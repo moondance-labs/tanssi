@@ -229,6 +229,7 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         containerRegistrar: {
+            DepositUpdated: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
             /**
              * A para id has been deregistered. [para_id]
              **/

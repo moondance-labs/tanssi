@@ -944,6 +944,10 @@ declare module "@polkadot/types/lookup" {
             readonly paraId: u32;
             readonly managerAddress: AccountId32;
         } & Struct;
+        readonly isDepositUpdated: boolean;
+        readonly asDepositUpdated: {
+            readonly paraId: u32;
+        } & Struct;
         readonly type:
             | "ParaIdRegistered"
             | "ParaIdDeregistered"
@@ -951,7 +955,8 @@ declare module "@polkadot/types/lookup" {
             | "ParaIdPaused"
             | "ParaIdUnpaused"
             | "ParathreadParamsChanged"
-            | "ParaManagerChanged";
+            | "ParaManagerChanged"
+            | "DepositUpdated";
     }
 
     /** @name PalletCollatorAssignmentEvent (66) */
@@ -3915,6 +3920,10 @@ declare module "@polkadot/types/lookup" {
             readonly relayProofBlockNumber: u32;
             readonly relayStorageProof: SpTrieStorageProof;
         } & Struct;
+        readonly isPokeDeposit: boolean;
+        readonly asPokeDeposit: {
+            readonly paraId: u32;
+        } & Struct;
         readonly type:
             | "Register"
             | "Deregister"
@@ -3925,7 +3934,8 @@ declare module "@polkadot/types/lookup" {
             | "SetParathreadParams"
             | "SetParaManager"
             | "RegisterWithRelayProof"
-            | "DeregisterWithRelayProof";
+            | "DeregisterWithRelayProof"
+            | "PokeDeposit";
     }
 
     /** @name DpContainerChainGenesisDataContainerChainGenesisData (324) */

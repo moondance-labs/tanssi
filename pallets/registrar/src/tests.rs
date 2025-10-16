@@ -15,11 +15,14 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{mock::*, Error, Event, HoldReason, ParaInfo, REGISTRAR_PARAS_INDEX},
+    crate::{mock::*, Error, Event, HoldReason, ParaInfo, Precision, REGISTRAR_PARAS_INDEX},
     cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
     dp_container_chain_genesis_data::ContainerChainGenesisData,
     frame_support::{
-        assert_noop, assert_ok, dispatch::GetDispatchInfo, traits::fungible::InspectHold,
+        assert_noop, assert_ok,
+        dispatch::GetDispatchInfo,
+        error::BadOrigin,
+        traits::fungible::{InspectHold, MutateHold},
         BoundedVec, Hashable,
     },
     parity_scale_codec::Encode,
@@ -2061,4 +2064,283 @@ fn weights_assigned_to_extrinsics_are_correct() {
             <() as crate::weights::WeightInfo>::unpause_container_chain()
         );
     });
+}
+
+mod poke_deposit {
+    use super::*;
+
+    const PARA_ID: i32 = 42;
+
+    #[test]
+    fn poke_deposit_fails_for_unknown_para() {
+        new_test_ext().execute_with(|| {
+            run_to_block(1);
+
+            assert_noop!(
+                ParaRegistrar::poke_deposit(RuntimeOrigin::signed(ALICE), 777.into()),
+                Error::<Test>::ParaIdNotRegistered
+            );
+        });
+    }
+
+    #[test]
+    fn poke_deposit_fails_for_unsigned() {
+        new_test_ext().execute_with(|| {
+            run_to_block(1);
+
+            // Called by BOB (not creator) should fail
+            assert_noop!(
+                ParaRegistrar::poke_deposit(RuntimeOrigin::none(), PARA_ID.into()),
+                BadOrigin
+            );
+        });
+    }
+
+    #[test]
+    fn poke_deposit_is_idempotent_after_adjustment() {
+        new_test_ext().execute_with(|| {
+            run_to_block(1);
+
+            assert_ok!(ParaRegistrar::register(
+                RuntimeOrigin::signed(ALICE),
+                PARA_ID.into(),
+                empty_genesis_data(),
+                None
+            ));
+
+            // Unbalanced deposit
+            let required = {
+                let gd = empty_genesis_data();
+                let size = gd.encoded_size() as u32;
+                DataDepositPerByte::get() * (size as u128)
+            };
+            let extra = required / 3;
+            assert_ok!(Balances::hold(
+                &HoldReason::RegistrarDeposit.into(),
+                &ALICE,
+                extra
+            ));
+            crate::RegistrarDeposit::<Test>::insert(
+                ParaId::from(PARA_ID),
+                crate::DepositInfo::<Test> {
+                    creator: ALICE,
+                    deposit: required + extra,
+                },
+            );
+
+            assert_ok!(ParaRegistrar::poke_deposit(
+                RuntimeOrigin::signed(ALICE),
+                PARA_ID.into()
+            ));
+            let hold_after_first =
+                Balances::balance_on_hold(&HoldReason::RegistrarDeposit.into(), &ALICE);
+
+            System::assert_last_event(
+                Event::DepositUpdated {
+                    para_id: PARA_ID.into(),
+                }
+                .into(),
+            );
+
+            // Second call: should not change anything
+            assert_ok!(ParaRegistrar::poke_deposit(
+                RuntimeOrigin::signed(ALICE),
+                PARA_ID.into()
+            ));
+            let hold_after_second =
+                Balances::balance_on_hold(&HoldReason::RegistrarDeposit.into(), &ALICE);
+
+            assert_eq!(hold_after_first, hold_after_second);
+            let info = ParaRegistrar::registrar_deposit(PARA_ID.into()).expect("exists");
+            assert_eq!(info.deposit, required);
+        });
+    }
+
+    #[test]
+    fn poke_deposit_fails_for_wrong_creator() {
+        new_test_ext().execute_with(|| {
+            run_to_block(1);
+
+            assert_ok!(ParaRegistrar::register(
+                RuntimeOrigin::signed(ALICE),
+                PARA_ID.into(),
+                empty_genesis_data(),
+                None
+            ));
+
+            // Called by BOB (not creator) should fail
+            assert_noop!(
+                ParaRegistrar::poke_deposit(RuntimeOrigin::signed(BOB), PARA_ID.into()),
+                Error::<Test>::NotParaCreator
+            );
+        });
+    }
+
+    #[test]
+    fn poke_deposit_is_noop_when_exact() {
+        new_test_ext().execute_with(|| {
+            run_to_block(1);
+
+            assert_ok!(ParaRegistrar::register(
+                RuntimeOrigin::signed(ALICE),
+                PARA_ID.into(),
+                empty_genesis_data(),
+                None
+            ));
+
+            let required = {
+                let gd = empty_genesis_data();
+                let size = gd.encoded_size() as u32;
+                DataDepositPerByte::get() * (size as u128)
+            };
+
+            assert_eq!(
+                Balances::balance_on_hold(&HoldReason::RegistrarDeposit.into(), &ALICE),
+                required
+            );
+            let before = System::account(ALICE).data;
+
+            assert_ok!(ParaRegistrar::poke_deposit(
+                RuntimeOrigin::signed(ALICE),
+                PARA_ID.into()
+            ));
+
+            // Nothing changed
+            assert_eq!(
+                Balances::balance_on_hold(&HoldReason::RegistrarDeposit.into(), &ALICE),
+                required
+            );
+            assert_eq!(System::account(ALICE).data, before);
+
+            // Storage remain the same
+            let info = ParaRegistrar::registrar_deposit(PARA_ID.into()).expect("exists");
+            assert_eq!(info.deposit, required);
+        });
+    }
+
+    #[test]
+    fn poke_deposit_increases_when_underfunded() {
+        new_test_ext().execute_with(|| {
+            run_to_block(1);
+
+            let para_id = PARA_ID;
+
+            assert_ok!(ParaRegistrar::register(
+                RuntimeOrigin::signed(ALICE),
+                PARA_ID.into(),
+                empty_genesis_data(),
+                None
+            ));
+
+            let required = {
+                let gd = empty_genesis_data();
+                let size = gd.encoded_size() as u32;
+                DataDepositPerByte::get() * (size as u128)
+            };
+
+            // Release half of the hold and update storage
+            let half = required / 2;
+            let delta = required.saturating_sub(half);
+
+            assert_ok!(Balances::release(
+                &HoldReason::RegistrarDeposit.into(),
+                &ALICE,
+                delta,
+                Precision::Exact
+            ));
+
+            crate::RegistrarDeposit::<Test>::insert(
+                ParaId::from(PARA_ID),
+                crate::DepositInfo::<Test> {
+                    creator: ALICE,
+                    deposit: half,
+                },
+            );
+
+            assert_eq!(
+                Balances::balance_on_hold(&HoldReason::RegistrarDeposit.into(), &ALICE),
+                half
+            );
+
+            assert_ok!(ParaRegistrar::poke_deposit(
+                RuntimeOrigin::signed(ALICE),
+                PARA_ID.into()
+            ));
+
+            // Should be back to required
+            assert_eq!(
+                Balances::balance_on_hold(&HoldReason::RegistrarDeposit.into(), &ALICE),
+                required
+            );
+            let info = ParaRegistrar::registrar_deposit(PARA_ID.into()).expect("exists");
+            assert_eq!(info.deposit, required);
+
+            System::assert_last_event(
+                Event::DepositUpdated {
+                    para_id: para_id.into(),
+                }
+                .into(),
+            );
+        });
+    }
+
+    #[test]
+    fn poke_deposit_decreases_when_overfunded() {
+        new_test_ext().execute_with(|| {
+            run_to_block(1);
+
+            assert_ok!(ParaRegistrar::register(
+                RuntimeOrigin::signed(ALICE),
+                PARA_ID.into(),
+                empty_genesis_data(),
+                None
+            ));
+
+            let required = {
+                let gd = empty_genesis_data();
+                let size = gd.encoded_size() as u32;
+                DataDepositPerByte::get() * (size as u128)
+            };
+
+            // Simulate holding extra and update storage
+            let extra = required / 2;
+            assert_ok!(Balances::hold(
+                &HoldReason::RegistrarDeposit.into(),
+                &ALICE,
+                extra
+            ));
+            crate::RegistrarDeposit::<Test>::insert(
+                ParaId::from(PARA_ID),
+                crate::DepositInfo::<Test> {
+                    creator: ALICE,
+                    deposit: required + extra,
+                },
+            );
+
+            assert_eq!(
+                Balances::balance_on_hold(&HoldReason::RegistrarDeposit.into(), &ALICE),
+                required + extra
+            );
+
+            assert_ok!(ParaRegistrar::poke_deposit(
+                RuntimeOrigin::signed(ALICE),
+                PARA_ID.into()
+            ));
+
+            // Should be back to required
+            assert_eq!(
+                Balances::balance_on_hold(&HoldReason::RegistrarDeposit.into(), &ALICE),
+                required
+            );
+            let info = ParaRegistrar::registrar_deposit(PARA_ID.into()).expect("exists");
+            assert_eq!(info.deposit, required);
+
+            System::assert_last_event(
+                Event::DepositUpdated {
+                    para_id: PARA_ID.into(),
+                }
+                .into(),
+            );
+        });
+    }
 }
