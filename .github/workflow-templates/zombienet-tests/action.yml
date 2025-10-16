@@ -38,10 +38,6 @@ runs:
       if: failure()
       shell: bash
       run: |
-        # TODO: if multiple attempts fail, we only get logs for the latest failed attempt
-        # We could try to get logs for all the attempts, but we need some way to get the zombienet folder name
-        # for each test run.
-        
         # Print collapsed output of /tmp for debugging
         echo "::group::ls -ltr /tmp"
         ls -ltr /tmp || true
