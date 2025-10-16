@@ -240,6 +240,38 @@ where
     pub message: BoundedVec<u8, MaxEnqueuedMessageSizeOfV2<T>>,
 }
 
+// A message which can be accepted by implementations of `/[`SendMessage`\]`
+#[derive(Encode, Decode, TypeInfo, Clone, RuntimeDebug)]
+#[cfg_attr(feature = "std", derive(PartialEq))]
+pub enum VersionedTanssiMessage<T>
+where
+    T: snowbridge_pallet_outbound_queue_v2::Config,
+    T: snowbridge_pallet_outbound_queue::Config,
+{
+    V1(Ticket<T>),
+    V2(TanssiMessageV2<T>),
+}
+
+impl<T> From<Ticket<T>> for VersionedTanssiMessage<T>
+where
+    T: snowbridge_pallet_outbound_queue_v2::Config,
+    T: snowbridge_pallet_outbound_queue::Config,
+{
+    fn from(ticket: Ticket<T>) -> VersionedTanssiMessage<T> {
+        VersionedTanssiMessage::V1(ticket)
+    }
+}
+
+impl<T> From<TanssiMessageV2<T>> for VersionedTanssiMessage<T>
+where
+    T: snowbridge_pallet_outbound_queue_v2::Config,
+    T: snowbridge_pallet_outbound_queue::Config,
+{
+    fn from(ticket: TanssiMessageV2<T>) -> VersionedTanssiMessage<T> {
+        VersionedTanssiMessage::V2(ticket)
+    }
+}
+
 pub trait TicketInfo {
     fn message_id(&self) -> H256;
 }
@@ -247,6 +279,27 @@ pub trait TicketInfo {
 impl TicketInfo for () {
     fn message_id(&self) -> H256 {
         H256::zero()
+    }
+}
+#[cfg(not(feature = "runtime-benchmarks"))]
+impl<T: snowbridge_pallet_outbound_queue::Config + snowbridge_pallet_outbound_queue_v2::Config>
+    TicketInfo for VersionedTanssiMessage<T>
+{
+    fn message_id(&self) -> H256 {
+        match self {
+            VersionedTanssiMessage::V1(ticket) => ticket.message_id,
+            VersionedTanssiMessage::V2(ticket) => ticket.id,
+        }
+    }
+}
+
+// Benchmarks check message_id so it must be deterministic.
+#[cfg(feature = "runtime-benchmarks")]
+impl<T: snowbridge_pallet_outbound_queue::Config + snowbridge_pallet_outbound_queue_v2::Config>
+    TicketInfo for VersionedTanssiMessage<T>
+{
+    fn message_id(&self) -> H256 {
+        H256::default()
     }
 }
 
@@ -284,6 +337,28 @@ impl<T: snowbridge_pallet_outbound_queue::Config> TicketInfo for Ticket<T> {
 impl TicketInfo for OutboundMessageV2 {
     fn message_id(&self) -> H256 {
         H256::default()
+    }
+}
+
+pub struct VersionedMessageValidator<
+    T: snowbridge_pallet_outbound_queue::Config + snowbridge_pallet_outbound_queue_v2::Config,
+    OwnOrigin: Get<Location>,
+    UseV2: Get<bool>,
+>(PhantomData<(T, OwnOrigin, UseV2)>);
+impl<
+        T: snowbridge_pallet_outbound_queue::Config + snowbridge_pallet_outbound_queue_v2::Config,
+        OwnOrigin: Get<Location>,
+        UseV2: Get<bool>,
+    > ValidateMessage for VersionedMessageValidator<T, OwnOrigin, UseV2>
+{
+    type Ticket = VersionedTanssiMessage<T>;
+    fn validate(message: &Message) -> Result<(Self::Ticket, Fee<u64>), SendError> {
+        if UseV2::get() {
+            MessageValidator::<T>::validate(message).map(|(ticket, fee)| (ticket.into(), fee))
+        } else {
+            MessageValidatorV2::<T, OwnOrigin>::validate(message)
+                .map(|(ticket, fee)| (ticket.into(), fee))
+        }
     }
 }
 
