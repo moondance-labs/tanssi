@@ -23,11 +23,13 @@ use frame_support::dispatch::DispatchResult;
 use frame_support::pallet_prelude::{DecodeWithMemTracking, Encode, TypeInfo};
 use frame_support::traits::{EnqueueMessage, QueueFootprint};
 use frame_support::BoundedSlice;
+use frame_support::PalletId;
 use frame_system::EnsureRootWithSuccess;
 use parity_scale_codec::{Decode, MaxEncodedLen};
 use snowbridge_core::reward::{AddTip, AddTipError, MessageId};
 use snowbridge_outbound_queue_primitives::v2::{Message, SendMessage};
 use snowbridge_outbound_queue_primitives::SendError;
+use sp_runtime::traits::AccountIdConversion;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
 use {
@@ -279,18 +281,27 @@ impl snowbridge_pallet_system_v2::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type OutboundQueue = DoNothingOutboundQueue;
     type InboundQueue = EthereumInboundQueueV2;
-    // TODO: Add pallet origin
-    type FrontendOrigin = EnsureRootWithSuccess<AccountId, EthereumLocation>;
+    type FrontendOrigin = tp_system::EnsureRootOrPalletIdWithSuccess<
+        AccountId,
+        EthereumLocation,
+        EthereumTokenTransfersPalletId,
+    >;
     type GovernanceOrigin = EnsureRootWithSuccess<AccountId, EthereumLocation>;
     type WeightInfo = ();
 }
 
-pub struct EthereumSystemAdapter<T>(core::marker::PhantomData<T>);
+parameter_types! {
+    pub EthereumTokenTransfersPalletId: PalletId = PalletId(*b"eth_tras");
+}
+
+pub struct EthereumTipForwarder<T>(core::marker::PhantomData<T>);
 impl<T: snowbridge_pallet_system_v2::Config>
-    pallet_ethereum_token_transfers::pallet::TipHandler<T::AccountId> for EthereumSystemAdapter<T>
+    pallet_ethereum_token_transfers::pallet::TipHandler<T::AccountId> for EthereumTipForwarder<T>
 {
     fn add_tip(sender: T::AccountId, message_id: MessageId, amount: u128) -> DispatchResult {
-        let origin = frame_system::RawOrigin::Root.into();
+        let pallet_account: T::AccountId =
+            EthereumTokenTransfersPalletId::get().into_account_truncating();
+        let origin = frame_system::RawOrigin::Signed(pallet_account.clone()).into();
 
         snowbridge_pallet_system_v2::Pallet::<T>::add_tip(origin, sender, message_id, amount)
     }
@@ -307,7 +318,7 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = tp_bridge::EthereumTokenTransfersBenchHelper<Runtime>;
     type WeightInfo = crate::weights::pallet_ethereum_token_transfers::SubstrateWeight<Runtime>;
-    type TipHandler = EthereumSystemAdapter<Runtime>;
+    type TipHandler = EthereumTipForwarder<Runtime>;
 }
 
 #[cfg(feature = "runtime-benchmarks")]

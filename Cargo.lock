@@ -3975,6 +3975,7 @@ dependencies = [
  "tp-invulnerables-filter-common",
  "tp-parathread-filter-common",
  "tp-stream-payment-common",
+ "tp-system",
  "tp-traits",
  "tp-xcm-commons",
  "xcm-runtime-apis",
@@ -20476,6 +20477,16 @@ dependencies = [
  "sp-core",
  "sp-runtime",
  "tp-traits",
+]
+
+[[package]]
+name = "tp-system"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "sp-core",
+ "sp-runtime",
 ]
 
 [[package]]
