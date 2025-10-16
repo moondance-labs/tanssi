@@ -503,6 +503,7 @@ pub fn dummy_config(tokio_handle: tokio::runtime::Handle, base_path: BasePath) -
             ipfs_server: false,
             network_backend: Default::default(),
             min_peers_to_start_warp_sync: None,
+            idle_connection_timeout: Default::default(),
         },
         keystore: KeystoreConfig::InMemory,
         database: DatabaseSource::ParityDb {
