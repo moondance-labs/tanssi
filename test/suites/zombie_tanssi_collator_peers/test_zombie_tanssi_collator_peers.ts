@@ -1,7 +1,7 @@
 // @ts-nocheck
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import type { ApiPromise, } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 import {
     getAuthorFromDigestRange,
     checkLogsNotExist,
@@ -145,11 +145,154 @@ describeSuite({
         });
 
         it({
+            id: "T11",
+            title: "Gather logs: Discovered new external address",
+            test: async () => {
+                // Parse "Discovered new external address" lines across all logs
+                const { readFile, readdir } = await import("fs/promises");
+
+                // (log file, node kind) -> list of discovered addresses (unique, in order seen)
+                type DiscoveryMap = Map<string, Map<string, string[]>>;
+
+                const buildDiscoveryMap = async (baseDir: string): Promise<DiscoveryMap> => {
+                    const map: DiscoveryMap = new Map();
+                    const names = await readdir(baseDir);
+                    const files = names.filter((n) => n.endsWith(".log")).map((n) => `${baseDir}/${n}`);
+
+                    // Example line:
+                    // 2025-10-16 12:38:12 [Container-2000] 🔍 Discovered new external address for our node: /ip4/127.0.0.1/tcp/46873/ws/p2p/...
+                    const re =
+                        /^\s*\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:\.\d+)?[^\[]*\[([^\]]+)\].*?Discovered new external address for our node:\s*(\S+)/gim;
+
+                    for (const file of files) {
+                        let txt = "";
+                        try {
+                            txt = await readFile(file, "utf8");
+                        } catch {
+                            continue;
+                        }
+                        let m: RegExpExecArray | null;
+                        while ((m = re.exec(txt)) !== null) {
+                            const nodeKind = m[1]; // e.g. "Container-2000", "Parachain", "Relaychain"
+                            const addr = m[2]; // multiaddr
+                            if (!map.has(file)) map.set(file, new Map());
+                            const inner = map.get(file)!;
+                            if (!inner.has(nodeKind)) inner.set(nodeKind, []);
+                            const list = inner.get(nodeKind)!;
+                            if (!list.includes(addr)) list.push(addr);
+                        }
+                    }
+                    return map;
+                };
+
+                const base = getTmpZombiePath();
+                const discoveredAddressMap = await buildDiscoveryMap(base);
+
+                // Optional: print a readable summary
+                for (const [file, byKind] of discoveredAddressMap) {
+                    for (const [kind, addrs] of byKind) {
+                        console.log(`[Discovery] ${file} [${kind}] (${addrs.length} addrs):\n  ${addrs.join("\n  ")}`);
+                    }
+                }
+
+                // ---- Extract TCP/UDP ports from multiaddrs, build port maps, assert uniqueness ----
+                const extractPorts = (addr: string): number[] => {
+                    const out: number[] = [];
+                    // capture all tcp/udp segments, e.g. .../tcp/46873/ws..., .../udp/30333/quic-v1/...
+                    const re = /\/(?:tcp|udp)\/(\d+)\b/gi;
+                    let m: RegExpExecArray | null;
+                    while ((m = re.exec(addr)) !== null) {
+                        const n = parseInt(m[1], 10);
+                        if (Number.isFinite(n)) out.push(n);
+                    }
+                    return out;
+                };
+
+                // file -> kind -> Set<port>
+                const portMap: Map<string, Map<string, Set<number>>> = new Map();
+                // port -> Set<ownerPair> (ownerPair = `${file} [${kind}]`)
+                const ownersByPort: Map<number, Set<string>> = new Map();
+
+                for (const [file, byKind] of discoveredAddressMap) {
+                    if (!portMap.has(file)) portMap.set(file, new Map());
+                    const kindsMap = portMap.get(file)!;
+
+                    for (const [kind, addrs] of byKind) {
+                        if (!kindsMap.has(kind)) kindsMap.set(kind, new Set());
+                        const portSet = kindsMap.get(kind)!;
+
+                        for (const addr of addrs) {
+                            const ports = extractPorts(addr);
+                            for (const p of ports) {
+                                portSet.add(p);
+
+                                const owner = `${file} [${kind}]`;
+                                if (!ownersByPort.has(p)) ownersByPort.set(p, new Set());
+                                ownersByPort.get(p)!.add(owner);
+                            }
+                        }
+                    }
+                }
+
+                // Optional: print a summary of discovered ports per (file, kind)
+                for (const [file, kinds] of portMap) {
+                    for (const [kind, ports] of kinds) {
+                        const sorted = [...ports].sort((a, b) => a - b);
+                        console.log(
+                            `[DiscoveryPorts] ${file} [${kind}] (${sorted.length} ports): ${sorted.join(", ")}`
+                        );
+                    }
+                }
+
+                // Assertion A: within the same file, no port reused by different node kinds
+                for (const [file, kinds] of portMap) {
+                    const ownerByPort = new Map<number, string>();
+                    for (const [kind, ports] of kinds) {
+                        for (const p of ports) {
+                            const prev = ownerByPort.get(p);
+                            if (prev && prev !== kind) {
+                                expect.fail(`Port collision in ${file}: port ${p} used by [${prev}] and [${kind}]`);
+                            }
+                            ownerByPort.set(p, kind);
+                        }
+                    }
+                }
+
+                // Assertion B: across files, no ports in common
+                const files = [...portMap.keys()];
+                for (let i = 0; i < files.length; i++) {
+                    const fi = files[i];
+                    const portsI = new Set<number>();
+                    for (const set of portMap.get(fi)!.values()) for (const p of set) portsI.add(p);
+
+                    for (let j = i + 1; j < files.length; j++) {
+                        const fj = files[j];
+                        const portsJ = new Set<number>();
+                        for (const set of portMap.get(fj)!.values()) for (const p of set) portsJ.add(p);
+
+                        for (const p of portsI) {
+                            if (portsJ.has(p)) {
+                                expect.fail(`Port collision across files: port ${p} appears in both ${fi} and ${fj}`);
+                            }
+                        }
+                    }
+                }
+
+                // Bonus single-pass global check (covers both A & B). Comment out if you prefer the tailored messages above.
+                // for (const [p, owners] of ownersByPort) {
+                //     if (owners.size > 1) {
+                //         expect.fail(`Port ${p} reused by multiple nodes: ${[...owners].join(" , ")}`);
+                //     }
+                // }
+            },
+        });
+
+        it({
             id: "T13",
             title: "Wait 2 sessions",
-            timeout: 300000,
+            timeout: 600000,
             test: async () => {
-                await waitSessions(context, relayApi, 2, null, "Tanssi");
+                await waitSessions(context, relayApi, 5, null, "Tanssi");
             },
         });
         it({
@@ -269,7 +412,9 @@ describeSuite({
                             if (m?.section === "timestamp" && m?.method === "set" && m?.args?.length) {
                                 const v = m.args[0];
                                 const n =
-                                    typeof v?.toNumber === "function" ? v.toNumber() : Number(v?.toString?.() ?? Number.NaN);
+                                    typeof v?.toNumber === "function"
+                                        ? v.toNumber()
+                                        : Number(v?.toString?.() ?? Number.NaN);
                                 if (Number.isFinite(n)) return n;
                             }
                         }
