@@ -16,7 +16,7 @@
 
 use {
     super::*,
-    crate::snowbridge_outbound_token_transfer_v2::AgentIdOf,
+    crate::AgentIdOf,
     alloc::boxed::Box,
     alloy_core::{
         primitives::{Bytes, FixedBytes},

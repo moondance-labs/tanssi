@@ -18,6 +18,7 @@
 // Rewrite of the following code which cause issues as Tanssi is not a parachain
 // https://github.com/moondance-labs/polkadot-sdk/blob/tanssi-polkadot-stable2412/bridges/snowbridge/primitives/router/src/outbound/mod.rs#L98
 
+use crate::AgentIdOf;
 use alloc::vec::Vec;
 use core::iter::Peekable;
 use core::marker::PhantomData;
@@ -47,20 +48,6 @@ use xcm_builder::{
     MatchXcm,
 };
 use xcm_executor::traits::{validate_export, ConvertLocation, ExportXcm};
-
-/// We need to add DescribeAccountId32Terminal for cases in which a local user is the one sending the tokens
-pub type AgentIdOf = HashedDescription<
-    AgentId,
-    (
-        DescribeHere,
-        DescribeFamily<DescribeAllTerminal>,
-        DescribeGlobalPrefix<(
-            DescribeTerminus,
-            DescribeFamily<DescribeTokenTerminal>,
-            DescribeAccountId32Terminal,
-        )>,
-    ),
->;
 
 pub struct EthereumBlobExporterV2<
     UniversalLocation,
@@ -406,7 +393,7 @@ where
         tail.dec_parent();
         log::error!("tail is {:?}", tail);
 
-        let origin = AgentIdOf::convert_location(origin_location).ok_or(InvalidOrigin)?;
+        let origin = crate::AgentIdOf::convert_location(origin_location).ok_or(InvalidOrigin)?;
 
         let (deposit_assets, beneficiary) = match_expression!(
             self.next()?,

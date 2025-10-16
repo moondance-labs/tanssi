@@ -36,21 +36,25 @@ where
         <T as snowbridge_pallet_outbound_queue_v2::Config>::AggregateMessageOrigin,
     >,
 {
-    type Ticket = TanssiMessageV2;
+    type Ticket = TanssiMessageV2<T>;
 
     fn deliver(ticket: Self::Ticket) -> Result<sp_core::H256, SendError> {
         let origin = GetAggregateMessageOrigin::convert(ticket.origin.into());
 
         let message = ticket.message.as_bounded_slice();
         <T as snowbridge_pallet_outbound_queue_v2::Config>::MessageQueue::enqueue_message(
-            message.as_bounded_slice(),
-            origin,
+            message, origin,
         );
-        /*snowbridge_pallet_outbound_queue_v2::Pallet::<T>::deposit_event(
+        snowbridge_pallet_outbound_queue_v2::Pallet::<T>::deposit_event(
             snowbridge_pallet_outbound_queue_v2::Event::MessageQueued {
-                message: MessageV2{}
+                message: MessageV2 {
+                    origin: ticket.origin,
+                    fee: ticket.fee,
+                    id: ticket.id,
+                    commands: vec![].try_into().unwrap(),
+                },
             },
-        );*/
+        );
 
         Ok(ticket.id)
     }

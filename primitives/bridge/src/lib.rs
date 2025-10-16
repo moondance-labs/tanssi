@@ -36,19 +36,22 @@ use {
     core::marker::PhantomData,
     cumulus_primitives_core::{
         relay_chain::{AccountId, Balance},
-        AccountKey20, Assets, Ethereum, GlobalConsensus, Location, SendResult, SendXcm, Xcm,
-        XcmHash,
+        AccountKey20, AggregateMessageOrigin, Assets, Ethereum, GlobalConsensus, Location,
+        SendResult, SendXcm, Xcm, XcmHash,
     },
     ethabi::{Token, U256},
     frame_support::{
         ensure,
         pallet_prelude::{Decode, Encode, Get},
-        traits::Contains,
+        traits::{Contains, EnqueueMessage},
     },
     frame_system::unique,
     parity_scale_codec::{DecodeWithMemTracking, MaxEncodedLen},
     scale_info::TypeInfo,
-    snowbridge_core::{AgentId, Channel, ChannelId, ParaId},
+    snowbridge_core::{
+        location::{DescribeGlobalPrefix, DescribeHere, DescribeTokenTerminal},
+        AgentId, Channel, ChannelId, ParaId,
+    },
     snowbridge_inbound_queue_primitives::v1::{
         ConvertMessage, ConvertMessageError, VersionedXcmMessage,
     },
@@ -59,7 +62,12 @@ use {
     snowbridge_outbound_queue_primitives::{v1::Fee, v2::Message as OutboundMessageV2, SendError},
     snowbridge_pallet_outbound_queue::send_message_impl::Ticket,
     sp_core::{blake2_256, hashing, H256},
-    sp_runtime::{app_crypto::sp_core, traits::Convert, RuntimeDebug},
+    sp_runtime::{app_crypto::sp_core, traits::Convert, BoundedVec, RuntimeDebug},
+    xcm::prelude::*,
+    xcm_builder::{
+        DescribeAccountId32Terminal, DescribeAllTerminal, DescribeFamily, DescribeLocation,
+        DescribeTerminus, HashedDescription,
+    },
 };
 
 // Separate import as rustfmt wrongly change it to `alloc::vec::self`, which is the module instead
@@ -69,6 +77,7 @@ use alloc::vec;
 pub use {
     custom_do_process_message::{ConstantGasMeter, CustomProcessSnowbridgeMessage},
     custom_send_message::CustomSendMessage,
+    custom_send_message_v2::CustomSendMessageV2,
     xcm_executor::traits::ConvertLocation,
 };
 
@@ -79,6 +88,26 @@ mod custom_do_process_message;
 mod custom_do_process_message_v2;
 mod custom_send_message;
 mod custom_send_message_v2;
+
+/// We need to add DescribeAccountId32Terminal for cases in which a local user is the one sending the tokens
+pub type AgentIdOf = HashedDescription<
+    AgentId,
+    (
+        DescribeHere,
+        DescribeFamily<DescribeAllTerminal>,
+        DescribeGlobalPrefix<(
+            DescribeTerminus,
+            DescribeFamily<DescribeTokenTerminal>,
+            DescribeAccountId32Terminal,
+        )>,
+    ),
+>;
+
+/// The maximal length of an enqueued message, as determined by the MessageQueue pallet
+pub type MaxEnqueuedMessageSizeOfV2<T: snowbridge_pallet_outbound_queue_v2::Config> =
+    <<T as snowbridge_pallet_outbound_queue_v2::Config>::MessageQueue as EnqueueMessage<
+        <T as snowbridge_pallet_outbound_queue_v2::Config>::AggregateMessageOrigin,
+    >>::MaxMessageLen;
 
 #[derive(Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo, PartialEq)]
 pub struct SlashData {
@@ -196,7 +225,10 @@ pub struct Message {
 // A message which can be accepted by implementations of `/[`SendMessage`\]`
 #[derive(Encode, Decode, TypeInfo, Clone, RuntimeDebug)]
 #[cfg_attr(feature = "std", derive(PartialEq))]
-pub struct TanssiMessageV2 {
+pub struct TanssiMessageV2<T>
+where
+    T: snowbridge_pallet_outbound_queue_v2::Config,
+{
     /// Origin
     pub origin: H256,
     /// ID
@@ -205,7 +237,7 @@ pub struct TanssiMessageV2 {
     pub fee: u128,
     /// Commands
     /// change to biunded
-    pub message: Vec<u8>,
+    pub message: BoundedVec<u8, MaxEnqueuedMessageSizeOfV2<T>>,
 }
 
 pub trait TicketInfo {
@@ -226,7 +258,7 @@ impl<T: snowbridge_pallet_outbound_queue::Config> TicketInfo for Ticket<T> {
 }
 
 #[cfg(not(feature = "runtime-benchmarks"))]
-impl TicketInfo for TanssiMessageV2 {
+impl<T: snowbridge_pallet_outbound_queue_v2::Config> TicketInfo for TanssiMessageV2<T> {
     fn message_id(&self) -> H256 {
         self.id
     }
@@ -257,7 +289,10 @@ impl TicketInfo for OutboundMessageV2 {
 
 pub struct MessageValidator<T: snowbridge_pallet_outbound_queue::Config>(PhantomData<T>);
 
-pub struct MessageValidatorV2;
+pub struct MessageValidatorV2<
+    T: snowbridge_pallet_outbound_queue_v2::Config,
+    OwnOrigin: Get<Location>,
+>(PhantomData<(T, OwnOrigin)>);
 
 pub trait ValidateMessage {
     type Ticket: TicketInfo;
@@ -320,8 +355,10 @@ impl<T: snowbridge_pallet_outbound_queue::Config> ValidateMessage for MessageVal
     }
 }
 
-impl ValidateMessage for MessageValidatorV2 {
-    type Ticket = TanssiMessageV2;
+impl<T: snowbridge_pallet_outbound_queue_v2::Config, OwnOrigin: Get<Location>> ValidateMessage
+    for MessageValidatorV2<T, OwnOrigin>
+{
+    type Ticket = TanssiMessageV2<T>;
 
     fn validate(message: &Message) -> Result<(Self::Ticket, Fee<u64>), SendError> {
         log::trace!("MessageValidator: {:?}", message);
@@ -329,11 +366,16 @@ impl ValidateMessage for MessageValidatorV2 {
         let payload = message.command.abi_encode();
 
         // make it dependent on pallet-v2
-        /*ensure!(
+        ensure!(
             payload.len() < T::MaxMessagePayloadSize::get() as usize,
             SendError::MessageTooLarge
-        );*/
+        );
 
+        // This is only called by system level pallets
+        // so we can put the origin to system
+
+        let origin = crate::AgentIdOf::convert_location(&OwnOrigin::get())
+            .ok_or(SendError::InvalidOrigin)?;
         // Ensure there is a registered channel we can transmit this message on
         /*ensure!(
             T::Channels::contains(&message.channel_id),
@@ -345,7 +387,7 @@ impl ValidateMessage for MessageValidatorV2 {
             .id
             .unwrap_or_else(|| unique((message.channel_id, &message.command)).into());
 
-        // Fee not used
+        // Fee not used for now
         /*
         let gas_used_at_most = T::GasMeter::maximum_gas_used_at_most(&message.command);
         let fee = Self::calculate_fee(gas_used_at_most, T::PricingParameters::get());
