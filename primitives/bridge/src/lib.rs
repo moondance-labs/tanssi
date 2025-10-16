@@ -591,6 +591,33 @@ impl ConvertMessageV2 for DoNothingConvertMessage {
     }
 }
 
+pub struct CustomSendMessageVesioned<T, GetAggregateMessageOrigin>(
+    PhantomData<(T, GetAggregateMessageOrigin)>,
+);
+
+impl<T, GetAggregateMessageOrigin> DeliverMessage
+    for CustomSendMessageVesioned<T, GetAggregateMessageOrigin>
+where
+    T: snowbridge_pallet_outbound_queue::Config + snowbridge_pallet_outbound_queue_v2::Config,
+    GetAggregateMessageOrigin: Convert<ChannelId, <T as snowbridge_pallet_outbound_queue::Config>::AggregateMessageOrigin>
+        + Convert<
+            ChannelId,
+            <T as snowbridge_pallet_outbound_queue_v2::Config>::AggregateMessageOrigin,
+        >,
+{
+    type Ticket = VersionedTanssiMessage<T>;
+
+    fn deliver(ticket: Self::Ticket) -> Result<sp_core::H256, SendError> {
+        match ticket {
+            VersionedTanssiMessage::V1(ticket) => {
+                CustomSendMessage::<T, GetAggregateMessageOrigin>::deliver(ticket)
+            }
+            VersionedTanssiMessage::V2(ticket) => {
+                CustomSendMessageV2::<T, GetAggregateMessageOrigin>::deliver(ticket)
+            }
+        }
+    }
+}
 // This is a variation of the converter found here:
 // https://github.com/paritytech/polkadot-sdk/blob/711e6ff33373bc08b026446ce19b73920bfe068c/bridges/snowbridge/primitives/router/src/inbound/mod.rs#L467
 //
