@@ -30,9 +30,10 @@ use {
 
 /// Alternative to [snowbridge_pallet_outbound_queue::Pallet::process_message] using a different
 /// [Command] enum.
-pub struct CustomProcessSnowbridgeMessage<T>(PhantomData<T>);
+/// Snowbridge V1 implementation!
+pub struct CustomProcessSnowbridgeMessageV1<T>(PhantomData<T>);
 
-impl<T> CustomProcessSnowbridgeMessage<T>
+impl<T> CustomProcessSnowbridgeMessageV1<T>
 where
     T: snowbridge_pallet_outbound_queue::Config,
 {

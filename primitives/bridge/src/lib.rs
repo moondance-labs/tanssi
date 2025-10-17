@@ -63,7 +63,7 @@ use alloc::vec;
 
 pub use {
     custom_do_process_message::{ConstantGasMeter, CustomProcessSnowbridgeMessage},
-    custom_send_message::CustomSendMessage,
+    custom_send_message::CustomSendMessagev1,
     xcm_executor::traits::ConvertLocation,
 };
 
@@ -72,6 +72,7 @@ pub use benchmarks::*;
 
 mod custom_do_process_message;
 mod custom_send_message;
+mod custom_validate_message;
 
 #[derive(Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo, PartialEq)]
 pub struct SlashData {
@@ -211,67 +212,10 @@ impl<T: snowbridge_pallet_outbound_queue::Config> TicketInfo for Ticket<T> {
     }
 }
 
-pub struct MessageValidator<T: snowbridge_pallet_outbound_queue::Config>(PhantomData<T>);
-
 pub trait ValidateMessage {
     type Ticket: TicketInfo;
 
     fn validate(message: &Message) -> Result<(Self::Ticket, Fee<u64>), SendError>;
-}
-
-impl<T: snowbridge_pallet_outbound_queue::Config> ValidateMessage for MessageValidator<T> {
-    type Ticket = Ticket<T>;
-
-    fn validate(message: &Message) -> Result<(Self::Ticket, Fee<u64>), SendError> {
-        log::trace!("MessageValidator: {:?}", message);
-        // The inner payload should not be too large
-        let payload = message.command.abi_encode();
-        ensure!(
-            payload.len() < T::MaxMessagePayloadSize::get() as usize,
-            SendError::MessageTooLarge
-        );
-
-        // Ensure there is a registered channel we can transmit this message on
-        ensure!(
-            T::Channels::contains(&message.channel_id),
-            SendError::InvalidChannel
-        );
-
-        // Generate a unique message id unless one is provided
-        let message_id: H256 = message
-            .id
-            .unwrap_or_else(|| unique((message.channel_id, &message.command)).into());
-
-        // Fee not used
-        /*
-        let gas_used_at_most = T::GasMeter::maximum_gas_used_at_most(&message.command);
-        let fee = Self::calculate_fee(gas_used_at_most, T::PricingParameters::get());
-         */
-
-        let queued_message: VersionedQueuedMessage = QueuedMessage {
-            id: message_id,
-            channel_id: message.channel_id,
-            command: message.command.clone(),
-        }
-        .into();
-        // The whole message should not be too large
-        let encoded = queued_message
-            .encode()
-            .try_into()
-            .map_err(|_| SendError::MessageTooLarge)?;
-
-        let ticket = Ticket {
-            message_id,
-            channel_id: message.channel_id,
-            message: encoded,
-        };
-        let fee = Fee {
-            local: Default::default(),
-            remote: Default::default(),
-        };
-
-        Ok((ticket, fee))
-    }
 }
 
 impl ValidateMessage for () {

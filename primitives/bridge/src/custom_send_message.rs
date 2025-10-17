@@ -21,12 +21,13 @@ use {
 
 /// Alternative to [snowbridge_pallet_outbound_queue::Pallet::deliver] using a different
 /// origin.
-pub struct CustomSendMessage<T, GetAggregateMessageOrigin>(
+/// Snowbridge V1 implementation!
+pub struct CustomSendMessageV1<T, GetAggregateMessageOrigin>(
     PhantomData<(T, GetAggregateMessageOrigin)>,
 );
 
 impl<T, GetAggregateMessageOrigin> DeliverMessage
-    for CustomSendMessage<T, GetAggregateMessageOrigin>
+    for CustomSendMessageV1<T, GetAggregateMessageOrigin>
 where
     T: snowbridge_pallet_outbound_queue::Config,
     GetAggregateMessageOrigin:
