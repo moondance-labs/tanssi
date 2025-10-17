@@ -216,6 +216,7 @@ async fn collate_returns_correct_block() {
             &Default::default(),
             head.clone().hash(),
             None,
+            None,
         )
         .await
         .unwrap();
@@ -255,7 +256,10 @@ async fn collate_returns_correct_block() {
         .1;
 
     // The returned block should be imported and we should be able to get its header by now.
-    assert!(client.header(res.header().hash()).unwrap().is_some());
+    assert!(client
+        .header(res.blocks()[0].header.hash())
+        .unwrap()
+        .is_some());
 }
 
 // Tests authorities are correctly returned and eligibility is correctly calculated

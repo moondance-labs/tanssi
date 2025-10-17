@@ -591,6 +591,43 @@
             ]
         },
         {
+            "name": "zombie_tanssi_collator_peers",
+            "testFileDir": ["suites/zombie_tanssi_collator_peers"],
+            "runScripts": [
+                "build-spec-single-container.sh",
+                "downloadPolkadot.ts",
+                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
+            ],
+            "timeout": 600000,
+            "foundation": {
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombie_tanssi_collator_peers.json"
+                }
+            },
+            "vitestArgs": {
+                "bail": 1
+            },
+            "connections": [
+                {
+                    "name": "Relay",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9947"]
+                },
+                {
+                    "name": "Tanssi",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9948"]
+                },
+                {
+                    "name": "Container2000",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9949"]
+                }
+            ]
+        },
+        {
             "name": "zombie_dancebox_upgrade",
             "testFileDir": ["suites/zombie_dancebox_upgrade"],
             "runScripts": [

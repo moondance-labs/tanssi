@@ -31,6 +31,7 @@ use {
         traits::{fungible::Inspect, fungibles::Mutate},
     },
     hex_literal::hex,
+    pallet_xcm::ExecutionError,
     parity_scale_codec::Encode,
     snowbridge_core::{AgentId, Channel, ChannelId, ParaId},
     snowbridge_inbound_queue_primitives::v1::{
@@ -1840,7 +1841,10 @@ fn cant_send_eth_unknown_token() {
                     0u32,
                     Unlimited,
                 ),
-                pallet_xcm::Error::<Runtime>::LocalExecutionIncomplete
+                pallet_xcm::Error::<Runtime>::LocalExecutionIncompleteWithError {
+                    index: 0,
+                    error: ExecutionError::AssetNotFound
+                }
             );
 
             assert_eq!(
@@ -1936,7 +1940,10 @@ fn cant_send_eth_native_token_more_than_owned() {
                     0u32,
                     Unlimited,
                 ),
-                pallet_xcm::Error::<Runtime>::LocalExecutionIncomplete
+                pallet_xcm::Error::<Runtime>::LocalExecutionIncompleteWithError {
+                    index: 0,
+                    error: ExecutionError::FailedToTransactAsset
+                }
             );
 
             assert_eq!(

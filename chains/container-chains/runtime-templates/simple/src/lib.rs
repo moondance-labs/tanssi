@@ -501,6 +501,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
     type ConsensusHook = ConsensusHook;
     type SelectCore = cumulus_pallet_parachain_system::DefaultCoreSelector<Runtime>;
+    type RelayParentOffset = ConstU32<0>;
 }
 
 pub struct ParaSlotProvider;
@@ -653,7 +654,6 @@ impl xcm_primitives::PauseXcmExecution for XcmExecutionManager {
 }
 
 impl pallet_migrations::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type MigrationsList = (migrations::TemplateMigrations<Runtime, XcmpQueue, PolkadotXcm>,);
     type XcmExecutionManager = XcmExecutionManager;
 }
@@ -698,7 +698,6 @@ impl Contains<RuntimeCall> for NormalFilter {
 }
 
 impl pallet_maintenance_mode::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
@@ -814,17 +813,16 @@ where
     type RuntimeCall = RuntimeCall;
 }
 
-impl<LocalCall> frame_system::offchain::CreateInherent<LocalCall> for Runtime
+impl<LocalCall> frame_system::offchain::CreateBare<LocalCall> for Runtime
 where
     RuntimeCall: From<LocalCall>,
 {
-    fn create_inherent(call: RuntimeCall) -> UncheckedExtrinsic {
+    fn create_bare(call: RuntimeCall) -> UncheckedExtrinsic {
         UncheckedExtrinsic::new_bare(call)
     }
 }
 
 impl pallet_ocw_testing::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type UnsignedInterval = ConstU32<6>;
 }
 
@@ -1114,11 +1112,11 @@ impl_runtime_apis! {
                     Ok(Location::parent())
                 }
 
-                fn fee_asset() -> Result<Asset, BenchmarkError> {
-                    Ok(Asset {
+                fn worst_case_for_trader() -> Result<(Asset, WeightLimit), BenchmarkError> {
+                    Ok((Asset {
                         id: AssetId(SelfReserve::get()),
                         fun: Fungible(ExistentialDeposit::get()*100),
-                    })
+                    }, WeightLimit::Unlimited))
                 }
 
                 fn claimable_asset() -> Result<(Location, Location, Assets), BenchmarkError> {

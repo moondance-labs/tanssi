@@ -336,7 +336,6 @@ impl Get<Option<CoreAllocationConfiguration>> for GetCoreAllocationConfiguration
 }
 
 impl pallet_collator_assignment::Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     type SessionIndex = u32;
     type HostConfiguration = HostConfigurationGetter;
     type ContainerChains = ContainerChainsGetter;

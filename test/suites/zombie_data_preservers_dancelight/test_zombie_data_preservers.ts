@@ -205,7 +205,26 @@ describeSuite({
         });
 
         it({
+            id: "T07b",
+            title: "RPC endpoint 2001 is synced to latest block",
+            test: async () => {
+                const wsProvider = new WsProvider("ws://127.0.0.1:9952");
+                dataProvider2001Api = await ApiPromise.create({ provider: wsProvider });
+
+                while (true) {
+                    const blockNum = (await dataProvider2001Api.rpc.chain.getBlock()).block.header.number.toNumber();
+                    if (blockNum > 0) {
+                        break;
+                    }
+                    // TODO: we want to wait for 1 container block, not 1 tanssi block, but this also works
+                    await context.waitBlock(1, "Relay");
+                }
+            },
+        });
+
+        it({
             id: "T08",
+            timeout: 600_000,
             title: "RPC endpoint 2001 is Ethereum compatible",
             test: async () => {
                 const url = "ws://127.0.0.1:9952";
@@ -214,31 +233,33 @@ describeSuite({
 
                 const signer = new ethers.Wallet(BALTATHAR_PRIVATE_KEY, customHttpProvider);
 
+                const balanceBefore = await customHttpProvider.getBalance(CHARLETH_ADDRESS);
                 // Try to send a test transaction.
-                // Ideally this could be done in one line, but there is a strange bug somewhere
-                // that causes transactions to never be included. As a workaround, we set a 60
-                // second timeout and retry sending the same transaction, and for some reason that
-                // fixes the bug.
-                for (let i = 0; i <= 5; i++) {
-                    if (i === 5) {
-                        expect.fail("failed to send tx");
-                    }
-                    try {
-                        const nonce = await customHttpProvider.getTransactionCount(BALTATHAR_ADDRESS);
-                        const tx = await signer.sendTransaction({
-                            to: CHARLETH_ADDRESS,
-                            value: parseUnits("0.001", "ether"),
-                            nonce,
-                        });
-
-                        await customHttpProvider.waitForTransaction(tx.hash, 1, 60_000);
-                        // Transaction included, don't need to try again
-                        break;
-                    } catch (e) {
-                        console.log("tx inclusion failed: ", e);
-                    }
+                const nonce = await customHttpProvider.getTransactionCount(BALTATHAR_ADDRESS);
+                const tx = await signer.sendTransaction({
+                    to: CHARLETH_ADDRESS,
+                    value: parseUnits("0.001", "ether"),
+                    nonce,
+                });
+                let blockNumber = await customHttpProvider.getBlockNumber();
+                console.log("frontier template block number sent: ", blockNumber);
+                console.log("frontier tx: ", tx);
+                const now = new Date();
+                const pad = (n) => String(n).padStart(2, "0");
+                console.log(
+                    `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ` +
+                        `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
+                );
+                try {
+                    // TODO: ignore timeout error, maybe transaction is included but not confirmed?
+                    await customHttpProvider.waitForTransaction(tx.hash, 1, 590_000);
+                } catch (e) {
+                    console.log(e);
                 }
-                expect(Number(await customHttpProvider.getBalance(CHARLETH_ADDRESS))).to.be.greaterThan(0);
+                blockNumber = await customHttpProvider.getBlockNumber();
+                console.log("frontier template block number included: ", blockNumber);
+                const balanceAfter = await customHttpProvider.getBalance(CHARLETH_ADDRESS);
+                expect(Number(balanceAfter - balanceBefore)).to.be.greaterThan(0);
             },
         });
 

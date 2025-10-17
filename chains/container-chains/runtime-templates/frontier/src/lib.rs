@@ -41,6 +41,7 @@ use {
     alloc::{vec, vec::Vec},
     cumulus_primitives_core::AggregateMessageOrigin,
     dp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
+    ethereum::AuthorizationList,
     fp_account::EthereumSignature,
     fp_rpc::TransactionStatus,
     frame_support::{
@@ -553,6 +554,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
     type ConsensusHook = ConsensusHook;
     type SelectCore = cumulus_pallet_parachain_system::DefaultCoreSelector<Runtime>;
+    type RelayParentOffset = ConstU32<0>;
 }
 
 pub struct ParaSlotProvider;
@@ -735,7 +737,6 @@ impl cumulus_pallet_weight_reclaim::Config for Runtime {
 }
 
 impl pallet_migrations::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type MigrationsList = (migrations::TemplateMigrations<Runtime, XcmpQueue, PolkadotXcm>,);
     type XcmExecutionManager = XcmExecutionManager;
 }
@@ -794,7 +795,6 @@ impl Contains<RuntimeCall> for NormalFilter {
 }
 
 impl pallet_maintenance_mode::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
@@ -933,7 +933,6 @@ impl pallet_evm::Config for Runtime {
         dynamic_params::contract_deploy_filter::AllowedAddressesToCreateInner,
     >;
     type Currency = Balances;
-    type RuntimeEvent = RuntimeEvent;
     type PrecompilesType = TemplatePrecompiles<Self>;
     type PrecompilesValue = PrecompilesValue;
     type ChainId = EVMChainId;
@@ -953,7 +952,6 @@ parameter_types! {
 }
 
 impl pallet_ethereum::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type StateRoot = pallet_ethereum::IntermediateStateRoot<Self::Version>;
     type PostLogContent = PostBlockAndTxnHashes;
     type ExtraDataLength = ConstU32<30>;
@@ -982,7 +980,6 @@ impl pallet_base_fee::BaseFeeThreshold for BaseFeeThreshold {
 }
 
 impl pallet_base_fee::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type Threshold = BaseFeeThreshold;
     type DefaultBaseFeePerGas = DefaultBaseFeePerGas;
     type DefaultElasticity = DefaultElasticity;
@@ -1369,11 +1366,11 @@ impl_runtime_apis! {
                     Ok(Location::parent())
                 }
 
-                fn fee_asset() -> Result<Asset, BenchmarkError> {
-                    Ok(Asset {
+                fn worst_case_for_trader() -> Result<(Asset, WeightLimit), BenchmarkError> {
+                    Ok((Asset {
                         id: AssetId(SelfReserve::get()),
                         fun: Fungible(crate::currency::MICROUNIT*100),
-                    })
+                    }, WeightLimit::Unlimited))
                 }
 
                 fn claimable_asset() -> Result<(Location, Location, Assets), BenchmarkError> {
@@ -1596,6 +1593,7 @@ impl_runtime_apis! {
             nonce: Option<U256>,
             estimate: bool,
             access_list: Option<Vec<(H160, Vec<H256>)>>,
+            authorization_list: Option<AuthorizationList>,
         ) -> Result<pallet_evm::CallInfo, sp_runtime::DispatchError> {
             let config = if estimate {
                 let mut config = <Runtime as pallet_evm::Config>::config().clone();
@@ -1609,16 +1607,17 @@ impl_runtime_apis! {
 
             let transaction_data = pallet_ethereum::TransactionData::new(
                 pallet_ethereum::TransactionAction::Call(to),
-                                data.clone(),
-                                nonce.unwrap_or_default(),
-                                gas_limit,
-                                None,
-                                max_fee_per_gas.or(Some(U256::default())),
-                                max_priority_fee_per_gas.or(Some(U256::default())),
-                                value,
-                                Some(<Runtime as pallet_evm::Config>::ChainId::get()),
-                                access_list.clone().unwrap_or_default(),
-                            );
+                data.clone(),
+                nonce.unwrap_or_default(),
+                gas_limit,
+                None,
+                max_fee_per_gas.or(Some(U256::default())),
+                max_priority_fee_per_gas.or(Some(U256::default())),
+                value,
+                Some(<Runtime as pallet_evm::Config>::ChainId::get()),
+                access_list.clone().unwrap_or_default(),
+                authorization_list.clone().unwrap_or_default(),
+            );
 
             let gas_limit = gas_limit.min(u64::MAX.into()).low_u64();
 
@@ -1634,6 +1633,7 @@ impl_runtime_apis! {
                 max_priority_fee_per_gas,
                 nonce,
                 access_list.unwrap_or_default(),
+                authorization_list.unwrap_or_default(),
                 is_transactional,
                 validate,
                 weight_limit,
@@ -1652,6 +1652,7 @@ impl_runtime_apis! {
             nonce: Option<U256>,
             estimate: bool,
             access_list: Option<Vec<(H160, Vec<H256>)>>,
+            authorization_list: Option<AuthorizationList>,
         ) -> Result<pallet_evm::CreateInfo, sp_runtime::DispatchError> {
             let config = if estimate {
                 let mut config = <Runtime as pallet_evm::Config>::config().clone();
@@ -1674,6 +1675,7 @@ impl_runtime_apis! {
                 value,
                 Some(<Runtime as pallet_evm::Config>::ChainId::get()),
                 access_list.clone().unwrap_or_default(),
+                authorization_list.clone().unwrap_or_default(),
             );
 
             let gas_limit = gas_limit.min(u64::MAX.into()).low_u64();
@@ -1690,6 +1692,7 @@ impl_runtime_apis! {
                 max_priority_fee_per_gas,
                 nonce,
                 access_list.unwrap_or_default(),
+                authorization_list.unwrap_or_default(),
                 is_transactional,
                 validate,
                 weight_limit,

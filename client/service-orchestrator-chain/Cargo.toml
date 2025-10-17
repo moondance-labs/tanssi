@@ -18,6 +18,8 @@ jsonrpsee = { workspace = true, features = [ "server" ] }
 log = { workspace = true }
 tokio = { workspace = true }
 tokio-util = { workspace = true }
+exit-future = { workspace = true }
+prometheus-endpoint = { workspace = true }
 
 # Local
 dancebox-runtime = { workspace = true, features = [ "std" ] }
@@ -71,6 +73,7 @@ polkadot-cli = { workspace = true }
 polkadot-primitives = { workspace = true }
 
 # Cumulus
+cumulus-client-bootnodes = { workspace = true }
 cumulus-client-cli = { workspace = true }
 cumulus-client-collator = { workspace = true }
 cumulus-client-consensus-aura = { workspace = true }

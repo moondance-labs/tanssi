@@ -246,7 +246,6 @@ parameter_types! {
 }
 
 impl external_validator_slashes::Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     type ValidatorId = <Self as frame_system::Config>::AccountId;
     type ValidatorIdOf = IdentityValidator;
     type SlashDeferDuration = DeferPeriodGetter;
@@ -270,6 +269,7 @@ impl sp_runtime::traits::Convert<AccountId, Option<()>> for FullIdentificationOf
 }
 
 impl pallet_session::historical::Config for Test {
+    type RuntimeEvent = RuntimeEvent;
     type FullIdentification = ();
     type FullIdentificationOf = FullIdentificationOf;
 }

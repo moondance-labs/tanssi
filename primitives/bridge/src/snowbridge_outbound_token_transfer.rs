@@ -30,7 +30,7 @@ use snowbridge_outbound_queue_primitives::v1::{
     AgentExecuteCommand,
 };
 use sp_core::H160;
-use sp_runtime::traits::{MaybeEquivalence, TryConvert};
+use sp_runtime::traits::{MaybeConvert, TryConvert};
 use xcm::prelude::*;
 use xcm::{
     latest::SendError::{MissingArgument, NotApplicable},
@@ -67,7 +67,7 @@ where
     UniversalLocation: Get<InteriorLocation>,
     EthereumNetwork: Get<NetworkId>,
     OutboundQueue: SendMessage<Balance = u128>,
-    ConvertAssetId: MaybeEquivalence<TokenId, Location>,
+    ConvertAssetId: MaybeConvert<TokenId, Location>,
     BridgeChannelInfo: Get<Option<(ChannelId, AgentId)>>,
 {
     type Ticket = (Vec<u8>, XcmHash);
@@ -88,10 +88,7 @@ where
         }
 
         // Cloning destination to avoid modifying the value so subsequent exporters can use it.
-        let dest = destination
-            .clone()
-            .take()
-            .ok_or(SendError::MissingArgument)?;
+        let dest = destination.clone().ok_or(SendError::MissingArgument)?;
         if dest != Here {
             log::trace!(target: "xcm::ethereum_blob_exporter", "skipped due to unmatched remote destination {dest:?}.");
             return Err(SendError::NotApplicable);
@@ -99,7 +96,6 @@ where
 
         // Cloning universal_source to avoid modifying the value so subsequent exporters can use it.
         let (local_net, local_sub) = universal_source.clone()
-            .take()
             .ok_or_else(|| {
                 log::error!(target: "xcm::ethereum_blob_exporter", "universal source not provided.");
                 SendError::MissingArgument
@@ -210,7 +206,7 @@ pub struct XcmConverter<'a, ConvertAssetId, Call> {
 }
 impl<'a, ConvertAssetId, Call> XcmConverter<'a, ConvertAssetId, Call>
 where
-    ConvertAssetId: MaybeEquivalence<TokenId, Location>,
+    ConvertAssetId: MaybeConvert<TokenId, Location>,
 {
     pub fn new(message: &'a Xcm<Call>, ethereum_network: NetworkId, agent_id: AgentId) -> Self {
         Self {
