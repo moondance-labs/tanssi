@@ -215,6 +215,7 @@ impl pallet_ethereum_token_transfers::Config for Test {
     type WeightInfo = ();
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = ();
+    type TipHandler = pallet_ethereum_token_transfers::DenyTipHandler<Self::AccountId>;
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {

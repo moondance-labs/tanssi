@@ -54,7 +54,6 @@ mod benchmarking;
 
 pub mod weights;
 
-use polkadot_primitives::AccountId;
 use {
     alloc::vec,
     frame_support::{
@@ -292,19 +291,15 @@ pub mod pallet {
             T::TipHandler::add_tip(sender.clone(), message_id.clone(), amount)
                 .map_err(|_| Error::<T>::TipFailed)?;
 
-            Self::deposit_event(Event::<T>::TipsAdded {
-                sender,
-                message_id,
-                amount,
-            });
             Ok(())
         }
     }
 }
 
-pub struct DummyTipHandler {}
-impl TipHandler<AccountId> for DummyTipHandler {
-    fn add_tip(_sender: AccountId, _message_id: MessageId, _amount: u128) -> DispatchResult {
-        Ok(())
+pub struct DenyTipHandler<T>(core::marker::PhantomData<T>);
+
+impl<T> TipHandler<T> for DenyTipHandler<T> {
+    fn add_tip(_sender: T, _message_id: MessageId, _amount: u128) -> DispatchResult {
+        Err("Execution is not permitted!".into())
     }
 }
