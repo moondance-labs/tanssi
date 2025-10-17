@@ -35,7 +35,7 @@ where
     GetAggregateMessageOrigin:
         Convert<ChannelId, <T as snowbridge_pallet_outbound_queue::Config>::AggregateMessageOrigin>,
 {
-    type Ticket = Ticket<T>;
+    type Ticket = TanssiTicketV1<T>;
 
     fn deliver(ticket: Self::Ticket) -> Result<sp_core::H256, SendError> {
         let origin = GetAggregateMessageOrigin::convert(ticket.channel_id);
@@ -98,5 +98,33 @@ where
         );
 
         Ok(ticket.id)
+    }
+}
+
+pub struct VersionedCustomMessageSender<T, GetAggregateMessageOrigin>(
+    PhantomData<(T, GetAggregateMessageOrigin)>,
+);
+
+impl<T, GetAggregateMessageOrigin> DeliverMessage
+    for VersionedCustomMessageSender<T, GetAggregateMessageOrigin>
+where
+    T: snowbridge_pallet_outbound_queue::Config + snowbridge_pallet_outbound_queue_v2::Config,
+    GetAggregateMessageOrigin: Convert<ChannelId, <T as snowbridge_pallet_outbound_queue::Config>::AggregateMessageOrigin>
+        + Convert<
+            ChannelId,
+            <T as snowbridge_pallet_outbound_queue_v2::Config>::AggregateMessageOrigin,
+        >,
+{
+    type Ticket = VersionedTanssiTicket<T>;
+
+    fn deliver(ticket: Self::Ticket) -> Result<sp_core::H256, SendError> {
+        match ticket {
+            VersionedTanssiTicket::V1(ticket) => {
+                CustomSendMessageV1::<T, GetAggregateMessageOrigin>::deliver(ticket)
+            }
+            VersionedTanssiTicket::V2(ticket) => {
+                CustomSendMessageV2::<T, GetAggregateMessageOrigin>::deliver(ticket)
+            }
+        }
     }
 }
