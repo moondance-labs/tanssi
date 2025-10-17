@@ -354,10 +354,10 @@ impl<
     type Ticket = VersionedTanssiMessage<T>;
     fn validate(message: &Message) -> Result<(Self::Ticket, Fee<u64>), SendError> {
         if UseV2::get() {
-            MessageValidator::<T>::validate(message).map(|(ticket, fee)| (ticket.into(), fee))
-        } else {
             MessageValidatorV2::<T, OwnOrigin>::validate(message)
                 .map(|(ticket, fee)| (ticket.into(), fee))
+        } else {
+            MessageValidator::<T>::validate(message).map(|(ticket, fee)| (ticket.into(), fee))
         }
     }
 }
