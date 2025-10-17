@@ -10,6 +10,7 @@ version = "0.1.0"
 workspace = true
 
 [dependencies]
+alloy-core = { workspace = true }
 dp-chain-state-snapshot = { workspace = true }
 dp-container-chain-genesis-data = { workspace = true }
 ethabi = { workspace = true }

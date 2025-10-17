@@ -18,10 +18,10 @@ use {super::*, core::marker::PhantomData, snowbridge_outbound_queue_primitives::
 
 /// Custom Impl
 pub struct CustomMessageValidatorV1<T: snowbridge_pallet_outbound_queue::Config>(PhantomData<T>);
-impl<T: snowbridge_pallet_outbound_queue::Config> ValidateMessage for MessageValidator<T> {
+impl<T: snowbridge_pallet_outbound_queue::Config> ValidateMessage for CustomMessageValidatorV1<T> {
     type Ticket = Ticket<T>;
 
-    fn validate(message: &Message) -> Result<(Self::Ticket, Fee<u64>), SendError> {
+    fn validate(message: &TanssiMessage) -> Result<(Self::Ticket, Fee<u64>), SendError> {
         log::trace!("CustomMessageValidatorV1: {:?}", message);
         // The inner payload should not be too large
         let payload = message.command.abi_encode();
@@ -47,7 +47,7 @@ impl<T: snowbridge_pallet_outbound_queue::Config> ValidateMessage for MessageVal
         let fee = Self::calculate_fee(gas_used_at_most, T::PricingParameters::get());
          */
 
-        let queued_message: VersionedQueuedMessage = QueuedMessage {
+        let queued_message: VersionedQueuedTanssiMessage = QueuedTanssiMessage {
             id: message_id,
             channel_id: message.channel_id,
             command: message.command.clone(),
@@ -70,5 +70,101 @@ impl<T: snowbridge_pallet_outbound_queue::Config> ValidateMessage for MessageVal
         };
 
         Ok((ticket, fee))
+    }
+}
+
+pub struct CustomMessageValidatorV2<
+    T: snowbridge_pallet_outbound_queue_v2::Config,
+    OwnOrigin: Get<Location>,
+>(PhantomData<(T, OwnOrigin)>);
+
+impl<T: snowbridge_pallet_outbound_queue_v2::Config, OwnOrigin: Get<Location>> ValidateMessage
+    for CustomMessageValidatorV2<T, OwnOrigin>
+{
+    type Ticket = TanssiTicketV2<T>;
+
+    fn validate(message: &TanssiMessage) -> Result<(Self::Ticket, Fee<u64>), SendError> {
+        log::trace!("MessageValidatorV2: {:?}", message);
+        // The inner payload should not be too large
+        let payload = message.command.abi_encode();
+
+        // make it dependent on pallet-v2
+        ensure!(
+            payload.len() < T::MaxMessagePayloadSize::get() as usize,
+            SendError::MessageTooLarge
+        );
+
+        // This is only called by system level pallets
+        // so we can put the origin to system
+
+        let origin = crate::AgentIdOf::convert_location(&OwnOrigin::get())
+            .ok_or(SendError::InvalidOrigin)?;
+        // Ensure there is a registered channel we can transmit this message on
+        /*ensure!(
+            T::Channels::contains(&message.channel_id),
+            SendError::InvalidChannel
+        );*/
+
+        // Generate a unique message id unless one is provided
+        let message_id: H256 = message
+            .id
+            .unwrap_or_else(|| unique((message.channel_id, &message.command)).into());
+
+        // Fee not used for now
+        /*
+        let gas_used_at_most = T::GasMeter::maximum_gas_used_at_most(&message.command);
+        let fee = Self::calculate_fee(gas_used_at_most, T::PricingParameters::get());
+         */
+
+        let queued_message: VersionedQueuedTanssiMessage = QueuedTanssiMessage {
+            id: message_id,
+            channel_id: message.channel_id,
+            command: message.command.clone(),
+        }
+        .into();
+
+        // The whole message should not be too large
+        let encoded = queued_message
+            .encode()
+            .try_into()
+            .map_err(|_| SendError::MessageTooLarge)?;
+
+        let ticket = TanssiTicketV2::<T> {
+            // change
+            origin: H256::default(),
+            id: message_id,
+            fee: 0,
+            message: encoded,
+        };
+
+        let fee = Fee {
+            local: Default::default(),
+            remote: Default::default(),
+        };
+
+        Ok((ticket, fee))
+    }
+}
+
+pub struct VersionedCustomMessageValidator<
+    T: snowbridge_pallet_outbound_queue::Config + snowbridge_pallet_outbound_queue_v2::Config,
+    OwnOrigin: Get<Location>,
+    UseV2: Get<bool>,
+>(PhantomData<(T, OwnOrigin, UseV2)>);
+impl<
+        T: snowbridge_pallet_outbound_queue::Config + snowbridge_pallet_outbound_queue_v2::Config,
+        OwnOrigin: Get<Location>,
+        UseV2: Get<bool>,
+    > ValidateMessage for VersionedCustomMessageValidator<T, OwnOrigin, UseV2>
+{
+    type Ticket = VersionedTanssiTicket<T>;
+    fn validate(message: &TanssiMessage) -> Result<(Self::Ticket, Fee<u64>), SendError> {
+        if UseV2::get() {
+            CustomMessageValidatorV2::<T, OwnOrigin>::validate(message)
+                .map(|(ticket, fee)| (ticket.into(), fee))
+        } else {
+            CustomMessageValidatorV1::<T>::validate(message)
+                .map(|(ticket, fee)| (ticket.into(), fee))
+        }
     }
 }
