@@ -170,6 +170,7 @@ snowbridge-pallet-outbound-queue = { workspace = true }
 snowbridge-pallet-system = { workspace = true }
 snowbridge-verification-primitives = { workspace = true }
 tp-bridge = { workspace = true }
+tp-system = { workspace = true }
 
 snowbridge-pallet-inbound-queue-v2 = { workspace = true }
 # snowbridge-pallet-outbound-queue-v2 = { workspace = true }
@@ -337,6 +338,7 @@ std = [
 	"test-relay-sproof-builder/std",
 	"tp-author-noting-inherent/std",
 	"tp-bridge/std",
+	"tp-system/std",
 	"tp-data-preservers-common/std",
 	"tp-invulnerables-filter-common/std",
 	"tp-parathread-filter-common/std",
@@ -426,6 +428,7 @@ runtime-benchmarks = [
 	"sp-staking/runtime-benchmarks",
 	"tanssi-runtime-common/runtime-benchmarks",
 	"tp-bridge/runtime-benchmarks",
+	"tp-system/runtime-benchmarks",
 	"tp-data-preservers-common/runtime-benchmarks",
 	"tp-invulnerables-filter-common/runtime-benchmarks",
 	"tp-parathread-filter-common/runtime-benchmarks",

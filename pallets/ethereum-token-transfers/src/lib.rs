@@ -65,7 +65,7 @@ use {
         },
     },
     frame_system::pallet_prelude::*,
-    snowbridge_core::{AgentId, ChannelId, ParaId, TokenId},
+    snowbridge_core::{reward::MessageId, AgentId, ChannelId, ParaId, TokenId},
     snowbridge_outbound_queue_primitives::v1::{
         Command as SnowbridgeCommand, Message as SnowbridgeMessage, SendMessage,
     },
@@ -129,6 +129,12 @@ pub mod pallet {
 
         #[cfg(feature = "runtime-benchmarks")]
         type BenchmarkHelper: TokenChannelSetterBenchmarkHelperTrait;
+        /// Tip Handler which is used for adding tips to the EthereumSystemV2 transaction.
+        type TipHandler: TipHandler<Self::AccountId>;
+    }
+
+    pub trait TipHandler<AccountId> {
+        fn add_tip(sender: AccountId, message_id: MessageId, amount: u128) -> DispatchResult;
     }
 
     // Events
@@ -147,6 +153,11 @@ pub mod pallet {
             amount: u128,
             fee: BalanceOf<T>,
         },
+        TipsAdded {
+            message_id: MessageId,
+            sender: T::AccountId,
+            amount: u128,
+        },
     }
 
     // Errors
@@ -160,6 +171,8 @@ pub mod pallet {
         InvalidMessage(SendError),
         /// The outbound message could not be sent.
         TransferMessageNotSent(SendError),
+        /// When add_tip extrinsic could not be called.
+        TipFailed,
     }
 
     #[pallet::pallet]
@@ -258,5 +271,35 @@ pub mod pallet {
 
             Ok(())
         }
+
+        #[pallet::call_index(2)]
+        #[pallet::weight(T::WeightInfo::add_tip_v2())]
+        pub fn add_tip(
+            origin: OriginFor<T>,
+            message_id: MessageId,
+            amount: u128,
+        ) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            T::Currency::transfer(
+                &sender,
+                &T::FeesAccount::get(),
+                amount.into(),
+                Preservation::Preserve,
+            )?;
+
+            T::TipHandler::add_tip(sender.clone(), message_id.clone(), amount)
+                .map_err(|_| Error::<T>::TipFailed)?;
+
+            Ok(())
+        }
+    }
+}
+
+pub struct DenyTipHandler<T>(core::marker::PhantomData<T>);
+
+impl<T> TipHandler<T> for DenyTipHandler<T> {
+    fn add_tip(_sender: T, _message_id: MessageId, _amount: u128) -> DispatchResult {
+        Err("Execution is not permitted!".into())
     }
 }

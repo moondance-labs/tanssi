@@ -99,4 +99,8 @@ impl<T: frame_system::Config> pallet_ethereum_token_transfers::WeightInfo for Su
 			.saturating_add(T::DbWeight::get().reads(10_u64))
 			.saturating_add(T::DbWeight::get().writes(8_u64))
 	}
+
+	fn add_tip_v2() -> Weight {
+		Weight::from_parts(104_480_000, 6196)
+	}
 }
