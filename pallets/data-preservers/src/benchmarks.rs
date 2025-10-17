@@ -19,8 +19,8 @@
 //! Benchmarking
 use {
     crate::{
-        AssignmentProcessor, Assignments, Call, Config, Pallet, ParaIdsFilter, Profile,
-        ProfileMode, Profiles, RegisteredProfile,
+        AssignmentProcessor, Assignments, Call, Config, NodeType, Pallet, ParaIdsFilter, Profile,
+        Profiles, RegisteredProfile,
     },
     alloc::{collections::btree_set::BTreeSet, vec},
     frame_benchmarking::v2::*,
@@ -83,6 +83,7 @@ mod benchmarks {
     fn create_profile(x: Linear<1, 200>, y: Linear<1, 10>) {
         // x: url len, y: para ids len
         let url = BoundedVec::try_from(vec![b'A'; x as usize]).unwrap();
+        let urls = BoundedVec::try_from(vec![url]).unwrap();
 
         let mut para_ids = BoundedBTreeSet::new();
         for i in 0..y {
@@ -90,10 +91,13 @@ mod benchmarks {
         }
 
         let profile = Profile {
-            url,
+            direct_rpc_urls: urls.clone(),
+            proxy_rpc_urls: Default::default(),
+            bootnode_url: None,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
-            mode: ProfileMode::Bootnode,
+            node_type: NodeType::Substrate,
             assignment_request: T::AssignmentProcessor::benchmark_provider_request(),
+            additional_info: Default::default(),
         };
 
         let deposit = T::ProfileDeposit::compute_deposit(&profile).expect("deposit to be computed");
@@ -118,16 +122,21 @@ mod benchmarks {
     fn force_create_profile(x: Linear<1, 200>, y: Linear<1, 10>) {
         // x: url len, y: para ids len
         let url = BoundedVec::try_from(vec![b'A'; x as usize]).unwrap();
+        let urls = BoundedVec::try_from(vec![url]).unwrap();
+
         let mut para_ids = BoundedBTreeSet::new();
         for i in 0..y {
             para_ids.try_insert(ParaId::from(i)).unwrap();
         }
 
         let profile = Profile {
-            url,
+            direct_rpc_urls: urls.clone(),
+            proxy_rpc_urls: Default::default(),
+            bootnode_url: None,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
-            mode: ProfileMode::Bootnode,
+            node_type: NodeType::Substrate,
             assignment_request: T::AssignmentProcessor::benchmark_provider_request(),
+            additional_info: Default::default(),
         };
 
         let owner = create_funded_user::<T>("owner", 1, 1_000_000_000u32);
@@ -154,17 +163,23 @@ mod benchmarks {
 
     #[benchmark]
     fn update_profile(x: Linear<1, 200>, y: Linear<1, 10>) {
-        let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
+        // x: url len, y: para ids len
+        let url = BoundedVec::try_from(vec![b'A'; x as usize]).unwrap();
+        let urls = BoundedVec::try_from(vec![url]).unwrap();
+
         let mut para_ids = BoundedBTreeSet::new();
         for i in 0..2 {
             para_ids.try_insert(ParaId::from(i)).unwrap();
         }
 
         let profile = Profile {
-            url,
+            direct_rpc_urls: urls.clone(),
+            proxy_rpc_urls: Default::default(),
+            bootnode_url: None,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
-            mode: ProfileMode::Bootnode,
+            node_type: NodeType::Substrate,
             assignment_request: T::AssignmentProcessor::benchmark_provider_request(),
+            additional_info: Default::default(),
         };
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
@@ -174,16 +189,21 @@ mod benchmarks {
 
         // x: url len, y: para ids len
         let url = BoundedVec::try_from(vec![b'B'; x as usize]).unwrap();
+        let urls = BoundedVec::try_from(vec![url]).unwrap();
+
         let mut para_ids = BoundedBTreeSet::new();
         for i in 0..y {
             para_ids.try_insert(ParaId::from(i)).unwrap();
         }
 
         let profile = Profile {
-            url,
+            direct_rpc_urls: urls.clone(),
+            proxy_rpc_urls: Default::default(),
+            bootnode_url: None,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
-            mode: ProfileMode::Bootnode,
+            node_type: NodeType::Substrate,
             assignment_request: T::AssignmentProcessor::benchmark_provider_request(),
+            additional_info: Default::default(),
         };
 
         let deposit = T::ProfileDeposit::compute_deposit(&profile).expect("deposit to be computed");
@@ -208,17 +228,22 @@ mod benchmarks {
 
     #[benchmark]
     fn force_update_profile(x: Linear<1, 200>, y: Linear<1, 10>) {
-        let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
+        let url = BoundedVec::try_from(vec![b'A'; x as usize]).unwrap();
+        let urls = BoundedVec::try_from(vec![url]).unwrap();
+
         let mut para_ids = BoundedBTreeSet::new();
         for i in 0..2 {
             para_ids.try_insert(ParaId::from(i)).unwrap();
         }
 
         let profile = Profile {
-            url,
+            direct_rpc_urls: urls.clone(),
+            proxy_rpc_urls: Default::default(),
+            bootnode_url: None,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
-            mode: ProfileMode::Bootnode,
+            node_type: NodeType::Substrate,
             assignment_request: T::AssignmentProcessor::benchmark_provider_request(),
+            additional_info: Default::default(),
         };
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
@@ -228,16 +253,21 @@ mod benchmarks {
 
         // x: url len, y: para ids len
         let url = BoundedVec::try_from(vec![b'B'; x as usize]).unwrap();
+        let urls = BoundedVec::try_from(vec![url]).unwrap();
+
         let mut para_ids = BoundedBTreeSet::new();
         for i in 0..y {
             para_ids.try_insert(ParaId::from(i)).unwrap();
         }
 
         let profile = Profile {
-            url,
+            direct_rpc_urls: urls.clone(),
+            proxy_rpc_urls: Default::default(),
+            bootnode_url: None,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
-            mode: ProfileMode::Bootnode,
+            node_type: NodeType::Substrate,
             assignment_request: T::AssignmentProcessor::benchmark_provider_request(),
+            additional_info: Default::default(),
         };
 
         let origin_force = T::ForceSetProfileOrigin::try_successful_origin()
@@ -264,16 +294,21 @@ mod benchmarks {
     #[benchmark]
     fn delete_profile() {
         let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
+        let urls = BoundedVec::try_from(vec![url]).unwrap();
+
         let mut para_ids = BoundedBTreeSet::new();
         for i in 0..2 {
             para_ids.try_insert(ParaId::from(i)).unwrap();
         }
 
         let profile = Profile {
-            url,
+            direct_rpc_urls: urls.clone(),
+            proxy_rpc_urls: Default::default(),
+            bootnode_url: None,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
-            mode: ProfileMode::Bootnode,
+            node_type: NodeType::Substrate,
             assignment_request: T::AssignmentProcessor::benchmark_provider_request(),
+            additional_info: Default::default(),
         };
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
@@ -290,16 +325,21 @@ mod benchmarks {
     #[benchmark]
     fn force_delete_profile() {
         let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
+        let urls = BoundedVec::try_from(vec![url]).unwrap();
+
         let mut para_ids = BoundedBTreeSet::new();
         for i in 0..2 {
             para_ids.try_insert(ParaId::from(i)).unwrap();
         }
 
         let profile = Profile {
-            url,
+            direct_rpc_urls: urls.clone(),
+            proxy_rpc_urls: Default::default(),
+            bootnode_url: None,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
-            mode: ProfileMode::Bootnode,
+            node_type: NodeType::Substrate,
             assignment_request: T::AssignmentProcessor::benchmark_provider_request(),
+            additional_info: Default::default(),
         };
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
@@ -319,6 +359,8 @@ mod benchmarks {
     #[benchmark]
     fn start_assignment() {
         let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
+        let urls = BoundedVec::try_from(vec![url]).unwrap();
+
         // !!! (Applicable for Dancelight only)
         // The specified ParaId needs to be larger than LOWEST_PUBLIC_ID value in Polkadot SDK.
         // Currently, this value is 2000. We should also avoid setting the value to one of
@@ -326,10 +368,13 @@ mod benchmarks {
         let para_id = ParaId::from(2042);
 
         let profile = Profile {
-            url,
+            direct_rpc_urls: urls.clone(),
+            proxy_rpc_urls: Default::default(),
+            bootnode_url: None,
             para_ids: ParaIdsFilter::Whitelist(bset![para_id]),
-            mode: ProfileMode::Bootnode,
+            node_type: NodeType::Substrate,
             assignment_request: T::AssignmentProcessor::benchmark_provider_request(),
+            additional_info: Default::default(),
         };
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
@@ -356,6 +401,8 @@ mod benchmarks {
     #[benchmark]
     fn stop_assignment() {
         let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
+        let urls = BoundedVec::try_from(vec![url]).unwrap();
+
         // !!! (Applicable for Dancelight only)
         // The specified ParaId needs to be larger than LOWEST_PUBLIC_ID value in Polkadot SDK.
         // Currently, this value is 2000. We should also avoid setting the value to one of
@@ -363,10 +410,13 @@ mod benchmarks {
         let para_id = ParaId::from(2042);
 
         let profile = Profile {
-            url,
+            direct_rpc_urls: urls.clone(),
+            proxy_rpc_urls: Default::default(),
+            bootnode_url: None,
             para_ids: ParaIdsFilter::Whitelist(bset![para_id]),
-            mode: ProfileMode::Bootnode,
+            node_type: NodeType::Substrate,
             assignment_request: T::AssignmentProcessor::benchmark_provider_request(),
+            additional_info: Default::default(),
         };
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
@@ -393,13 +443,18 @@ mod benchmarks {
     #[benchmark]
     fn force_start_assignment() {
         let url = BoundedVec::try_from(vec![b'A'; 10]).unwrap();
+        let urls = BoundedVec::try_from(vec![url]).unwrap();
+
         let para_id = ParaId::from(42);
 
         let profile = Profile {
-            url,
+            direct_rpc_urls: urls.clone(),
+            proxy_rpc_urls: Default::default(),
+            bootnode_url: None,
             para_ids: ParaIdsFilter::Whitelist(bset![para_id]),
-            mode: ProfileMode::Bootnode,
+            node_type: NodeType::Substrate,
             assignment_request: T::AssignmentProcessor::benchmark_provider_request(),
+            additional_info: Default::default(),
         };
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
