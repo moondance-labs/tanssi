@@ -18,10 +18,10 @@ use {
     super::{
         currency::MICROUNIT,
         weights::{self, xcm::XcmWeight as XcmGenericWeights},
-        AccountId, AllPalletsWithSystem, AssetRate, Balance, Balances, ForeignAssetsCreator,
-        MaintenanceMode, MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime,
-        RuntimeBlockWeights, RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee,
-        WeightToFee, XcmpQueue,
+        AccountId, AllPalletsWithSystem, AssetRate, Balance, Balances, EthereumLocation,
+        EthereumNetwork, ForeignAssetsCreator, MaintenanceMode, MessageQueue, ParachainInfo,
+        ParachainSystem, PolkadotXcm, Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeEvent,
+        RuntimeOrigin, TransactionByteFee, WeightToFee, XcmpQueue,
     },
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
@@ -44,6 +44,7 @@ use {
         sovereign_paid_remote_exporter::SovereignPaidRemoteExporter,
         ContainerChainEthereumLocationConverter,
     },
+    tp_xcm_commons::EthereumAssetReserveFromParent,
     xcm::latest::prelude::*,
     xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
@@ -193,7 +194,7 @@ pub type XcmRouter = WithUniqueTopic<(
     SovereignPaidRemoteExporter<
         UmpRouter,
         UniversalLocation,
-        crate::EthereumNetwork,
+        EthereumNetwork,
         ContainerToEthTransferFee,
         ParachainInfo,
     >,
@@ -205,7 +206,13 @@ impl xcm_executor::Config for XcmConfig {
     type XcmSender = XcmRouter;
     type AssetTransactor = AssetTransactors;
     type OriginConverter = XcmOriginToTransactDispatchOrigin;
-    type IsReserve = IsReserveFilter<Runtime>;
+    // We admit as reserves:
+    // - Native assets 'AllNative'
+    // - Ethereum assets with ethereum or relay origin
+    type IsReserve = (
+        IsReserveFilter<Runtime>,
+        EthereumAssetReserveFromParent<EthereumLocation, EthereumNetwork>,
+    );
     type IsTeleporter = IsTeleportFilter<Runtime>;
     type UniversalLocation = UniversalLocation;
     type Barrier = XcmBarrier;

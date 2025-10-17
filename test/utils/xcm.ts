@@ -561,7 +561,7 @@ export class XcmFragment {
                     },
                     beneficiary: {
                         parents: 0,
-                        interior: { X1: { AccountId32: { network, key: beneficiary } } },
+                        interior: { X1: { AccountId32: { network, id: beneficiary } } },
                     },
                 },
             });
