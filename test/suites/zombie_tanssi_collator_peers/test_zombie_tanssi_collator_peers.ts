@@ -1,7 +1,7 @@
 // @ts-nocheck
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import type { ApiPromise } from "@polkadot/api";
+import {ApiPromise, Keyring} from "@polkadot/api";
 import {
     getAuthorFromDigestRange,
     checkLogsNotExist,
@@ -9,7 +9,7 @@ import {
     getHeaderFromRelay,
     getKeyringNimbusIdHex,
     getTmpZombiePath,
-    waitSessions,
+    waitSessions, signAndSendAndInclude,
 } from "utils";
 
 describeSuite({
@@ -51,6 +51,22 @@ describeSuite({
             test: async () => {
                 const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
+            },
+        });
+
+        it({
+            id: "T02",
+            title: "Set config params",
+            test: async () => {
+                const keyring = new Keyring({ type: "sr25519" });
+                const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
+
+                // Disable rotation
+                const tx1 = paraApi.tx.configuration.setFullRotationPeriod(0);
+                const fillAmount = 990_000_000; // equal to 99% Perbill
+                const tx2 = paraApi.tx.configuration.setMaxParachainCoresPercentage(fillAmount);
+                const txBatch = paraApi.tx.utility.batchAll([tx1, tx2]);
+                await signAndSendAndInclude(paraApi.tx.sudo.sudo(txBatch), alice);
             },
         });
 
@@ -292,7 +308,7 @@ describeSuite({
             title: "Wait 2 sessions",
             timeout: 600000,
             test: async () => {
-                await waitSessions(context, relayApi, 5, null, "Tanssi");
+                await waitSessions(context, relayApi, 3, null, "Tanssi");
             },
         });
         it({

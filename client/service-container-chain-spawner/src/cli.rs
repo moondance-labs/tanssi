@@ -325,6 +325,9 @@ impl sc_cli::DefaultConfigurationValues for ContainerChainCli {
         // TODO: this fixes zombienet tests, collators can see each other if the port is 0
         // 0
         30335
+        // Random port also works...
+        //use rand::Rng;
+        //rand::thread_rng().gen_range(10_000..=u16::MAX)
     }
 
     fn rpc_listen_port() -> u16 {
