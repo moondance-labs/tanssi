@@ -32,6 +32,7 @@ use {
     },
     hex_literal::hex,
     parity_scale_codec::Encode,
+    snowbridge_core::TokenIdOf,
     snowbridge_core::{AgentId, Channel, ChannelId, ParaId},
     snowbridge_inbound_queue_primitives::v1::{
         Command, Destination, Envelope, MessageProcessor, MessageV1, OutboundMessageAccepted,
@@ -46,8 +47,9 @@ use {
             prelude::*, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, Fungibility,
             Junctions::*, Location,
         },
-        VersionedAssets, VersionedLocation, VersionedXcm,
+        lts, VersionedAssets, VersionedLocation, VersionedXcm,
     },
+    xcm_executor::traits::ConvertLocation,
 };
 
 #[test]
@@ -2371,6 +2373,516 @@ fn create_payload_with_token_id(token_id: H256) -> Vec<u8> {
     });
 
     message.encode()
+}
+
+#[test]
+fn test_token_id_hashing_lts_vs_latest_xcm_versions() {
+    // This test compares TokenIdOf hashes between xcm::lts and xcm::latest versions
+    // to ensure cross-version compatibility and detect breaking changes in hashing.
+
+    ExtBuilder::default().build().execute_with(|| {
+        use xcm::latest::Junction::Parachain as ParachainXcmLatest;
+        use xcm::lts::Junction::Parachain as ParachainXcmLts;
+        use xcm::lts::Junction::{
+            AccountKey20 as AccountKey20Lts, GeneralIndex as GeneralIndexLts,
+            GeneralKey as GeneralKeyLts, GlobalConsensus as GlobalConsensusLts,
+            PalletInstance as PalletInstanceLts,
+        };
+
+        // Helper function to convert LTS location to the type TokenIdOf expects
+        let convert_lts_location = |lts_loc: xcm::lts::Location| -> xcm::latest::Location {
+            let versioned = VersionedLocation::V4(lts_loc);
+            versioned.try_into().expect("Should convert LTS to latest")
+        };
+
+        // Test Case 1: parents:0, interior: here
+        // Note: This location won't be convertible by TokenIdOf since it requires GlobalConsensus
+        let latest_here = xcm::latest::Location::new(0, []);
+        let lts_here = xcm::lts::Location::new(0, []);
+
+        let latest_here_result = TokenIdOf::convert_location(&latest_here);
+        let lts_here_result = TokenIdOf::convert_location(&convert_lts_location(lts_here));
+
+        assert_eq!(
+            latest_here_result.is_none(),
+            lts_here_result.is_none(),
+            "Both LTS and latest 'here' locations should have same convertibility"
+        );
+
+        // Test Case 2: parents: 0, parachain 2000
+        // Note: This also won't be convertible without GlobalConsensus parent
+        let latest_para_only = xcm::latest::Location::new(0, [ParachainXcmLatest(2000)]);
+        let lts_para_only = xcm::lts::Location::new(0, [ParachainXcmLts(2000)]);
+
+        let latest_para_result = TokenIdOf::convert_location(&latest_para_only);
+        let lts_para_result = TokenIdOf::convert_location(&convert_lts_location(lts_para_only));
+
+        assert_eq!(
+            latest_para_result.is_none(),
+            lts_para_result.is_none(),
+            "Both LTS and latest parachain-only locations should have same convertibility"
+        );
+
+        // Test Case 3: parents: 1, GlobalConsensus(ethereum), empty interior
+        let latest_eth_empty = xcm::latest::Location::new(
+            1,
+            [xcm::latest::Junction::GlobalConsensus(
+                EthereumNetwork::get(),
+            )],
+        );
+        let lts_eth_empty =
+            xcm::lts::Location::new(1, [GlobalConsensusLts(EthereumNetwork::get().into())]);
+
+        let latest_eth_empty_id = TokenIdOf::convert_location(&latest_eth_empty)
+            .expect("Latest ethereum empty should convert");
+        let lts_eth_empty_id = TokenIdOf::convert_location(&convert_lts_location(lts_eth_empty))
+            .expect("LTS ethereum empty should convert");
+
+        assert_eq!(
+            latest_eth_empty_id, lts_eth_empty_id,
+            "LTS and latest ethereum empty location hashes should match"
+        );
+
+        // Test Case 4: parents: 1, GlobalConsensus(ethereum), parachain 2000
+        let latest_eth_para = xcm::latest::Location::new(
+            1,
+            [
+                xcm::latest::Junction::GlobalConsensus(EthereumNetwork::get()),
+                xcm::latest::Junction::Parachain(2000),
+            ],
+        );
+        let lts_eth_para = xcm::lts::Location::new(
+            1,
+            [
+                GlobalConsensusLts(EthereumNetwork::get().into()),
+                ParachainXcmLts(2000),
+            ],
+        );
+
+        let latest_eth_para_id = TokenIdOf::convert_location(&latest_eth_para)
+            .expect("Latest ethereum + parachain should convert");
+        let lts_eth_para_id = TokenIdOf::convert_location(&convert_lts_location(lts_eth_para))
+            .expect("LTS ethereum + parachain should convert");
+
+        assert_eq!(
+            latest_eth_para_id, lts_eth_para_id,
+            "LTS and latest ethereum + parachain location hashes should match"
+        );
+
+        // Test Case 5: parents: 1, GlobalConsensus(ethereum), parachain 2000, GeneralIndex(5)
+        let latest_eth_para_index = xcm::latest::Location::new(
+            1,
+            [
+                xcm::latest::Junction::GlobalConsensus(EthereumNetwork::get()),
+                xcm::latest::Junction::Parachain(2000),
+                xcm::latest::Junction::GeneralIndex(5),
+            ],
+        );
+        let lts_eth_para_index = xcm::lts::Location::new(
+            1,
+            [
+                GlobalConsensusLts(EthereumNetwork::get().into()),
+                ParachainXcmLts(2000),
+                GeneralIndexLts(5),
+            ],
+        );
+
+        let latest_eth_para_index_id = TokenIdOf::convert_location(&latest_eth_para_index)
+            .expect("Latest ethereum + parachain + index should convert");
+        let lts_eth_para_index_id =
+            TokenIdOf::convert_location(&convert_lts_location(lts_eth_para_index))
+                .expect("LTS ethereum + parachain + index should convert");
+
+        assert_eq!(
+            latest_eth_para_index_id, lts_eth_para_index_id,
+            "LTS and latest ethereum + parachain + index location hashes should match"
+        );
+
+        // Test Case 6: General Key comparison
+        let key_data = [
+            0x01, 0x02, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+        ];
+        let latest_general_key = xcm::latest::Location::new(
+            1,
+            [
+                xcm::latest::Junction::GlobalConsensus(EthereumNetwork::get()),
+                xcm::latest::Junction::Parachain(2000),
+                xcm::latest::Junction::GeneralKey {
+                    length: 32,
+                    data: key_data,
+                },
+            ],
+        );
+        let lts_general_key = xcm::lts::Location::new(
+            1,
+            [
+                GlobalConsensusLts(EthereumNetwork::get().into()),
+                ParachainXcmLts(2000),
+                GeneralKeyLts {
+                    length: 32,
+                    data: key_data,
+                },
+            ],
+        );
+
+        let latest_general_key_id = TokenIdOf::convert_location(&latest_general_key)
+            .expect("Latest general key should convert");
+        let lts_general_key_id =
+            TokenIdOf::convert_location(&convert_lts_location(lts_general_key))
+                .expect("LTS general key should convert");
+
+        assert_eq!(
+            latest_general_key_id, lts_general_key_id,
+            "LTS and latest general key location hashes should match"
+        );
+
+        // Test Case 7: AccountKey20 comparison
+        let account_key = [
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e,
+            0x0f, 0x10, 0x11, 0x12, 0x13, 0x14,
+        ];
+        let latest_account_key20 = xcm::latest::Location::new(
+            1,
+            [
+                xcm::latest::Junction::GlobalConsensus(EthereumNetwork::get()),
+                xcm::latest::Junction::Parachain(2000),
+                xcm::latest::Junction::AccountKey20 {
+                    network: Some(EthereumNetwork::get()),
+                    key: account_key,
+                },
+            ],
+        );
+        let lts_account_key20 = xcm::lts::Location::new(
+            1,
+            [
+                GlobalConsensusLts(EthereumNetwork::get().into()),
+                ParachainXcmLts(2000),
+                AccountKey20Lts {
+                    network: Some(EthereumNetwork::get().into()),
+                    key: account_key,
+                },
+            ],
+        );
+
+        let latest_account_key20_id = TokenIdOf::convert_location(&latest_account_key20)
+            .expect("Latest account key20 should convert");
+        let lts_account_key20_id =
+            TokenIdOf::convert_location(&convert_lts_location(lts_account_key20))
+                .expect("LTS account key20 should convert");
+
+        assert_eq!(
+            latest_account_key20_id, lts_account_key20_id,
+            "LTS and latest account key20 location hashes should match"
+        );
+
+        // Test Case 8: PalletInstance comparison
+        let latest_pallet = xcm::latest::Location::new(
+            1,
+            [
+                xcm::latest::Junction::GlobalConsensus(EthereumNetwork::get()),
+                xcm::latest::Junction::Parachain(2000),
+                xcm::latest::Junction::PalletInstance(50),
+            ],
+        );
+        let lts_pallet = xcm::lts::Location::new(
+            1,
+            [
+                GlobalConsensusLts(EthereumNetwork::get().into()),
+                ParachainXcmLts(2000),
+                PalletInstanceLts(50),
+            ],
+        );
+
+        let latest_pallet_id =
+            TokenIdOf::convert_location(&latest_pallet).expect("Latest pallet should convert");
+        let lts_pallet_id = TokenIdOf::convert_location(&convert_lts_location(lts_pallet))
+            .expect("LTS pallet should convert");
+
+        assert_eq!(
+            latest_pallet_id, lts_pallet_id,
+            "LTS and latest pallet location hashes should match"
+        );
+
+        // Test Case 9: Complex case - PalletInstance + GeneralIndex
+        let latest_pallet_index = xcm::latest::Location::new(
+            1,
+            [
+                xcm::latest::Junction::GlobalConsensus(EthereumNetwork::get()),
+                xcm::latest::Junction::Parachain(2000),
+                xcm::latest::Junction::PalletInstance(50),
+                xcm::latest::Junction::GeneralIndex(10),
+            ],
+        );
+        let lts_pallet_index = xcm::lts::Location::new(
+            1,
+            [
+                GlobalConsensusLts(EthereumNetwork::get().into()),
+                ParachainXcmLts(2000),
+                PalletInstanceLts(50),
+                GeneralIndexLts(10),
+            ],
+        );
+
+        let latest_pallet_index_id = TokenIdOf::convert_location(&latest_pallet_index)
+            .expect("Latest pallet + index should convert");
+        let lts_pallet_index_id =
+            TokenIdOf::convert_location(&convert_lts_location(lts_pallet_index))
+                .expect("LTS pallet + index should convert");
+
+        assert_eq!(
+            latest_pallet_index_id, lts_pallet_index_id,
+            "LTS and latest pallet + index location hashes should match"
+        );
+    });
+}
+
+#[test]
+fn test_token_id_hashing_consistency_across_xcm_versions() {
+    // This test ensures that TokenIdOf hashing remains consistent across XCM versions.
+    // If Parity changes the hashing mechanism, we'll notice through these exact value checks.
+
+    ExtBuilder::default().build().execute_with(|| {
+        // Test cases covering all patterns supported by DescribeTokenTerminal
+
+        // Case 1: Empty interior (parents: 1, GlobalConsensus + empty)
+        let location_empty = Location::new(1, [GlobalConsensus(EthereumNetwork::get())]);
+        let token_id_empty =
+            TokenIdOf::convert_location(&location_empty).expect("Should convert empty location");
+        assert_eq!(
+            token_id_empty,
+            hex!("cf761dfb05ca10f0cfb78a7c149cf13a22bf3cd7517bd4e3d1196b9a6349f6dd").into(),
+            "Empty location hash changed unexpectedly"
+        );
+
+        // Case 2: Parachain location (parents: 1, GlobalConsensus + Parachain)
+        let location_parachain = Location::new(
+            1,
+            [GlobalConsensus(EthereumNetwork::get()), Parachain(2000)],
+        );
+        let token_id_parachain = TokenIdOf::convert_location(&location_parachain)
+            .expect("Should convert parachain location");
+        assert_eq!(
+            token_id_parachain,
+            hex!("76aa1af5ce575713aa4410cf75a0f3ecd2bdb6ee8ce599f39d1990cff53332ae").into(),
+            "Parachain location hash changed unexpectedly"
+        );
+
+        // Case 3: GlobalConsensus + Parachain + GeneralIndex
+        let location_general_index = Location::new(
+            1,
+            [
+                GlobalConsensus(EthereumNetwork::get()),
+                Parachain(2000),
+                GeneralIndex(5),
+            ],
+        );
+        let token_id_general_index = TokenIdOf::convert_location(&location_general_index)
+            .expect("Should convert general index location");
+        assert_eq!(
+            token_id_general_index,
+            hex!("1966773ea3f421e27db0372bc66ad3d31c55221ad96554cd325dc6e08300ecf8").into(),
+            "General index location hash changed unexpectedly"
+        );
+
+        // Case 4: GlobalConsensus + Parachain + GeneralKey
+        let general_key_data = [
+            0x01, 0x02, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+        ];
+        let location_general_key = Location::new(
+            1,
+            [
+                GlobalConsensus(EthereumNetwork::get()),
+                Parachain(2000),
+                GeneralKey {
+                    length: 32,
+                    data: general_key_data,
+                },
+            ],
+        );
+        let token_id_general_key = TokenIdOf::convert_location(&location_general_key)
+            .expect("Should convert general key location");
+        assert_eq!(
+            token_id_general_key,
+            hex!("78682ef078bfec88e5c289faaf1cabd4b68f2f61062a67286eef874c45f16b5a").into(),
+            "General key location hash changed unexpectedly"
+        );
+
+        // Case 5: GlobalConsensus + Parachain + AccountKey20
+        let account_key_20 = [
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e,
+            0x0f, 0x10, 0x11, 0x12, 0x13, 0x14,
+        ];
+        let location_account_key20 = Location::new(
+            1,
+            [
+                GlobalConsensus(EthereumNetwork::get()),
+                Parachain(2000),
+                AccountKey20 {
+                    network: Some(EthereumNetwork::get()),
+                    key: account_key_20,
+                },
+            ],
+        );
+        let token_id_account_key20 = TokenIdOf::convert_location(&location_account_key20)
+            .expect("Should convert account key20 location");
+        assert_eq!(
+            token_id_account_key20,
+            hex!("7ae2f78b73102c2c346534e70901eda406b9f58ace9fe53fc8cdb6abc6759f5c").into(),
+            "Account key20 location hash changed unexpectedly"
+        );
+
+        // Case 6: GlobalConsensus + Parachain + AccountId32
+        let account_id_32 = [
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e,
+            0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c,
+            0x1d, 0x1e, 0x1f, 0x20,
+        ];
+        let location_account_id32 = Location::new(
+            1,
+            [
+                GlobalConsensus(EthereumNetwork::get()),
+                Parachain(2000),
+                AccountId32 {
+                    network: Some(EthereumNetwork::get()),
+                    id: account_id_32,
+                },
+            ],
+        );
+        let token_id_account_id32 = TokenIdOf::convert_location(&location_account_id32)
+            .expect("Should convert account id32 location");
+        assert_eq!(
+            token_id_account_id32,
+            hex!("eb0434d007f0d37a295239c02f593a73ca305f8d3a569a26acf755535e66512d").into(),
+            "Account id32 location hash changed unexpectedly"
+        );
+
+        // Case 7: GlobalConsensus + Parachain + PalletInstance
+        let location_pallet_instance = Location::new(
+            1,
+            [
+                GlobalConsensus(EthereumNetwork::get()),
+                Parachain(2000),
+                PalletInstance(50),
+            ],
+        );
+        let token_id_pallet_instance = TokenIdOf::convert_location(&location_pallet_instance)
+            .expect("Should convert pallet instance location");
+        assert_eq!(
+            token_id_pallet_instance,
+            hex!("26f864a258a84edbbf0d9ff45a3c914796b9ecf9f3a6e2c92e0b547372d131ab").into(),
+            "Pallet instance location hash changed unexpectedly"
+        );
+
+        // Case 8: GlobalConsensus + Parachain + PalletInstance + GeneralIndex
+        let location_pallet_general_index = Location::new(
+            1,
+            [
+                GlobalConsensus(EthereumNetwork::get()),
+                Parachain(2000),
+                PalletInstance(50),
+                GeneralIndex(10),
+            ],
+        );
+        let token_id_pallet_general_index =
+            TokenIdOf::convert_location(&location_pallet_general_index)
+                .expect("Should convert pallet + general index location");
+        assert_eq!(
+            token_id_pallet_general_index,
+            hex!("f330878262076f7c25b552609c6b4a6a302cd05311162dca5ab814ada827e3ad").into(),
+            "Pallet instance + general index location hash changed unexpectedly"
+        );
+
+        // Case 9: GlobalConsensus + Parachain + PalletInstance + GeneralKey
+        let location_pallet_general_key = Location::new(
+            1,
+            [
+                GlobalConsensus(EthereumNetwork::get()),
+                Parachain(2000),
+                PalletInstance(50),
+                GeneralKey {
+                    length: 32,
+                    data: general_key_data,
+                },
+            ],
+        );
+        let token_id_pallet_general_key = TokenIdOf::convert_location(&location_pallet_general_key)
+            .expect("Should convert pallet + general key location");
+        assert_eq!(
+            token_id_pallet_general_key,
+            hex!("21c31d297df7197c21ee61bc2847ec61879e33117f9f5f33bfb96208bb27e754").into(),
+            "Pallet instance + general key location hash changed unexpectedly"
+        );
+
+        // Case 10: GlobalConsensus + Parachain + PalletInstance + AccountKey20
+        let location_pallet_account_key20 = Location::new(
+            1,
+            [
+                GlobalConsensus(EthereumNetwork::get()),
+                Parachain(2000),
+                PalletInstance(50),
+                AccountKey20 {
+                    network: Some(EthereumNetwork::get()),
+                    key: account_key_20,
+                },
+            ],
+        );
+        let token_id_pallet_account_key20 =
+            TokenIdOf::convert_location(&location_pallet_account_key20)
+                .expect("Should convert pallet + account key20 location");
+        assert_eq!(
+            token_id_pallet_account_key20,
+            hex!("1708fece73094e2e5bbd902e81baf49c168f2a1bc694722044cf55d6fa19c365").into(),
+            "Pallet instance + account key20 location hash changed unexpectedly"
+        );
+
+        // Case 11: GlobalConsensus + Parachain + PalletInstance + AccountId32
+        let location_pallet_account_id32 = Location::new(
+            1,
+            [
+                GlobalConsensus(EthereumNetwork::get()),
+                Parachain(2000),
+                PalletInstance(50),
+                AccountId32 {
+                    network: Some(EthereumNetwork::get()),
+                    id: account_id_32,
+                },
+            ],
+        );
+        let token_id_pallet_account_id32 =
+            TokenIdOf::convert_location(&location_pallet_account_id32)
+                .expect("Should convert pallet + account id32 location");
+        assert_eq!(
+            token_id_pallet_account_id32,
+            hex!("2f6f48be2a60c236aa2df01cceabed25ba220d5ccf14342b5af429d9d67be835").into(),
+            "Pallet instance + account id32 location hash changed unexpectedly"
+        );
+
+        // Edge case: Location that should not be convertible (missing GlobalConsensus)
+        let invalid_location = Location::new(0, [Parachain(2000)]);
+        assert!(
+            TokenIdOf::convert_location(&invalid_location).is_none(),
+            "Invalid location should not be convertible"
+        );
+
+        // Edge case: Location with unsupported junction pattern
+        let unsupported_location = Location::new(
+            1,
+            [
+                GlobalConsensus(EthereumNetwork::get()),
+                Parachain(2000),
+                GeneralIndex(1),
+                GeneralIndex(2), // This should be unsupported
+            ],
+        );
+        assert!(
+            TokenIdOf::convert_location(&unsupported_location).is_none(),
+            "Unsupported junction pattern should not be convertible"
+        );
+    });
 }
 
 #[test]
