@@ -993,6 +993,32 @@
             ]
         },
         {
+            "name": "zombie_tanssi_relay_p2p_port_conflict",
+            "timeout": 600000,
+            "testFileDir": ["suites/zombie_tanssi_relay_p2p_port_conflict"],
+            "runScripts": [
+                "build-spec-dancelight.sh",
+                "compile-wasm.ts compile -b ../target/release/tanssi-relay -o wasm -c specs/tanssi-relay.json"
+            ],
+            "foundation": {
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombie_tanssi_relay_p2p_port_conflict.json",
+                    "skipBlockCheck": ["Container2002"]
+                }
+            },
+            "vitestArgs": {
+                "bail": 1
+            },
+            "connections": [
+                {
+                    "name": "Tanssi-relay",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9947"]
+                }
+            ]
+        },
+        {
             "name": "zombie_tanssi_relay_finalization_recovery",
             "timeout": 600000,
             "testFileDir": ["suites/zombie_tanssi_relay_finalization_recovery"],
