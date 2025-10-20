@@ -74,8 +74,10 @@ pub use {
     custom_do_process_message::{ConstantGasMeter, CustomProcessSnowbridgeMessageV1},
     custom_send_message::CustomSendMessageV1,
     custom_send_message::CustomSendMessageV2,
+    custom_send_message::VersionedCustomMessageSender,
     custom_validate_message::CustomMessageValidatorV1,
     custom_validate_message::CustomMessageValidatorV2,
+    custom_validate_message::VersionedCustomMessageValidator,
     xcm_executor::traits::ConvertLocation,
 };
 

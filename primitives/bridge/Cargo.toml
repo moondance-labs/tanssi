@@ -40,6 +40,7 @@ xcm-executor = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 
 [dev-dependencies]
+assert_matches = { workspace = true }
 bp-relayers = { workspace = true, fetures = ["std"] }
 hex-literal = { workspace = true }
 pallet-balances = { workspace = true, fetures = ["std"] }

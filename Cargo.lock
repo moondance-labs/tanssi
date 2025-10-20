@@ -20277,6 +20277,7 @@ name = "tp-bridge"
 version = "0.1.0"
 dependencies = [
  "alloy-core",
+ "assert_matches",
  "bp-relayers",
  "cumulus-primitives-core",
  "dp-chain-state-snapshot",

@@ -283,6 +283,58 @@ mod custom_message_validator {
             );
         });
     }
+
+    #[test]
+    fn test_assert_succesful_v2_in_versioned() {
+        new_test_ext().execute_with(|| {
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let (versioned_ticket, fee) = VersionedCustomMessageValidator::<
+                Test,
+                OwnLocation,
+                frame_support::traits::ConstBool<true>,
+            >::validate(&tanssi_message)
+            .unwrap();
+            assert!(matches!(versioned_ticket, VersionedTanssiTicket::V2(_)));
+        });
+    }
+
+    #[test]
+    fn test_assert_succesful_v1_in_versioned() {
+        new_test_ext().execute_with(|| {
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let (versioned_ticket, fee) = VersionedCustomMessageValidator::<
+                Test,
+                OwnLocation,
+                frame_support::traits::ConstBool<false>,
+            >::validate(&tanssi_message)
+            .unwrap();
+            assert!(matches!(versioned_ticket, VersionedTanssiTicket::V1(_)));
+        });
+    }
 }
 
 mod custom_message_delivers {
@@ -294,6 +346,7 @@ mod custom_message_delivers {
         },
         SendError,
     };
+    use assert_matches::assert_matches;
     use snowbridge_outbound_queue_primitives::v2::Message as MessageV2;
 
     #[test]
@@ -377,6 +430,93 @@ mod custom_message_delivers {
                     },
                 },
             ));
+        });
+    }
+
+    #[test]
+    fn test_message_versioned_deliver_is_succesful_v1() {
+        // Correct channels and such do work
+        new_test_ext().execute_with(|| {
+            // otherwise no events
+            run_to_block(1);
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let (versioned_ticket, fee) = VersionedCustomMessageValidator::<
+                Test,
+                OwnLocation,
+                frame_support::traits::ConstBool<false>,
+            >::validate(&tanssi_message)
+            .unwrap();
+
+            let result =
+                VersionedCustomMessageSender::<Test, MockGetAggregateMessageOrigin>::deliver(
+                    versioned_ticket.clone(),
+                );
+
+            assert!(result.is_ok());
+            assert_matches!(versioned_ticket, VersionedTanssiTicket::V1(_));
+
+            // assert event has been emited
+            System::assert_last_event(RuntimeEvent::EthereumOutboundQueue(
+                snowbridge_pallet_outbound_queue::Event::MessageQueued {
+                    id: versioned_ticket.message_id(),
+                },
+            ));
+        });
+    }
+
+    #[test]
+    fn test_message_versioned_deliver_is_succesful_v2() {
+        // Correct channels and such do work
+        new_test_ext().execute_with(|| {
+            // otherwise no events
+            run_to_block(1);
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let (versioned_ticket, fee) = VersionedCustomMessageValidator::<
+                Test,
+                OwnLocation,
+                frame_support::traits::ConstBool<true>,
+            >::validate(&tanssi_message)
+            .unwrap();
+            assert_matches!(versioned_ticket, VersionedTanssiTicket::V2(_));
+
+            let result =
+                VersionedCustomMessageSender::<Test, MockGetAggregateMessageOrigin>::deliver(
+                    versioned_ticket.clone(),
+                );
+
+            assert!(result.is_ok());
+            let event = System::events().pop().expect("Expected event").event;
+
+            assert_matches!(
+                event,
+                RuntimeEvent::EthereumOutboundQueueV2(
+                    snowbridge_pallet_outbound_queue_v2::Event::MessageQueued { ref message }
+                ) if message.id == versioned_ticket.message_id()
+            );
         });
     }
 }
