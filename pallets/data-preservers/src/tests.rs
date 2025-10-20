@@ -1955,7 +1955,7 @@ mod poke_deposit {
                 let updated_reg = Profiles::<Test>::get(0).unwrap();
                 assert_eq!(updated_reg.deposit, new_required_deposit);
 
-                // Check balance increased by the delta 
+                // Check balance increased by the delta
                 let delta = initial_deposit - new_required_deposit;
                 assert_eq!(Balances::free_balance(ALICE), alice_balance_before + delta);
 
