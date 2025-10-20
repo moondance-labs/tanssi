@@ -21,9 +21,12 @@ use crate::EthereumBeaconClient;
 use crate::EthereumInboundQueueV2;
 use frame_support::dispatch::DispatchResult;
 use frame_support::pallet_prelude::{DecodeWithMemTracking, Encode, TypeInfo};
+use frame_support::traits::EitherOfDiverse;
+use frame_support::traits::OriginTrait;
 use frame_support::traits::{EnqueueMessage, QueueFootprint};
 use frame_support::BoundedSlice;
 use frame_support::PalletId;
+use frame_system::EnsureRoot;
 use frame_system::EnsureRootWithSuccess;
 use parity_scale_codec::{Decode, MaxEncodedLen};
 use snowbridge_core::reward::{AddTip, AddTipError, MessageId};
@@ -281,27 +284,25 @@ impl snowbridge_pallet_system_v2::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type OutboundQueue = DoNothingOutboundQueue;
     type InboundQueue = EthereumInboundQueueV2;
-    type FrontendOrigin = tp_system::EnsureRootOrPalletIdWithSuccess<
-        AccountId,
+    type FrontendOrigin = pallet_ethereum_token_transfers::origins::EitherOfDiverseWithSuccess<
+        EnsureRoot<AccountId>,
+        pallet_ethereum_token_transfers::origins::EnsureEthereumTokenTransfers,
         EthereumLocation,
-        EthereumTokenTransfersPalletId,
     >;
     type GovernanceOrigin = EnsureRootWithSuccess<AccountId, EthereumLocation>;
     type WeightInfo = ();
 }
 
-parameter_types! {
-    pub EthereumTokenTransfersPalletId: PalletId = PalletId(*b"eth_tras");
-}
-
 pub struct EthereumTipForwarder<T>(core::marker::PhantomData<T>);
 impl<T: snowbridge_pallet_system_v2::Config>
     pallet_ethereum_token_transfers::pallet::TipHandler<T::AccountId> for EthereumTipForwarder<T>
+where
+    T: frame_system::Config,
+    T::RuntimeOrigin: From<pallet_ethereum_token_transfers::Origin>,
 {
     fn add_tip(sender: T::AccountId, message_id: MessageId, amount: u128) -> DispatchResult {
-        let pallet_account: T::AccountId =
-            EthereumTokenTransfersPalletId::get().into_account_truncating();
-        let origin = frame_system::RawOrigin::Signed(pallet_account.clone()).into();
+        let origin: T::RuntimeOrigin =
+            pallet_ethereum_token_transfers::Origin::EthereumTokenTransfers.into();
 
         snowbridge_pallet_system_v2::Pallet::<T>::add_tip(origin, sender, message_id, amount)
     }

@@ -54,6 +54,8 @@ mod benchmarking;
 
 pub mod weights;
 
+pub mod origins;
+
 use {
     alloc::vec,
     frame_support::{
@@ -153,11 +155,6 @@ pub mod pallet {
             amount: u128,
             fee: BalanceOf<T>,
         },
-        TipsAdded {
-            message_id: MessageId,
-            sender: T::AccountId,
-            amount: u128,
-        },
     }
 
     // Errors
@@ -183,6 +180,23 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn current_channel_info)]
     pub type CurrentChannelInfo<T: Config> = StorageValue<_, ChannelInfo, OptionQuery>;
+
+    #[derive(
+        PartialEq,
+        Eq,
+        Clone,
+        MaxEncodedLen,
+        Encode,
+        Decode,
+        DecodeWithMemTracking,
+        TypeInfo,
+        RuntimeDebug,
+    )]
+    #[pallet::origin]
+    pub enum Origin {
+        /// The origin for the pallet to make extrinsics.
+        EthereumTokenTransfers,
+    }
 
     // Calls
     #[pallet::call]

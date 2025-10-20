@@ -196,7 +196,7 @@ fn test_add_tip_for_ethereum_system_v2_succeeded_with_root() {
 }
 
 #[test]
-fn test_add_tip_for_ethereum_system_v2_succeeded_with_correct_pallet_id() {
+fn test_add_tip_for_ethereum_system_v2_succeeded_with_correct_pallet_origin() {
     ExtBuilder::default()
         .with_balances(vec![
             (AccountId::from(ALICE), 210_000 * UNIT),
@@ -211,8 +211,9 @@ fn test_add_tip_for_ethereum_system_v2_succeeded_with_correct_pallet_id() {
             let sender: AccountId = AccountId::from(BOB);
             let message_id = MessageId::Inbound(1);
             let amount = 100;
-            let pallet_account: AccountId = PalletId(*b"eth_tras").into_account_truncating();
-            let origin = frame_system::RawOrigin::Signed(pallet_account.clone()).into();
+
+            let origin: RuntimeOrigin =
+                pallet_ethereum_token_transfers::Origin::EthereumTokenTransfers.into();
 
             assert_ok!(EthereumSystemV2::add_tip(
                 origin,
