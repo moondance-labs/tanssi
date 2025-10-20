@@ -73,7 +73,9 @@ use alloc::vec;
 pub use {
     custom_do_process_message::{ConstantGasMeter, CustomProcessSnowbridgeMessageV1},
     custom_send_message::CustomSendMessageV1,
+    custom_send_message::CustomSendMessageV2,
     custom_validate_message::CustomMessageValidatorV1,
+    custom_validate_message::CustomMessageValidatorV2,
     xcm_executor::traits::ConvertLocation,
 };
 

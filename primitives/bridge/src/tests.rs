@@ -182,7 +182,7 @@ mod xcm_converter {
 mod custom_message_validator {
     use super::*;
     use crate::{
-        mock::{new_test_ext, MaxMessagePayloadSize, Test},
+        mock::{new_test_ext, MaxMessagePayloadSize, OwnLocation, Test},
         SendError,
     };
 
@@ -244,6 +244,139 @@ mod custom_message_validator {
                 CustomMessageValidatorV1::<Test>::validate(&tanssi_message),
                 SendError::MessageTooLarge
             );
+        });
+    }
+
+    #[test]
+    fn test_assert_succesful_v2() {
+        new_test_ext().execute_with(|| {
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let result = CustomMessageValidatorV2::<Test, OwnLocation>::validate(&tanssi_message);
+            assert!(result.is_ok());
+        });
+    }
+
+    #[test]
+    fn test_assert_error_max_payload_v2() {
+        new_test_ext().execute_with(|| {
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: H256::default().into(),
+                command: Command::Test(vec![0u8; (MaxMessagePayloadSize::get() + 1) as usize]),
+            };
+
+            assert_noop!(
+                CustomMessageValidatorV2::<Test, OwnLocation>::validate(&tanssi_message),
+                SendError::MessageTooLarge
+            );
+        });
+    }
+}
+
+mod custom_message_delivers {
+    use super::*;
+    use crate::{
+        mock::{
+            last_delivered_message_queue, new_test_ext, run_to_block, MaxMessagePayloadSize,
+            MockGetAggregateMessageOrigin, OwnLocation, RuntimeEvent, System, Test,
+        },
+        SendError,
+    };
+    use snowbridge_outbound_queue_primitives::v2::Message as MessageV2;
+
+    #[test]
+    fn test_message_deliver_v1_successful() {
+        // Correct channels and such do work
+        new_test_ext().execute_with(|| {
+            // otherwise no events
+            run_to_block(1);
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let (ticket, fee) =
+                CustomMessageValidatorV1::<Test>::validate(&tanssi_message).unwrap();
+
+            let result =
+                CustomSendMessageV1::<Test, MockGetAggregateMessageOrigin>::deliver(ticket.clone());
+
+            assert!(result.is_ok());
+            assert_eq!(
+                last_delivered_message_queue(),
+                ticket.message.as_bounded_slice().to_vec()
+            );
+            // assert event has been emited
+            System::assert_last_event(RuntimeEvent::EthereumOutboundQueue(
+                snowbridge_pallet_outbound_queue::Event::MessageQueued {
+                    id: ticket.message_id,
+                },
+            ));
+        });
+    }
+
+    #[test]
+    fn test_message_deliver_v2_successful() {
+        new_test_ext().execute_with(|| {
+            // otherwise no events
+            run_to_block(1);
+
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let (ticket, fee) =
+                CustomMessageValidatorV2::<Test, OwnLocation>::validate(&tanssi_message).unwrap();
+            let result =
+                CustomSendMessageV2::<Test, MockGetAggregateMessageOrigin>::deliver(ticket.clone());
+
+            assert!(result.is_ok());
+
+            assert_eq!(
+                last_delivered_message_queue(),
+                ticket.message.as_bounded_slice().to_vec()
+            );
+
+            // assert event has been emited
+            System::assert_last_event(RuntimeEvent::EthereumOutboundQueueV2(
+                snowbridge_pallet_outbound_queue_v2::Event::MessageQueued {
+                    message: MessageV2 {
+                        origin: ticket.origin,
+                        fee: ticket.fee,
+                        id: ticket.id,
+                        commands: vec![].try_into().unwrap(),
+                    },
+                },
+            ));
         });
     }
 }

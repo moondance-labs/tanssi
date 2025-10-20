@@ -53,7 +53,7 @@ frame_support::construct_runtime!(
         Timestamp: pallet_timestamp,
         Balances: pallet_balances,
         EthereumOutboundQueue: snowbridge_pallet_outbound_queue,
-        EthereumOutboundQueuV2: snowbridge_pallet_outbound_queue_v2,
+        EthereumOutboundQueueV2: snowbridge_pallet_outbound_queue_v2,
     }
 );
 
@@ -180,6 +180,10 @@ parameter_types! {
     pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 11155111 };
     pub const GatewayAddress: H160 = H160(GATEWAY_ADDRESS);
     pub const AllowedChannels: ChannelId = PRIMARY_GOVERNANCE_CHANNEL;
+    pub const OwnLocation: Location = Location {
+        parents:0,
+        interior: Here
+    };
 }
 
 /// The aggregate origin of an inbound message.
@@ -246,7 +250,7 @@ impl snowbridge_pallet_outbound_queue_v2::Config for Test {
     type Verifier = MockVerifier;
     type GatewayAddress = GatewayAddress;
     type Hashing = Keccak256;
-    type MessageQueue = ();
+    type MessageQueue = MockMessageQueue;
     type MaxMessagePayloadSize = MaxMessagePayloadSize;
     type MaxMessagesPerBlock = MaxMessagesPerBlock;
     type GasMeter = ConstantGasMeterV2;
