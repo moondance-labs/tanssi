@@ -21,18 +21,14 @@ use crate::EthereumBeaconClient;
 use crate::EthereumInboundQueueV2;
 use frame_support::dispatch::DispatchResult;
 use frame_support::pallet_prelude::{DecodeWithMemTracking, Encode, TypeInfo};
-use frame_support::traits::EitherOfDiverse;
-use frame_support::traits::OriginTrait;
 use frame_support::traits::{EnqueueMessage, QueueFootprint};
 use frame_support::BoundedSlice;
-use frame_support::PalletId;
 use frame_system::EnsureRoot;
 use frame_system::EnsureRootWithSuccess;
 use parity_scale_codec::{Decode, MaxEncodedLen};
 use snowbridge_core::reward::{AddTip, AddTipError, MessageId};
 use snowbridge_outbound_queue_primitives::v2::{Message, SendMessage};
 use snowbridge_outbound_queue_primitives::SendError;
-use sp_runtime::traits::AccountIdConversion;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
 use {
