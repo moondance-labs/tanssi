@@ -311,6 +311,7 @@ xcm-runtime-apis = { git = "https://github.com/moondance-labs/polkadot-sdk", bra
 # Bridges (wasm)
 alloy-core = { version = "0.8.15", default-features = false }
 alloy-sol-types = { version = "0.4.2", default-features = false }
+bp-relayers = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "girazoki-bring-agg-message-origin-outbound-queue", default-features = false }
 milagro-bls = { package = "snowbridge-milagro-bls", version = "1.5.4", default-features = false }
 snowbridge-beacon-primitives = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "girazoki-bring-agg-message-origin-outbound-queue", default-features = false }
 snowbridge-core = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "girazoki-bring-agg-message-origin-outbound-queue", default-features = false }

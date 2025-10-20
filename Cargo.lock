@@ -20277,6 +20277,7 @@ name = "tp-bridge"
 version = "0.1.0"
 dependencies = [
  "alloy-core",
+ "bp-relayers",
  "cumulus-primitives-core",
  "dp-chain-state-snapshot",
  "dp-container-chain-genesis-data",
@@ -20287,7 +20288,9 @@ dependencies = [
  "impl-trait-for-tuples",
  "log",
  "macro_rules_attribute",
+ "pallet-balances",
  "pallet-external-validators",
+ "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",
  "serde",
@@ -20299,6 +20302,7 @@ dependencies = [
  "snowbridge-pallet-outbound-queue-v2",
  "snowbridge-pallet-system",
  "sp-core",
+ "sp-io",
  "sp-runtime",
  "staging-xcm",
  "staging-xcm-builder",

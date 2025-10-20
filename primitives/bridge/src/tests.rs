@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use frame_support::assert_noop;
+use snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
 use snowbridge_outbound_queue_primitives::v1::AgentExecuteCommand;
 use {super::*, hex_literal::hex};
 
@@ -174,5 +176,74 @@ mod xcm_converter {
                 topic
             )
         )
+    }
+}
+
+mod custom_message_validator {
+    use super::*;
+    use crate::{
+        mock::{new_test_ext, MaxMessagePayloadSize, Test},
+        SendError,
+    };
+
+    #[test]
+    fn test_message_validator_v1_successful() {
+        // Correct channels and such do work
+        new_test_ext().execute_with(|| {
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let result = CustomMessageValidatorV1::<Test>::validate(&tanssi_message);
+            assert!(result.is_ok());
+        });
+    }
+
+    #[test]
+    fn test_message_validator_v1_wrong_channel() {
+        new_test_ext().execute_with(|| {
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: H256::default().into(),
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            assert_noop!(
+                CustomMessageValidatorV1::<Test>::validate(&tanssi_message),
+                SendError::InvalidChannel
+            );
+        });
+    }
+
+    #[test]
+    fn test_assert_error_max_payload() {
+        new_test_ext().execute_with(|| {
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: H256::default().into(),
+                command: Command::Test(vec![0u8; (MaxMessagePayloadSize::get() + 1) as usize]),
+            };
+
+            assert_noop!(
+                CustomMessageValidatorV1::<Test>::validate(&tanssi_message),
+                SendError::MessageTooLarge
+            );
+        });
     }
 }

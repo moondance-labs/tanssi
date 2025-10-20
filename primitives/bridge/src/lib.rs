@@ -23,6 +23,8 @@ extern crate alloc;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarks;
 #[cfg(test)]
+mod mock;
+#[cfg(test)]
 mod tests;
 
 pub mod container_token_to_ethereum_message_exporter;

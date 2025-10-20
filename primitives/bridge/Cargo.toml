@@ -40,7 +40,11 @@ xcm-executor = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 
 [dev-dependencies]
+bp-relayers = { workspace = true, fetures = ["std"] }
 hex-literal = { workspace = true }
+pallet-balances = { workspace = true, fetures = ["std"] }
+pallet-timestamp = { workspace = true, fetures = ["std"] }
+sp-io = { workspace = true, fetures = ["std"] }
 
 [features]
 default = [ "std" ]
