@@ -15,10 +15,15 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    super::*, core::marker::PhantomData, frame_support::traits::EnqueueMessage,
-    snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL,
+    crate::*,
+    core::marker::PhantomData,
+    frame_support::ensure,
+    frame_support::traits::EnqueueMessage,
+    snowbridge_core::{ChannelId, PRIMARY_GOVERNANCE_CHANNEL},
     snowbridge_outbound_queue_primitives::v2::Message as MessageV2,
     snowbridge_outbound_queue_primitives::SendError,
+    sp_core::H256,
+    sp_runtime::traits::Convert,
 };
 
 /// Alternative to [snowbridge_pallet_outbound_queue::Pallet::deliver] using a different

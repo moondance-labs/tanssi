@@ -14,7 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use {super::*, core::marker::PhantomData, snowbridge_outbound_queue_primitives::SendError};
+use frame_support::ensure;
+use {crate::*, core::marker::PhantomData, snowbridge_outbound_queue_primitives::SendError};
 
 /// Custom Impl
 pub struct CustomMessageValidatorV1<T: snowbridge_pallet_outbound_queue::Config>(PhantomData<T>);
@@ -96,25 +97,13 @@ impl<T: snowbridge_pallet_outbound_queue_v2::Config, OwnOrigin: Get<Location>> V
 
         // This is only called by system level pallets
         // so we can put the origin to system
-
         let origin = crate::AgentIdOf::convert_location(&OwnOrigin::get())
             .ok_or(SendError::InvalidOrigin)?;
-        // Ensure there is a registered channel we can transmit this message on
-        /*ensure!(
-            T::Channels::contains(&message.channel_id),
-            SendError::InvalidChannel
-        );*/
 
         // Generate a unique message id unless one is provided
         let message_id: H256 = message
             .id
             .unwrap_or_else(|| unique((message.channel_id, &message.command)).into());
-
-        // Fee not used for now
-        /*
-        let gas_used_at_most = T::GasMeter::maximum_gas_used_at_most(&message.command);
-        let fee = Self::calculate_fee(gas_used_at_most, T::PricingParameters::get());
-         */
 
         let queued_message: VersionedQueuedTanssiMessage = QueuedTanssiMessage {
             id: message_id,
@@ -130,13 +119,13 @@ impl<T: snowbridge_pallet_outbound_queue_v2::Config, OwnOrigin: Get<Location>> V
             .map_err(|_| SendError::MessageTooLarge)?;
 
         let ticket = TanssiTicketV2::<T> {
-            // change
-            origin: H256::default(),
+            origin,
             id: message_id,
             fee: 0,
             message: encoded,
         };
 
+        // Fee not used for now
         let fee = Fee {
             local: Default::default(),
             remote: Default::default(),

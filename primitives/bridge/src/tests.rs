@@ -300,7 +300,7 @@ mod custom_message_validator {
                 },
             };
 
-            let (versioned_ticket, fee) = VersionedCustomMessageValidator::<
+            let (versioned_ticket, _fee) = VersionedCustomMessageValidator::<
                 Test,
                 OwnLocation,
                 frame_support::traits::ConstBool<true>,
@@ -326,7 +326,7 @@ mod custom_message_validator {
                 },
             };
 
-            let (versioned_ticket, fee) = VersionedCustomMessageValidator::<
+            let (versioned_ticket, _fee) = VersionedCustomMessageValidator::<
                 Test,
                 OwnLocation,
                 frame_support::traits::ConstBool<false>,
@@ -339,12 +339,9 @@ mod custom_message_validator {
 
 mod custom_message_delivers {
     use super::*;
-    use crate::{
-        mock::{
-            last_delivered_message_queue, new_test_ext, run_to_block, MaxMessagePayloadSize,
-            MockGetAggregateMessageOrigin, OwnLocation, RuntimeEvent, System, Test,
-        },
-        SendError,
+    use crate::mock::{
+        last_delivered_message_queue, new_test_ext, run_to_block, MockGetAggregateMessageOrigin,
+        OwnLocation, RuntimeEvent, System, Test,
     };
     use assert_matches::assert_matches;
     use snowbridge_outbound_queue_primitives::v2::Message as MessageV2;
@@ -368,7 +365,7 @@ mod custom_message_delivers {
                 },
             };
 
-            let (ticket, fee) =
+            let (ticket, _fee) =
                 CustomMessageValidatorV1::<Test>::validate(&tanssi_message).unwrap();
 
             let result =
@@ -407,7 +404,7 @@ mod custom_message_delivers {
                 },
             };
 
-            let (ticket, fee) =
+            let (ticket, _fee) =
                 CustomMessageValidatorV2::<Test, OwnLocation>::validate(&tanssi_message).unwrap();
             let result =
                 CustomSendMessageV2::<Test, MockGetAggregateMessageOrigin>::deliver(ticket.clone());
@@ -452,7 +449,7 @@ mod custom_message_delivers {
                 },
             };
 
-            let (versioned_ticket, fee) = VersionedCustomMessageValidator::<
+            let (versioned_ticket, _fee) = VersionedCustomMessageValidator::<
                 Test,
                 OwnLocation,
                 frame_support::traits::ConstBool<false>,
@@ -495,7 +492,7 @@ mod custom_message_delivers {
                 },
             };
 
-            let (versioned_ticket, fee) = VersionedCustomMessageValidator::<
+            let (versioned_ticket, _fee) = VersionedCustomMessageValidator::<
                 Test,
                 OwnLocation,
                 frame_support::traits::ConstBool<true>,
@@ -523,18 +520,18 @@ mod custom_message_delivers {
 
 mod custom_message_processors {
     use super::*;
-    use crate::{
-        mock::{
-            last_delivered_message_queue, new_test_ext, run_to_block, MaxMessagePayloadSize,
-            MockAggregateMessageOrigin, MockGetAggregateMessageOrigin, OwnLocation, RuntimeEvent,
-            System, Test,
-        },
-        SendError,
+    use crate::mock::{
+        new_test_ext, run_to_block, MaxMessagesPerBlock, MockAggregateMessageOrigin, OwnLocation,
+        RuntimeEvent, System, Test,
     };
     use assert_matches::assert_matches;
-    use frame_support::traits::ProcessMessage;
-    use frame_support::weights::WeightMeter;
-    use snowbridge_outbound_queue_primitives::v2::Message as MessageV2;
+    use frame_support::{
+        traits::{
+            ProcessMessage,
+            ProcessMessageError::{Corrupt, Overweight, Yield},
+        },
+        weights::WeightMeter,
+    };
     use sp_runtime::Weight;
 
     #[test]
@@ -556,7 +553,7 @@ mod custom_message_processors {
                 },
             };
 
-            let (ticket, fee) =
+            let (ticket, _fee) =
                 CustomMessageValidatorV1::<Test>::validate(&tanssi_message).unwrap();
 
             assert_ok!(CustomProcessSnowbridgeMessageV1::<Test>::process_message(
@@ -571,9 +568,99 @@ mod custom_message_processors {
             assert_matches!(
                 event,
                 RuntimeEvent::EthereumOutboundQueue(
-                    snowbridge_pallet_outbound_queue::Event::MessageAccepted { id, nonce }
+                    snowbridge_pallet_outbound_queue::Event::MessageAccepted { id,.. }
                 ) if id == ticket.message_id()
             );
+        });
+    }
+
+    #[test]
+    fn test_message_process_v1_non_succesful_max_messages_per_block() {
+        // Correct channels and such do work
+        new_test_ext().execute_with(|| {
+            // otherwise no events
+            run_to_block(1);
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let (ticket, _fee) =
+                CustomMessageValidatorV1::<Test>::validate(&tanssi_message).unwrap();
+
+            for _ in 0..MaxMessagesPerBlock::get() {
+                snowbridge_pallet_outbound_queue::MessageLeaves::<Test>::append(H256::zero())
+            }
+
+            assert_noop!(
+                CustomProcessSnowbridgeMessageV1::<Test>::process_message(
+                    &ticket.message.as_bounded_slice().to_vec(),
+                    MockAggregateMessageOrigin::SnowbridgeTest(ticket.channel_id),
+                    &mut WeightMeter::new(),
+                    &mut [0u8; 32]
+                ),
+                Yield
+            );
+        });
+    }
+
+    #[test]
+    fn test_message_process_v1_non_succesful_if_not_correctly_decode() {
+        // Correct channels and such do work
+        new_test_ext().execute_with(|| {
+            // otherwise no events
+            run_to_block(1);
+
+            let message = [1u8; 32];
+            assert_noop!(
+                CustomProcessSnowbridgeMessageV1::<Test>::process_message(
+                    &message.to_vec(),
+                    MockAggregateMessageOrigin::SnowbridgeTest(H256::default().into()),
+                    &mut WeightMeter::new(),
+                    &mut [0u8; 32]
+                ),
+                Corrupt
+            );
+        });
+    }
+
+    #[test]
+    fn test_message_process_v1_non_succesful_if_overweight() {
+        // Correct channels and such do work
+        new_test_ext().execute_with(|| {
+            // otherwise no events
+            run_to_block(1);
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let (ticket, _fee) =
+                CustomMessageValidatorV1::<Test>::validate(&tanssi_message).unwrap();
+
+            let result = CustomProcessSnowbridgeMessageV1::<Test>::process_message(
+                &ticket.message.as_bounded_slice().to_vec(),
+                MockAggregateMessageOrigin::SnowbridgeTest(ticket.channel_id),
+                &mut WeightMeter::with_limit(Weight::default()),
+                &mut [0u8; 32],
+            );
+            assert!(matches!(result, Err(Overweight(_))));
         });
     }
 
@@ -596,7 +683,7 @@ mod custom_message_processors {
                 },
             };
 
-            let (ticket, fee) =
+            let (ticket, _fee) =
                 CustomMessageValidatorV2::<Test, OwnLocation>::validate(&tanssi_message).unwrap();
 
             assert_ok!(
@@ -613,9 +700,99 @@ mod custom_message_processors {
             assert_matches!(
                 event,
                 RuntimeEvent::EthereumOutboundQueueV2(
-                    snowbridge_pallet_outbound_queue_v2::Event::MessageAccepted { id, nonce }
+                    snowbridge_pallet_outbound_queue_v2::Event::MessageAccepted { id,.. }
                 ) if id == ticket.message_id()
             );
+        });
+    }
+
+    #[test]
+    fn test_message_process_v2_non_succesful_max_messages_per_block() {
+        // Correct channels and such do work
+        new_test_ext().execute_with(|| {
+            // otherwise no events
+            run_to_block(1);
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let (ticket, _fee) =
+                CustomMessageValidatorV2::<Test, OwnLocation>::validate(&tanssi_message).unwrap();
+
+            for _ in 0..MaxMessagesPerBlock::get() {
+                snowbridge_pallet_outbound_queue_v2::MessageLeaves::<Test>::append(H256::zero())
+            }
+
+            assert_noop!(
+                CustomProcessSnowbridgeMessageV2::<Test, OwnLocation>::process_message(
+                    &ticket.message.as_bounded_slice().to_vec(),
+                    MockAggregateMessageOrigin::SnowbridgeTestV2(ticket.origin),
+                    &mut WeightMeter::new(),
+                    &mut [0u8; 32]
+                ),
+                Yield
+            );
+        });
+    }
+
+    #[test]
+    fn test_message_process_v2_non_succesful_if_not_correctly_decode() {
+        // Correct channels and such do work
+        new_test_ext().execute_with(|| {
+            // otherwise no events
+            run_to_block(1);
+
+            let message = [1u8; 32];
+            assert_noop!(
+                CustomProcessSnowbridgeMessageV2::<Test, OwnLocation>::process_message(
+                    &message.to_vec(),
+                    MockAggregateMessageOrigin::SnowbridgeTest(H256::default().into()),
+                    &mut WeightMeter::new(),
+                    &mut [0u8; 32]
+                ),
+                Corrupt
+            );
+        });
+    }
+
+    #[test]
+    fn test_message_process_v2_non_succesful_if_overweight() {
+        // Correct channels and such do work
+        new_test_ext().execute_with(|| {
+            // otherwise no events
+            run_to_block(1);
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let (ticket, _fee) =
+                CustomMessageValidatorV2::<Test, OwnLocation>::validate(&tanssi_message).unwrap();
+
+            let result = CustomProcessSnowbridgeMessageV2::<Test, OwnLocation>::process_message(
+                &ticket.message.as_bounded_slice().to_vec(),
+                MockAggregateMessageOrigin::SnowbridgeTestV2(ticket.origin),
+                &mut WeightMeter::with_limit(Weight::default()),
+                &mut [0u8; 32],
+            );
+            assert!(matches!(result, Err(Overweight(_))));
         });
     }
 }

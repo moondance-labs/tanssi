@@ -15,12 +15,13 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    super::*,
+    crate::*,
     alloc::boxed::Box,
     alloy_core::{
         primitives::{Bytes, FixedBytes},
         sol_types::SolValue,
     },
+    core::marker::PhantomData,
     frame_support::{
         ensure,
         traits::{Defensive, ProcessMessage, ProcessMessageError},
@@ -38,7 +39,8 @@ use {
         PendingOrders, ProcessMessageOriginOf as ProcessMessageOriginOfV2,
         WeightInfo as WeightInfoV2,
     },
-    sp_runtime::traits::{BlockNumberProvider, Hash},
+    sp_runtime::traits::{BlockNumberProvider, Get, Hash},
+    xcm::latest::Location,
 };
 
 /// Alternative to [snowbridge_pallet_outbound_queue::Pallet::process_message] using a different

@@ -41,11 +41,11 @@ cumulus-primitives-core = { workspace = true }
 
 [dev-dependencies]
 assert_matches = { workspace = true }
-bp-relayers = { workspace = true, fetures = ["std"] }
+bp-relayers = { workspace = true, features = ["std"] }
 hex-literal = { workspace = true }
-pallet-balances = { workspace = true, fetures = ["std"] }
-pallet-timestamp = { workspace = true, fetures = ["std"] }
-sp-io = { workspace = true, fetures = ["std"] }
+pallet-balances = { workspace = true, features = ["std"] }
+pallet-timestamp = { workspace = true, features = ["std"] }
+sp-io = { workspace = true, features = ["std"] }
 
 [features]
 default = [ "std" ]

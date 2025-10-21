@@ -25,19 +25,14 @@ use {
     },
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     scale_info::TypeInfo,
-    snowbridge_core::{
-        gwei, meth, AgentId, ChannelId, ParaId, PricingParameters, Rewards, TokenId,
-        PRIMARY_GOVERNANCE_CHANNEL,
-    },
+    snowbridge_core::{gwei, ChannelId, PricingParameters, Rewards, PRIMARY_GOVERNANCE_CHANNEL},
     snowbridge_outbound_queue_primitives::{
-        v1::{ConstantGasMeter, Fee, Message},
-        v2::ConstantGasMeter as ConstantGasMeterV2,
+        v1::ConstantGasMeter, v2::ConstantGasMeter as ConstantGasMeterV2,
     },
-    snowbridge_outbound_queue_primitives::{SendError, SendMessageFeeProvider},
     sp_core::{H160, H256},
     sp_runtime::{
-        traits::{BlakeTwo256, Convert, IdentityLookup, Keccak256, MaybeEquivalence},
-        BoundedSlice, BuildStorage, FixedU128,
+        traits::{BlakeTwo256, Convert, IdentityLookup, Keccak256},
+        BoundedSlice, BuildStorage,
     },
     xcm::prelude::*,
 };
@@ -133,20 +128,6 @@ pub struct DummyTicket {
 impl TicketInfo for DummyTicket {
     fn message_id(&self) -> H256 {
         H256::default()
-    }
-}
-
-pub struct MockTokenIdConvert;
-impl MaybeEquivalence<TokenId, Location> for MockTokenIdConvert {
-    fn convert(_id: &TokenId) -> Option<Location> {
-        Some(Location::parent())
-    }
-    fn convert_back(loc: &Location) -> Option<TokenId> {
-        if *loc == Location::here() {
-            Some(H256::repeat_byte(0x01))
-        } else {
-            None
-        }
     }
 }
 
@@ -273,7 +254,7 @@ impl snowbridge_pallet_outbound_queue_v2::Config for Test {
     type Helper = Test;
 }
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    let mut t = frame_system::GenesisConfig::<Test>::default()
+    let t = frame_system::GenesisConfig::<Test>::default()
         .build_storage()
         .unwrap();
 
@@ -281,8 +262,6 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 
     ext
 }
-
-pub const ALICE: u64 = 1;
 
 pub fn run_to_block(n: u64) {
     System::run_to_block_with::<AllPalletsWithSystem>(n, frame_system::RunToBlockHooks::default());

@@ -27,11 +27,6 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-pub mod container_token_to_ethereum_message_exporter;
-pub mod generic_token_message_processor;
-pub mod snowbridge_outbound_token_transfer;
-pub mod symbiotic_message_processor;
-
 use {
     alloc::vec::Vec,
     core::marker::PhantomData,
@@ -42,7 +37,6 @@ use {
     },
     ethabi::{Token, U256},
     frame_support::{
-        ensure,
         pallet_prelude::{Decode, Encode, Get},
         traits::{Contains, EnqueueMessage},
     },
@@ -59,7 +53,7 @@ use {
     snowbridge_outbound_queue_primitives::{v1::Fee, SendError},
     snowbridge_pallet_outbound_queue::send_message_impl::Ticket,
     sp_core::{blake2_256, hashing, H256},
-    sp_runtime::{app_crypto::sp_core, traits::Convert, BoundedVec, RuntimeDebug},
+    sp_runtime::{app_crypto::sp_core, BoundedVec, RuntimeDebug},
     xcm_builder::{
         DescribeAccountId32Terminal, DescribeAllTerminal, DescribeFamily, DescribeTerminus,
         HashedDescription,
@@ -70,25 +64,18 @@ use {
 // of the macro.
 use alloc::vec;
 
-pub use {
-    custom_do_process_message::{
-        ConstantGasMeter, CustomProcessSnowbridgeMessageV1, CustomProcessSnowbridgeMessageV2,
-    },
-    custom_send_message::CustomSendMessageV1,
-    custom_send_message::CustomSendMessageV2,
-    custom_send_message::VersionedCustomMessageSender,
-    custom_validate_message::CustomMessageValidatorV1,
-    custom_validate_message::CustomMessageValidatorV2,
-    custom_validate_message::VersionedCustomMessageValidator,
-    xcm_executor::traits::ConvertLocation,
-};
+pub use xcm_executor::traits::ConvertLocation;
 
 #[cfg(feature = "runtime-benchmarks")]
 pub use benchmarks::*;
 
-mod custom_do_process_message;
-mod custom_send_message;
-mod custom_validate_message;
+pub mod custom_exporters;
+pub mod inbound_queue;
+pub mod outbound_queue;
+
+pub use custom_exporters::*;
+pub use inbound_queue::*;
+pub use outbound_queue::*;
 
 /// Means of converting an ML origin into a h256
 /// We need to add DescribeAccountId32Terminal for cases in which a local user is the one sending the tokens
