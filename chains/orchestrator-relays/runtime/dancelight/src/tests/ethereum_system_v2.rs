@@ -17,40 +17,14 @@
 #![cfg(test)]
 
 use {
-    crate::{
-        bridge_to_ethereum_config::EthereumGatewayAddress, filter_events, tests::common::*,
-        Balances, EthereumInboundQueue, EthereumLocation, EthereumSovereignAccount, EthereumSystem,
-        EthereumSystemV2, EthereumTokenTransfers, ForeignAssets, ForeignAssetsCreator,
-        RuntimeEvent, SnowbridgeFeesAccount, TokenLocationReanchored, XcmPallet,
-    },
+    crate::{tests::common::*, EthereumSystemV2},
     alloc::vec,
-    alloy_sol_types::SolEvent,
-    dancelight_runtime_constants::snowbridge::EthereumNetwork,
     dancelight_runtime_constants::DANCELIGHT_GENESIS_HASH,
-    frame_support::PalletId,
-    frame_support::{
-        assert_err, assert_noop, assert_ok,
-        error::BadOrigin,
-        traits::{fungible::Inspect, fungibles::Mutate},
-    },
-    hex_literal::hex,
-    parity_scale_codec::Encode,
-    snowbridge_core::{reward::MessageId, AgentId, Channel, ChannelId, ParaId},
-    snowbridge_inbound_queue_primitives::v1::{
-        Command, Destination, Envelope, MessageProcessor, MessageV1, OutboundMessageAccepted,
-        VersionedXcmMessage,
-    },
-    snowbridge_inbound_queue_primitives::{EventProof, Log},
-    sp_core::{H160, H256},
-    sp_runtime::traits::AccountIdConversion,
-    sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
-    tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
+    frame_support::{assert_noop, assert_ok, error::BadOrigin},
+    snowbridge_core::reward::MessageId,
     xcm::{
-        latest::{
-            prelude::*, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, Fungibility,
-            Junctions::*, Location,
-        },
-        VersionedAssets, VersionedLocation, VersionedXcm,
+        latest::{prelude::*, Junctions::*, Location},
+        VersionedLocation,
     },
 };
 
@@ -114,13 +88,6 @@ fn nobody_else_can_register_ethereum_v2() {
         .execute_with(|| {
             run_to_block(2);
             let token_location: VersionedLocation = Location::here().into();
-            let reanchored_location = Location {
-                parents: 1,
-                interior: X1([GlobalConsensus(NetworkId::ByGenesis(
-                    DANCELIGHT_GENESIS_HASH,
-                ))]
-                .into()),
-            };
 
             // Even though the register is done through ethereum systemv2, the storage
             // is from v1
