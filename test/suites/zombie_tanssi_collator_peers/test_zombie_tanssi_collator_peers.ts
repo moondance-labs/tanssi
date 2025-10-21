@@ -1,7 +1,7 @@
 // @ts-nocheck
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import {ApiPromise, Keyring} from "@polkadot/api";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import {
     getAuthorFromDigestRange,
     checkLogsNotExist,
@@ -9,7 +9,8 @@ import {
     getHeaderFromRelay,
     getKeyringNimbusIdHex,
     getTmpZombiePath,
-    waitSessions, signAndSendAndInclude,
+    waitSessions,
+    signAndSendAndInclude,
 } from "utils";
 
 describeSuite({
@@ -165,7 +166,7 @@ describeSuite({
             title: "Gather logs: Discovered new external address",
             test: async () => {
                 // Parse "Discovered new external address" lines across all logs
-                const { readFile, readdir } = await import("fs/promises");
+                const { readFile, readdir } = await import("node:fs/promises");
 
                 // (log file, node kind) -> list of discovered addresses (unique, in order seen)
                 type DiscoveryMap = Map<string, Map<string, string[]>>;
@@ -187,14 +188,30 @@ describeSuite({
                         } catch {
                             continue;
                         }
+
+                        // If `re` is global (/g or /y), reset lastIndex before reusing it.
+                        if ("lastIndex" in re) re.lastIndex = 0;
+
                         let m: RegExpExecArray | null;
-                        while ((m = re.exec(txt)) !== null) {
+                        while (true) {
+                            m = re.exec(txt);
+                            if (m === null) break;
+
                             const nodeKind = m[1]; // e.g. "Container-2000", "Parachain", "Relaychain"
                             const addr = m[2]; // multiaddr
-                            if (!map.has(file)) map.set(file, new Map());
-                            const inner = map.get(file)!;
-                            if (!inner.has(nodeKind)) inner.set(nodeKind, []);
-                            const list = inner.get(nodeKind)!;
+
+                            let inner = map.get(file);
+                            if (!inner) {
+                                inner = new Map<string, string[]>();
+                                map.set(file, inner);
+                            }
+
+                            let list = inner.get(nodeKind);
+                            if (!list) {
+                                list = [];
+                                inner.set(nodeKind, list);
+                            }
+
                             if (!list.includes(addr)) list.push(addr);
                         }
                     }
@@ -215,10 +232,8 @@ describeSuite({
                 const extractPorts = (addr: string): number[] => {
                     const out: number[] = [];
                     // capture all tcp/udp segments, e.g. .../tcp/46873/ws..., .../udp/30333/quic-v1/...
-                    const re = /\/(?:tcp|udp)\/(\d+)\b/gi;
-                    let m: RegExpExecArray | null;
-                    while ((m = re.exec(addr)) !== null) {
-                        const n = parseInt(m[1], 10);
+                    for (const m of addr.matchAll(/\/(?:tcp|udp)\/(\d+)\b/gi)) {
+                        const n = Number.parseInt(m[1] ?? "", 10);
                         if (Number.isFinite(n)) out.push(n);
                     }
                     return out;
@@ -230,12 +245,18 @@ describeSuite({
                 const ownersByPort: Map<number, Set<string>> = new Map();
 
                 for (const [file, byKind] of discoveredAddressMap) {
-                    if (!portMap.has(file)) portMap.set(file, new Map());
-                    const kindsMap = portMap.get(file)!;
+                    let kindsMap = portMap.get(file);
+                    if (!kindsMap) {
+                        kindsMap = new Map(); // Map<Kind, Set<number>>
+                        portMap.set(file, kindsMap);
+                    }
 
                     for (const [kind, addrs] of byKind) {
-                        if (!kindsMap.has(kind)) kindsMap.set(kind, new Set());
-                        const portSet = kindsMap.get(kind)!;
+                        let portSet = kindsMap.get(kind);
+                        if (!portSet) {
+                            portSet = new Set<number>();
+                            kindsMap.set(kind, portSet);
+                        }
 
                         for (const addr of addrs) {
                             const ports = extractPorts(addr);
@@ -243,8 +264,12 @@ describeSuite({
                                 portSet.add(p);
 
                                 const owner = `${file} [${kind}]`;
-                                if (!ownersByPort.has(p)) ownersByPort.set(p, new Set());
-                                ownersByPort.get(p)!.add(owner);
+                                let set = ownersByPort.get(p);
+                                if (!set) {
+                                    set = new Set<typeof owner>();
+                                    ownersByPort.set(p, set);
+                                }
+                                set.add(owner);
                             }
                         }
                     }
@@ -279,12 +304,24 @@ describeSuite({
                 for (let i = 0; i < files.length; i++) {
                     const fi = files[i];
                     const portsI = new Set<number>();
-                    for (const set of portMap.get(fi)!.values()) for (const p of set) portsI.add(p);
+                    const setsI = portMap.get(fi);
+                    for (const set of setsI.values()) {
+                        for (const p of set) {
+                            portsI.add(p);
+                        }
+                    }
 
                     for (let j = i + 1; j < files.length; j++) {
                         const fj = files[j];
                         const portsJ = new Set<number>();
-                        for (const set of portMap.get(fj)!.values()) for (const p of set) portsJ.add(p);
+                        const setsJ = portMap.get(fj);
+                        if (setsJ) {
+                            for (const set of setsJ.values()) {
+                                for (const p of set) {
+                                    portsJ.add(p);
+                                }
+                            }
+                        }
 
                         for (const p of portsI) {
                             if (portsJ.has(p)) {
