@@ -50,6 +50,8 @@ sp-io = { workspace = true, features = [ "std" ] }
 [features]
 default = [ "std" ]
 std = [
+	"alloy-core/std",
+	"bp-relayers/std",
 	"cumulus-primitives-core/std",
 	"dp-chain-state-snapshot/std",
 	"dp-container-chain-genesis-data/std",
@@ -57,7 +59,9 @@ std = [
 	"frame-support/std",
 	"frame-system/std",
 	"log/std",
+	"pallet-balances/std",
 	"pallet-external-validators/std",
+	"pallet-timestamp/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
 	"serde/std",
@@ -69,30 +73,26 @@ std = [
 	"snowbridge-pallet-outbound-queue/std",
 	"snowbridge-pallet-system/std",
 	"sp-core/std",
+	"sp-io/std",
 	"sp-runtime/std",
 	"xcm-builder/std",
 	"xcm-executor/std",
 	"xcm/std",
-	"bp-relayers/std",
-	"pallet-balances/std",
-	"pallet-timestamp/std",
-	"sp-io/std",
-	"alloy-core/std"
 ]
 runtime-benchmarks = [
 	"cumulus-primitives-core/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
+	"pallet-balances/runtime-benchmarks",
 	"pallet-external-validators/runtime-benchmarks",
+	"pallet-timestamp/runtime-benchmarks",
 	"snowbridge-core/runtime-benchmarks",
 	"snowbridge-inbound-queue-primitives/runtime-benchmarks",
+	"snowbridge-pallet-outbound-queue-v2/runtime-benchmarks",
 	"snowbridge-pallet-outbound-queue/runtime-benchmarks",
 	"snowbridge-pallet-system/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 	"xcm/runtime-benchmarks",
-	"pallet-balances/runtime-benchmarks",
-	"pallet-timestamp/runtime-benchmarks",
-	"snowbridge-pallet-outbound-queue-v2/runtime-benchmarks"
 ]
