@@ -38,18 +38,18 @@ use {
     xcm_emulator::{Chain, ConvertLocation, TestExt},
 };
 
+const PARA_ID_FOR_CHANNEL: u32 = 2000;
+const RELAY_NATIVE_TOKEN_ASSET_ID: u16 = 42;
+const ERC20_ASSET_ID: u16 = 24;
+const TRANSFER_AMOUNT: u128 = 100_000_000;
+const TOKEN_ADDRESS: H160 = H160::repeat_byte(0x11);
+const CONTAINER_FEE_FRONTIER: u128 = 500_000_000_000_000;
+const CONTAINER_FEE_SIMPLE: u128 = 2_000_000_000_000_000;
+const RELAY_TOKEN_ASSET_LOCATION: Location = Location::parent();
+
 #[test]
 fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
-    const PARA_ID_FOR_CHANNEL: u32 = 2000;
-    const RELAY_NATIVE_TOKEN_ASSET_ID: u16 = 42;
-    const ERC20_ASSET_ID: u16 = 24;
-
-    const TRANSFER_AMOUNT: u128 = 100_000_000;
-
-    const TOKEN_ADDRESS: H160 = H160::repeat_byte(0x11);
     let token_receiver: AccountId20 = [5u8; 20].into();
-
-    const CONTAINER_FEE: u128 = 500_000_000_000_000;
 
     let container_para_id: u32 = <FrontierTemplate as xcm_emulator::Parachain>::para_id().into();
 
@@ -80,7 +80,7 @@ fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
         assert_ok!(
             <<Dancelight as DancelightRelayPallet>::Balances as Mutate<_>>::mint_into(
                 &SnowbridgeFeesAccount::get(),
-                CONTAINER_FEE * 2
+                CONTAINER_FEE_FRONTIER * 2
             )
         );
         snowbridge_fees_account_balance_before =
@@ -129,9 +129,6 @@ fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
                 ERC20_ASSET_ID,
                 &token_receiver,
             );
-
-        // Register relay token in ForeignAssetsCreator
-        const RELAY_TOKEN_ASSET_LOCATION: Location = Location::parent();
 
         assert_ok!(
             <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
@@ -202,11 +199,11 @@ fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
 
         assert!(
             snowbridge_fees_account_balance_after
-                <= snowbridge_fees_account_balance_before - CONTAINER_FEE
+                <= snowbridge_fees_account_balance_before - CONTAINER_FEE_FRONTIER
         );
 
         assert!(
-            container_sovereign_balance_after <= container_sovereign_balance_before + CONTAINER_FEE
+            container_sovereign_balance_after <= container_sovereign_balance_before + CONTAINER_FEE_FRONTIER
         );
 
         assert_eq!(
@@ -232,17 +229,7 @@ fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
 
 #[test]
 fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
-    const PARA_ID_FOR_CHANNEL: u32 = 2000;
-    const RELAY_NATIVE_TOKEN_ASSET_ID: u16 = 42;
-    const ERC20_ASSET_ID: u16 = 24;
-
-    const TRANSFER_AMOUNT: u128 = 100_000_000;
-
-    const TOKEN_ADDRESS: H160 = H160::repeat_byte(0x11);
     let token_receiver: AccountId32 = [5u8; 32].into();
-
-    const CONTAINER_FEE: u128 = 2_000_000_000_000_000;
-
     let container_para_id: u32 = <SimpleTemplate as xcm_emulator::Parachain>::para_id().into();
 
     let container_location = Location::new(0, Parachain(container_para_id));
@@ -272,7 +259,7 @@ fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
         assert_ok!(
             <<Dancelight as DancelightRelayPallet>::Balances as Mutate<_>>::mint_into(
                 &SnowbridgeFeesAccount::get(),
-                CONTAINER_FEE * 2
+                CONTAINER_FEE_SIMPLE * 2
             )
         );
         snowbridge_fees_account_balance_before =
@@ -321,9 +308,6 @@ fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
                 ERC20_ASSET_ID,
                 &token_receiver,
             );
-
-        // Register relay token in ForeignAssetsCreator
-        const RELAY_TOKEN_ASSET_LOCATION: Location = Location::parent();
 
         assert_ok!(
             <SimpleTemplate as SimpleTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
@@ -394,11 +378,11 @@ fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
 
         assert!(
             snowbridge_fees_account_balance_after
-                <= snowbridge_fees_account_balance_before - CONTAINER_FEE
+                <= snowbridge_fees_account_balance_before - CONTAINER_FEE_SIMPLE
         );
 
         assert!(
-            container_sovereign_balance_after <= container_sovereign_balance_before + CONTAINER_FEE
+            container_sovereign_balance_after <= container_sovereign_balance_before + CONTAINER_FEE_SIMPLE
         );
 
         assert_eq!(
@@ -424,11 +408,6 @@ fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
 
 #[test]
 fn check_foreign_eth_token_container_fails_if_fees_account_has_not_enough_balance() {
-    const PARA_ID_FOR_CHANNEL: u32 = 2000;
-    const RELAY_NATIVE_TOKEN_ASSET_ID: u16 = 42;
-    const ERC20_ASSET_ID: u16 = 24;
-
-    const TOKEN_ADDRESS: H160 = H160::repeat_byte(0x11);
     let token_receiver: AccountId32 = [5u8; 32].into();
 
     let container_para_id: u32 = <SimpleTemplate as xcm_emulator::Parachain>::para_id().into();
@@ -511,9 +490,6 @@ fn check_foreign_eth_token_container_fails_if_fees_account_has_not_enough_balanc
                 ERC20_ASSET_ID,
                 &token_receiver,
             );
-
-        // Register relay token in ForeignAssetsCreator
-        const RELAY_TOKEN_ASSET_LOCATION: Location = Location::parent();
 
         assert_ok!(
             <SimpleTemplate as SimpleTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
@@ -606,15 +582,7 @@ fn check_foreign_eth_token_container_fails_if_fees_account_has_not_enough_balanc
 
 #[test]
 fn check_foreign_eth_token_container_fails_if_foreign_token_not_registered_in_relay() {
-    const PARA_ID_FOR_CHANNEL: u32 = 2000;
-    const RELAY_NATIVE_TOKEN_ASSET_ID: u16 = 42;
-    const ERC20_ASSET_ID: u16 = 24;
-
-    const TOKEN_ADDRESS: H160 = H160::repeat_byte(0x11);
     let token_receiver: AccountId32 = [5u8; 32].into();
-
-    const CONTAINER_FEE: u128 = 2_000_000_000_000_000;
-
     let container_para_id: u32 = <SimpleTemplate as xcm_emulator::Parachain>::para_id().into();
 
     let container_location = Location::new(0, Parachain(container_para_id));
@@ -643,7 +611,7 @@ fn check_foreign_eth_token_container_fails_if_foreign_token_not_registered_in_re
         assert_ok!(
             <<Dancelight as DancelightRelayPallet>::Balances as Mutate<_>>::mint_into(
                 &SnowbridgeFeesAccount::get(),
-                CONTAINER_FEE * 2
+                CONTAINER_FEE_SIMPLE * 2
             )
         );
 
@@ -671,7 +639,6 @@ fn check_foreign_eth_token_container_fails_if_foreign_token_not_registered_in_re
             );
 
         // Register relay token in ForeignAssetsCreator
-        const RELAY_TOKEN_ASSET_LOCATION: Location = Location::parent();
 
         assert_ok!(
             <SimpleTemplate as SimpleTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
