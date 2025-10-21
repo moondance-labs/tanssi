@@ -24,7 +24,7 @@
         "unhash-key": "tsx scripts/unhashKey.ts",
         "get-api-info": "tsx scripts/fetchRuntimeApi.ts",
         "compare-api-info": "tsx scripts/compare-apis.ts",
-        "net-listeners": "tsx scripts/net-listeners.ts",
+        "net-ports": "tsx scripts/net-ports.ts",
         "zombienet-restart": "tsx scripts/zombienetRestart.ts"
     },
     "keywords": [],

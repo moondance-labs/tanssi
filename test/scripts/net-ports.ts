@@ -1,4 +1,4 @@
-// net-listeners.ts
+// net-ports.ts
 // Node >=18 recommended (fs/promises, stable ESM). Linux-only (/proc).
 /*
 README
@@ -10,22 +10,54 @@ SO_REUSEPORT allows multiple processes to listen on the same TCP port. This util
 zombienet tests, because if 2 processes are listening on the same p2p port, they won't be able to connect to each other.
 
 USAGE (quick):
-  pnpm net-listeners check-conflicts --all
-  pnpm net-listeners by-pid --names "tanssi-node,tanssi-relay,polkadot"
-  pnpm net-listeners by-port -p 30335
-  pnpm net-listeners probe-reuseport -p 30335
+  pnpm net-ports check-conflicts --all
+  pnpm net-ports by-pid --names "tanssi-node,tanssi-relay,polkadot"
+  pnpm net-ports by-port -p 30335
+  pnpm net-ports probe-reuseport -p 30335
+  pnpm net-ports connections-between --pids "123,456,789"
+  pnpm net-ports connections-between --names "tanssi-node,tanssi-relay,polkadot"
 
 NAME MATCHING:
   --names / --name → exact match on process *name* (i.e., /proc/<pid>/comm). No grep, no args. Case-sensitive.
 
 EXAMPLES:
-  net-listeners by-port -p 30335
-  net-listeners by-port -p 30335 --json
-  net-listeners by-pid --names "tanssi-node,tanssi-relay"
-  net-listeners by-pid --name tanssi-node
-  net-listeners check-conflicts --all
-  net-listeners check-conflicts --pids "123,456" --exit-code
-  net-listeners probe-reuseport -p 30335
+  net-ports by-port -p 30335
+  net-ports by-port -p 30335 --json
+  net-ports by-pid --names "tanssi-node,tanssi-relay"
+  net-ports by-pid --name tanssi-node
+  net-ports check-conflicts --all
+  net-ports check-conflicts --pids "123,456" --exit-code
+  net-ports probe-reuseport -p 30335
+  net-ports connections-between --pids "111,222" --json
+
+FALLBACK (Linux utilities)
+-------------------------
+If this script ever breaks, you can get the same information using stock tools like `ss` (and a bit of awk).
+
+• List listeners on a specific port (like `by-port`):
+    ss -Hltpn 'sport = :30335'
+  (Shows PID/command of processes listening on TCP 30335.)
+
+• Show listening ports for a given PID (like `by-pid`):
+    pid=1234; ss -Hltpn | awk -v pid="$pid" '
+      /LISTEN/ && match($0, /pid=([0-9]+)/, p) && p[1]==pid {
+        if (match($4, /:([0-9]+)$/, m)) print m[1]
+      }' | sort -n | uniq
+
+• Detect ports listened by >1 unique PID (SO_REUSEPORT conflicts; like `check-conflicts`):
+    ss -Hltpn | awk '
+      /LISTEN/ {
+        if (match($4, /:([0-9]+)$/, m) && match($0, /pid=([0-9]+)/, p)) {
+          seen[m[1], p[1]] = 1
+        }
+      }
+      END {
+        for (k in seen) { split(k, a, SUBSEP); cnt[a[1]]++ }
+        PROCINFO["sorted_in"]="@ind_num_asc"
+        printf "%-6s %-1s\n","PORT","N"
+        printf "%-6s %-1s\n","----","-"
+        for (port in cnt) if (cnt[port] > 1) printf "%-6d %d\n", port, cnt[port]
+      }'
 */
 
 import fs from "node:fs/promises";
@@ -40,13 +72,60 @@ type TcpRow = {
     localPort: number;
     protocol: "tcp4" | "tcp6";
     stateHex: string; // "0A" = LISTEN
-    localHex: string; // hex address (kept for future)
+    localHex: string; // 8-hex little-endian IPv4 (from /proc)
+    remHex: string; // 8-hex little-endian IPv4 (from /proc)
+    remPort: number; // remote port
+};
+
+type Listener = { ip: string; port: number };
+
+type ConnEntry = {
+    inode: number;
+    protocol: "tcp4";
+    stateHex: string;
+    state: string;
+    localIp: string; // dotted (pretty)
+    localPort: number;
+    remIp: string; // dotted (pretty)
+    remPort: number;
+    localHex: string; // 8-hex LE (e.g., "0100007F")
+    remHex: string; // 8-hex LE
+};
+
+type ProbeError = { code?: string; message: string };
+
+type JsonConnectionsBetween = {
+    command: "connections-between";
+    nodes: Array<{
+        pid: number;
+        name: string;
+        netns: string;
+        listeners_v4: Listener[];
+    }>;
+    edges: Array<{
+        aPid: number;
+        bPid: number;
+        a: ConnEntry;
+        b: ConnEntry;
+    }>;
+};
+
+type JsonProbeReusePort = {
+    command: "probe-reuseport";
+    port: number;
+    host: string;
+    node: string;
+    before: { pid: number; name: string }[];
+    bound: boolean;
+    error?: ProbeError;
 };
 
 type JsonOut =
     | { command: "by-port"; port: number; listeners: { pid: number; name: string }[] }
     | { command: "by-pid"; entries: { pid: number; name: string; ports: number[] }[] }
-    | { command: "check-conflicts"; conflicts: { port: number; pids: number[]; names: Record<number, string> }[] };
+    | { command: "check-conflicts"; conflicts: { port: number; pids: number[]; names: Record<number, string> }[] }
+    | JsonProbeReusePort
+    | JsonConnectionsBetween;
 
 /** Standardized exit codes for nice shell ergonomics. */
 const EC = {
@@ -59,9 +138,24 @@ const EC = {
 } as const;
 
 const LISTEN_HEX = "0A";
+const TCP_STATES: Record<string, string> = {
+    "01": "ESTABLISHED",
+    "02": "SYN_SENT",
+    "03": "SYN_RECV",
+    "04": "FIN_WAIT1",
+    "05": "FIN_WAIT2",
+    "06": "TIME_WAIT",
+    "07": "CLOSE",
+    "08": "CLOSE_WAIT",
+    "09": "LAST_ACK",
+    "0A": "LISTEN",
+    "0B": "CLOSING",
+    "0C": "NEW_SYN_RECV",
+};
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-// ---------- small utils (no color) ----------
+// ---------- small utils ----------
 const pad = (s: string, w: number) => (s.length >= w ? s : s + " ".repeat(w - s.length));
 const asBool = (x: unknown, def = false) => (typeof x === "boolean" ? x : def);
 const toNum = (x: unknown) =>
@@ -130,6 +224,15 @@ async function procName(pid: number): Promise<string> {
     return "?";
 }
 
+/** Read the netns symlink for a PID (for context). */
+async function readNetNs(pid: number): Promise<string> {
+    try {
+        return await fs.readlink(`/proc/${pid}/ns/net`);
+    } catch {
+        return "?";
+    }
+}
+
 // ---------- /proc parsing ----------
 /** Read both tcp4 and (optionally) tcp6 tables. */
 async function readTcpTables(include6: boolean): Promise<TcpRow[]> {
@@ -147,13 +250,21 @@ async function readTcpTablesForPid(pid: number, include6: boolean): Promise<TcpR
     return rows4.concat(rows6);
 }
 
+/** Convert little-endian hex IPv4 (e.g., "0100007F") to dotted string "127.0.0.1". */
+function hexToIPv4(hex: string): string {
+    const s = hex.trim();
+    if (s.length !== 8) return `?(${s})`;
+    const bytes = [s.slice(0, 2), s.slice(2, 4), s.slice(4, 6), s.slice(6, 8)].reverse();
+    return bytes.map((b) => String(Number.parseInt(b, 16))).join(".");
+}
+
 /** Parse /proc/net/tcp or /proc/net/tcp6 into structured rows. */
+
 async function parseProcNetTcp(file: string, protocol: "tcp4" | "tcp6"): Promise<TcpRow[]> {
     let txt = "";
     try {
         txt = await fs.readFile(file, "utf8");
     } catch {
-        // File can be missing (restricted containers). Be permissive.
         return [];
     }
     const out: TcpRow[] = [];
@@ -165,22 +276,33 @@ async function parseProcNetTcp(file: string, protocol: "tcp4" | "tcp6"): Promise
         if (cols.length < 10) continue;
 
         const local = cols[1]; // "HEXADDR:PORTHEX"
-        const stateHex = cols[3];
+        const rem = cols[2]; // "HEXADDR:PORTHEX"
+        const stateHex = cols[3]?.toUpperCase() || "";
         const inodeStr = cols[9];
 
-        const colonIdx = local.lastIndexOf(":");
-        if (colonIdx < 0) continue;
-        const portHex = local.slice(colonIdx + 1);
-        const port = Number.parseInt(portHex, 16);
+        const colonIdxL = local.lastIndexOf(":");
+        const colonIdxR = rem.lastIndexOf(":");
+        if (colonIdxL < 0 || colonIdxR < 0) continue;
+
+        const localHex = local.slice(0, colonIdxL).toUpperCase();
+        const portHex = local.slice(colonIdxL + 1);
+        const remHex = rem.slice(0, colonIdxR).toUpperCase();
+        const remPortHex = rem.slice(colonIdxR + 1);
+
+        const localPort = Number.parseInt(portHex, 16);
+        const remPort = Number.parseInt(remPortHex, 16);
         const inode = Number.parseInt(inodeStr, 10);
-        if (!Number.isFinite(port) || !Number.isFinite(inode)) continue;
+
+        if (!Number.isFinite(localPort) || !Number.isFinite(inode)) continue;
 
         out.push({
             inode,
-            localPort: port,
+            localPort,
             protocol,
             stateHex,
-            localHex: local.slice(0, colonIdx),
+            localHex,
+            remHex,
+            remPort: Number.isFinite(remPort) ? remPort : -1,
         });
     }
     return out;
@@ -347,6 +469,51 @@ function printTable(headers: string[], rows: string[][]) {
     console.log(headers.map((h, i) => pad(h, widths[i])).join("  "));
     console.log(widths.map((w) => "-".repeat(w)).join("  "));
     for (const r of rows) console.log(r.map((c, i) => pad(c, widths[i])).join("  "));
+}
+
+function tcpStateName(hex: string): string {
+    return TCP_STATES[hex.toUpperCase()] ?? hex;
+}
+
+async function listenersForPidV4(pid: number): Promise<Listener[]> {
+    const inodes = await inodesForPid(pid);
+    const rows = await readTcpTablesForPid(pid, false /* IPv4 only */);
+    const s = new Set<string>();
+    for (const r of rows) {
+        if (r.stateHex !== LISTEN_HEX) continue;
+        if (!inodes.has(r.inode)) continue;
+        const ip = hexToIPv4(r.localHex);
+        s.add(`${ip}:${r.localPort}`);
+    }
+    return [...s]
+        .map((s) => {
+            const [ip, port] = s.split(":");
+            return { ip, port: Number(port) };
+        })
+        .sort((a, b) => (a.ip === b.ip ? a.port - b.port : a.ip.localeCompare(b.ip)));
+}
+
+async function connsForPidV4(pid: number): Promise<ConnEntry[]> {
+    const inodes = await inodesForPid(pid);
+    const rows = await readTcpTablesForPid(pid, false /* IPv4 only */);
+    const out: ConnEntry[] = [];
+    for (const r of rows) {
+        if (r.stateHex === LISTEN_HEX) continue;
+        if (!inodes.has(r.inode)) continue;
+        out.push({
+            inode: r.inode,
+            protocol: "tcp4",
+            stateHex: r.stateHex,
+            state: tcpStateName(r.stateHex),
+            localIp: hexToIPv4(r.localHex),
+            localPort: r.localPort,
+            remIp: hexToIPv4(r.remHex),
+            remPort: r.remPort,
+            localHex: r.localHex,
+            remHex: r.remHex,
+        });
+    }
+    return out;
 }
 
 // ---------- command impls (logic moved out) ----------
@@ -663,9 +830,171 @@ async function cmdProbeReusePort(argv: any) {
     }
 }
 
+// ---- connections-between ----
+// Given a set of PIDs (or names), find all direct TCP/IPv4 connections among them.
+async function cmdConnectionsBetween(argv: any) {
+    ensureLinux();
+
+    const pidList = await collectPidsExact(argv);
+    if (pidList.length < 2) die("Provide at least two PIDs or names.", EC.USAGE);
+
+    const nodesMeta = new Map<
+        number,
+        { name: string; netns: string; listeners_v4: Listener[]; conns_v4: ConnEntry[] }
+    >();
+
+    for (const pid of pidList) {
+        try {
+            await fs.stat(`/proc/${pid}`);
+        } catch {
+            die(`PID ${pid} not found (no /proc/${pid}).`, EC.USAGE);
+        }
+        let listeners_v4: Listener[] = [];
+        let conns_v4: ConnEntry[] = [];
+        try {
+            listeners_v4 = await listenersForPidV4(pid);
+            conns_v4 = await connsForPidV4(pid);
+        } catch (e: any) {
+            if (e?.code === "EACCES" || e?.code === "EPERM") {
+                die(`Permission denied reading sockets for PID ${pid}. Try elevated privileges.`, EC.NOPERM);
+            }
+            die(`Error reading sockets for PID ${pid}: ${String(e?.message ?? e)}`, EC.OSERR);
+        }
+        nodesMeta.set(pid, {
+            name: await procName(pid),
+            netns: await readNetNs(pid),
+            listeners_v4,
+            conns_v4,
+        });
+    }
+
+    // Index by raw-hex tuple; this mirrors the Python behavior precisely.
+    type Key = string;
+    const keyHex = (e: ConnEntry): Key => `${e.localHex}|${e.localPort}|${e.remHex}|${e.remPort}`;
+    const revKeyHex = (e: ConnEntry): Key => `${e.remHex}|${e.remPort}|${e.localHex}|${e.localPort}`;
+
+    const index = new Map<Key, Array<{ pid: number; e: ConnEntry }>>();
+
+    for (const pid of pidList) {
+        const meta = nodesMeta.get(pid);
+        if (!meta) continue;
+
+        for (const e of meta.conns_v4) {
+            const k = keyHex(e);
+            let arr = index.get(k);
+            if (!arr) {
+                arr = [];
+                index.set(k, arr);
+            }
+            arr.push({ pid, e });
+        }
+    }
+
+    const edges: Array<{ aPid: number; bPid: number; a: ConnEntry; b: ConnEntry }> = [];
+    const dedupe = new Set<string>(); // minInode|maxInode
+
+    for (const aPid of pidList) {
+        const metaA = nodesMeta.get(aPid);
+        if (!metaA) continue;
+
+        for (const a of metaA.conns_v4) {
+            const rk = revKeyHex(a);
+            const candidates = (index.get(rk) ?? []).filter((x) => x.pid !== aPid);
+            if (candidates.length === 0) continue;
+
+            // Prefer ESTABLISHED<->ESTABLISHED if present
+            const best = candidates.find((c) => a.stateHex === "01" && c.e.stateHex === "01") ?? candidates[0];
+
+            const bPid = best.pid;
+            const b = best.e;
+
+            const idA = Math.min(a.inode, b.inode);
+            const idB = Math.max(a.inode, b.inode);
+            const dKey = `${idA}|${idB}`;
+            if (dedupe.has(dKey)) continue;
+            dedupe.add(dKey);
+
+            edges.push({ aPid, bPid, a, b });
+        }
+    }
+
+    if (argv.json) {
+        const out: JsonOut = {
+            command: "connections-between",
+            nodes: pidList.map((pid) => {
+                const m = nodesMeta.get(pid);
+                return {
+                    pid,
+                    name: m?.name ?? "unknown",
+                    netns: m?.netns ?? null, // use a neutral fallback if your type allows it
+                    listeners_v4: m?.listeners_v4 ?? [], // empty list if missing
+                };
+            }),
+            edges,
+        };
+        console.log(JSON.stringify(out));
+        process.exit(EC.OK);
+    }
+
+    // Pretty print
+    for (const pid of pidList) {
+        const m = nodesMeta.get(pid);
+        if (!m) {
+            console.log(`PID ${pid}: unknown  netns=?`);
+            console.log("  Listening (IPv4): none");
+            console.log();
+            continue;
+        }
+
+        console.log(`PID ${pid}: ${m.name}  netns=${m.netns}`);
+        if (!m.listeners_v4 || m.listeners_v4.length === 0) {
+            console.log("  Listening (IPv4): none");
+        } else {
+            console.log("  Listening (IPv4):");
+            for (const { ip, port } of m.listeners_v4) console.log(`    - ${ip}:${port}`);
+        }
+        console.log();
+    }
+
+    console.log("Direct TCP/IPv4 connections among provided PIDs:");
+    if (edges.length === 0) {
+        console.log("  none found");
+
+        // Build a set of namespaces from the PIDs we *do* have metadata for
+        const nsSet = new Set<number | string>();
+        for (const pid of pidList) {
+            const meta = nodesMeta.get(pid);
+            if (meta && meta.netns !== undefined && meta.netns !== null) {
+                nsSet.add(meta.netns);
+            }
+        }
+
+        if (nsSet.size > 1) {
+            console.log("\nNote: Some PIDs are in different network namespaces;");
+            console.log("      they typically cannot connect directly unless bridged.");
+        }
+        process.exit(EC.OK);
+    } else {
+        let i = 1;
+        for (const { aPid, bPid, a, b } of edges) {
+            const metaA = nodesMeta.get(aPid);
+            const metaB = nodesMeta.get(bPid);
+            const nameA = metaA?.name ?? "unknown";
+            const nameB = metaB?.name ?? "unknown";
+
+            console.log(
+                `  [${i}] ${aPid}(${nameA}) ${a.localIp}:${a.localPort}  <--${a.state}/${b.state}-->  ${a.remIp}:${a.remPort}  ${bPid}(${nameB})`
+            );
+            console.log(`       (A inode=${a.inode}, B inode=${b.inode})`);
+            i++;
+        }
+        process.exit(EC.OK);
+    }
+}
+
 // ---------- CLI ----------
 yargs(hideBin(process.argv))
-    .scriptName("net-listeners")
+    .scriptName("net-ports")
     .usage("Usage: $0 <command> [options]")
     .version("2.2.0")
     .parserConfiguration({ "camel-case-expansion": true, "dot-notation": false })
@@ -684,15 +1013,13 @@ yargs(hideBin(process.argv))
     .option("json", { type: "boolean", default: false, describe: "Output machine-readable JSON." })
     .epilog(
         `Examples:
-  net-listeners by-port -p 30335
-  net-listeners by-port -p 30335 --json
-  net-listeners by-pid --names "tanssi-node,tanssi-relay"
-  net-listeners by-pid --name tanssi-node
-  net-listeners check-conflicts --all
-  net-listeners check-conflicts --pids "3333528 3333375 3333215" --exit-code`
+  net-ports by-port -p 30335
+  net-ports by-port -p 30335 --json
+  net-ports by-pid --names "tanssi-node,tanssi-relay"
+  net-ports by-pid --name tanssi-node
+  net-ports check-conflicts --all
+  net-ports check-conflicts --pids "3333528 3333375 3333215" --exit-code`
     )
-
-    // ---- by-port ----
     .command(
         "by-port",
         "List processes listening on a TCP port",
@@ -722,8 +1049,6 @@ yargs(hideBin(process.argv))
                 }),
         (argv) => void cmdByPort(argv).catch((e: any) => handleTopLevelError(e))
     )
-
-    // ---- by-pid ----
     .command(
         "by-pid",
         "List listening TCP ports for one or more PIDs (or names)",
@@ -764,8 +1089,6 @@ yargs(hideBin(process.argv))
                 }),
         (argv) => void cmdByPid(argv).catch((e: any) => handleTopLevelError(e))
     )
-
-    // ---- check-conflicts ----
     .command(
         "check-conflicts",
         "Print TCP ports that are LISTENed by >1 PID in the set",
@@ -816,8 +1139,6 @@ yargs(hideBin(process.argv))
                 }),
         (argv) => void cmdCheckConflicts(argv).catch((e: any) => handleTopLevelError(e))
     )
-
-    // ---- probe-reuseport ----
     .command(
         "probe-reuseport",
         "Try to bind a TCP port with SO_REUSEPORT (Linux). Exits 0 on success.",
@@ -850,6 +1171,36 @@ yargs(hideBin(process.argv))
                     "exit-code": { type: "boolean", default: false, describe: "Exit 1 if the bind fails." },
                 }),
         (argv) => void cmdProbeReusePort(argv).catch((e: any) => handleTopLevelError(e))
+    )
+    .command(
+        "connections-between",
+        "Find direct TCP/IPv4 connections among the given PIDs (or exact names via --names/--name).",
+        (y) =>
+            y
+                .example("$0 connections-between --pids '111,222'", "Compare two specific PIDs")
+                .example(
+                    "$0 connections-between --names 'tanssi-node,tanssi-relay'",
+                    "Match exact process names (comm)"
+                )
+                .options({
+                    pid: { type: "array", alias: ["p", "Pid"], describe: "Repeatable: --pid 123 --pid 456" },
+                    pids: {
+                        type: "array",
+                        alias: ["Pids"],
+                        describe: "Space/comma separated: --pids 1 2 3 or --pids '1,2,3'",
+                    },
+                    names: {
+                        type: "array",
+                        alias: ["Names"],
+                        describe: "Exact process names (comm). No grep, no args.",
+                    },
+                    name: {
+                        type: "array",
+                        alias: ["n", "Name"],
+                        describe: "Exact process names (comm). No grep, no args.",
+                    },
+                }),
+        (argv) => void cmdConnectionsBetween(argv).catch((e: any) => handleTopLevelError(e))
     )
 
     .demandCommand(1)
