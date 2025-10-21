@@ -19462,12 +19462,20 @@ name = "tanssi-utils"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "ethabi-decode",
  "hex",
+ "hex-literal 0.3.4",
  "pallet-external-validators-rewards",
+ "parity-scale-codec",
  "serde",
  "serde_json",
+ "snowbridge-core",
+ "snowbridge-inbound-queue-primitives",
  "snowbridge-merkle-tree",
+ "sp-core",
  "sp-runtime",
+ "staging-xcm",
+ "staging-xcm-executor",
 ]
 
 [[package]]
