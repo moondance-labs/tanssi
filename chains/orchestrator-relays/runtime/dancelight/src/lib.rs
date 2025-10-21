@@ -247,6 +247,14 @@ pub enum AggregateMessageOrigin {
     /// This will be processed by `CustomProcessSnowbridgeMessage`.
     #[codec(index = 2)]
     SnowbridgeTanssi(ChannelId),
+
+    /// The message came from a snowbridge channel. It will be processed by `snowbridge_pallet_outbound_queue_v2`.
+    #[codec(index = 3)]
+    SnowbridgeV2(H256),
+
+    /// The message came from a snowbridge channel. It will be processed by `snowbridge_pallet_outbound_queue_v2`.
+    #[codec(index = 4)]
+    SnowbridgeTanssiV2(H256),
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -260,7 +268,7 @@ impl From<u32> for AggregateMessageOrigin {
 impl From<H256> for AggregateMessageOrigin {
     fn from(n: H256) -> Self {
         // Some dummy for the benchmarks.
-        AggregateMessageOrigin::Snowbridge(n.into())
+        AggregateMessageOrigin::SnowbridgeV2(n)
     }
 }
 
@@ -269,6 +277,12 @@ pub struct GetAggregateMessageOrigin;
 impl Convert<ChannelId, AggregateMessageOrigin> for GetAggregateMessageOrigin {
     fn convert(channel_id: ChannelId) -> AggregateMessageOrigin {
         AggregateMessageOrigin::Snowbridge(channel_id)
+    }
+}
+
+impl Convert<H256, AggregateMessageOrigin> for GetAggregateMessageOrigin {
+    fn convert(channel_id: H256) -> AggregateMessageOrigin {
+        AggregateMessageOrigin::SnowbridgeV2(channel_id.into())
     }
 }
 
@@ -283,6 +297,12 @@ pub struct GetAggregateMessageOriginTanssi;
 impl Convert<ChannelId, AggregateMessageOrigin> for GetAggregateMessageOriginTanssi {
     fn convert(channel_id: ChannelId) -> AggregateMessageOrigin {
         AggregateMessageOrigin::SnowbridgeTanssi(channel_id)
+    }
+}
+
+impl Convert<H256, AggregateMessageOrigin> for GetAggregateMessageOriginTanssi {
+    fn convert(channel_id: H256) -> AggregateMessageOrigin {
+        AggregateMessageOrigin::SnowbridgeTanssiV2(channel_id)
     }
 }
 
@@ -307,6 +327,10 @@ impl Convert<AggregateMessageOrigin, ParaId> for GetParaFromAggregateMessageOrig
                         ParaId::from(0)
                     }
                 }
+            }
+            _ => {
+                log::warn!("We should never get this",);
+                ParaId::from(0)
             }
         }
     }
@@ -1102,8 +1126,18 @@ impl ProcessMessage for MessageProcessor {
                     message, origin, meter, id,
                 )
             }
+            AggregateMessageOrigin::SnowbridgeV2(_) => {
+                snowbridge_pallet_outbound_queue_v2::Pallet::<Runtime>::process_message(
+                    message, origin, meter, id,
+                )
+            }
             AggregateMessageOrigin::SnowbridgeTanssi(_) => {
                 tp_bridge::CustomProcessSnowbridgeMessage::<Runtime>::process_message(
+                    message, origin, meter, id,
+                )
+            }
+            AggregateMessageOrigin::SnowbridgeTanssiV2(_) => {
+                tp_bridge::CustomProcessSnowbridgeMessageV2::<Runtime, TokenLocationReanchored>::process_message(
                     message, origin, meter, id,
                 )
             }

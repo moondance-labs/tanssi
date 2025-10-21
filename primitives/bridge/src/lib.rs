@@ -76,6 +76,7 @@ use alloc::vec;
 
 pub use {
     custom_do_process_message::{ConstantGasMeter, CustomProcessSnowbridgeMessage},
+    custom_do_process_message_v2::CustomProcessSnowbridgeMessageV2,
     custom_send_message::CustomSendMessage,
     custom_send_message_v2::CustomSendMessageV2,
     xcm_executor::traits::ConvertLocation,
@@ -600,10 +601,7 @@ impl<T, GetAggregateMessageOrigin> DeliverMessage
 where
     T: snowbridge_pallet_outbound_queue::Config + snowbridge_pallet_outbound_queue_v2::Config,
     GetAggregateMessageOrigin: Convert<ChannelId, <T as snowbridge_pallet_outbound_queue::Config>::AggregateMessageOrigin>
-        + Convert<
-            ChannelId,
-            <T as snowbridge_pallet_outbound_queue_v2::Config>::AggregateMessageOrigin,
-        >,
+        + Convert<H256, <T as snowbridge_pallet_outbound_queue_v2::Config>::AggregateMessageOrigin>,
 {
     type Ticket = VersionedTanssiMessage<T>;
 
