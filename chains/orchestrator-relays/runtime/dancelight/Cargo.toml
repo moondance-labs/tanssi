@@ -170,7 +170,6 @@ snowbridge-pallet-outbound-queue = { workspace = true }
 snowbridge-pallet-system = { workspace = true }
 snowbridge-verification-primitives = { workspace = true }
 tp-bridge = { workspace = true }
-tp-system = { workspace = true }
 
 bp-relayers = { workspace = true }
 bridge-hub-common = { workspace = true }
@@ -344,7 +343,6 @@ std = [
 	"tp-invulnerables-filter-common/std",
 	"tp-parathread-filter-common/std",
 	"tp-stream-payment-common/std",
-	"tp-system/std",
 	"tp-traits/std",
 	"tp-xcm-commons/std",
 	"tx-pool-api/std",
@@ -438,7 +436,6 @@ runtime-benchmarks = [
 	"tp-invulnerables-filter-common/runtime-benchmarks",
 	"tp-parathread-filter-common/runtime-benchmarks",
 	"tp-stream-payment-common/runtime-benchmarks",
-	"tp-system/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
