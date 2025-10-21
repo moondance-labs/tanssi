@@ -33,21 +33,16 @@ use {
     xcm_executor::traits::{ConvertLocation, TransferType},
 };
 
+// Define common constants and accounts
+const PARA_ID_FOR_CHANNEL: u32 = 2000;
+const ERC20_TOKEN_ADDRESS: [u8; 20] = hex!("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
+const ERC20_ASSET_ID: u16 = 123;
+const RELAY_NATIVE_ASSET_ID: u16 = 124;
+const ERC20_ASSET_AMOUNT: u128 = 123_321_000_000_000_000;
+const RELAY_ASSET_FEE_AMOUNT: u128 = 3_500_000_000_000;
+
 #[test]
 fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
-    // Define common constants and accounts
-    const PARA_ID_FOR_CHANNEL: u32 = 2000;
-
-    const ERC20_TOKEN_ADDRESS: [u8; 20] = hex!("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
-
-    const ERC20_ASSET_ID: u16 = 123;
-
-    const RELAY_NATIVE_ASSET_ID: u16 = 124;
-
-    const ERC20_ASSET_AMOUNT: u128 = 123_321_000_000_000_000;
-
-    const RELAY_ASSET_FEE_AMOUNT: u128 = 3_500_000_000_000;
-
     let asset_sender = EthereumSender::get();
 
     let container_para_id: u32 = FrontierTemplate::execute_with(|| {
@@ -388,19 +383,6 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
 
 #[test]
 fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
-    // Define common constants and accounts
-    const PARA_ID_FOR_CHANNEL: u32 = 2000;
-
-    const ERC20_TOKEN_ADDRESS: [u8; 20] = hex!("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
-
-    const ERC20_ASSET_ID: u16 = 123;
-
-    const RELAY_NATIVE_ASSET_ID: u16 = 124;
-
-    const ERC20_ASSET_AMOUNT: u128 = 123_321_000_000_000_000;
-
-    const RELAY_ASSET_FEE_AMOUNT: u128 = 3_500_000_000_000;
-
     let asset_sender = SimpleTemplateSender::get();
 
     let container_para_id: u32 = SimpleTemplate::execute_with(|| {
