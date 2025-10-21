@@ -170,6 +170,7 @@ pub mod eth_chain_config;
 mod weights;
 
 // Governance and configurations.
+pub mod bridge_relayers;
 pub mod governance;
 use {
     governance::{

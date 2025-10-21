@@ -21,6 +21,7 @@ pub mod pallet_assets;
 pub mod pallet_author_noting;
 pub mod pallet_balances;
 pub mod pallet_beefy_mmr;
+pub mod pallet_bridge_relayers;
 pub mod pallet_collator_assignment;
 pub mod pallet_configuration;
 pub mod pallet_conviction_voting;

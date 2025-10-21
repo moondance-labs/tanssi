@@ -46,9 +46,9 @@ use dancelight_runtime_constants::snowbridge::EthereumLocation;
 use tp_traits::BlockNumber;
 use {
     crate::{
-        parameter_types, weights, xcm_config, AggregateMessageOrigin, Balance, Balances,
-        EthereumInboundQueue, EthereumOutboundQueue, EthereumSovereignAccount, EthereumSystem,
-        FixedU128, GetAggregateMessageOrigin, Keccak256, MessageQueue,
+        bridge_relayers, parameter_types, weights, xcm_config, AggregateMessageOrigin, Balance,
+        Balances, EthereumInboundQueue, EthereumOutboundQueue, EthereumSovereignAccount,
+        EthereumSystem, FixedU128, GetAggregateMessageOrigin, Keccak256, MessageQueue,
         OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, SnowbridgeFeesAccount,
         TokenLocationReanchored, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
@@ -167,30 +167,6 @@ impl From<sp_runtime::AccountId32> for BridgeRewardBeneficiaries {
     }
 }
 
-pub struct BridgeRewardPayer;
-impl bp_relayers::PaymentProcedure<AccountId, BridgeReward, u128> for BridgeRewardPayer {
-    type Error = sp_runtime::DispatchError;
-    type Beneficiary = BridgeRewardBeneficiaries;
-
-    fn pay_reward(
-        _relayer: &AccountId,
-        reward_kind: BridgeReward,
-        _reward: u128,
-        beneficiary: BridgeRewardBeneficiaries,
-    ) -> Result<(), Self::Error> {
-        match reward_kind {
-            BridgeReward::Snowbridge => {
-                match beneficiary {
-                    BridgeRewardBeneficiaries::LocalAccount(_account_id) => {
-                        // TODO: Pay relayer from reward account
-                        Ok(())
-                    }
-                }
-            }
-        }
-    }
-}
-
 // These values are copied from bridge-hub-westend we will need to modify them
 parameter_types! {
     pub storage RequiredStakeForStakeAndSlash: Balance = 1_000_000;
@@ -204,9 +180,9 @@ impl pallet_bridge_relayers::Config<BridgeRelayersInstance> for Runtime {
 
     type RewardBalance = u128;
     type Reward = BridgeReward;
-    type PaymentProcedure = BridgeRewardPayer;
+    type PaymentProcedure = bridge_relayers::BridgeRewardPayer;
 
-    type StakeAndSlash = pallet_bridge_relayers::StakeAndSlashNamed<
+    type StakeAndSlash = bridge_relayers::DoNothingStakeAndSlashNamed<
         AccountId,
         BlockNumber,
         Balances,
@@ -215,7 +191,7 @@ impl pallet_bridge_relayers::Config<BridgeRelayersInstance> for Runtime {
         RelayerStakeLease,
     >;
     type Balance = Balance;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_bridge_relayers::WeightInfo<Runtime>;
 }
 
 parameter_types! {
