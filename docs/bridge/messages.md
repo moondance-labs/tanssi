@@ -171,7 +171,7 @@ External index not used for setting validators, used for slashing:
 This payload is created on ethereum side to send operators data to starlight. The timestamp here is an opaque type created by ethereum and not semantically interpreted by starlight.
 
 ### Where this payload is consumed?
-The payload is consumed by `external-validators` and the validator ids contained in the message are set as external validators. The message processor is `SymbioticMessageProcessor` which calls `ExternalRewards::set_external_validators`.
+The payload is consumed by `external-validators` and the validator ids contained in the message are set as external validators. The message processor is `SymbioticInboundMessageProcessor` which calls `ExternalRewards::set_external_validators`.
 
 # Ethereum -> Starlight (snowbridge processor)
 

@@ -29,12 +29,12 @@ use {
 /// Alternative to [snowbridge_pallet_outbound_queue::Pallet::deliver] using a different
 /// origin.
 /// Snowbridge V1 implementation!
-pub struct CustomSendMessageV1<T, GetAggregateMessageOrigin>(
+pub struct TanssiSendMessageEthV1<T, GetAggregateMessageOrigin>(
     PhantomData<(T, GetAggregateMessageOrigin)>,
 );
 
 impl<T, GetAggregateMessageOrigin> DeliverMessage
-    for CustomSendMessageV1<T, GetAggregateMessageOrigin>
+    for TanssiSendMessageEthV1<T, GetAggregateMessageOrigin>
 where
     T: snowbridge_pallet_outbound_queue::Config,
     GetAggregateMessageOrigin:
@@ -69,12 +69,12 @@ where
 
 /// Alternative to [snowbridge_pallet_outbound_queue::Pallet::deliver] using a different
 /// origin.
-pub struct CustomSendMessageV2<T, GetAggregateMessageOrigin>(
+pub struct TanssiSendMessageEthV2<T, GetAggregateMessageOrigin>(
     PhantomData<(T, GetAggregateMessageOrigin)>,
 );
 
 impl<T, GetAggregateMessageOrigin> DeliverMessage
-    for CustomSendMessageV2<T, GetAggregateMessageOrigin>
+    for TanssiSendMessageEthV2<T, GetAggregateMessageOrigin>
 where
     T: snowbridge_pallet_outbound_queue_v2::Config,
     GetAggregateMessageOrigin:
@@ -104,12 +104,12 @@ where
     }
 }
 
-pub struct VersionedCustomMessageSender<T, GetAggregateMessageOrigin>(
+pub struct VersionedTanssiEthMessageSender<T, GetAggregateMessageOrigin>(
     PhantomData<(T, GetAggregateMessageOrigin)>,
 );
 
 impl<T, GetAggregateMessageOrigin> DeliverMessage
-    for VersionedCustomMessageSender<T, GetAggregateMessageOrigin>
+    for VersionedTanssiEthMessageSender<T, GetAggregateMessageOrigin>
 where
     T: snowbridge_pallet_outbound_queue::Config + snowbridge_pallet_outbound_queue_v2::Config,
     GetAggregateMessageOrigin: Convert<ChannelId, <T as snowbridge_pallet_outbound_queue::Config>::AggregateMessageOrigin>
@@ -120,10 +120,10 @@ where
     fn deliver(ticket: Self::Ticket) -> Result<sp_core::H256, SendError> {
         match ticket {
             VersionedTanssiTicket::V1(ticket) => {
-                CustomSendMessageV1::<T, GetAggregateMessageOrigin>::deliver(ticket)
+                TanssiSendMessageEthV1::<T, GetAggregateMessageOrigin>::deliver(ticket)
             }
             VersionedTanssiTicket::V2(ticket) => {
-                CustomSendMessageV2::<T, GetAggregateMessageOrigin>::deliver(ticket)
+                TanssiSendMessageEthV2::<T, GetAggregateMessageOrigin>::deliver(ticket)
             }
         }
     }

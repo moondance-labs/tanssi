@@ -1124,7 +1124,7 @@ impl ProcessMessage for MessageProcessor {
                 )
             }
             AggregateMessageOrigin::SnowbridgeTanssi(_) => {
-                tp_bridge::CustomProcessSnowbridgeMessageV1::<Runtime>::process_message(
+                tp_bridge::TanssiOutboundEthProcessorSnowbridgeV1::<Runtime>::process_message(
                     message, origin, meter, id,
                 )
             }
@@ -1538,7 +1538,8 @@ impl pallet_external_validators_rewards::Config for Runtime {
     type GetWhitelistedValidators = GetWhitelistedValidators;
     type Hashing = Keccak256;
     type ValidateMessage = tp_bridge::CustomMessageValidatorV1<Runtime>;
-    type OutboundQueue = tp_bridge::CustomSendMessageV1<Runtime, GetAggregateMessageOriginTanssi>;
+    type OutboundQueue =
+        tp_bridge::tanssiSendMessageEthV1<Runtime, GetAggregateMessageOriginTanssi>;
     type Currency = Balances;
     type RewardsEthereumSovereignAccount = EthereumSovereignAccount;
     type TokenLocationReanchored = TokenLocationReanchored;
@@ -1559,7 +1560,8 @@ impl pallet_external_validator_slashes::Config for Runtime {
     type EraIndexProvider = ExternalValidators;
     type InvulnerablesProvider = ExternalValidators;
     type ValidateMessage = tp_bridge::CustomMessageValidatorV1<Runtime>;
-    type OutboundQueue = tp_bridge::CustomSendMessageV1<Runtime, GetAggregateMessageOriginTanssi>;
+    type OutboundQueue =
+        tp_bridge::tanssiSendMessageEthV1<Runtime, GetAggregateMessageOriginTanssi>;
     type ExternalIndexProvider = ExternalValidators;
     type QueuedSlashesProcessedPerBlock = ConstU32<10>;
     type WeightInfo = weights::pallet_external_validator_slashes::SubstrateWeight<Runtime>;

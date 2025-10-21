@@ -18,12 +18,14 @@ use frame_support::ensure;
 use {crate::*, core::marker::PhantomData, snowbridge_outbound_queue_primitives::SendError};
 
 /// Custom Impl
-pub struct CustomMessageValidatorV1<T: snowbridge_pallet_outbound_queue::Config>(PhantomData<T>);
-impl<T: snowbridge_pallet_outbound_queue::Config> ValidateMessage for CustomMessageValidatorV1<T> {
+pub struct TanssiEthMessageValidatorV1<T: snowbridge_pallet_outbound_queue::Config>(PhantomData<T>);
+impl<T: snowbridge_pallet_outbound_queue::Config> ValidateMessage
+    for TanssiEthMessageValidatorV1<T>
+{
     type Ticket = Ticket<T>;
 
     fn validate(message: &TanssiMessage) -> Result<(Self::Ticket, Fee<u64>), SendError> {
-        log::trace!("CustomMessageValidatorV1: {:?}", message);
+        log::trace!("TanssiEthMessageValidatorV1: {:?}", message);
         // The inner payload should not be too large
         let payload = message.command.abi_encode();
         ensure!(
@@ -74,13 +76,13 @@ impl<T: snowbridge_pallet_outbound_queue::Config> ValidateMessage for CustomMess
     }
 }
 
-pub struct CustomMessageValidatorV2<
+pub struct TanssiEthMessageValidatorV2<
     T: snowbridge_pallet_outbound_queue_v2::Config,
     OwnOrigin: Get<Location>,
 >(PhantomData<(T, OwnOrigin)>);
 
 impl<T: snowbridge_pallet_outbound_queue_v2::Config, OwnOrigin: Get<Location>> ValidateMessage
-    for CustomMessageValidatorV2<T, OwnOrigin>
+    for TanssiEthMessageValidatorV2<T, OwnOrigin>
 {
     type Ticket = TanssiTicketV2<T>;
 
@@ -135,7 +137,7 @@ impl<T: snowbridge_pallet_outbound_queue_v2::Config, OwnOrigin: Get<Location>> V
     }
 }
 
-pub struct VersionedCustomMessageValidator<
+pub struct VersionedTanssiEthMessageValidator<
     T: snowbridge_pallet_outbound_queue::Config + snowbridge_pallet_outbound_queue_v2::Config,
     OwnOrigin: Get<Location>,
     UseV2: Get<bool>,
@@ -144,15 +146,15 @@ impl<
         T: snowbridge_pallet_outbound_queue::Config + snowbridge_pallet_outbound_queue_v2::Config,
         OwnOrigin: Get<Location>,
         UseV2: Get<bool>,
-    > ValidateMessage for VersionedCustomMessageValidator<T, OwnOrigin, UseV2>
+    > ValidateMessage for VersionedTanssiEthMessageValidator<T, OwnOrigin, UseV2>
 {
     type Ticket = VersionedTanssiTicket<T>;
     fn validate(message: &TanssiMessage) -> Result<(Self::Ticket, Fee<u64>), SendError> {
         if UseV2::get() {
-            CustomMessageValidatorV2::<T, OwnOrigin>::validate(message)
+            TanssiEthMessageValidatorV2::<T, OwnOrigin>::validate(message)
                 .map(|(ticket, fee)| (ticket.into(), fee))
         } else {
-            CustomMessageValidatorV1::<T>::validate(message)
+            TanssiEthMessageValidatorV1::<T>::validate(message)
                 .map(|(ticket, fee)| (ticket.into(), fee))
         }
     }

@@ -46,9 +46,9 @@ use {
 /// Alternative to [snowbridge_pallet_outbound_queue::Pallet::process_message] using a different
 /// [Command] enum.
 /// Snowbridge V1 implementation!
-pub struct CustomProcessSnowbridgeMessageV1<T>(PhantomData<T>);
+pub struct TanssiOutboundEthProcessorSnowbridgeV1<T>(PhantomData<T>);
 
-impl<T> CustomProcessSnowbridgeMessageV1<T>
+impl<T> TanssiOutboundEthProcessorSnowbridgeV1<T>
 where
     T: snowbridge_pallet_outbound_queue::Config,
 {
@@ -128,7 +128,7 @@ where
     }
 }
 
-impl<T> ProcessMessage for CustomProcessSnowbridgeMessageV1<T>
+impl<T> ProcessMessage for TanssiOutboundEthProcessorSnowbridgeV1<T>
 where
     T: snowbridge_pallet_outbound_queue::Config,
 {
@@ -153,9 +153,9 @@ where
 
 /// Alternative to [snowbridge_pallet_outbound_queue::Pallet::process_message] using a different
 /// [Command] enum.
-pub struct CustomProcessSnowbridgeMessageV2<T, SelfLocation>(PhantomData<(T, SelfLocation)>);
+pub struct TanssiOutboundEthProcessorSnowbridgeV2<T, SelfLocation>(PhantomData<(T, SelfLocation)>);
 
-impl<T, SelfLocation> CustomProcessSnowbridgeMessageV2<T, SelfLocation>
+impl<T, SelfLocation> TanssiOutboundEthProcessorSnowbridgeV2<T, SelfLocation>
 where
     T: snowbridge_pallet_outbound_queue_v2::Config + frame_system::Config,
     SelfLocation: Get<Location>,
@@ -256,7 +256,7 @@ where
     }
 }
 
-impl<T, SelfLocation> ProcessMessage for CustomProcessSnowbridgeMessageV2<T, SelfLocation>
+impl<T, SelfLocation> ProcessMessage for TanssiOutboundEthProcessorSnowbridgeV2<T, SelfLocation>
 where
     T: snowbridge_pallet_outbound_queue_v2::Config + frame_system::Config,
     SelfLocation: Get<Location>,
