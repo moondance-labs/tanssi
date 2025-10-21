@@ -71,7 +71,9 @@ use {
 use alloc::vec;
 
 pub use {
-    custom_do_process_message::{ConstantGasMeter, CustomProcessSnowbridgeMessageV1},
+    custom_do_process_message::{
+        ConstantGasMeter, CustomProcessSnowbridgeMessageV1, CustomProcessSnowbridgeMessageV2,
+    },
     custom_send_message::CustomSendMessageV1,
     custom_send_message::CustomSendMessageV2,
     custom_send_message::VersionedCustomMessageSender,

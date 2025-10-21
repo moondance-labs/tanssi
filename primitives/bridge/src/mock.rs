@@ -192,6 +192,7 @@ parameter_types! {
 #[derive(Encode, Decode, Copy, MaxEncodedLen, Clone, Eq, PartialEq, TypeInfo, Debug)]
 pub enum MockAggregateMessageOrigin {
     SnowbridgeTest(ChannelId),
+    SnowbridgeTestV2(H256),
 }
 
 pub struct MockGetAggregateMessageOrigin;
@@ -202,9 +203,15 @@ impl Convert<ChannelId, MockAggregateMessageOrigin> for MockGetAggregateMessageO
     }
 }
 
+impl Convert<H256, MockAggregateMessageOrigin> for MockGetAggregateMessageOrigin {
+    fn convert(origin: H256) -> MockAggregateMessageOrigin {
+        MockAggregateMessageOrigin::SnowbridgeTestV2(origin)
+    }
+}
+
 impl From<H256> for MockAggregateMessageOrigin {
-    fn from(channel: H256) -> MockAggregateMessageOrigin {
-        MockAggregateMessageOrigin::SnowbridgeTest(channel.into())
+    fn from(origin: H256) -> MockAggregateMessageOrigin {
+        MockAggregateMessageOrigin::SnowbridgeTestV2(origin)
     }
 }
 

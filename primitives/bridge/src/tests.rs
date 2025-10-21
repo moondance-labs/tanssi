@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use frame_support::assert_noop;
+use frame_support::{assert_noop, assert_ok};
 use snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
 use snowbridge_outbound_queue_primitives::v1::AgentExecuteCommand;
 use {super::*, hex_literal::hex};
@@ -516,6 +516,105 @@ mod custom_message_delivers {
                 RuntimeEvent::EthereumOutboundQueueV2(
                     snowbridge_pallet_outbound_queue_v2::Event::MessageQueued { ref message }
                 ) if message.id == versioned_ticket.message_id()
+            );
+        });
+    }
+}
+
+mod custom_message_processors {
+    use super::*;
+    use crate::{
+        mock::{
+            last_delivered_message_queue, new_test_ext, run_to_block, MaxMessagePayloadSize,
+            MockAggregateMessageOrigin, MockGetAggregateMessageOrigin, OwnLocation, RuntimeEvent,
+            System, Test,
+        },
+        SendError,
+    };
+    use assert_matches::assert_matches;
+    use frame_support::traits::ProcessMessage;
+    use frame_support::weights::WeightMeter;
+    use snowbridge_outbound_queue_primitives::v2::Message as MessageV2;
+    use sp_runtime::Weight;
+
+    #[test]
+    fn test_message_process_v1_successful() {
+        // Correct channels and such do work
+        new_test_ext().execute_with(|| {
+            // otherwise no events
+            run_to_block(1);
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let (ticket, fee) =
+                CustomMessageValidatorV1::<Test>::validate(&tanssi_message).unwrap();
+
+            assert_ok!(CustomProcessSnowbridgeMessageV1::<Test>::process_message(
+                &ticket.message.as_bounded_slice().to_vec(),
+                MockAggregateMessageOrigin::SnowbridgeTest(ticket.channel_id),
+                &mut WeightMeter::new(),
+                &mut [0u8; 32]
+            ));
+
+            let event = System::events().pop().expect("Expected event").event;
+
+            assert_matches!(
+                event,
+                RuntimeEvent::EthereumOutboundQueue(
+                    snowbridge_pallet_outbound_queue::Event::MessageAccepted { id, nonce }
+                ) if id == ticket.message_id()
+            );
+        });
+    }
+
+    #[test]
+    fn test_message_process_v2_successful() {
+        // Correct channels and such do work
+        new_test_ext().execute_with(|| {
+            // otherwise no events
+            run_to_block(1);
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let (ticket, fee) =
+                CustomMessageValidatorV2::<Test, OwnLocation>::validate(&tanssi_message).unwrap();
+
+            assert_ok!(
+                CustomProcessSnowbridgeMessageV2::<Test, OwnLocation>::process_message(
+                    &ticket.message.as_bounded_slice().to_vec(),
+                    MockAggregateMessageOrigin::SnowbridgeTestV2(ticket.origin),
+                    &mut WeightMeter::new(),
+                    &mut [0u8; 32]
+                )
+            );
+
+            let event = System::events().pop().expect("Expected event").event;
+
+            assert_matches!(
+                event,
+                RuntimeEvent::EthereumOutboundQueueV2(
+                    snowbridge_pallet_outbound_queue_v2::Event::MessageAccepted { id, nonce }
+                ) if id == ticket.message_id()
             );
         });
     }

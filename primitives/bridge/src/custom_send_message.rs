@@ -72,15 +72,13 @@ impl<T, GetAggregateMessageOrigin> DeliverMessage
     for CustomSendMessageV2<T, GetAggregateMessageOrigin>
 where
     T: snowbridge_pallet_outbound_queue_v2::Config,
-    GetAggregateMessageOrigin: Convert<
-        ChannelId,
-        <T as snowbridge_pallet_outbound_queue_v2::Config>::AggregateMessageOrigin,
-    >,
+    GetAggregateMessageOrigin:
+        Convert<H256, <T as snowbridge_pallet_outbound_queue_v2::Config>::AggregateMessageOrigin>,
 {
     type Ticket = TanssiTicketV2<T>;
 
     fn deliver(ticket: Self::Ticket) -> Result<sp_core::H256, SendError> {
-        let origin = GetAggregateMessageOrigin::convert(ticket.origin.into());
+        let origin = GetAggregateMessageOrigin::convert(ticket.origin);
 
         let message = ticket.message.as_bounded_slice();
         <T as snowbridge_pallet_outbound_queue_v2::Config>::MessageQueue::enqueue_message(
@@ -110,10 +108,7 @@ impl<T, GetAggregateMessageOrigin> DeliverMessage
 where
     T: snowbridge_pallet_outbound_queue::Config + snowbridge_pallet_outbound_queue_v2::Config,
     GetAggregateMessageOrigin: Convert<ChannelId, <T as snowbridge_pallet_outbound_queue::Config>::AggregateMessageOrigin>
-        + Convert<
-            ChannelId,
-            <T as snowbridge_pallet_outbound_queue_v2::Config>::AggregateMessageOrigin,
-        >,
+        + Convert<H256, <T as snowbridge_pallet_outbound_queue_v2::Config>::AggregateMessageOrigin>,
 {
     type Ticket = VersionedTanssiTicket<T>;
 
