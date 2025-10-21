@@ -41,11 +41,11 @@ cumulus-primitives-core = { workspace = true }
 
 [dev-dependencies]
 assert_matches = { workspace = true }
-bp-relayers = { workspace = true, features = ["std"] }
+bp-relayers = { workspace = true, features = [ "std" ] }
 hex-literal = { workspace = true }
-pallet-balances = { workspace = true, features = ["std"] }
-pallet-timestamp = { workspace = true, features = ["std"] }
-sp-io = { workspace = true, features = ["std"] }
+pallet-balances = { workspace = true, features = [ "std" ] }
+pallet-timestamp = { workspace = true, features = [ "std" ] }
+sp-io = { workspace = true, features = [ "std" ] }
 
 [features]
 default = [ "std" ]
@@ -73,6 +73,11 @@ std = [
 	"xcm-builder/std",
 	"xcm-executor/std",
 	"xcm/std",
+	"bp-relayers/std",
+	"pallet-balances/std",
+	"pallet-timestamp/std",
+	"sp-io/std",
+	"alloy-core/std"
 ]
 runtime-benchmarks = [
 	"cumulus-primitives-core/runtime-benchmarks",
@@ -87,4 +92,7 @@ runtime-benchmarks = [
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 	"xcm/runtime-benchmarks",
+	"pallet-balances/runtime-benchmarks",
+	"pallet-timestamp/runtime-benchmarks",
+	"snowbridge-pallet-outbound-queue-v2/runtime-benchmarks"
 ]
