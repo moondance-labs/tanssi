@@ -112,7 +112,6 @@ fn receive_tokens_from_the_relay_to_simple_template() {
     });
     // We should have received the tokens
     SimpleTemplate::execute_with(|| {
-        println!("SimpleTemplate events: {:?}", SimpleTemplate::events());
         type RuntimeEvent = <SimpleTemplate as Chain>::RuntimeEvent;
         let mut outcome_weight = Weight::default();
         assert_expected_events!(
