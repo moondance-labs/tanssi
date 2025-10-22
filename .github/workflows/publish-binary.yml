@@ -44,7 +44,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install protobuf-compiler
       - name: Build Node
-        run: cargo build --profile=production --all
+        run: cargo build --profile=production --all --features=include-git-hash-in-version
 
       - name: Copy parachain node binaries
         uses: ./.github/workflow-templates/copy-parachain-node-binaries
@@ -71,7 +71,7 @@ jobs:
           ref: ${{ github.event.inputs.to }}
           fetch-depth: 0
       - name: Use Node.js 22.x
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22.x
       - name: Download Original Tools

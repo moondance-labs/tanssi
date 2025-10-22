@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 import type { ApiDecoration } from "@polkadot/api/types";
@@ -6,12 +8,12 @@ import {
     fetchRewardAuthorContainers,
     filterRewardFromOrchestratorWithFailure,
     getAuthorFromDigest,
+    getBlockNumberForDebug,
     PARACHAIN_BOND,
     PER_BILL_RATIO,
 } from "utils";
 
-// For debug purposes only, specify block here to check it
-const BLOCK_NUMBER_TO_DEBUG = undefined;
+const BLOCK_NUMBER_TO_DEBUG = getBlockNumberForDebug();
 
 describeSuite({
     id: "SM04",

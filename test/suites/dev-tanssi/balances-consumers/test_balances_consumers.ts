@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect, isExtrinsicSuccessful } from "@moonwall/cli";

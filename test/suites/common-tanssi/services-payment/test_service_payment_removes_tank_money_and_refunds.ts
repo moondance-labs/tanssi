@@ -16,7 +16,7 @@ describeSuite({
         let alice: KeyringPair;
         const blocksPerSession = 10n;
         const paraId2001 = 2001;
-        let costPerBlock = 1_000_000n;
+        let costPerBlock: bigint;
         let refundAddress: KeyringPair;
         let balanceTankBefore: bigint;
         let purchasedCredits: bigint;
@@ -50,9 +50,7 @@ describeSuite({
                 return;
             }
 
-            if (isStarlight) {
-                costPerBlock = 30_000_000_000n;
-            }
+            costPerBlock = BigInt((await polkadotJs.call.servicesPaymentApi.blockCost(paraId2001)).toString());
 
             const sudoSignedTx = await polkadotJs.tx.sudo.sudo(tx2001OneSession).signAsync(alice);
             await context.createBlock([sudoSignedTx]);

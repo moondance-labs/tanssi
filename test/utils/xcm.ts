@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { type DevModeContext, customDevRpcRequest, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 import type { XcmpMessageFormat } from "@polkadot/types/interfaces";
@@ -287,7 +289,12 @@ export interface XcmFragmentConfig {
         multilocation: MultiLocation;
         fungible: bigint;
     }[];
-    weight_limit?: BN;
+    weight_limit?:
+        | BN
+        | {
+              refTime: BN | number | bigint;
+              proofSize: BN | number | bigint;
+          };
     descend_origin?: string;
     beneficiary?: string;
 }

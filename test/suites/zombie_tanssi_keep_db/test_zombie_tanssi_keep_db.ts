@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { afterAll, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { spawn } from "node:child_process";
@@ -14,6 +16,8 @@ import {
     signAndSendAndInclude,
     sleep,
     waitSessions,
+    verifyCanary,
+    snapshotCanary,
 } from "utils";
 
 describeSuite({
@@ -200,8 +204,13 @@ describeSuite({
 
         it({
             id: "T11",
+            timeout: 90_000,
             title: "Test restarting both container chain collators",
             test: async () => {
+                const dbPath01 = `${getTmpZombiePath()}/Collator2000-01/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
+                const dbPath02 = `${getTmpZombiePath()}/Collator2000-02/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
+                // Prepare canaries
+                const [snap01, snap02] = await Promise.all([snapshotCanary(dbPath01), snapshotCanary(dbPath02)]);
                 // Fetch block number before restarting because the RPC may no longer work after the restart
                 blockNumberOfRestart = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
                 // Fetch authorities for a later test
@@ -221,13 +230,19 @@ describeSuite({
                 // Check that both collators have been stopped
                 expect(isProcessRunning(pidCollator200001)).to.be.false;
                 expect(isProcessRunning(pidCollator200002)).to.be.false;
-
                 // Check db has not been deleted
-                const dbPath01 = `${getTmpZombiePath()}/Collator2000-01/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
-                const dbPath02 = `${getTmpZombiePath()}/Collator2000-02/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
-
                 expect(await directoryExists(dbPath01)).to.be.true;
                 expect(await directoryExists(dbPath02)).to.be.true;
+                // Check canary files to handle edge case of directory deleted and then created again
+                await Promise.all([verifyCanary(snap01), verifyCanary(snap02)]);
+
+                // Wait for nodes to restart. This is to test that they don't delete the db on start.
+                await sleep(30_000);
+                // Check db has not been deleted
+                expect(await directoryExists(dbPath01)).to.be.true;
+                expect(await directoryExists(dbPath02)).to.be.true;
+                // Check canary files to handle edge case of directory deleted and then created again
+                await Promise.all([verifyCanary(snap01), verifyCanary(snap02)]);
             },
         });
 
