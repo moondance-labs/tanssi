@@ -19,10 +19,10 @@ use {
         currency::MICROUNIT,
         precompiles::FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX,
         weights::{self, xcm::XcmWeight as XcmGenericWeights},
-        AccountId, AllPalletsWithSystem, AssetRate, Balance, Balances, ForeignAssetsCreator,
-        MaintenanceMode, MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime,
-        RuntimeBlockWeights, RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee,
-        WeightToFee, XcmpQueue,
+        AccountId, AllPalletsWithSystem, AssetRate, Balance, Balances, EthereumLocation,
+        EthereumNetwork, ForeignAssetsCreator, MaintenanceMode, MessageQueue, ParachainInfo,
+        ParachainSystem, PolkadotXcm, Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeEvent,
+        RuntimeOrigin, TransactionByteFee, WeightToFee, XcmpQueue,
     },
     alloc::vec::Vec,
     ccp_xcm::SignedToAccountKey20,
@@ -53,6 +53,7 @@ use {
         sovereign_paid_remote_exporter::SovereignPaidRemoteExporter,
         ContainerChainEthereumLocationConverter,
     },
+    tp_xcm_commons::EthereumAssetReserveFromParent,
     xcm::latest::prelude::*,
     xcm_builder::{
         AccountKey20Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
@@ -219,7 +220,13 @@ impl xcm_executor::Config for XcmConfig {
     type XcmSender = XcmRouter;
     type AssetTransactor = AssetTransactors;
     type OriginConverter = XcmOriginToTransactDispatchOrigin;
-    type IsReserve = IsReserveFilter<Runtime>;
+    // We admit as reserves:
+    // - Native assets 'AllNative'
+    // - Ethereum assets with ethereum or relay origin
+    type IsReserve = (
+        IsReserveFilter<Runtime>,
+        EthereumAssetReserveFromParent<EthereumLocation, EthereumNetwork>,
+    );
     type IsTeleporter = IsTeleportFilter<Runtime>;
     type UniversalLocation = UniversalLocation;
     type Barrier = XcmBarrier;

@@ -97,6 +97,7 @@ use {
         ApplyExtrinsicResult, BoundedVec, Cow,
     },
     sp_version::RuntimeVersion,
+    xcm::prelude::Location,
     xcm::v5::NetworkId,
     xcm::Version as XcmVersion,
     xcm::{IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm},
@@ -316,7 +317,7 @@ parameter_types! {
         /// <https://chainlist.org/chain/1>
         /// <https://ethereum.org/en/developers/docs/apis/json-rpc/#net_version>
         pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 11155111 };
-
+        pub EthereumLocation: Location = Location::new(2, EthereumNetwork::get());
 }
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know

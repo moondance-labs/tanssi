@@ -29,6 +29,7 @@ dp-impl-tanssi-pallets-config = { workspace = true }
 dp-slot-duration-runtime-api = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
 tanssi-runtime-common = { workspace = true }
+tp-xcm-commons = { workspace = true }
 
 # Moonkit
 async-backing-primitives = { workspace = true }
@@ -225,6 +226,7 @@ std = [
 	"sp-version/std",
 	"tanssi-runtime-common/std",
 	"tp-container-chain/std",
+	"tp-xcm-commons/std",
 	"xcm-builder/std",
 	"xcm-executor/std",
 	"xcm-primitives/std",
