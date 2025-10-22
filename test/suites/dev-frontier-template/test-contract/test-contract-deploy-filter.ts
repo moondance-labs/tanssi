@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import "@tanssi/api-augment";
 
 import { deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
@@ -52,26 +54,20 @@ describeSuite({
             id: "T02",
             title: "Only allowed address can deploy (CREATE) after changing parameters",
             test: async () => {
-                const deployFilter = context
-                    .polkadotJs()
-                    .createType("ContainerChainTemplateFrontierRuntimeDeployFilter", { Whitelisted: [ALITH_ADDRESS] });
-                const allowedAddressesToCreate = context
-                    .polkadotJs()
-                    .createType("ContainerChainTemplateFrontierRuntimeDynamicParamsContractDeployFilterParameters", {
-                        AllowedAddressesToCreate: [null, deployFilter],
-                    });
-                const runtimeParameters = context
-                    .polkadotJs()
-                    .createType("ContainerChainTemplateFrontierRuntimeRuntimeParameters", {
-                        ContractDeployFilter: allowedAddressesToCreate,
-                    });
+                const deployFilter = { Whitelisted: [ALITH_ADDRESS] };
+                const allowedAddressesToCreate = {
+                    AllowedAddressesToCreate: [null, deployFilter],
+                };
+                const runtimeParameters = {
+                    ContractDeployFilter: allowedAddressesToCreate,
+                };
 
                 // parameters.setParameter() call to allow Alith (0xf24ff3a9cf04c71dbc94d0b566f7a27b94566cac)
                 // to deploy contracts via CREATE.
                 await context.createBlock(
                     context
                         .polkadotJs()
-                        .tx.sudo.sudo(context.polkadotJs().tx.parameters.setParameter(runtimeParameters.toU8a()))
+                        .tx.sudo.sudo(context.polkadotJs().tx.parameters.setParameter(runtimeParameters))
                         .signAsync(alith),
                     { allowFailures: false }
                 );
@@ -172,26 +168,20 @@ describeSuite({
             id: "T04",
             title: "Only allowed address can deploy CALL(CREATE) after changing parameters",
             test: async () => {
-                const deployFilter = context
-                    .polkadotJs()
-                    .createType("ContainerChainTemplateFrontierRuntimeDeployFilter", { Whitelisted: [ALITH_ADDRESS] });
-                const allowedAddressesToCreateInner = context
-                    .polkadotJs()
-                    .createType("ContainerChainTemplateFrontierRuntimeDynamicParamsContractDeployFilterParameters", {
-                        AllowedAddressesToCreateInner: [null, deployFilter],
-                    });
-                const runtimeParameters = context
-                    .polkadotJs()
-                    .createType("ContainerChainTemplateFrontierRuntimeRuntimeParameters", {
-                        ContractDeployFilter: allowedAddressesToCreateInner,
-                    });
+                const deployFilter = { Whitelisted: [ALITH_ADDRESS] };
+                const allowedAddressesToCreateInner = {
+                    AllowedAddressesToCreateInner: [null, deployFilter],
+                };
+                const runtimeParameters = {
+                    ContractDeployFilter: allowedAddressesToCreateInner,
+                };
 
                 // parameters.setParameter() call to allow Alith (0xf24ff3a9cf04c71dbc94d0b566f7a27b94566cac)
                 // to deploy inner contracts via CALL(CREATE).
                 await context.createBlock(
                     context
                         .polkadotJs()
-                        .tx.sudo.sudo(context.polkadotJs().tx.parameters.setParameter(runtimeParameters.toU8a()))
+                        .tx.sudo.sudo(context.polkadotJs().tx.parameters.setParameter(runtimeParameters))
                         .signAsync(alith),
                     { allowFailures: false }
                 );

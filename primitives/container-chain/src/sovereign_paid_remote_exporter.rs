@@ -78,6 +78,8 @@ where
         dest: &mut Option<Location>,
         msg: &mut Option<Xcm<()>>,
     ) -> SendResult<Router::Ticket> {
+        log::trace!(target: "xcm::sovereign_paid_remote_exporter", "validate params: dest={dest:?}, msg={msg:?}");
+
         let d = dest.as_ref().ok_or(MissingArgument)?;
         let xcm = msg.take().ok_or(MissingArgument)?;
         // Check if the destination is an Ethereum location
