@@ -2150,7 +2150,11 @@ impl_runtime_apis! {
 
             use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
             impl pallet_xcm::benchmarking::Config for Runtime {
-                type DeliveryHelper = ();
+                type DeliveryHelper = cumulus_primitives_utility::ToParentDeliveryHelper<
+                xcm_config::XcmConfig,
+                ExistentialDepositAsset,
+                xcm_config::PriceForParentDelivery,
+                >;
                 fn get_asset() -> Asset {
                     Asset {
                         id: AssetId(SelfReserve::get()),
