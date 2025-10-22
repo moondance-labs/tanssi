@@ -41,7 +41,7 @@ use {
     core::marker::PhantomData,
     cumulus_primitives_core::ParaId,
     frame_support::{
-        migration::{move_pallet, storage_key_iter},
+        migration::{clear_storage_prefix, move_pallet, storage_key_iter},
         pallet_prelude::GetStorageVersion,
         parameter_types,
         traits::{
