@@ -30,7 +30,7 @@ use snowbridge_outbound_queue_primitives::v1::{
     AgentExecuteCommand,
 };
 use sp_core::H160;
-use sp_runtime::traits::{MaybeConvert, TryConvert};
+use sp_runtime::traits::{MaybeEquivalence, TryConvert};
 use xcm::prelude::*;
 use xcm::{
     latest::SendError::{MissingArgument, NotApplicable},
@@ -67,7 +67,7 @@ where
     UniversalLocation: Get<InteriorLocation>,
     EthereumNetwork: Get<NetworkId>,
     OutboundQueue: SendMessage<Balance = u128>,
-    ConvertAssetId: MaybeConvert<TokenId, Location>,
+    ConvertAssetId: MaybeEquivalence<TokenId, Location>,
     BridgeChannelInfo: Get<Option<(ChannelId, AgentId)>>,
 {
     type Ticket = (Vec<u8>, XcmHash);
@@ -206,7 +206,7 @@ pub struct XcmConverter<'a, ConvertAssetId, Call> {
 }
 impl<'a, ConvertAssetId, Call> XcmConverter<'a, ConvertAssetId, Call>
 where
-    ConvertAssetId: MaybeConvert<TokenId, Location>,
+    ConvertAssetId: MaybeEquivalence<TokenId, Location>,
 {
     pub fn new(message: &'a Xcm<Call>, ethereum_network: NetworkId, agent_id: AgentId) -> Self {
         Self {

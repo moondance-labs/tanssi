@@ -14,9 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use snowbridge_core::TokenIdOf;
-use sp_runtime::traits::MaybeConvert;
-use xcm_executor::traits::ConvertLocation;
 use {
     alloc::vec::Vec,
     core::{iter::Peekable, marker::PhantomData, slice::Iter},
@@ -25,6 +22,7 @@ use {
     snowbridge_core::{AgentId, ChannelId, TokenId},
     snowbridge_outbound_queue_primitives::v1::message::{Command, Message, SendMessage},
     sp_core::H160,
+    sp_runtime::traits::MaybeEquivalence,
     xcm::latest::SendError::{MissingArgument, NotApplicable, Unroutable},
     xcm::prelude::*,
     xcm_executor::traits::ExportXcm,
@@ -69,7 +67,7 @@ where
     EthereumNetwork: Get<NetworkId>,
     EthereumLocation: Get<Location>,
     OutboundQueue: SendMessage<Balance = u128>,
-    ConvertAssetId: MaybeConvert<TokenId, Location>,
+    ConvertAssetId: MaybeEquivalence<TokenId, Location>,
     BridgeChannelInfo: Get<Option<(ChannelId, AgentId)>>,
 {
     type Ticket = (Vec<u8>, XcmHash);
@@ -223,7 +221,7 @@ struct XcmConverter<'a, ConvertAssetId, UniversalLocation, EthereumLocation, Cal
 impl<'a, ConvertAssetId, UniversalLocation, EthereumLocation, Call>
     XcmConverter<'a, ConvertAssetId, UniversalLocation, EthereumLocation, Call>
 where
-    ConvertAssetId: MaybeConvert<TokenId, Location>,
+    ConvertAssetId: MaybeEquivalence<TokenId, Location>,
     UniversalLocation: Get<InteriorLocation>,
     EthereumLocation: Get<Location>,
 {
@@ -261,7 +259,7 @@ struct XcmConverter<'a, ConvertAssetId, UniversalLocation, EthereumLocation, Cal
 impl<'a, ConvertAssetId, UniversalLocation, EthereumLocation, Call>
     XcmConverter<'a, ConvertAssetId, UniversalLocation, EthereumLocation, Call>
 where
-    ConvertAssetId: MaybeConvert<TokenId, Location>,
+    ConvertAssetId: MaybeEquivalence<TokenId, Location>,
     UniversalLocation: Get<InteriorLocation>,
     EthereumLocation: Get<Location>,
 {
@@ -425,11 +423,7 @@ where
         // NOTE: For now we have hardcoded RelayNetwork to the DANCELIGHT_GENESIS_HASH,
         // so asset_id won't work with Starlight runtime, but after we add pallet parameters and make the
         // RelayNetwork parameter dynamic, it will work with both
-        let token_id = TokenIdOf::convert_location(&asset_id).ok_or(InvalidAsset)?;
-        // Validate that token_id has been registered in snowbridge_pallet_system
-        if ConvertAssetId::maybe_convert(token_id).is_none() {
-            return Err(InvalidAsset.into());
-        }
+        let token_id = ConvertAssetId::convert_back(&asset_id).ok_or(InvalidAsset)?;
 
         // Check if there is a SetTopic and skip over it if found.
         let topic_id = match_expression!(self.next()?, SetTopic(id), id).ok_or(SetTopicExpected)?;
@@ -507,7 +501,6 @@ impl<
 
 #[cfg(test)]
 mod tests {
-    use sp_runtime::traits::MaybeConvert;
     use {
         super::*,
         frame_support::parameter_types,
@@ -524,9 +517,12 @@ mod tests {
     }
 
     pub struct MockTokenIdConvert;
-    impl MaybeConvert<TokenId, Location> for MockTokenIdConvert {
-        fn maybe_convert(_id: TokenId) -> Option<Location> {
+    impl MaybeEquivalence<TokenId, Location> for MockTokenIdConvert {
+        fn convert(_id: &TokenId) -> Option<Location> {
             Some(Location::parent())
+        }
+        fn convert_back(_loc: &Location) -> Option<TokenId> {
+            Some(H256::from_low_u64_be(123))
         }
     }
 
