@@ -6,7 +6,7 @@
     "relaychain": {
         "chain_spec_path": "specs/tanssi-relay.json",
         "default_command": "../target/release/tanssi-relay",
-        "default_args": ["--no-hardware-benchmarks", "-ldebug,sub-libp2p=trace,litep2p=trace", "--database=paritydb", "--no-beefy"],
+        "default_args": ["--no-hardware-benchmarks", "-lparachain=debug", "--database=paritydb", "--no-beefy"],
         "genesis": {
             "runtimeGenesis": {
                 "patch": {
@@ -57,7 +57,6 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "-ldebug,sub-libp2p=trace,litep2p=trace",
                         "--pool-type=fork-aware"
                     ],
                     "rpc_port": 9949,
@@ -71,7 +70,6 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "-ldebug,sub-libp2p=trace,litep2p=trace",
                         "--pool-type=fork-aware"
                     ],
                     "prometheus_port": 33102
@@ -83,7 +81,6 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "-ldebug,sub-libp2p=trace,litep2p=trace",
                         "--pool-type=fork-aware"
                     ],
                     "prometheus_port": 33102
@@ -95,7 +92,6 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "-ldebug,sub-libp2p=trace,litep2p=trace",
                         "--pool-type=fork-aware"
                     ],
                     "prometheus_port": 33102
@@ -107,7 +103,6 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "-ldebug,sub-libp2p=trace,litep2p=trace",
                         "--pool-type=fork-aware"
                     ],
                     "prometheus_port": 33102
@@ -119,7 +114,6 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "-ldebug,sub-libp2p=trace,litep2p=trace",
                         "--pool-type=fork-aware"
                     ],
                     "prometheus_port": 33102
@@ -131,7 +125,6 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "-ldebug,sub-libp2p=trace,litep2p=trace",
                         "--pool-type=fork-aware"
                     ],
                     "prometheus_port": 33102
@@ -145,7 +138,6 @@
                         "--solochain",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "-ldebug,sub-libp2p=trace,litep2p=trace",
                         "--prometheus-external --prometheus-port 33102",
                         " --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe",
                         "--rpc-port 9950"
@@ -161,7 +153,6 @@
                         "--solochain",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "-ldebug,sub-libp2p=trace,litep2p=trace",
                         "--prometheus-external --prometheus-port 33102",
                         " --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe",
                         "--rpc-port 9952"
@@ -178,7 +169,7 @@
                     "name": "FullNode-2001",
                     "validator": false,
                     "command": "../target/release/container-chain-frontier-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "-ldebug,sub-libp2p=trace,litep2p=trace", "--wasmtime-precompiled=wasm"],
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
                     "rpc_port": 9951,
                     "p2p_port": 33050
                 }

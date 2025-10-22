@@ -1,11 +1,10 @@
 // @ts-nocheck
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { TpTraitsSlotFrequency } from "@polkadot/types/lookup";
 import fs, { stat } from "node:fs/promises";
-import { generateEmptyGenesisData, createCollatorKeyToNameMap, signAndSendAndInclude } from "utils";
+import { generateEmptyGenesisData, createCollatorKeyToNameMap, signAndSendAndInclude, waitSessions } from "utils";
 
 describeSuite({
     id: "ZOMBIETAN01",
@@ -60,93 +59,6 @@ describeSuite({
             },
         });
 
-        // TODO: for testing, try to send a balance transfer multiple times
-        it({
-            id: "T03",
-            title: "Send balance transfer with retries",
-            timeout: 120000,
-            test: async () => {
-                const alice = new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
-                    name: "Alice default",
-                });
-                const randomAccount = generateKeyringPair("sr25519");
-
-                let tries = 0;
-                const balanceBefore = (await paraApi.query.system.account(randomAccount.address)).data.free.toBigInt();
-
-                // This way it doesnt work with error:
-                //      → 1014: Priority is too low: (637 vs 637): The transaction has too low priority to replace another transaction already in the pool.
-                /*
-                /// It might happen that by accident we hit a session change
-                /// A block in which a session change occurs cannot hold any tx
-                /// Chopsticks does not have the notion of tx pool either, so we need to retry
-                /// Therefore we just retry at most MAX_BALANCE_TRANSFER_TRIES
-                const MAX_BALANCE_TRANSFER_TRIES = 5;
-                while (tries < MAX_BALANCE_TRANSFER_TRIES) {
-                    const txHash = await paraApi.tx.balances
-                        .transferAllowDeath(randomAccount.address, 1_000_000_000)
-                        .signAndSend(alice);
-                    await context.waitBlock(1, "Tanssi");
-
-                    const block = await paraApi.rpc.chain.getBlock();
-                    const includedTxHashes = block.block.extrinsics.map((x) => x.hash.toString());
-                    if (includedTxHashes.includes(txHash.toString())) {
-                        break;
-                    }
-                    tries++;
-                }
-                 */
-                /// It might happen that by accident we hit a session change
-                /// A block in which a session change occurs cannot hold any tx
-                /// But the txpool is smart and it will keep the transaction until it can be included.
-                /// So wait for MAX_BALANCE_TRANSFER_WAIT_BLOCKS
-                const txHash = await paraApi.tx.balances
-                    .transferAllowDeath(randomAccount.address, 1_000_000_000)
-                    .signAndSend(alice);
-                await context.waitBlock(1, "Tanssi");
-                const MAX_BALANCE_TRANSFER_WAIT_BLOCKS = 5;
-                while (tries < MAX_BALANCE_TRANSFER_WAIT_BLOCKS) {
-                    const block = await paraApi.rpc.chain.getBlock();
-                    const includedTxHashes = block.block.extrinsics.map((x) => x.hash.toString());
-                    if (includedTxHashes.includes(txHash.toString())) {
-                        break;
-                    }
-                    await context.waitBlock(1, "Tanssi");
-                    tries++;
-                }
-
-                const balanceAfter = (await paraApi.query.system.account(randomAccount.address)).data.free.toBigInt();
-                expect(balanceBefore < balanceAfter).to.be.true;
-            },
-        });
-
-        it({
-            id: "T04",
-            title: "Send balance transfer many times signAndSendAndInclude",
-            timeout: 700_000, // 10 transaction inclusions = 10 * 60 seconds on average. Sample run: 436977ms
-            test: async () => {
-                const alice = new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
-                    name: "Alice default",
-                });
-                const randomAccount = generateKeyringPair("sr25519");
-
-                const balanceBefore = (await paraApi.query.system.account(randomAccount.address)).data.free.toBigInt();
-
-                // Try signAndSendAndInclude to see if it always works
-                for (let i = 0; i < 10; i++) {
-                    await signAndSendAndInclude(
-                        paraApi.tx.balances.transferAllowDeath(randomAccount.address, 1_000_000_000),
-                        alice
-                    );
-                    console.log(new Date(), "included tx number:", i);
-                }
-
-                const balanceAfter = (await paraApi.query.system.account(randomAccount.address)).data.free.toBigInt();
-                expect(balanceBefore < balanceAfter).to.be.true;
-            },
-        });
-
-        /*
         it({
             id: "T03",
             title: "Register empty wasm as parathread 2000",
@@ -225,8 +137,6 @@ describeSuite({
                 await waitForNewLogs(logFilePath);
             },
         });
-
-         */
     },
 });
 

@@ -25,8 +25,7 @@ runs:
     - name: "Run zombie test"
       uses: nick-fields/retry@v3
       with:
-        # TODO: set max_attempts back to 3
-        max_attempts: 1
+        max_attempts: 3
         timeout_minutes: 60
         shell: bash
         command: |
