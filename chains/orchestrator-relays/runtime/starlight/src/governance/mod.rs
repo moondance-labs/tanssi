@@ -34,6 +34,7 @@ pub use origins::{
 mod tracks;
 pub use tracks::TracksInfo;
 mod fellowship;
+
 pub use fellowship::{FellowshipCollectiveInstance, FellowshipReferendaInstance};
 
 parameter_types! {

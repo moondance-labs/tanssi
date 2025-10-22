@@ -19,8 +19,9 @@ pallet-xcm = { workspace = true }
 primitives = { workspace = true }
 simple-template-emulated-chain = { workspace = true }
 sp-runtime = { workspace = true }
+sp-tracing = { workspace = true, features = [ "std", "test-utils" ] }
 starlight-emulated-chain = { workspace = true }
-starlight-runtime = { workspace = true }
+starlight-runtime = { workspace = true, features = [ "std" ] }
 starlight-system-emulated-network  = { workspace = true }
 tanssi-emulated-integration-tests-common = { workspace = true }
 xcm = { workspace = true }

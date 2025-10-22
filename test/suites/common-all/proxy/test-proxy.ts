@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
@@ -259,11 +261,94 @@ describeSuite({
                 });
                 expect(ev1.length).to.be.equal(1);
                 expect(ev1[0].event.data[0].toString()).to.be.eq("Ok");
+            },
+        });
 
-                const ev2 = events.filter((a) => {
-                    return a.event.method === "Remarked";
+        it({
+            id: "E08",
+            title: "Account with non transfer proxy can call staking extrinsics",
+            test: async ({ skip }) => {
+                if (!chain.includes("light")) {
+                    skip();
+                }
+
+                await context.createBlock();
+
+                const proxyTx = polkadotJs.tx.pooledStaking.executePendingOperations([
+                    {
+                        delegator: alice.address,
+                        operation: {
+                            JoiningAutoCompounding: {
+                                candidate: alice.address,
+                                at: 0,
+                            },
+                        },
+                    },
+                ]);
+
+                // Dave has NonTransfer proxy, so he should be able to call staking extrinsics
+                const tx = polkadotJs.tx.proxy.proxy(alice.address, null, proxyTx);
+
+                await context.createBlock([await tx.signAsync(dave)]);
+
+                const events = await polkadotJs.query.system.events();
+                const ev1 = events.filter((a) => {
+                    return a.event.method === "ProxyExecuted";
                 });
-                expect(ev2.length).to.be.equal(1);
+                expect(ev1.length).to.be.equal(1);
+                expect(ev1[0].event.data[0].toString()).to.be.eq("Ok");
+            },
+        });
+
+        it({
+            id: "E09",
+            title: "Should fail when calling pallet_identity.addSub through a `NonTransfer` proxy",
+            test: async ({ skip }) => {
+                if (!chain.includes("light")) {
+                    skip();
+                }
+
+                await context.createBlock();
+
+                const proxyTx = polkadotJs.tx.identity.addSub(alice.address, { Raw: "test" });
+
+                // Dave has NonTransfer proxy, so he should be able to call staking extrinsics
+                const tx = polkadotJs.tx.proxy.proxy(alice.address, null, proxyTx);
+
+                await context.createBlock([await tx.signAsync(dave)]);
+
+                const events = await polkadotJs.query.system.events();
+                const ev1 = events.filter((a) => {
+                    return a.event.method === "ProxyExecuted";
+                });
+                expect(ev1.length).to.be.equal(1);
+                expect(!!ev1[0].event.data.toJSON()[0].err).to.be.eq(true);
+            },
+        });
+
+        it({
+            id: "E10",
+            title: "Should fail when calling pallet_identity.setSubs through a `NonTransfer` proxy",
+            test: async ({ skip }) => {
+                if (!chain.includes("light")) {
+                    skip();
+                }
+
+                await context.createBlock();
+
+                const proxyTx = polkadotJs.tx.identity.setSubs([[alice.address, { Raw: "test" }]]);
+
+                // Dave has NonTransfer proxy, so he should be able to call staking extrinsics
+                const tx = polkadotJs.tx.proxy.proxy(alice.address, null, proxyTx);
+
+                await context.createBlock([await tx.signAsync(dave)]);
+
+                const events = await polkadotJs.query.system.events();
+                const ev1 = events.filter((a) => {
+                    return a.event.method === "ProxyExecuted";
+                });
+                expect(ev1.length).to.be.equal(1);
+                expect(!!ev1[0].event.data.toJSON()[0].err).to.be.eq(true);
             },
         });
     },

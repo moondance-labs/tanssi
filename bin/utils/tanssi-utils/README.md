@@ -1,3 +1,5 @@
+# Tanssi utils
+
 ## Rewards utils generator tool
 
 ### Usage
@@ -49,4 +51,66 @@ Merkle proof for account 0505050505050505050505050505050505050505050505050505050
    - Number of leaves: 2
    - Leaf index: 1
    - Leaf: 0x27e610a11a547f210646001377ae223bc6bce387931f8153624d21f6478512d2
+```
+
+## XCM Payload generator tool
+
+This tool provides a way to generate XCM payloads for different use cases: 
+- Transfer container native token to container chain (frontier/simple)
+- Transfer relay native token to relay chain
+- Transfer ERC20 token to relay chain
+- Transfer ERC20 token to container chain (frontier/simple)
+
+### Usage
+
+Container native to container chain:
+```
+cargo run -p tanssi-utils -- payload-generator \
+  --token-location '{"parents": 0, "interior": {"X2": [{"Parachain": 2002}, {"PalletInstance": 10}]}}' \
+  --para-id 2002 \
+  --beneficiary 0x0505050505050505050505050505050505050505050505050505050505050505 \
+  --container-fee 500000000000000 \
+  --amount 100000000 \
+  --fee 1500000000000000 \
+  --destination container \
+  --token native
+```
+
+Relay native to relay
+```
+cargo run -p tanssi-utils -- payload-generator \
+  --token-location '{"parents": 0, "interior": "Here"}' \
+  --para-id 2002 \
+  --beneficiary 0x0505050505050505050505050505050505050505050505050505050505050505 \
+  --container-fee 500000000000000 \
+  --amount 10000 \
+  --fee 1000 \
+  --destination relay \
+  --token native
+```
+
+ERC20 to relay
+```
+cargo run -p tanssi-utils -- payload-generator \
+  --para-id 2002 \
+  --beneficiary 0x0505050505050505050505050505050505050505050505050505050505050505 \
+  --container-fee 500000000000000 \
+  --amount 10000 \
+  --fee 1000 \
+  --destination relay \
+  --token erc20 \
+  --token-address 0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef
+```
+
+ERC20 to container
+```
+cargo run -p tanssi-utils -- payload-generator \
+  --para-id 2002 \
+  --beneficiary 0x0505050505050505050505050505050505050505050505050505050505050505 \
+  --container-fee 500000000000000 \
+  --amount 10000 \
+  --fee 1000 \
+  --destination container \
+  --token erc20 \
+  --token-address 0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef
 ```

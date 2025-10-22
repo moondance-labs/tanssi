@@ -15,13 +15,13 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    super::*,
-    crate::AgentIdOf,
+    crate::*,
     alloc::boxed::Box,
     alloy_core::{
         primitives::{Bytes, FixedBytes},
         sol_types::SolValue,
     },
+    core::marker::PhantomData,
     frame_support::{
         ensure,
         traits::{Defensive, ProcessMessage, ProcessMessageError},
@@ -31,21 +31,26 @@ use {
         abi::{CommandWrapper, OutboundMessageWrapper},
         OutboundCommandWrapper, OutboundMessage as OutboundMessageV2,
     },
-    snowbridge_pallet_outbound_queue_v2::{
-        MessageLeaves, Messages, Nonce, PendingOrder, PendingOrders, ProcessMessageOriginOf,
-        WeightInfo,
+    snowbridge_pallet_outbound_queue::{
+        CommittedMessage, MessageLeaves, Messages, Nonce, ProcessMessageOriginOf, WeightInfo,
     },
-    sp_runtime::traits::{BlockNumberProvider, Hash},
+    snowbridge_pallet_outbound_queue_v2::{
+        MessageLeaves as MessageLeavesV2, Messages as MessagesV2, Nonce as NonceV2, PendingOrder,
+        PendingOrders, ProcessMessageOriginOf as ProcessMessageOriginOfV2,
+        WeightInfo as WeightInfoV2,
+    },
+    sp_runtime::traits::{BlockNumberProvider, Get, Hash},
+    xcm::latest::Location,
 };
 
 /// Alternative to [snowbridge_pallet_outbound_queue::Pallet::process_message] using a different
 /// [Command] enum.
-pub struct CustomProcessSnowbridgeMessageV2<T, SelfLocation>(PhantomData<(T, SelfLocation)>);
+/// Snowbridge V1 implementation!
+pub struct TanssiOutboundEthProcessorSnowbridgeV1<T>(PhantomData<T>);
 
-impl<T, SelfLocation> CustomProcessSnowbridgeMessageV2<T, SelfLocation>
+impl<T> TanssiOutboundEthProcessorSnowbridgeV1<T>
 where
-    T: snowbridge_pallet_outbound_queue_v2::Config + frame_system::Config,
-    SelfLocation: Get<Location>,
+    T: snowbridge_pallet_outbound_queue::Config,
 {
     /// Process a message delivered by the MessageQueue pallet
     pub(crate) fn do_process_message(
@@ -62,8 +67,8 @@ where
         );
 
         // Decode bytes into versioned message
-        let versioned_queued_message: VersionedQueuedMessage =
-            VersionedQueuedMessage::decode(&mut message).map_err(|_| Corrupt)?;
+        let versioned_queued_message: VersionedQueuedTanssiMessage =
+            VersionedQueuedTanssiMessage::decode(&mut message).map_err(|_| Corrupt)?;
 
         log::trace!(
             "CustomProcessSnowbridgeMessage: {:?}",
@@ -71,10 +76,119 @@ where
         );
 
         // Convert versioned message into latest supported message version
-        let queued_message: QueuedMessage = versioned_queued_message.into();
+        let queued_message: QueuedTanssiMessage = versioned_queued_message.into();
 
         // Obtain next nonce
-        let nonce = <Nonce<T>>::try_mutate(|nonce| -> Result<u64, ProcessMessageError> {
+        let nonce = <Nonce<T>>::try_mutate(
+            queued_message.channel_id,
+            |nonce| -> Result<u64, ProcessMessageError> {
+                *nonce = nonce.checked_add(1).ok_or(Unsupported)?;
+                Ok(*nonce)
+            },
+        )?;
+
+        let pricing_params = T::PricingParameters::get();
+        let command = queued_message.command.index();
+        let params = queued_message.command.abi_encode();
+        let max_dispatch_gas =
+            ConstantGasMeter::maximum_dispatch_gas_used_at_most(&queued_message.command);
+        let reward = pricing_params.rewards.remote;
+
+        // Construct the final committed message
+        let message = CommittedMessage {
+            channel_id: queued_message.channel_id,
+            nonce,
+            command,
+            params,
+            max_dispatch_gas,
+            max_fee_per_gas: pricing_params
+                .fee_per_gas
+                .try_into()
+                .defensive_unwrap_or(u128::MAX),
+            reward: reward.try_into().defensive_unwrap_or(u128::MAX),
+            id: queued_message.id,
+        };
+
+        // ABI-encode and hash the prepared message
+        let message_abi_encoded = ethabi::encode(&[message.clone().into()]);
+        let message_abi_encoded_hash =
+            <T as snowbridge_pallet_outbound_queue::Config>::Hashing::hash(&message_abi_encoded);
+
+        Messages::<T>::append(Box::new(message));
+        MessageLeaves::<T>::append(message_abi_encoded_hash);
+
+        snowbridge_pallet_outbound_queue::Pallet::<T>::deposit_event(
+            snowbridge_pallet_outbound_queue::Event::MessageAccepted {
+                id: queued_message.id,
+                nonce,
+            },
+        );
+
+        Ok(true)
+    }
+}
+
+impl<T> ProcessMessage for TanssiOutboundEthProcessorSnowbridgeV1<T>
+where
+    T: snowbridge_pallet_outbound_queue::Config,
+{
+    type Origin = T::AggregateMessageOrigin;
+
+    fn process_message(
+        message: &[u8],
+        origin: Self::Origin,
+        meter: &mut WeightMeter,
+        _id: &mut [u8; 32],
+    ) -> Result<bool, ProcessMessageError> {
+        // TODO: this weight is from the pallet, should be very similar to the weight of
+        // Self::do_process_message, but ideally we should benchmark this separately
+        let weight = T::WeightInfo::do_process_message();
+        if meter.try_consume(weight).is_err() {
+            return Err(ProcessMessageError::Overweight(weight));
+        }
+
+        Self::do_process_message(origin.clone(), message)
+    }
+}
+
+/// Alternative to [snowbridge_pallet_outbound_queue::Pallet::process_message] using a different
+/// [Command] enum.
+pub struct TanssiOutboundEthProcessorSnowbridgeV2<T, SelfLocation>(PhantomData<(T, SelfLocation)>);
+
+impl<T, SelfLocation> TanssiOutboundEthProcessorSnowbridgeV2<T, SelfLocation>
+where
+    T: snowbridge_pallet_outbound_queue_v2::Config + frame_system::Config,
+    SelfLocation: Get<Location>,
+{
+    /// Process a message delivered by the MessageQueue pallet
+    pub(crate) fn do_process_message(
+        _: ProcessMessageOriginOfV2<T>,
+        mut message: &[u8],
+    ) -> Result<bool, ProcessMessageError> {
+        use ProcessMessageError::*;
+
+        // Yield if the maximum number of messages has been processed this block.
+        // This ensures that the weight of `on_finalize` has a known maximum bound.
+        ensure!(
+            MessageLeavesV2::<T>::decode_len().unwrap_or(0)
+                < T::MaxMessagesPerBlock::get() as usize,
+            Yield
+        );
+
+        // Decode bytes into versioned message
+        let versioned_queued_message: VersionedQueuedTanssiMessage =
+            VersionedQueuedTanssiMessage::decode(&mut message).map_err(|_| Corrupt)?;
+
+        log::trace!(
+            "CustomProcessSnowbridgeMessage: {:?}",
+            versioned_queued_message
+        );
+
+        // Convert versioned message into latest supported message version
+        let queued_message: QueuedTanssiMessage = versioned_queued_message.into();
+
+        // Obtain next nonce
+        let nonce = <NonceV2<T>>::try_mutate(|nonce| -> Result<u64, ProcessMessageError> {
             *nonce = nonce.checked_add(1).ok_or(Unsupported)?;
             Ok(*nonce)
         })?;
@@ -121,8 +235,8 @@ where
         let message_abi_encoded_hash =
             <T as snowbridge_pallet_outbound_queue_v2::Config>::Hashing::hash(&message_abi_encoded);
 
-        Messages::<T>::append(Box::new(message));
-        MessageLeaves::<T>::append(message_abi_encoded_hash);
+        MessagesV2::<T>::append(Box::new(message));
+        MessageLeavesV2::<T>::append(message_abi_encoded_hash);
 
         let order = PendingOrder {
             nonce,
@@ -142,7 +256,7 @@ where
     }
 }
 
-impl<T, SelfLocation> ProcessMessage for CustomProcessSnowbridgeMessageV2<T, SelfLocation>
+impl<T, SelfLocation> ProcessMessage for TanssiOutboundEthProcessorSnowbridgeV2<T, SelfLocation>
 where
     T: snowbridge_pallet_outbound_queue_v2::Config + frame_system::Config,
     SelfLocation: Get<Location>,

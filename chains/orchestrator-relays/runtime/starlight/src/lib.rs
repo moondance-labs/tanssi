@@ -925,9 +925,14 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
     fn filter(&self, c: &RuntimeCall) -> bool {
         match self {
             ProxyType::Any => true,
-            ProxyType::NonTransfer => matches!(
-                c,
-                RuntimeCall::System(..) |
+            ProxyType::NonTransfer => match c {
+                RuntimeCall::Identity(
+                    pallet_identity::Call::add_sub { .. } | pallet_identity::Call::set_subs { .. },
+                ) => false,
+                call => {
+                    matches!(
+                        call,
+                        RuntimeCall::System(..) |
 				RuntimeCall::Babe(..) |
 				RuntimeCall::Timestamp(..) |
 				// Specifically omitting Indices `transfer`, `force_transfer`
@@ -944,12 +949,15 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				RuntimeCall::Identity(..) |
 				RuntimeCall::Scheduler(..) |
 				RuntimeCall::Proxy(..) |
+                RuntimeCall::PooledStaking(..) |
 				RuntimeCall::Multisig(..) |
 				RuntimeCall::Registrar(paras_registrar::Call::register {..}) |
 				RuntimeCall::Registrar(paras_registrar::Call::deregister {..}) |
 				// Specifically omitting Registrar `swap`
 				RuntimeCall::Registrar(paras_registrar::Call::reserve {..})
-            ),
+                    )
+                }
+            },
             ProxyType::Governance => matches!(
                 c,
                 RuntimeCall::Utility(..) |
@@ -1116,7 +1124,7 @@ impl ProcessMessage for MessageProcessor {
                 )
             }
             AggregateMessageOrigin::SnowbridgeTanssi(_) => {
-                tp_bridge::CustomProcessSnowbridgeMessage::<Runtime>::process_message(
+                tp_bridge::TanssiOutboundEthProcessorSnowbridgeV1::<Runtime>::process_message(
                     message, origin, meter, id,
                 )
             }
@@ -1529,8 +1537,9 @@ impl pallet_external_validators_rewards::Config for Runtime {
     type ExternalIndexProvider = ExternalValidators;
     type GetWhitelistedValidators = GetWhitelistedValidators;
     type Hashing = Keccak256;
-    type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
-    type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;
+    type ValidateMessage = tp_bridge::TanssiEthMessageValidatorV1<Runtime>;
+    type OutboundQueue =
+        tp_bridge::TanssiSendMessageEthV1<Runtime, GetAggregateMessageOriginTanssi>;
     type Currency = Balances;
     type RewardsEthereumSovereignAccount = EthereumSovereignAccount;
     type TokenLocationReanchored = TokenLocationReanchored;
@@ -1550,8 +1559,9 @@ impl pallet_external_validator_slashes::Config for Runtime {
     type SessionInterface = StarlightSessionInterface;
     type EraIndexProvider = ExternalValidators;
     type InvulnerablesProvider = ExternalValidators;
-    type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
-    type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;
+    type ValidateMessage = tp_bridge::TanssiEthMessageValidatorV1<Runtime>;
+    type OutboundQueue =
+        tp_bridge::TanssiSendMessageEthV1<Runtime, GetAggregateMessageOriginTanssi>;
     type ExternalIndexProvider = ExternalValidators;
     type QueuedSlashesProcessedPerBlock = ConstU32<10>;
     type WeightInfo = weights::pallet_external_validator_slashes::SubstrateWeight<Runtime>;

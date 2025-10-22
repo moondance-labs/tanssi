@@ -1,0 +1,130 @@
+// Copyright (C) Moondance Labs Ltd.
+// This file is part of Tanssi.
+
+// Tanssi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Tanssi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+
+use {
+    crate::*,
+    core::marker::PhantomData,
+    frame_support::ensure,
+    frame_support::traits::EnqueueMessage,
+    snowbridge_core::{ChannelId, PRIMARY_GOVERNANCE_CHANNEL},
+    snowbridge_outbound_queue_primitives::v2::Message as MessageV2,
+    snowbridge_outbound_queue_primitives::SendError,
+    sp_core::H256,
+    sp_runtime::traits::Convert,
+};
+
+/// Alternative to [snowbridge_pallet_outbound_queue::Pallet::deliver] using a different
+/// origin.
+/// Snowbridge V1 implementation!
+pub struct TanssiSendMessageEthV1<T, GetAggregateMessageOrigin>(
+    PhantomData<(T, GetAggregateMessageOrigin)>,
+);
+
+impl<T, GetAggregateMessageOrigin> DeliverMessage
+    for TanssiSendMessageEthV1<T, GetAggregateMessageOrigin>
+where
+    T: snowbridge_pallet_outbound_queue::Config,
+    GetAggregateMessageOrigin:
+        Convert<ChannelId, <T as snowbridge_pallet_outbound_queue::Config>::AggregateMessageOrigin>,
+{
+    type Ticket = TanssiTicketV1<T>;
+
+    fn deliver(ticket: Self::Ticket) -> Result<sp_core::H256, SendError> {
+        let origin = GetAggregateMessageOrigin::convert(ticket.channel_id);
+
+        if ticket.channel_id != PRIMARY_GOVERNANCE_CHANNEL {
+            ensure!(
+                !<snowbridge_pallet_outbound_queue::Pallet<T>>::operating_mode().is_halted(),
+                SendError::Halted
+            );
+        }
+
+        let message = ticket.message.as_bounded_slice();
+
+        <T as snowbridge_pallet_outbound_queue::Config>::MessageQueue::enqueue_message(
+            message, origin,
+        );
+        snowbridge_pallet_outbound_queue::Pallet::<T>::deposit_event(
+            snowbridge_pallet_outbound_queue::Event::MessageQueued {
+                id: ticket.message_id,
+            },
+        );
+
+        Ok(ticket.message_id)
+    }
+}
+
+/// Alternative to [snowbridge_pallet_outbound_queue::Pallet::deliver] using a different
+/// origin.
+pub struct TanssiSendMessageEthV2<T, GetAggregateMessageOrigin>(
+    PhantomData<(T, GetAggregateMessageOrigin)>,
+);
+
+impl<T, GetAggregateMessageOrigin> DeliverMessage
+    for TanssiSendMessageEthV2<T, GetAggregateMessageOrigin>
+where
+    T: snowbridge_pallet_outbound_queue_v2::Config,
+    GetAggregateMessageOrigin:
+        Convert<H256, <T as snowbridge_pallet_outbound_queue_v2::Config>::AggregateMessageOrigin>,
+{
+    type Ticket = TanssiTicketV2<T>;
+
+    fn deliver(ticket: Self::Ticket) -> Result<sp_core::H256, SendError> {
+        let origin = GetAggregateMessageOrigin::convert(ticket.origin);
+
+        let message = ticket.message.as_bounded_slice();
+        <T as snowbridge_pallet_outbound_queue_v2::Config>::MessageQueue::enqueue_message(
+            message, origin,
+        );
+        snowbridge_pallet_outbound_queue_v2::Pallet::<T>::deposit_event(
+            snowbridge_pallet_outbound_queue_v2::Event::MessageQueued {
+                message: MessageV2 {
+                    origin: ticket.origin,
+                    fee: ticket.fee,
+                    id: ticket.id,
+                    commands: vec![].try_into().unwrap(),
+                },
+            },
+        );
+
+        Ok(ticket.id)
+    }
+}
+
+pub struct VersionedTanssiEthMessageSender<T, GetAggregateMessageOrigin>(
+    PhantomData<(T, GetAggregateMessageOrigin)>,
+);
+
+impl<T, GetAggregateMessageOrigin> DeliverMessage
+    for VersionedTanssiEthMessageSender<T, GetAggregateMessageOrigin>
+where
+    T: snowbridge_pallet_outbound_queue::Config + snowbridge_pallet_outbound_queue_v2::Config,
+    GetAggregateMessageOrigin: Convert<ChannelId, <T as snowbridge_pallet_outbound_queue::Config>::AggregateMessageOrigin>
+        + Convert<H256, <T as snowbridge_pallet_outbound_queue_v2::Config>::AggregateMessageOrigin>,
+{
+    type Ticket = VersionedTanssiTicket<T>;
+
+    fn deliver(ticket: Self::Ticket) -> Result<sp_core::H256, SendError> {
+        match ticket {
+            VersionedTanssiTicket::V1(ticket) => {
+                TanssiSendMessageEthV1::<T, GetAggregateMessageOrigin>::deliver(ticket)
+            }
+            VersionedTanssiTicket::V2(ticket) => {
+                TanssiSendMessageEthV2::<T, GetAggregateMessageOrigin>::deliver(ticket)
+            }
+        }
+    }
+}
