@@ -94,8 +94,9 @@ declare module "@polkadot/api-base/types/consts" {
         };
         dataPreservers: {
             maxAssignmentsPerParaId: u32 & AugmentedConst<ApiType>;
-            maxNodeUrlLen: u32 & AugmentedConst<ApiType>;
+            maxNodeUrlCount: u32 & AugmentedConst<ApiType>;
             maxParaIdsVecLen: u32 & AugmentedConst<ApiType>;
+            maxStringLen: u32 & AugmentedConst<ApiType>;
             /**
              * Generic const
              **/
