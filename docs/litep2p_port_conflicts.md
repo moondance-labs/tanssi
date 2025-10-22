@@ -63,8 +63,8 @@ Using a helper script to inspect connections between processes:
 pnpm moonwall run zombie_tanssi_relay_p2p_port_conflict_libp2p
 pnpm net-ports connections-between --names "tanssi-node,tanssi-relay,polkadot"
 
-> test@1.0.0 net-listeners /home/tomasz/projects/tanssi/test
-> tsx scripts/net-listeners.ts "connections-between" "--names" "tanssi-node,tanssi-relay,polkadot"
+> test@1.0.0 net-ports /home/tomasz/projects/tanssi/test
+> tsx scripts/net-ports.ts "connections-between" "--names" "tanssi-node,tanssi-relay,polkadot"
 
 PID 3541053: tanssi-relay  netns=net:[4026531840]
   Listening (IPv4):
@@ -117,6 +117,64 @@ pnpm moonwall test zombie_data_preservers_remote_dancebox
 ```
 
 The exact cause for the timeout is unknown but it could be related to using only 1 full node to connect all the collators between them.
+
+---
+
+## Verify outbound port reuse behavior
+
+The behavior for outbound port reuse can be verified by running the test suites with p2p_port modified so that alice
+is on 30333 and bob on 30334, and using the net-ports script to verify that a connection between these 2 ports exists.
+In normal conditions we would see a random outbound port each time, but we always see the same 2 ports, which indicates
+that litep2p selects that port on purpose.
+
+```
+pnpm moonwall run zombie_tanssi_relay_p2p_port_conflict_litep2p
+pnpm net-ports connections-between --names "tanssi-node,tanssi-relay,polkadot"
+> test@1.0.0 net-ports /home/tomasz/projects/tanssi/test
+> tsx scripts/net-ports.ts "connections-between" "--names" "tanssi-node,tanssi-relay,polkadot"
+
+PID 3660056: tanssi-relay  netns=net:[4026531840]
+  Listening (IPv4):
+    - 0.0.0.0:9947
+    - 0.0.0.0:30333
+    - 0.0.0.0:38571
+
+PID 3660314: tanssi-relay  netns=net:[4026531840]
+  Listening (IPv4):
+    - 0.0.0.0:30334
+    - 0.0.0.0:42457
+    - 0.0.0.0:43137
+
+Direct TCP/IPv4 connections among provided PIDs:
+  [1] 3660056(tanssi-relay) 127.0.0.1:30333  <--ESTABLISHED/ESTABLISHED-->  127.0.0.1:30334  3660314(tanssi-relay)
+       (A inode=46846022, B inode=46823203)
+```
+
+In libp2p, we see the connection is between 30333 and 53430:
+
+```
+pnpm moonwall run zombie_tanssi_relay_p2p_port_conflict_libp2p
+pnpm net-ports connections-between --names "tanssi-node,tanssi-relay,polkadot"
+
+> test@1.0.0 net-ports /home/tomasz/projects/tanssi/test
+> tsx scripts/net-ports.ts "connections-between" "--names" "tanssi-node,tanssi-relay,polkadot"
+
+PID 3670435: tanssi-relay  netns=net:[4026531840]
+  Listening (IPv4):
+    - 0.0.0.0:9947
+    - 0.0.0.0:30333
+    - 0.0.0.0:32987
+
+PID 3670632: tanssi-relay  netns=net:[4026531840]
+  Listening (IPv4):
+    - 0.0.0.0:30334
+    - 0.0.0.0:37629
+    - 0.0.0.0:46773
+
+Direct TCP/IPv4 connections among provided PIDs:
+  [1] 3670435(tanssi-relay) 127.0.0.1:30333  <--ESTABLISHED/ESTABLISHED-->  127.0.0.1:53430  3670632(tanssi-relay)
+       (A inode=46858199, B inode=46833391)
+```
 
 ---
 
