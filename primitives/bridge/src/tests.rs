@@ -795,12 +795,13 @@ mod custom_message_processors {
                 TanssiEthMessageValidatorV2::<Test, OwnLocation>::validate(&tanssi_message)
                     .unwrap();
 
-            let result = TanssiOutboundEthProcessorSnowbridgeV2::<Test, OwnLocation>::process_message(
-                &ticket.message.as_bounded_slice().to_vec(),
-                MockAggregateMessageOrigin::SnowbridgeTestV2(ticket.origin),
-                &mut WeightMeter::with_limit(Weight::default()),
-                &mut [0u8; 32],
-            );
+            let result =
+                TanssiOutboundEthProcessorSnowbridgeV2::<Test, OwnLocation>::process_message(
+                    &ticket.message.as_bounded_slice().to_vec(),
+                    MockAggregateMessageOrigin::SnowbridgeTestV2(ticket.origin),
+                    &mut WeightMeter::with_limit(Weight::default()),
+                    &mut [0u8; 32],
+                );
             assert!(matches!(result, Err(Overweight(_))));
         });
     }

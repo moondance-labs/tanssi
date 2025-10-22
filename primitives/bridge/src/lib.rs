@@ -322,6 +322,16 @@ impl<T: snowbridge_pallet_outbound_queue_v2::Config> TicketInfo for TanssiTicket
     }
 }
 
+// Benchmarks check message_id so it must be deterministic.
+#[cfg(feature = "runtime-benchmarks")]
+impl<T: snowbridge_pallet_outbound_queue::Config + snowbridge_pallet_outbound_queue_v2::Config>
+    TicketInfo for VersionedTanssiTicket<T>
+{
+    fn message_id(&self) -> H256 {
+        H256::default()
+    }
+}
+
 // Our own implementation of validating a tanssiMessage
 pub trait ValidateMessage {
     type Ticket: TicketInfo;
