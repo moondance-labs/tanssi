@@ -69,11 +69,6 @@ parameter_types! {
     pub storage EthereumGatewayAddress: H160 = H160(hex_literal::hex!("EDa338E4dC46038493b885327842fD3E301CaB39"));
 }
 
-// Ethereum Bridge
-parameter_types! {
-    pub storage UseSnowbridgeV2: bool = false;
-}
-
 parameter_types! {
     pub Parameters: PricingParameters<u128> = PricingParameters {
         exchange_rate: FixedU128::from_rational(1, 400),

@@ -1527,6 +1527,8 @@ parameter_types! {
         &EthereumLocation::get(),
         &xcm_config::UniversalLocation::get()
     ).expect("unable to reanchor reward token");
+
+    pub storage UseSnowbridgeV2: bool = false;
 }
 
 pub struct GetWhitelistedValidators;
@@ -1562,9 +1564,13 @@ impl pallet_external_validators_rewards::Config for Runtime {
     type ExternalIndexProvider = ExternalValidators;
     type GetWhitelistedValidators = GetWhitelistedValidators;
     type Hashing = Keccak256;
-    type ValidateMessage = tp_bridge::TanssiEthMessageValidatorV1<Runtime>;
+    type ValidateMessage = tp_bridge::VersionedTanssiEthMessageValidator<
+        Runtime,
+        TokenLocationReanchored,
+        UseSnowbridgeV2,
+    >;
     type OutboundQueue =
-        tp_bridge::TanssiSendMessageEthV1<Runtime, GetAggregateMessageOriginTanssi>;
+        tp_bridge::VersionedTanssiEthMessageSender<Runtime, GetAggregateMessageOriginTanssi>;
     type Currency = Balances;
     type RewardsEthereumSovereignAccount = EthereumSovereignAccount;
     type TokenLocationReanchored = TokenLocationReanchored;
@@ -1584,9 +1590,13 @@ impl pallet_external_validator_slashes::Config for Runtime {
     type SessionInterface = DancelightSessionInterface;
     type EraIndexProvider = ExternalValidators;
     type InvulnerablesProvider = ExternalValidators;
-    type ValidateMessage = tp_bridge::TanssiEthMessageValidatorV1<Runtime>;
+    type ValidateMessage = tp_bridge::VersionedTanssiEthMessageValidator<
+        Runtime,
+        TokenLocationReanchored,
+        UseSnowbridgeV2,
+    >;
     type OutboundQueue =
-        tp_bridge::TanssiSendMessageEthV1<Runtime, GetAggregateMessageOriginTanssi>;
+        tp_bridge::VersionedTanssiEthMessageSender<Runtime, GetAggregateMessageOriginTanssi>;
     type ExternalIndexProvider = ExternalValidators;
     type QueuedSlashesProcessedPerBlock = ConstU32<10>;
     type WeightInfo = weights::pallet_external_validator_slashes::SubstrateWeight<Runtime>;

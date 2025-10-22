@@ -50,7 +50,9 @@ use {
     snowbridge_inbound_queue_primitives::v1::{
         ConvertMessage, ConvertMessageError, VersionedXcmMessage,
     },
-    snowbridge_outbound_queue_primitives::{v1::Fee, v2::Message as SnowbridgeMessageV2, SendError},
+    snowbridge_outbound_queue_primitives::{
+        v1::Fee, v2::Message as SnowbridgeMessageV2, SendError,
+    },
     snowbridge_pallet_outbound_queue::send_message_impl::Ticket,
     sp_core::{blake2_256, hashing, H256},
     sp_runtime::{app_crypto::sp_core, BoundedVec, RuntimeDebug},
