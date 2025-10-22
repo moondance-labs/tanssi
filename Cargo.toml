@@ -153,7 +153,6 @@ tp-invulnerables-filter-common = { path = "primitives/invulnerables-filter-commo
 tp-maths = { path = "primitives/maths", default-features = false }
 tp-parathread-filter-common = { path = "primitives/parathread-filter-common", default-features = false }
 tp-stream-payment-common = { path = "primitives/stream-payment-common", default-features = false }
-tp-system = { path = "primitives/system", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
 tp-xcm-commons = { path = "primitives/xcm-commons", default-features = false }
 tp-xcm-core-buyer = { path = "primitives/xcm-core-buyer", default-features = false }

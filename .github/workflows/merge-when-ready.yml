@@ -18,8 +18,6 @@ jobs:
     build:
         runs-on: self-hosted
         env:
-          TMP_TARGET: "/tmp/target"
-          CARGO_TARGET_DIR: "target"
           RUSTC_WRAPPER: "sccache"
           CARGO_INCREMENTAL: "0"
           SCCACHE_CACHE_SIZE: "100GB"
@@ -199,7 +197,7 @@ jobs:
                 version: 9
 
             - name: Setup Node
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v5
               with:
                 node-version: 22.x
                 cache: "pnpm"

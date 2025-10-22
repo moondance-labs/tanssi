@@ -1,96 +1,22 @@
+// @ts-nocheck
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith, generateKeyringPair } from "@moonwall/util";
-import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 import { XcmFragment } from "utils";
-
-const runtimeApi = {
-    runtime: {
-        DryRunApi: [
-            {
-                methods: {
-                    dry_run_call: {
-                        description: "Dry run call",
-                        params: [
-                            {
-                                name: "origin",
-                                type: "OriginCaller",
-                            },
-                            {
-                                name: "call",
-                                type: "Call",
-                            },
-                        ],
-                        type: "Result<CallDryRunEffects<Event>, XcmDryRunError>",
-                    },
-                    dry_run_xcm: {
-                        description: "Dry run XCM program",
-                        params: [
-                            {
-                                name: "origin_location",
-                                type: "XcmVersionedLocation",
-                            },
-                            {
-                                name: "xcm",
-                                type: "XcmVersionedXcm",
-                            },
-                        ],
-                        type: "Result<XcmDryRunEffects, XcmDryRunError>",
-                    },
-                },
-                version: 1,
-            },
-        ],
-    },
-    types: {
-        CallDryRunEffects: {
-            ExecutionResult: "DispatchResultWithPostInfo",
-            EmittedEvents: "Vec<Event>",
-            LocalXcm: "Option<VersionedXcm>",
-            ForwardedXcms: "Vec<(XcmVersionedLocation, Vec<XcmVersionedXcm>)>",
-        },
-        DispatchErrorWithPostInfoTPostDispatchInfo: {
-            postInfo: "PostDispatchInfo",
-            error: "DispatchError",
-        },
-        DispatchResultWithPostInfo: {
-            _enum: {
-                Ok: "PostDispatchInfo",
-                Err: "DispatchErrorWithPostInfoTPostDispatchInfo",
-            },
-        },
-        PostDispatchInfo: {
-            actualWeight: "Option<Weight>",
-            paysFee: "Pays",
-        },
-        XcmDryRunEffects: {
-            ExecutionResult: "StagingXcmV4TraitsOutcome",
-            EmittedEvents: "Vec<Event>",
-            ForwardedXcms: "Vec<(XcmVersionedLocation, Vec<XcmVersionedXcm>)>",
-        },
-        XcmDryRunError: {
-            _enum: {
-                Unimplemented: "Null",
-                VersionedConversionFailed: "Null",
-            },
-        },
-    },
-};
 
 describeSuite({
     id: "COMMON0305",
     title: "XCM - DryRunApi",
     foundationMethods: "dev",
-    testCases: ({ it }) => {
+    testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let chain: any;
 
         beforeAll(async () => {
-            polkadotJs = await ApiPromise.create({
-                provider: new WsProvider(`ws://localhost:${process.env.MOONWALL_RPC_PORT}/`),
-                ...runtimeApi,
-            });
+            polkadotJs = context.polkadotJs();
             chain = polkadotJs.consts.system.version.specName.toString();
             alice =
                 chain === "frontier-template"

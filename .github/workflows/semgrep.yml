@@ -1,0 +1,54 @@
+name: Semgrep Check
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 20 1 * *' # Runs on the 1st day of every month at 20:00 UTC
+
+jobs:
+  semgrep:
+    runs-on: ubuntu-latest
+
+    container:
+      image: semgrep/semgrep
+
+    if: (github.actor != 'dependabot[bot]')
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Run Semgrep scan
+        run: semgrep scan --output=semgrep_report.txt
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      - name: Upload Semgrep report
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-report
+          path: semgrep_report.txt
+
+  create-issue:
+    needs: semgrep
+    runs-on: self-hosted
+    if: always() && github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Download Semgrep report
+        uses: actions/download-artifact@v4
+        with:
+          name: semgrep-report
+          path: .
+
+      - name: Install GitHub CLI
+        uses: ./.github/workflow-templates/gh-cli
+
+      - name: Create issue with Semgrep results
+        run: |
+          ~/bin/bin/gh issue create \
+            --title "🔍 Semgrep scan results" \
+            --body "$(printf '### Semgrep Scan Report\n\nThe following issues were found by Semgrep:\n\n<details>\n<summary>Full Log</summary>\n\n```txt\n%s\n```\n</details>' "$(cat semgrep_report.txt)")" \
+            --assignee evgeny-s
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

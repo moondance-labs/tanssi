@@ -23,6 +23,7 @@ pub mod pallet_balances;
 pub mod pallet_beefy_mmr;
 pub mod pallet_bridge_relayers;
 pub mod pallet_collator_assignment;
+pub mod pallet_collective;
 pub mod pallet_configuration;
 pub mod pallet_conviction_voting;
 pub mod pallet_data_preservers;

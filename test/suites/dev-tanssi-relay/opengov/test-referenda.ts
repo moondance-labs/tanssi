@@ -4,20 +4,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { KeyringPair } from "@polkadot/keyring/types";
 import { isDancelightRuntime, isStarlightRuntime } from "../../../utils/runtime.ts";
-import { BN } from "@polkadot/util";
-
-export type ExtrinsicFailedEventDataType = {
-    dispatchError: {
-        Module: {
-            index: string;
-            error: string;
-        };
-    };
-};
-
-export type SubmittedEventDataType = {
-    index: number;
-};
+import { type SubmittedEventDataType, checkIfErrorIsEmitted } from "../../../utils";
 
 describeSuite({
     id: "DEVT23",
@@ -256,12 +243,22 @@ describeSuite({
 
                 const submitBlock = await context.createBlock(await submitTx.signAsync(bob), { allowFailures: true });
                 expect(submitBlock.result?.successful).to.be.false;
+
+                const submitTx2 = api.tx.referenda.submit(
+                    {
+                        Origins: "WhitelistedCaller",
+                    },
+                    { Lookup: { Hash: tx.method.hash.toHex(), len: tx.method.encodedLength } },
+                    { After: "1" }
+                );
+                const submitBlock2 = await context.createBlock(await submitTx2.signAsync(bob), { allowFailures: true });
+                expect(submitBlock2.result?.successful).to.be.false;
             },
         });
 
         it({
             id: "E04",
-            title: "Only Root track is enabled",
+            title: "Only Root and Whitelisted tracks are enabled",
             test: async ({ skip }) => {
                 if (!isDancelightRuntime(api)) {
                     skip();
@@ -274,8 +271,8 @@ describeSuite({
                 const preimageBlock = await context.createBlock(await notePreimageTx.signAsync(eve));
                 expect(preimageBlock.result?.successful).to.be.true;
 
-                // Step 2: Alice submits referenda for not existing track
-                const submitTx = api.tx.referenda.submit(
+                // Step 2: Alice submits referenda for whitelisted track
+                const submitTxSuccess = api.tx.referenda.submit(
                     {
                         Origins: "WhitelistedCaller",
                     },
@@ -283,28 +280,27 @@ describeSuite({
                     { After: "1" }
                 );
 
-                const submitBlock = await context.createBlock(await submitTx.signAsync(alice));
-                expect(submitBlock.result?.successful).to.be.false;
+                const submitBlockSuccess = await context.createBlock(await submitTxSuccess.signAsync(alice));
+                expect(submitBlockSuccess.result?.successful).to.be.true;
 
-                const metadata = await api.rpc.state.getMetadata();
-                const referendaPalletIndex = metadata.asLatest.pallets
-                    .find(({ name }) => name.toString() === "Referenda")
-                    .index.toString();
+                // Step 3: Alice submits referenda for non-existing track
+                const submitTxFailure = api.tx.referenda.submit(
+                    {
+                        Origins: "GeneralAdmin",
+                    },
+                    { Lookup: { Hash: tx.method.hash.toHex(), len: tx.method.encodedLength } },
+                    { After: "1" }
+                );
+                const submitBlockFailure = await context.createBlock(await submitTxFailure.signAsync(alice));
+                expect(submitBlockFailure.result?.successful).to.be.false;
 
-                const errorData = submitBlock.result.events
-                    .find((e) => e.event.method === "ExtrinsicFailed")
-                    .event.toHuman().data as unknown as ExtrinsicFailedEventDataType;
-                expect(errorData.dispatchError.Module.index).toEqual(referendaPalletIndex);
-
-                const errorBytes = Uint8Array.from(Buffer.from(errorData.dispatchError.Module.error.slice(2), "hex"));
-                const errorIndex = errorBytes[0];
-
-                const errorMeta = api.registry.findMetaError({
-                    index: new BN(errorData.dispatchError.Module.index),
-                    error: new BN(errorIndex),
-                });
-
-                expect(errorMeta.method).toEqual("NoTrack");
+                const isNoTrackErrorEmitted = await checkIfErrorIsEmitted(
+                    api,
+                    "Referenda",
+                    submitBlockFailure,
+                    "NoTrack"
+                );
+                expect(isNoTrackErrorEmitted, "NoTrack error must be emitted").to.be.true;
             },
         });
 

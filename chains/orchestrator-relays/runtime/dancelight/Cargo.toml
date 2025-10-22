@@ -68,6 +68,7 @@ pallet-balances = { workspace = true }
 pallet-beefy = { workspace = true }
 pallet-beefy-mmr = { workspace = true }
 pallet-collator-assignment = { workspace = true }
+pallet-collective = { workspace = true }
 pallet-conviction-voting = { workspace = true }
 pallet-ethereum-token-transfers = { workspace = true }
 pallet-external-validator-slashes = { workspace = true }
@@ -99,6 +100,7 @@ pallet-transaction-payment-rpc-runtime-api = { workspace = true }
 pallet-treasury = { workspace = true }
 pallet-utility = { workspace = true }
 pallet-whitelist = { workspace = true }
+
 pallet-xcm = { workspace = true }
 pallet-xcm-benchmarks = { workspace = true, optional = true }
 
@@ -170,7 +172,6 @@ snowbridge-pallet-outbound-queue = { workspace = true }
 snowbridge-pallet-system = { workspace = true }
 snowbridge-verification-primitives = { workspace = true }
 tp-bridge = { workspace = true }
-tp-system = { workspace = true }
 
 bp-relayers = { workspace = true }
 bridge-hub-common = { workspace = true }
@@ -204,6 +205,8 @@ std = [
 	"binary-merkle-tree/std",
 	"bitvec/std",
 	"block-builder-api/std",
+	"bp-relayers/std",
+	"bridge-hub-common/std",
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-pallet-session-benchmarking/std",
 	"cumulus-primitives-core/std",
@@ -241,6 +244,7 @@ std = [
 	"pallet-beefy/std",
 	"pallet-bridge-relayers/std",
 	"pallet-collator-assignment/std",
+	"pallet-collective/std",
 	"pallet-configuration/std",
 	"pallet-conviction-voting/std",
 	"pallet-data-preservers-runtime-api/std",
@@ -302,8 +306,6 @@ std = [
 	"serde_json/std",
 	"snowbridge-beacon-primitives/std",
 	"snowbridge-core/std",
-	"bp-relayers/std",
-	"bridge-hub-common/std",
 	"snowbridge-inbound-queue-primitives/std",
 	"snowbridge-merkle-tree/std",
 	"snowbridge-outbound-queue-primitives/std",
@@ -344,7 +346,6 @@ std = [
 	"tp-invulnerables-filter-common/std",
 	"tp-parathread-filter-common/std",
 	"tp-stream-payment-common/std",
-	"tp-system/std",
 	"tp-traits/std",
 	"tp-xcm-commons/std",
 	"tx-pool-api/std",
@@ -377,6 +378,7 @@ runtime-benchmarks = [
 	"pallet-bridge-relayers/runtime-benchmarks",
 	"pallet-collator-assignment/runtime-benchmarks",
 	"pallet-collator-assignment/runtime-benchmarks",
+	"pallet-collective/runtime-benchmarks",
 	"pallet-configuration/runtime-benchmarks",
 	"pallet-conviction-voting/runtime-benchmarks",
 	"pallet-data-preservers/runtime-benchmarks",
@@ -438,7 +440,6 @@ runtime-benchmarks = [
 	"tp-invulnerables-filter-common/runtime-benchmarks",
 	"tp-parathread-filter-common/runtime-benchmarks",
 	"tp-stream-payment-common/runtime-benchmarks",
-	"tp-system/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
@@ -466,6 +467,7 @@ try-runtime = [
 	"pallet-beefy/try-runtime",
 	"pallet-bridge-relayers/try-runtime",
 	"pallet-collator-assignment/try-runtime",
+	"pallet-collective/try-runtime",
 	"pallet-configuration/try-runtime",
 	"pallet-conviction-voting/try-runtime",
 	"pallet-data-preservers/try-runtime",
