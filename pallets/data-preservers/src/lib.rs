@@ -28,9 +28,8 @@ pub use {pallet::*, types::*};
 #[cfg(test)]
 mod mock;
 
-// // TODO: Fix tests
-// #[cfg(test)]
-// mod tests;
+#[cfg(test)]
+mod tests;
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 mod benchmarks;
