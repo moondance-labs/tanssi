@@ -19,9 +19,6 @@ pub mod rpc;
 use cumulus_client_bootnodes::{start_bootnode_tasks, StartBootnodeTasksParams};
 use node_common::service::node_builder::StartBootnodeParams;
 use sc_client_api::TrieCacheContext;
-use sc_service::TaskRegistry;
-use tokio::runtime::Handle;
-use tokio::time::sleep;
 use {
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
@@ -331,7 +328,6 @@ where
 
     let (block_import, import_queue) = import_queue(&parachain_config, &node_builder);
 
-    // TODO: start bootnode tasks
     let (relay_chain_interface, collator_key, start_bootnode_params) = node_builder
         .build_relay_chain_interface(&parachain_config, polkadot_config, collator_options.clone())
         .await?;
@@ -583,15 +579,7 @@ where
             "container-chain-spawner-debug-state",
             None,
             monitor::monitor_task(state),
-        );
-
-        if false {
-            node_builder.task_manager.spawn_essential_handle().spawn(
-                "container-chain-task-list-monitor",
-                None,
-                monitor_task_manager(node_builder.task_manager.spawn_handle()),
-            );
-        }
+        )
     }
 
     Ok(ParachainNodeStarted {
@@ -601,84 +589,6 @@ where
         orchestrator_chain_interface,
         keystore: node_builder.keystore_container.keystore(),
     })
-}
-
-/*
-monitor task manager:
-* [default] import-queue
-* [default] cumulus-dht-bootnode-discovery
-* [networking] peer-store
-* [networking] libp2p-node x35
-* [default] parachain-informant
-* [transaction-pool] txpool-notifications
-* [default] notification-pinning-worker
-* [networking] block-request-handler
-* [networking] state-request-handler
-* [transaction-pool] on-transaction-imported
-* [default] cumulus-dht-bootnode-advertisement
-* [default] container-chain-spawner-debug-state
-* [default] container-chain-task-list-monitor
-* [default] tanssi-aura
-* [networking] network-transactions-handler
-* [networking] system-rpc-handler
-* [default] container-chain-spawner-rx-loop
-* [default] cumulus-consensus
-* [transaction-pool] transaction-pool-task-1
-* [offchain-work] offchain-workers-runner
-* [block-import] basic-block-import-worker
-* [transaction-pool] transaction-pool-task-0
-* [default] cumulus-pov-recovery
-* [default] syncing
-* [default] check-assigned-para-id
-* [networking] light-client-request-handler
-* [transaction-pool] txpool-background x2
-* [networking] chain-sync-network-service-provider
-* [default] telemetry-periodic-send
-* [default] prometheus-endpoint
-* [default] informant
-* [networking] network-worker
- */
-async fn monitor_task_manager(spawn_task_handle: SpawnTaskHandle) {
-    // Main loop frequency, doesn't need to be fast
-    let monitor_period = Duration::from_secs(300 * 0 + 10);
-
-    loop {
-        sleep(monitor_period).await;
-        log::debug!("Monitor tick");
-
-        let handle_private: &SpawnTaskHandle = &spawn_task_handle;
-        #[allow(unsafe_code)]
-        let handle_public: &MySpawnTaskHandle = unsafe { &*(handle_private as *const SpawnTaskHandle as *const MySpawnTaskHandle) };
-        let tasks = handle_public.task_registry.running_tasks();
-
-        log::info!("monitor task manager:");
-        for (task, count) in tasks {
-            log::info!("* [{}] {}{}", task.group, task.name, if count > 1 { format!(" x{}", count) } else { " ".to_string() });
-        }
-    }
-}
-
-/// An handle for spawning tasks in the service.
-#[derive(Clone)]
-pub struct MySpawnTaskHandle {
-    on_exit: exit_future::Exit,
-    tokio_handle: Handle,
-    metrics: Option<MyMetrics>,
-    task_registry: TaskRegistry,
-}
-
-use prometheus_endpoint::{
-    exponential_buckets, register, CounterVec, HistogramOpts, HistogramVec, Opts, PrometheusError,
-    Registry, U64,
-};
-
-#[derive(Clone)]
-struct MyMetrics {
-    // This list is ordered alphabetically
-    poll_duration: HistogramVec,
-    poll_start: CounterVec<U64>,
-    tasks_spawned: CounterVec<U64>,
-    tasks_ended: CounterVec<U64>,
 }
 
 pub fn import_queue(

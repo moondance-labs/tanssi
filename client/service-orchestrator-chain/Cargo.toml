@@ -18,8 +18,6 @@ jsonrpsee = { workspace = true, features = [ "server" ] }
 log = { workspace = true }
 tokio = { workspace = true }
 tokio-util = { workspace = true }
-exit-future = { workspace = true }
-prometheus-endpoint = { workspace = true }
 
 # Local
 dancebox-runtime = { workspace = true, features = [ "std" ] }
