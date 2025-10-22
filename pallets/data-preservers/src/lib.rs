@@ -470,6 +470,56 @@ pub mod pallet {
 
             Self::do_start_assignment(profile_id, para_id, |_profile| Ok(assignment_witness))
         }
+
+        #[pallet::call_index(10)]
+        #[pallet::weight(T::WeightInfo::poke_deposit())]
+        #[allow(clippy::useless_conversion)]
+        pub fn poke_deposit(
+            origin: OriginFor<T>,
+            profile_id: T::ProfileId,
+        ) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+
+            let Some(mut reg) = Profiles::<T>::get(profile_id) else {
+                Err(Error::<T>::UnknownProfileId)?
+            };
+
+            // Only the owner can call
+            ensure!(reg.account == who, sp_runtime::DispatchError::BadOrigin);
+
+            let required = T::ProfileDeposit::compute_deposit(&reg.profile)?;
+            let current = reg.deposit;
+
+            // If the deposit is already correct, do nothing
+            if required == current {
+                return Ok(().into());
+            }
+
+            // Adjust the hold as necessary
+            if let Some(delta) = required.checked_sub(&current) {
+                // Increase the hold
+                T::Currency::hold(&HoldReason::ProfileDeposit.into(), &reg.account, delta)?;
+            } else if let Some(delta) = current.checked_sub(&required) {
+                // Release excess
+                T::Currency::release(
+                    &HoldReason::ProfileDeposit.into(),
+                    &reg.account,
+                    delta,
+                    Precision::Exact,
+                )?;
+            }
+
+            reg.deposit = required;
+            Profiles::<T>::insert(profile_id, reg);
+
+            Self::deposit_event(Event::ProfileUpdated {
+                profile_id,
+                old_deposit: current,
+                new_deposit: required,
+            });
+
+            Ok(().into())
+        }
     }
 
     impl<T: Config> Pallet<T> {

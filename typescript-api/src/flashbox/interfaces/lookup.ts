@@ -2059,6 +2059,9 @@ export default {
                 paraId: "u32",
                 assignmentWitness: "TpDataPreserversCommonAssignmentWitness",
             },
+            poke_deposit: {
+                profileId: "u64",
+            },
         },
     },
     /**
