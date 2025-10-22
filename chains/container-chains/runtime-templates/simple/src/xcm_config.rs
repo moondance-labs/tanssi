@@ -194,7 +194,7 @@ pub type XcmRouter = WithUniqueTopic<(
     SovereignPaidRemoteExporter<
         UmpRouter,
         UniversalLocation,
-        crate::EthereumNetwork,
+        EthereumNetwork,
         ContainerToEthTransferFee,
         ParachainInfo,
     >,

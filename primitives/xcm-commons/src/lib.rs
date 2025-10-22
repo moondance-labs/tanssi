@@ -78,7 +78,7 @@ where
     }
 }
 
-// Filter to permit reception of Ethereum assets that come from the parent
+/// Filter to ensure an ETH asset is coming from a parent.
 pub struct EthereumAssetReserveFromParent<EthereumLocation, EthereumNetwork>(
     core::marker::PhantomData<(EthereumLocation, EthereumNetwork)>,
 );

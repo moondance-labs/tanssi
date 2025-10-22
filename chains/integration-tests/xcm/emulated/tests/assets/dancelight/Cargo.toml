@@ -18,6 +18,7 @@ dancelight-emulated-chain = { workspace = true }
 dancelight-runtime = { workspace = true, features = [ "std" ] }
 dancelight-runtime-constants = { workspace = true, features = [ "std" ] }
 dancelight-system-emulated-network  = { workspace = true }
+fp-account = { workspace = true, features = [ "serde" ] }
 frame-support = { workspace = true, features = [ "tuples-96" ] }
 frontier-template-emulated-chain = { workspace = true }
 hex-literal = { workspace = true }
@@ -25,8 +26,10 @@ pallet-message-queue = { workspace = true }
 pallet-xcm = { workspace = true }
 primitives = { workspace = true }
 simple-template-emulated-chain = { workspace = true }
+snowbridge-beacon-primitives = { workspace = true }
 snowbridge-core = { workspace = true }
 snowbridge-pallet-outbound-queue = { workspace = true }
+snowbridge-inbound-queue-primitives = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-tracing = { workspace = true, features = [ "std", "test-utils" ] }
