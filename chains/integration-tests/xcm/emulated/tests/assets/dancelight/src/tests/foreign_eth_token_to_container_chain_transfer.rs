@@ -203,7 +203,8 @@ fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
         );
 
         assert!(
-            container_sovereign_balance_after <= container_sovereign_balance_before + CONTAINER_FEE_FRONTIER
+            container_sovereign_balance_after
+                <= container_sovereign_balance_before + CONTAINER_FEE_FRONTIER
         );
 
         assert_eq!(
@@ -382,7 +383,8 @@ fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
         );
 
         assert!(
-            container_sovereign_balance_after <= container_sovereign_balance_before + CONTAINER_FEE_SIMPLE
+            container_sovereign_balance_after
+                <= container_sovereign_balance_before + CONTAINER_FEE_SIMPLE
         );
 
         assert_eq!(
