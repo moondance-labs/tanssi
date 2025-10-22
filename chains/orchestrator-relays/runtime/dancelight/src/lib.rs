@@ -1148,7 +1148,7 @@ impl ProcessMessage for MessageProcessor {
                 )
             }
             AggregateMessageOrigin::SnowbridgeTanssiV2(_) => {
-                tp_bridge::CustomProcessSnowbridgeMessageV2::<Runtime, TokenLocationReanchored>::process_message(
+                tp_bridge::TanssiOutboundEthProcessorSnowbridgeV2::<Runtime, TokenLocationReanchored>::process_message(
                     message, origin, meter, id,
                 )
             }

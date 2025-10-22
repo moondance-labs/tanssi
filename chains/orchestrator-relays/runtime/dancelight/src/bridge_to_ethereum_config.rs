@@ -474,7 +474,7 @@ impl snowbridge_pallet_inbound_queue_v2::Config for Runtime {
     type Verifier = test_helpers::MockVerifier;
     // TODO: Revisit this when we enable xcmp messages
     type GatewayAddress = EthereumGatewayAddress;
-    type MessageProcessor = (SymbioticMessageProcessor<Self>,);
+    type MessageProcessor = (SymbioticInboundMessageProcessor<Self>,);
     type RewardKind = BridgeReward;
     type DefaultRewardKind = SnowbridgeReward;
     type RewardPayment = BridgeRelayers;
