@@ -623,7 +623,7 @@ mod update_profile {
     }
 }
 
- mod delete_profile {
+mod delete_profile {
     use super::*;
 
     #[test]
@@ -899,7 +899,7 @@ mod update_profile {
     }
 }
 
- mod start_assignment {
+mod start_assignment {
     use super::*;
 
     #[test]
@@ -1887,7 +1887,6 @@ mod stop_assignment {
             });
     }
 }
-
 
 mod force_start_assignment {
     use super::*;
