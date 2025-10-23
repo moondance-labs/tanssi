@@ -6,7 +6,7 @@ import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 import { WebSocketProvider, ethers, parseUnits } from "ethers";
-import { getHeaderFromRelay, getTmpZombiePath, signAndSendAndInclude, waitForLogs } from "utils";
+import { getHeaderFromRelay, getTmpZombiePath, signAndSendAndInclude, sleep, waitForLogs } from "utils";
 
 // Checks every second the log file to find the watcher best block notification until it is found or
 // timeout is reached. If timeout is reached, throws an error.
@@ -216,15 +216,14 @@ describeSuite({
                     if (blockNum > 0) {
                         break;
                     }
-                    // TODO: we want to wait for 1 container block, not 1 tanssi block, but this also works
-                    await context.waitBlock(1, "Relay");
+                    await sleep(1000);
                 }
             },
         });
 
         it({
             id: "T08",
-            timeout: 600_000,
+            timeout: 120_000,
             title: "RPC endpoint 2001 is Ethereum compatible",
             test: async () => {
                 const url = "ws://127.0.0.1:9952";
@@ -241,23 +240,7 @@ describeSuite({
                     value: parseUnits("0.001", "ether"),
                     nonce,
                 });
-                let blockNumber = await customHttpProvider.getBlockNumber();
-                console.log("frontier template block number sent: ", blockNumber);
-                console.log("frontier tx: ", tx);
-                const now = new Date();
-                const pad = (n) => String(n).padStart(2, "0");
-                console.log(
-                    `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ` +
-                        `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
-                );
-                try {
-                    // TODO: ignore timeout error, maybe transaction is included but not confirmed?
-                    await customHttpProvider.waitForTransaction(tx.hash, 1, 590_000);
-                } catch (e) {
-                    console.log(e);
-                }
-                blockNumber = await customHttpProvider.getBlockNumber();
-                console.log("frontier template block number included: ", blockNumber);
+                await customHttpProvider.waitForTransaction(tx.hash, 1, 119_000);
                 const balanceAfter = await customHttpProvider.getBalance(CHARLETH_ADDRESS);
                 expect(Number(balanceAfter - balanceBefore)).to.be.greaterThan(0);
             },

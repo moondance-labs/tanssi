@@ -1071,10 +1071,7 @@ impl parachains_paras::Config for Runtime {
     type OnNewHead = Registrar;
     type AssignCoretime = ();
     type Fungible = Balances;
-    // TODO: CooldownRemovalMultiplier from test network or from westend?
-    //type CooldownRemovalMultiplier = ConstUint<1>;
-    // Per day the cooldown is removed earlier, it should cost 1000.
-    type CooldownRemovalMultiplier = ConstUint<{ 1000 * UNITS / DAYS as u128 }>;
+    type CooldownRemovalMultiplier = ConstUint<1>;
     type AuthorizeCurrentCodeOrigin = EnsureRoot<Self::AccountId>;
 }
 

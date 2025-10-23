@@ -1148,7 +1148,8 @@ impl_runtime_apis! {
                 xcm_config::XcmConfig,
                 ExistentialDepositAsset,
                 xcm_config::PriceForParentDelivery,
-                >;                fn get_asset() -> Asset {
+                >;
+                fn get_asset() -> Asset {
                     Asset {
                         id: AssetId(SelfReserve::get()),
                         fun: Fungible(ExistentialDeposit::get()),

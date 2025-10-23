@@ -340,8 +340,6 @@ where
     ExecutorOf<T>: Clone + CodeExecutor + RuntimeVersionOf + Sync + Send + 'static,
     RuntimeApiOf<T>: MinimalCumulusRuntimeApi<BlockOf<T>, ClientOf<T>>,
 {
-    // TODO: check usages of this function, should match PR
-    // https://github.com/paritytech/polkadot-sdk/pull/8072
     pub async fn build_relay_chain_interface(
         &mut self,
         parachain_config: &Configuration,
@@ -824,7 +822,8 @@ where
         };
 
         // TODO: change for async backing
-        // TODO: only need to change `start_full_node` to `start_relay_chain_tasks`
+        // TODO: to fix deprecation warning, we only need to change
+        // `start_full_node` to `start_relay_chain_tasks`
         #[allow(deprecated)]
         cumulus_client_service::start_full_node(params)?;
 

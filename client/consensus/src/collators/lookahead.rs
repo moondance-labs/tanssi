@@ -774,21 +774,6 @@ where
                                     .collator_service()
                                     .announce_block(new_block_hash, None);
 
-                            /*
-                        if let Some(ref export_pov) = export_pov {
-                            export_pov_to_path::<Block>(
-                                export_pov.clone(),
-                                collation.proof_of_validity.clone().into_compressed(),
-                                new_block_hash,
-                                *new_block_header.number(),
-                                parent_header.clone(),
-                                *relay_parent_header.state_root(),
-                                *relay_parent_header.number(),
-                                validation_data.max_pov_size,
-                            );
-                        }
-                             */
-
                                 // Send a submit-collation message to the collation generation subsystem,
                                 // which then distributes this to validators.
                                 //

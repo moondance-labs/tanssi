@@ -757,7 +757,7 @@ dependencies = [
  "fp-account",
  "frame-support",
  "frontier-template-emulated-chain",
- "hex-literal 0.3.4",
+ "hex-literal",
  "pallet-message-queue",
  "pallet-xcm",
  "polkadot-primitives",

@@ -120,11 +120,11 @@ pub async fn start_solochain_node(
     } else {
         Role::Full
     };
-    // TODO: implement the DHT bootnode advertisement?
-    // I don't know if collators belong there, probably not, but data preservers yes?
-    // Although at this point I'm not sure if data preservers already know the para id they will be
-    // assigned to, because we need that for input of `start_bootnode_tasks`
-    let (relay_chain_interface, collator_key, _, _) =
+    // TODO: this node does not implement DHT bootnode advertisement
+    // Not sure if collators should implement it, maybe not, but data preservers should.
+    // The problem is that at this point data preservers may not know the para id they will be
+    // assigned to, and we need that for the input of `start_bootnode_tasks`
+    let (relay_chain_interface, collator_key, _relay_chain_network, _paranode_rx) =
         cumulus_client_service::build_relay_chain_interface(
             polkadot_config,
             &dummy_parachain_config,

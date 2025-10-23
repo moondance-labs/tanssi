@@ -699,7 +699,6 @@ where
         orchestrator_parent: PHash,
         key: &[u8],
     ) -> OrchestratorChainResult<Option<StorageValue>> {
-        // TODO: trusted or untrusted?
         let state = self
             .backend
             .state_at(orchestrator_parent, TrieCacheContext::Untrusted)?;
