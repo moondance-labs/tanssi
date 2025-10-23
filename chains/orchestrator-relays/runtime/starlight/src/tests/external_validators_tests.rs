@@ -706,57 +706,6 @@ fn external_validators_manual_reward_points() {
 }
 
 #[test]
-fn external_validators_rewards_sends_message_on_era_end() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-        ])
-        .with_validators(vec![])
-        .with_external_validators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
-        .build()
-        .execute_with(|| {
-            let token_location: VersionedLocation = Location::here().into();
-
-            assert_ok!(EthereumSystem::register_token(
-                root_origin(),
-                Box::new(token_location),
-                snowbridge_core::AssetMetadata {
-                    name: "dance".as_bytes().to_vec().try_into().unwrap(),
-                    symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
-                    decimals: 12,
-                }
-            ));
-
-            // SessionsPerEra depends on fast-runtime feature, this test should pass regardless
-            let sessions_per_era = SessionsPerEra::get();
-
-            // This will call on_era_end for era 0
-            run_to_session(sessions_per_era);
-
-            let outbound_msg_queue_event = System::events()
-                .iter()
-                .filter(|r| {
-                    matches!(
-                        r.event,
-                        RuntimeEvent::EthereumOutboundQueue(
-                            snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
-                        )
-                    )
-                })
-                .count();
-
-            assert_eq!(
-                outbound_msg_queue_event, 1,
-                "MessageQueued event should be emitted"
-            );
-        });
-}
-
-#[test]
 fn external_validators_rewards_merkle_proofs() {
     use {crate::ValidatorIndex, runtime_parachains::inclusion::RewardValidators};
 

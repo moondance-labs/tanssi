@@ -222,12 +222,16 @@ mod test_helpers {
     }
 }
 
+type AssetTransactor = <xcm_config::XcmConfig as xcm_executor::Config>::AssetTransactor;
+
 pub type EthTokensProcessor = EthTokensLocalProcessor<
     Runtime,
     xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
     <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+    AssetTransactor,
     starlight_runtime_constants::snowbridge::EthereumLocation,
     starlight_runtime_constants::snowbridge::EthereumNetwork,
+    frame_support::traits::ConstBool<false>,
 >;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
@@ -254,7 +258,7 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     // TODO: Revisit this when we enable xcmp messages
     type MaxMessageSize = ConstU32<2048>;
-    type AssetTransactor = <xcm_config::XcmConfig as xcm_executor::Config>::AssetTransactor;
+    type AssetTransactor = AssetTransactor;
     #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (
         SymbioticInboundMessageProcessorV1<Self>,
