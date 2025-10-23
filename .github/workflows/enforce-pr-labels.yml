@@ -19,6 +19,27 @@ jobs:
           REQUIRED_LABELS_ANY: "breaking,not-breaking"
           REQUIRED_LABELS_ALL: ""
           BANNED_LABELS: ""
+      - name: Verify affected runtime label
+        if: contains(github.event.pull_request.labels.*.name, 'B7-runtimenoteworthy')
+        uses: yogevbd/enforce-label-action@2.2.2
+        with:
+          REQUIRED_LABELS_ANY: "R1-flashbox,R1-flashbox,R2-dancebox,R3-dancelight,R4-starlight,R5-allpara,R6-orchestratorpara,R7-container,R8-orchestratorsolo,R9-allruntimes"
+          REQUIRED_LABELS_ALL: ""
+          BANNED_LABELS: ""
+      - name: Verify affected runtime version
+        if: contains(github.event.pull_request.labels.*.name, 'B7-runtimenoteworthy')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          labels=$(gh pr view ${{ github.event.pull_request.number }} --json labels --jq '.labels[].name')
+          echo "Labels: $labels"
+          if echo "$labels" | grep -q '^V-'; then
+            echo "✅ Found a label starting with V-"
+          else
+            echo "❌ No label starting with V- found!"
+            exit 1
+          fi
+
   enforce-auditability-label:
     runs-on: ubuntu-latest
     steps:
