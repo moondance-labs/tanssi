@@ -23,7 +23,7 @@ jobs:
         if: contains(github.event.pull_request.labels.*.name, 'B7-runtimenoteworthy')
         uses: yogevbd/enforce-label-action@2.2.2
         with:
-          REQUIRED_LABELS_ANY: "R1-flashbox,R1-flashbox,R2-dancebox,R3-dancelight,R4-starlight,R5-allpara,R6-orchestratorpara,R7-container,R8-orchestratorsolo,R9-all"
+          REQUIRED_LABELS_ANY: "R1-flashbox,R1-flashbox,R2-dancebox,R3-dancelight,R4-starlight,R5-allpara,R6-orchestratorpara,R7-container,R8-orchestratorsolo,R9-allruntimes"
           REQUIRED_LABELS_ALL: ""
           BANNED_LABELS: ""
       - name: Verify affected runtime version
@@ -39,7 +39,6 @@ jobs:
             echo "❌ No label starting with V- found!"
             exit 1
           fi
-
 
   enforce-auditability-label:
     runs-on: ubuntu-latest
