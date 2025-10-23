@@ -1474,9 +1474,10 @@ impl_runtime_apis! {
                     let asset_amount = 10u128;
                     let initial_asset_amount = asset_amount * 10;
 
-                    let (asset_id, asset_location) = pallet_foreign_asset_creator::benchmarks::create_default_minted_asset::<Runtime>(
+                    let (asset_id, asset_location) = pallet_foreign_asset_creator::benchmarks::create_minted_asset::<Runtime>(
                         initial_asset_amount,
-                        who
+                        who,
+                        None,
                     );
 
                     let transfer_asset: Asset = (asset_location, asset_amount).into();
