@@ -724,6 +724,9 @@ export default {
                 paraId: "u32",
                 managerAddress: "AccountId32",
             },
+            DepositUpdated: {
+                paraId: "u32",
+            },
         },
     },
     /**
@@ -1795,6 +1798,9 @@ export default {
                 paraId: "u32",
                 relayProofBlockNumber: "u32",
                 relayStorageProof: "SpTrieStorageProof",
+            },
+            poke_deposit: {
+                paraId: "u32",
             },
         },
     },
