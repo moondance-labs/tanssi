@@ -1071,7 +1071,9 @@ impl parachains_paras::Config for Runtime {
     type OnNewHead = Registrar;
     type AssignCoretime = ();
     type Fungible = Balances;
-    type CooldownRemovalMultiplier = ConstUint<1>;
+    // TODO: this could be set to 1 because we don't care, but benchmarks fail in that case
+    // Per day the cooldown is removed earlier, it should cost 1000.
+    type CooldownRemovalMultiplier = ConstUint<{ 1000 * UNITS / DAYS as u128 }>;
     type AuthorizeCurrentCodeOrigin = EnsureRoot<Self::AccountId>;
 }
 
