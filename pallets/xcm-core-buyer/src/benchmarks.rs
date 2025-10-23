@@ -51,6 +51,7 @@ mod benchmarks {
     #[benchmark]
     fn buy_core() {
         let caller: T::AccountId = whitelisted_caller();
+        T::XcmSender::ensure_successful_delivery(Location::parent());
         assert_ok!(Pallet::<T>::set_relay_xcm_weight_config(
             RawOrigin::Root.into(),
             Some(RelayXcmWeightConfigInner {
@@ -105,6 +106,7 @@ mod benchmarks {
 
     #[benchmark]
     fn force_buy_core() {
+        T::XcmSender::ensure_successful_delivery(Location::parent());
         assert_ok!(Pallet::<T>::set_relay_xcm_weight_config(
             RawOrigin::Root.into(),
             Some(RelayXcmWeightConfigInner {
