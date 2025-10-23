@@ -64,6 +64,9 @@ identity_op = { level = "allow", priority = 3 }
 manual_inspect = { level = "allow", priority = 3 }
 too-many-arguments = { level = "allow", priority = 3 }
 type_complexity = { level = "allow", priority = 3 }
+# This lint is disabled in future rust versions, so we don't need to see warnings now
+# https://rust-lang.github.io/rust-clippy/master/#uninlined_format_args
+uninlined_format_args = { level = "allow", priority = 3 }
 
 [workspace.lints.rust]
 unsafe-code = { level = "deny", priority = 1 }
