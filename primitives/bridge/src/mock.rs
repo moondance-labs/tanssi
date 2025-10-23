@@ -251,7 +251,7 @@ impl snowbridge_pallet_outbound_queue_v2::Config for Test {
     type DefaultRewardKind = ();
     type AggregateMessageOrigin = MockAggregateMessageOrigin;
     #[cfg(feature = "runtime-benchmarks")]
-    type Helper = ();
+    type Helper = Test;
 }
 pub fn new_test_ext() -> sp_io::TestExternalities {
     let t = frame_system::GenesisConfig::<Test>::default()
@@ -265,4 +265,12 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 
 pub fn run_to_block(n: u64) {
     System::run_to_block_with::<AllPalletsWithSystem>(n, frame_system::RunToBlockHooks::default());
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<T: snowbridge_pallet_outbound_queue_v2::Config>
+    snowbridge_pallet_outbound_queue_v2::BenchmarkHelper<T> for Test
+{
+    // not implemented since the MockVerifier is used for tests
+    fn initialize_storage(_: snowbridge_beacon_primitives::BeaconHeader, _: H256) {}
 }
