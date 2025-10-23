@@ -26,7 +26,6 @@ use {
     frame_benchmarking::v2::*,
     frame_support::{assert_ok, pallet_prelude::Weight, BoundedVec},
     frame_system::RawOrigin,
-    staging_xcm::v5::SendXcm,
     tp_traits::{ParaId, ParathreadParams, SlotFrequency},
 };
 
@@ -45,7 +44,7 @@ mod benchmarks {
         sp_runtime::RuntimeAppPublic,
         xcm::{
             latest::{MaybeErrorCode, QueryId},
-            v5::{Location, Response},
+            v5::{Location, Response, SendXcm},
         },
     };
 
