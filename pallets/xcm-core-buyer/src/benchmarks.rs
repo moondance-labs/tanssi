@@ -26,6 +26,7 @@ use {
     frame_benchmarking::v2::*,
     frame_support::{assert_ok, pallet_prelude::Weight, BoundedVec},
     frame_system::RawOrigin,
+    staging_xcm::v5::SendXcm,
     tp_traits::{ParaId, ParathreadParams, SlotFrequency},
 };
 
