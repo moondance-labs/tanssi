@@ -43,7 +43,6 @@ use {
 
 use crate::{AccountId, BridgeRelayers};
 use dancelight_runtime_constants::snowbridge::EthereumLocation;
-use tp_traits::BlockNumber;
 use {
     crate::{
         bridge_relayers, parameter_types, weights, xcm_config, AggregateMessageOrigin, Balance,
@@ -182,14 +181,7 @@ impl pallet_bridge_relayers::Config<BridgeRelayersInstance> for Runtime {
     type Reward = BridgeReward;
     type PaymentProcedure = bridge_relayers::BridgeRewardPayer;
 
-    type StakeAndSlash = bridge_relayers::DoNothingStakeAndSlashNamed<
-        AccountId,
-        BlockNumber,
-        Balances,
-        RelayerStakeReserveId,
-        RequiredStakeForStakeAndSlash,
-        RelayerStakeLease,
-    >;
+    type StakeAndSlash = ();
     type Balance = Balance;
     type WeightInfo = weights::pallet_bridge_relayers::WeightInfo<Runtime>;
 }

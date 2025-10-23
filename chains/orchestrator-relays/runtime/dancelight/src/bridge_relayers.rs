@@ -19,58 +19,9 @@ use {
         bridge_to_ethereum_config::{BridgeReward, BridgeRewardBeneficiaries},
         AccountId, SnowbridgeFeesAccount,
     },
-    bp_relayers::{PaymentProcedure, StakeAndSlash},
-    core::{fmt::Debug, marker::PhantomData},
-    frame_support::traits::{fungible::Mutate, tokens::Preservation, NamedReservableCurrency},
-    sp_runtime::{
-        codec::Codec,
-        traits::{Get, Zero},
-        DispatchError, DispatchResult,
-    },
+    bp_relayers::PaymentProcedure,
+    frame_support::traits::{fungible::Mutate, tokens::Preservation},
 };
-
-pub struct DoNothingStakeAndSlashNamed<AccountId, BlockNumber, Currency, ReserveId, Stake, Lease>(
-    PhantomData<(AccountId, BlockNumber, Currency, ReserveId, Stake, Lease)>,
-);
-
-impl<AccountId, BlockNumber, Currency, ReserveId, Stake, Lease>
-    StakeAndSlash<AccountId, BlockNumber, Currency::Balance>
-    for DoNothingStakeAndSlashNamed<AccountId, BlockNumber, Currency, ReserveId, Stake, Lease>
-where
-    AccountId: Codec + Debug,
-    Currency: NamedReservableCurrency<AccountId>,
-    ReserveId: Get<Currency::ReserveIdentifier>,
-    Stake: Get<Currency::Balance>,
-    Lease: Get<BlockNumber>,
-{
-    type RequiredStake = Stake;
-    type RequiredRegistrationLease = Lease;
-
-    fn reserve(_relayer: &AccountId, _amount: Currency::Balance) -> DispatchResult {
-        // Currency::reserve_named(&ReserveId::get(), relayer, amount)
-        Ok(())
-    }
-
-    fn unreserve(_relayer: &AccountId, _amount: Currency::Balance) -> Currency::Balance {
-        Zero::zero()
-        // Currency::unreserve_named(&ReserveId::get(), relayer, amount)
-    }
-
-    fn repatriate_reserved(
-        _relayer: &AccountId,
-        _beneficiary: &AccountId,
-        _amount: Currency::Balance,
-    ) -> Result<Currency::Balance, DispatchError> {
-        Ok(Zero::zero())
-        // Currency::repatriate_reserved_named(
-        //     &ReserveId::get(),
-        //     relayer,
-        //     &beneficiary,
-        //     amount,
-        //     BalanceStatus::Free,
-        // )
-    }
-}
 
 pub struct BridgeRewardPayer;
 impl PaymentProcedure<AccountId, BridgeReward, u128> for BridgeRewardPayer {
