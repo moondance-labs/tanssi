@@ -46,9 +46,9 @@ use {
 /// Alternative to [snowbridge_pallet_outbound_queue::Pallet::process_message] using a different
 /// [Command] enum.
 /// Snowbridge V1 implementation!
-pub struct TanssiOutboundEthProcessorSnowbridgeV1<T>(PhantomData<T>);
+pub struct TanssiOutboundEthMessageProcessorV1<T>(PhantomData<T>);
 
-impl<T> TanssiOutboundEthProcessorSnowbridgeV1<T>
+impl<T> TanssiOutboundEthMessageProcessorV1<T>
 where
     T: snowbridge_pallet_outbound_queue::Config,
 {
@@ -128,7 +128,7 @@ where
     }
 }
 
-impl<T> ProcessMessage for TanssiOutboundEthProcessorSnowbridgeV1<T>
+impl<T> ProcessMessage for TanssiOutboundEthMessageProcessorV1<T>
 where
     T: snowbridge_pallet_outbound_queue::Config,
 {
@@ -153,9 +153,9 @@ where
 
 /// Alternative to [snowbridge_pallet_outbound_queue::Pallet::process_message] using a different
 /// [Command] enum.
-pub struct TanssiOutboundEthProcessorSnowbridgeV2<T, SelfLocation>(PhantomData<(T, SelfLocation)>);
+pub struct TanssiOutboundEthMessageProcessorV2<T, SelfLocation>(PhantomData<(T, SelfLocation)>);
 
-impl<T, SelfLocation> TanssiOutboundEthProcessorSnowbridgeV2<T, SelfLocation>
+impl<T, SelfLocation> TanssiOutboundEthMessageProcessorV2<T, SelfLocation>
 where
     T: snowbridge_pallet_outbound_queue_v2::Config + frame_system::Config,
     SelfLocation: Get<Location>,
@@ -204,7 +204,7 @@ where
             payload: params,
         }];
 
-        let origin = AgentIdOf::convert_location(&SelfLocation::get()).ok_or(Unsupported)?;
+        let origin = TanssiAgentIdOf::convert_location(&SelfLocation::get()).ok_or(Unsupported)?;
         let topic = queued_message.id;
         // Construct the final committed message
         let message = OutboundMessageV2 {
@@ -256,7 +256,7 @@ where
     }
 }
 
-impl<T, SelfLocation> ProcessMessage for TanssiOutboundEthProcessorSnowbridgeV2<T, SelfLocation>
+impl<T, SelfLocation> ProcessMessage for TanssiOutboundEthMessageProcessorV2<T, SelfLocation>
 where
     T: snowbridge_pallet_outbound_queue_v2::Config + frame_system::Config,
     SelfLocation: Get<Location>,

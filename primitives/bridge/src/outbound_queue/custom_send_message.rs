@@ -29,12 +29,12 @@ use {
 /// Alternative to [snowbridge_pallet_outbound_queue::Pallet::deliver] using a different
 /// origin.
 /// Snowbridge V1 implementation!
-pub struct TanssiSendMessageEthV1<T, GetAggregateMessageOrigin>(
+pub struct TanssiEthMessageSenderV1<T, GetAggregateMessageOrigin>(
     PhantomData<(T, GetAggregateMessageOrigin)>,
 );
 
 impl<T, GetAggregateMessageOrigin> DeliverMessage
-    for TanssiSendMessageEthV1<T, GetAggregateMessageOrigin>
+    for TanssiEthMessageSenderV1<T, GetAggregateMessageOrigin>
 where
     T: snowbridge_pallet_outbound_queue::Config,
     GetAggregateMessageOrigin:
@@ -69,12 +69,12 @@ where
 
 /// Alternative to [snowbridge_pallet_outbound_queue::Pallet::deliver] using a different
 /// origin.
-pub struct TanssiSendMessageEthV2<T, GetAggregateMessageOrigin>(
+pub struct TanssiEthMessageSenderV2<T, GetAggregateMessageOrigin>(
     PhantomData<(T, GetAggregateMessageOrigin)>,
 );
 
 impl<T, GetAggregateMessageOrigin> DeliverMessage
-    for TanssiSendMessageEthV2<T, GetAggregateMessageOrigin>
+    for TanssiEthMessageSenderV2<T, GetAggregateMessageOrigin>
 where
     T: snowbridge_pallet_outbound_queue_v2::Config,
     GetAggregateMessageOrigin:
@@ -120,10 +120,10 @@ where
     fn deliver(ticket: Self::Ticket) -> Result<sp_core::H256, SendError> {
         match ticket {
             VersionedTanssiTicket::V1(ticket) => {
-                TanssiSendMessageEthV1::<T, GetAggregateMessageOrigin>::deliver(ticket)
+                TanssiEthMessageSenderV1::<T, GetAggregateMessageOrigin>::deliver(ticket)
             }
             VersionedTanssiTicket::V2(ticket) => {
-                TanssiSendMessageEthV2::<T, GetAggregateMessageOrigin>::deliver(ticket)
+                TanssiEthMessageSenderV2::<T, GetAggregateMessageOrigin>::deliver(ticket)
             }
         }
     }

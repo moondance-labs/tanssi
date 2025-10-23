@@ -79,7 +79,7 @@ pub use outbound_queue::*;
 
 /// Means of converting an ML origin into a h256
 /// We need to add DescribeAccountId32Terminal for cases in which a local user is the one sending the tokens
-pub type AgentIdOf = HashedDescription<
+pub type TanssiAgentIdOf = HashedDescription<
     AgentId,
     (
         DescribeHere,

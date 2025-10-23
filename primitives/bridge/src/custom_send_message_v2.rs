@@ -23,12 +23,12 @@ use {
 
 /// Alternative to [snowbridge_pallet_outbound_queue::Pallet::deliver] using a different
 /// origin.
-pub struct TanssiSendMessageEthV2<T, GetAggregateMessageOrigin>(
+pub struct TanssiEthMessageSenderV2<T, GetAggregateMessageOrigin>(
     PhantomData<(T, GetAggregateMessageOrigin)>,
 );
 
 impl<T, GetAggregateMessageOrigin> DeliverMessage
-    for TanssiSendMessageEthV2<T, GetAggregateMessageOrigin>
+    for TanssiEthMessageSenderV2<T, GetAggregateMessageOrigin>
 where
     T: snowbridge_pallet_outbound_queue_v2::Config,
     GetAggregateMessageOrigin: Convert<

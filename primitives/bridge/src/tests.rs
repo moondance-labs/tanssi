@@ -369,7 +369,7 @@ mod custom_message_delivers {
             let (ticket, _fee) =
                 TanssiEthMessageValidatorV1::<Test>::validate(&tanssi_message).unwrap();
 
-            let result = TanssiSendMessageEthV1::<Test, MockGetAggregateMessageOrigin>::deliver(
+            let result = TanssiEthMessageSenderV1::<Test, MockGetAggregateMessageOrigin>::deliver(
                 ticket.clone(),
             );
 
@@ -409,7 +409,7 @@ mod custom_message_delivers {
             let (ticket, _fee) =
                 TanssiEthMessageValidatorV2::<Test, OwnLocation>::validate(&tanssi_message)
                     .unwrap();
-            let result = TanssiSendMessageEthV2::<Test, MockGetAggregateMessageOrigin>::deliver(
+            let result = TanssiEthMessageSenderV2::<Test, MockGetAggregateMessageOrigin>::deliver(
                 ticket.clone(),
             );
 
@@ -561,7 +561,7 @@ mod custom_message_processors {
                 TanssiEthMessageValidatorV1::<Test>::validate(&tanssi_message).unwrap();
 
             assert_ok!(
-                TanssiOutboundEthProcessorSnowbridgeV1::<Test>::process_message(
+                TanssiOutboundEthMessageProcessorV1::<Test>::process_message(
                     &ticket.message.as_bounded_slice().to_vec(),
                     MockAggregateMessageOrigin::SnowbridgeTest(ticket.channel_id),
                     &mut WeightMeter::new(),
@@ -607,7 +607,7 @@ mod custom_message_processors {
             }
 
             assert_noop!(
-                TanssiOutboundEthProcessorSnowbridgeV1::<Test>::process_message(
+                TanssiOutboundEthMessageProcessorV1::<Test>::process_message(
                     &ticket.message.as_bounded_slice().to_vec(),
                     MockAggregateMessageOrigin::SnowbridgeTest(ticket.channel_id),
                     &mut WeightMeter::new(),
@@ -627,7 +627,7 @@ mod custom_message_processors {
 
             let message = [1u8; 32];
             assert_noop!(
-                TanssiOutboundEthProcessorSnowbridgeV1::<Test>::process_message(
+                TanssiOutboundEthMessageProcessorV1::<Test>::process_message(
                     &message.to_vec(),
                     MockAggregateMessageOrigin::SnowbridgeTest(H256::default().into()),
                     &mut WeightMeter::new(),
@@ -660,7 +660,7 @@ mod custom_message_processors {
             let (ticket, _fee) =
                 TanssiEthMessageValidatorV1::<Test>::validate(&tanssi_message).unwrap();
 
-            let result = TanssiOutboundEthProcessorSnowbridgeV1::<Test>::process_message(
+            let result = TanssiOutboundEthMessageProcessorV1::<Test>::process_message(
                 &ticket.message.as_bounded_slice().to_vec(),
                 MockAggregateMessageOrigin::SnowbridgeTest(ticket.channel_id),
                 &mut WeightMeter::with_limit(Weight::default()),
@@ -694,7 +694,7 @@ mod custom_message_processors {
                     .unwrap();
 
             assert_ok!(
-                TanssiOutboundEthProcessorSnowbridgeV2::<Test, OwnLocation>::process_message(
+                TanssiOutboundEthMessageProcessorV2::<Test, OwnLocation>::process_message(
                     &ticket.message.as_bounded_slice().to_vec(),
                     MockAggregateMessageOrigin::SnowbridgeTestV2(ticket.origin),
                     &mut WeightMeter::new(),
@@ -741,7 +741,7 @@ mod custom_message_processors {
             }
 
             assert_noop!(
-                TanssiOutboundEthProcessorSnowbridgeV2::<Test, OwnLocation>::process_message(
+                TanssiOutboundEthMessageProcessorV2::<Test, OwnLocation>::process_message(
                     &ticket.message.as_bounded_slice().to_vec(),
                     MockAggregateMessageOrigin::SnowbridgeTestV2(ticket.origin),
                     &mut WeightMeter::new(),
@@ -761,7 +761,7 @@ mod custom_message_processors {
 
             let message = [1u8; 32];
             assert_noop!(
-                TanssiOutboundEthProcessorSnowbridgeV2::<Test, OwnLocation>::process_message(
+                TanssiOutboundEthMessageProcessorV2::<Test, OwnLocation>::process_message(
                     &message.to_vec(),
                     MockAggregateMessageOrigin::SnowbridgeTest(H256::default().into()),
                     &mut WeightMeter::new(),
@@ -795,13 +795,12 @@ mod custom_message_processors {
                 TanssiEthMessageValidatorV2::<Test, OwnLocation>::validate(&tanssi_message)
                     .unwrap();
 
-            let result =
-                TanssiOutboundEthProcessorSnowbridgeV2::<Test, OwnLocation>::process_message(
-                    &ticket.message.as_bounded_slice().to_vec(),
-                    MockAggregateMessageOrigin::SnowbridgeTestV2(ticket.origin),
-                    &mut WeightMeter::with_limit(Weight::default()),
-                    &mut [0u8; 32],
-                );
+            let result = TanssiOutboundEthMessageProcessorV2::<Test, OwnLocation>::process_message(
+                &ticket.message.as_bounded_slice().to_vec(),
+                MockAggregateMessageOrigin::SnowbridgeTestV2(ticket.origin),
+                &mut WeightMeter::with_limit(Weight::default()),
+                &mut [0u8; 32],
+            );
             assert!(matches!(result, Err(Overweight(_))));
         });
     }
