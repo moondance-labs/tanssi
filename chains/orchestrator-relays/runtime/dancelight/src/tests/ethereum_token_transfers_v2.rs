@@ -1673,7 +1673,6 @@ fn process_message_fee_greater_than_amount_ok() {
             );
         });
 }*/
-
 #[test]
 fn send_eth_native_token_works_v2() {
     ExtBuilder::default()
@@ -1748,7 +1747,12 @@ fn send_eth_native_token_works_v2() {
             let eth_asset = AssetId(erc20_asset_location.clone())
                 .into_asset(Fungibility::Fungible(amount_to_transfer));
 
-            let fee_amount = 1u128;
+            let fee_amount_withdrawn = 1_000_000_000_000u128;
+
+            let fee_asset_withdrawn = AssetId(crate::xcm_config::TokenLocation::get().clone())
+                .into_asset(Fungibility::Fungible(fee_amount_withdrawn));
+
+            let fee_amount = 1_000_000_000u128;
 
             let fee_asset = AssetId(crate::xcm_config::TokenLocation::get().clone())
                 .into_asset(Fungibility::Fungible(fee_amount));
@@ -1767,7 +1771,7 @@ fn send_eth_native_token_works_v2() {
                 Unlimited,
             ));*/
 
-            let assets = vec![eth_asset.clone(), fee_asset.clone()];
+            let assets = vec![fee_asset_withdrawn.clone(), eth_asset.clone()];
 
             // remote-fees = None does not put a paysAsset
             // remote-fees = Some puts a paysAsset

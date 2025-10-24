@@ -55,6 +55,7 @@ pub struct EthereumBlobExporterV2<
     OutboundQueue,
     ConvertAssetId,
     BridgeChannelInfo,
+    MinReward,
 >(
     PhantomData<(
         UniversalLocation,
@@ -62,16 +63,25 @@ pub struct EthereumBlobExporterV2<
         OutboundQueue,
         ConvertAssetId,
         BridgeChannelInfo,
+        MinReward,
     )>,
 );
 
-impl<UniversalLocation, EthereumNetwork, OutboundQueue, ConvertAssetId, BridgeChannelInfo> ExportXcm
+impl<
+        UniversalLocation,
+        EthereumNetwork,
+        OutboundQueue,
+        ConvertAssetId,
+        BridgeChannelInfo,
+        MinReward,
+    > ExportXcm
     for EthereumBlobExporterV2<
         UniversalLocation,
         EthereumNetwork,
         OutboundQueue,
         ConvertAssetId,
         BridgeChannelInfo,
+        MinReward,
     >
 where
     UniversalLocation: Get<InteriorLocation>,
@@ -79,6 +89,8 @@ where
     OutboundQueue: SendMessage,
     ConvertAssetId: MaybeEquivalence<TokenId, Location>,
     BridgeChannelInfo: Get<Option<(ChannelId, AgentId)>>,
+    // Evaluated in XCM context!
+    MinReward: Get<Asset>,
 {
     type Ticket = (Vec<u8>, XcmHash);
 
@@ -92,6 +104,7 @@ where
         let expected_network = EthereumNetwork::get();
         let universal_location = UniversalLocation::get();
 
+        log::info!("HEREE");
         if network != expected_network {
             log::trace!(target: "xcm::ethereum_blob_exporterv2", "skipped due to unmatched bridge network {network:?}.");
             return Err(SendError::NotApplicable);
@@ -158,8 +171,23 @@ where
         );
         ensure!(result.is_err(), SendError::NotApplicable);
 
-        let mut converter =
-            XcmConverterV2::<ConvertAssetId, ()>::new(&message, expected_network, agent_id);
+        let dest_junction: Junction = expected_network.into();
+        let dest_location = dest_junction.into_exterior(1);
+        let min_reward_destination_view = MinReward::get().reanchored(&dest_location, &UniversalLocation::get()).map_err(|err| {
+            log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue validation of message failed. {err:?}");
+            SendError::Unroutable
+        })?;
+
+        log::info!("dest view {:?}", min_reward_destination_view);
+        log::info!("dest 2 view {:?}", dest);
+        log::info!("dest 2 view {:?}", UniversalLocation::get());
+
+        let mut converter = XcmConverterV2::<ConvertAssetId, ()>::new(
+            &message,
+            expected_network,
+            agent_id,
+            min_reward_destination_view,
+        );
 
         let mut commands: Vec<Command> = Vec::new();
         let outbound_message = converter.convert().map_err(|err|{
@@ -174,11 +202,7 @@ where
         })?;
 
         // convert fee to Asset
-        // WE ARE PUTTING THIS TO 0, AT RISK OF PEOPLE CLICKING EXPORT DOS
-        // WE PROBABLY SHOULD MAKE SURE WE CHARGE HERE WHEREVER AMOUNT WE GET FROM
-        // message.fee. We should add a handler for this
-        // WE SHOULD ESTABLISH A MIN AMOUNT TOO!
-        let fee = Assets::default();
+        let fee = Asset::from((MinReward::get().id, outbound_message.fee)).into();
 
         Ok(((ticket.encode(), XcmHash::from(outbound_message.id)), fee))
     }
@@ -236,32 +260,41 @@ pub struct XcmConverterV2<'a, ConvertAssetId, Call> {
     iter: Peekable<Iter<'a, Instruction<Call>>>,
     ethereum_network: NetworkId,
     agent_id: AgentId,
+    min_reward: Asset,
     _marker: PhantomData<ConvertAssetId>,
 }
 impl<'a, ConvertAssetId, Call> XcmConverterV2<'a, ConvertAssetId, Call>
 where
     ConvertAssetId: MaybeEquivalence<TokenId, Location>,
 {
-    pub fn new(message: &'a Xcm<Call>, ethereum_network: NetworkId, agent_id: AgentId) -> Self {
+    pub fn new(
+        message: &'a Xcm<Call>,
+        ethereum_network: NetworkId,
+        agent_id: AgentId,
+        min_reward: Asset,
+    ) -> Self {
         Self {
             iter: message.inner().iter().peekable(),
             ethereum_network,
             agent_id,
+            min_reward,
             _marker: Default::default(),
         }
     }
 
     pub fn convert(&mut self) -> Result<Message, XcmConverterError> {
         // Step 1: Try to extract optional remote fee
-        let fee = self.try_extract_fee()?;
-        let instructions: Vec<_> = self.iter.clone().cloned().collect();
-        log::error!("FEE IS  {:?}", fee);
+        // Can THIS be sent without the fee being extracted? this is a key question
+        // If the answer to this is yes then we are screwed
+        // We need to remember this is part of EXPORT
+        // this instruction cannot be reached unless export is used
+        // or is it also used in send?
 
-        log::error!("the instructions are {:?}", instructions);
+        let fee = self.try_extract_fee()?;
         let result = match self.peek() {
-            Ok(ReserveAssetDeposited { .. }) => self.make_mint_foreign_token_command(),
+            Ok(ReserveAssetDeposited { .. }) => self.make_mint_foreign_token_command(fee),
             // Get withdraw/deposit and make native tokens create message.
-            Ok(WithdrawAsset { .. }) => self.make_unlock_native_token_command(),
+            Ok(WithdrawAsset { .. }) => self.make_unlock_native_token_command(fee),
             Err(e) => Err(e),
             _ => return Err(XcmConverterError::UnexpectedInstruction),
         }?;
@@ -277,74 +310,81 @@ where
     fn try_extract_fee(&mut self) -> Result<u128, XcmConverterError> {
         use XcmConverterError::*;
 
-        // Clone iterator to peek without consuming if not matched
-        let mut clone = self.iter.clone();
-
-        // Try to match first instruction: WithdrawAsset
-        let reserved_fee_assets = match clone.next() {
-            Some(ReserveAssetDeposited(fee)) => fee,
-            _ => return Ok(0), // Not WithdrawAsset, ignore
-        };
-
-        log::error!("failing in 1");
-
-        if reserved_fee_assets.len() != 1 {
-            return Ok(0); // Doesn't match expected fee pattern
-        }
+        let reserved_fee_assets = match_expression!(self.next()?, ReserveAssetDeposited(fee), fee)
+            .ok_or(ReserveAssetDepositedExpected)?;
+        ensure!(
+            reserved_fee_assets.len() == 1,
+            XcmConverterError::AssetResolutionFailed
+        );
 
         let reserved_fee_asset = reserved_fee_assets
             .inner()
             .first()
             .cloned()
-            .ok_or(AssetResolutionFailed)?;
+            .ok_or(XcmConverterError::AssetResolutionFailed)?;
+
         let (reserved_fee_asset_id, reserved_fee_amount) = match reserved_fee_asset {
             Asset {
                 id: asset_id,
                 fun: Fungible(amount),
-            } => (asset_id, amount),
-            _ => return Ok(0),
-        };
+            } => Ok((asset_id, amount)),
+            _ => Err(XcmConverterError::AssetResolutionFailed),
+        }?;
 
-        log::error!("failing in 2");
+        log::info!("before");
 
-        // Try to match second instruction: PayFees
-        let fee_asset = match clone.next() {
-            Some(PayFees { asset: fee }) => fee,
-            _ => return Ok(0),
-        };
-        log::error!("failing in 3");
+        let fee_asset =
+            match_expression!(self.next()?, PayFees { asset: fee }, fee).ok_or(InvalidFeeAsset)?;
+
+        log::info!("fee asset {:?}", fee_asset.id.0);
 
         let (fee_asset_id, fee_amount) = match fee_asset {
             Asset {
                 id: asset_id,
                 fun: Fungible(amount),
-            } => (asset_id, *amount),
-            _ => return Ok(0),
-        };
+            } => Ok((asset_id, *amount)),
+            _ => Err(XcmConverterError::AssetResolutionFailed),
+        }?;
 
-        // Validate asset origin and amounts
-        /*if fee_asset_id.0 != Here.into() || reserved_fee_asset_id.0 != Here.into() {
-            return Ok(0);
-        }*/
+        let (min_reward_asset_id, min_reward_amount) = match &self.min_reward {
+            Asset {
+                id: asset_id,
+                fun: Fungible(amount),
+            } => Ok((asset_id, amount)),
+            _ => Err(XcmConverterError::AssetResolutionFailed),
+        }?;
 
-        if reserved_fee_amount < fee_amount {
-            return Ok(0);
-        }
-        log::error!("failing in 5");
+        log::info!("min_reward_asset_id {:?}", min_reward_asset_id.0);
+        log::info!("fee {:?}", fee_asset_id.0);
+        log::info!("reserved_fee_asset_id {:?}", reserved_fee_asset_id.0);
+        log::info!("fee_amount {:?}", fee_amount);
+        log::info!("min_reward_amount {:?}", min_reward_amount);
 
-        // Pattern matches, so now consume the instructions for real
-        let _ = self.next(); // WithdrawAsset
-        let _ = self.next(); // PayFees
+        ensure!(fee_asset_id.0 == min_reward_asset_id.0, InvalidFeeAsset);
+        log::info!("here 1");
+
+        ensure!(
+            reserved_fee_asset_id.0 == min_reward_asset_id.0,
+            InvalidFeeAsset
+        );
+        log::info!("here 2");
+
+        ensure!(reserved_fee_amount >= fee_amount, InvalidFeeAsset);
+        log::info!("here 3");
+
+        ensure!(fee_amount >= *min_reward_amount, InvalidFeeAsset);
+        log::info!("here 4");
 
         Ok(fee_amount)
     }
 
-    pub fn make_unlock_native_token_command(&mut self) -> Result<Message, XcmConverterError> {
+    pub fn make_unlock_native_token_command(
+        &mut self,
+        fee: u128,
+    ) -> Result<Message, XcmConverterError> {
         use XcmConverterError::*;
 
         let instructions: Vec<_> = self.iter.clone().cloned().collect();
-
-        log::error!("the instructions are {:?}", instructions);
 
         // Get the fee asset from ReserveAssetDeposited, if any.
         // Get the reserve assets from WithdrawAsset.
@@ -357,41 +397,12 @@ where
             let _ = self.next();
         }
 
-        //let fee_asset =
-        //	match_expression!(self.next()?, PayFees { asset: fee }, fee).ok_or(InvalidFeeAsset)?;
-
-        // Get the fee asset item from BuyExecution or continue parsing.
-        /*let fee_asset = match_expression!(self.next()?, BuyExecution { fees, .. }, fees)
-            .ok_or(InvalidFeeAsset)?;
-        let (fee_asset_id, fee_amount) = match fee_asset {
-            Asset {
-                id: asset_id,
-                fun: Fungible(amount),
-            } => Ok((asset_id, *amount)),
-            _ => Err(AssetResolutionFailed),
-        }?;*/
-
-        // We should require a MINIMUM AMOUNT HERE maybe
-        // FEE GOES TO THE RELAYER
-        // MAYBE CHARGE BOTH
-        // Check the fee asset is Ether (XCM is evaluated in Ethereum context).
-        // recheck
-        //ensure!(fee_asset_id.0 == Here.into(), InvalidFeeAsset);
-        //ensure!(reserved_fee_asset_id.0 == Here.into(), InvalidFeeAsset);
-        //ensure!(reserved_fee_amount >= fee_amount, InvalidFeeAsset);
-
         // Check AliasOrigin.
         let origin_location = match_expression!(self.next()?, AliasOrigin(origin), origin)
             .ok_or(AliasOriginExpected)?;
-        log::error!("origin is {:?}", origin_location);
-        log::error!(
-            "evaluating oriring {:?} {:?}",
-            origin_location.parent_count(),
-            origin_location.first_interior()
-        );
+
         let mut tail = origin_location.clone().split_first_interior().0;
         tail.dec_parent();
-        log::error!("tail is {:?}", tail);
 
         let origin = crate::AgentIdOf::convert_location(origin_location).ok_or(InvalidOrigin)?;
 
@@ -432,19 +443,6 @@ where
         ensure!(reserve_assets.len() == 1, TooManyAssets);
         let reserve_asset = reserve_assets.get(0).ok_or(AssetResolutionFailed)?;
 
-        // Fees are collected on Tanssi, up front and directly from the user, to cover the
-        // complete cost of the transfer. Any additional fees provided in the XCM program are
-        // refunded to the beneficiary. We only validate the fee here if its provided to make sure
-        // the XCM program is well formed. Another way to think about this from an XCM perspective
-        // would be that the user offered to pay X amount in fees, but we charge 0 of that X amount
-        // (no fee) and refund X to the user.
-        /*  if let Some(fee_asset) = fee_asset {
-            // The fee asset must be the same as the reserve asset.
-            if fee_asset.id != reserve_asset.id || fee_asset.fun > reserve_asset.fun {
-                return Err(InvalidFeeAsset);
-            }
-        }*/
-
         let (token, amount) = match reserve_asset {
             Asset {
                 id: AssetId(inner_location),
@@ -464,11 +462,9 @@ where
         // transfer amount must be greater than 0.
         ensure!(amount > 0, ZeroAssetTransfer);
 
-        log::info!("topic");
         // Check if there is a SetTopic and skip over it if found.
         let topic_id = match_expression!(self.next()?, SetTopic(id), id).ok_or(SetTopicExpected)?;
 
-        log::info!("post topic");
         let mut commands: Vec<Command> = Vec::new();
         commands.push(Command::UnlockNativeToken {
             token,
@@ -476,10 +472,11 @@ where
             amount,
         });
 
+        log::info!("fee is {:?}", fee);
         let message = Message {
             id: (*topic_id).into(),
             origin,
-            fee: 0u128,
+            fee,
             commands: BoundedVec::try_from(commands).map_err(|_| TooManyCommands)?,
         };
 
@@ -513,7 +510,7 @@ where
     /// # BuyExecution
     /// # DepositAsset
     /// # SetTopic
-    fn make_mint_foreign_token_command(&mut self) -> Result<Message, XcmConverterError> {
+    fn make_mint_foreign_token_command(&mut self, fee: u128) -> Result<Message, XcmConverterError> {
         // TODO: This function will be used only when we start receiving tokens from containers.
         // The whole struct is copied from Snowbridge and modified for our needs, and thus function
         // will be modified in a latter PR.
