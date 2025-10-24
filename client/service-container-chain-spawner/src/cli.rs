@@ -83,6 +83,10 @@ pub struct ContainerChainRunCmd {
     /// It will be removed once <https://github.com/paritytech/polkadot-sdk/issues/6020> is fixed.
     #[arg(long)]
     pub experimental_max_pov_percentage: Option<u32>,
+
+    /// Disable RPC service for this node. Useful for bootnode-only nodes that only provide network services.
+    #[arg(long)]
+    pub disable_rpc: bool,
 }
 
 impl ContainerChainRunCmd {

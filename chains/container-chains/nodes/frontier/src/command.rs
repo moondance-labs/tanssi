@@ -363,6 +363,12 @@ pub fn run() -> Result<()> {
                     }
                 }
 
+                // Disable RPC if the flag is set
+                if cli.run.disable_rpc {
+                    log::info!("RPC service disabled for bootnode-only node");
+                    config.rpc.addr = None;
+                }
+
                 match config.network.network_backend.unwrap_or(sc_network::config::NetworkBackendType::Libp2p) {
                     sc_network::config::NetworkBackendType::Libp2p => {
                         crate::service::start_parachain_node::<sc_network::NetworkWorker<_, _>>(
