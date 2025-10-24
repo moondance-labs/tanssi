@@ -832,7 +832,8 @@ where
 
         let ethereum_location = EthereumLocation::get();
 
-        if let Ok(weight) = XcmWeigher::weight(&mut xcm) {
+        // TODO: review Weight::MAX https://github.com/paritytech/polkadot-sdk/pull/7730
+        if let Ok(weight) = XcmWeigher::weight(&mut xcm, Weight::MAX) {
             let mut message_id = xcm.using_encoded(sp_io::hashing::blake2_256);
 
             let outcome = XcmProcessor::prepare_and_execute(

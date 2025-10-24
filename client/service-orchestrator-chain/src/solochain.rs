@@ -22,7 +22,6 @@ use {
         cli::RelayChainCli, service::solochain::RelayAsOrchestratorChainInterfaceBuilder,
     },
     sc_cli::{CliConfiguration, DefaultConfigurationValues, LoggerBuilder, Signals, SubstrateCli},
-    sc_network::config::NetworkBackendType,
     sc_service::{
         config::{ExecutorConfiguration, KeystoreConfig, NetworkConfiguration, TransportConfig},
         BasePath, BlocksPruning, ChainType, Configuration, DatabaseSource, GenericChainSpec,
@@ -121,7 +120,11 @@ pub async fn start_solochain_node(
     } else {
         Role::Full
     };
-    let (relay_chain_interface, collator_key) =
+    // TODO: this node does not implement DHT bootnode advertisement
+    // Not sure if collators should implement it, maybe not, but data preservers should.
+    // The problem is that at this point data preservers may not know the para id they will be
+    // assigned to, and we need that for the input of `start_bootnode_tasks`
+    let (relay_chain_interface, collator_key, _relay_chain_network, _paranode_rx) =
         cumulus_client_service::build_relay_chain_interface(
             polkadot_config,
             &dummy_parachain_config,
@@ -498,13 +501,16 @@ pub fn dummy_config(tokio_handle: tokio::runtime::Handle, base_path: BasePath) -
             kademlia_disjoint_query_paths: false,
             kademlia_replication_factor: NonZeroUsize::new(20).unwrap(),
             ipfs_server: false,
-            network_backend: Some(NetworkBackendType::Libp2p),
+            network_backend: Default::default(),
+            min_peers_to_start_warp_sync: None,
+            idle_connection_timeout: Default::default(),
         },
         keystore: KeystoreConfig::InMemory,
         database: DatabaseSource::ParityDb {
             path: Default::default(),
         },
         trie_cache_maximum_size: None,
+        warm_up_trie_cache: None,
         state_pruning: None,
         blocks_pruning: BlocksPruning::KeepAll,
         chain_spec: Box::new(

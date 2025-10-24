@@ -45,8 +45,9 @@ use {
     polkadot_overseer::dummy::dummy_overseer_builder,
     polkadot_parachain_primitives::primitives::HeadData,
     polkadot_primitives::{
-        vstaging::CoreState, CollatorPair, CoreIndex, Hash as PHash, OccupiedCoreAssumption,
-        PersistedValidationData, ScheduledCore, ValidatorId,
+        vstaging::{CandidateEvent, CoreState},
+        CollatorPair, CoreIndex, Hash as PHash, OccupiedCoreAssumption, PersistedValidationData,
+        ScheduledCore, ValidatorId,
     },
     sc_block_builder::BlockBuilderBuilder,
     sc_client_api::{
@@ -428,6 +429,10 @@ impl RelayChainInterface for RelayChain {
         &self,
         _: PHash,
     ) -> RelayChainResult<BTreeMap<CoreIndex, VecDeque<ParaId>>> {
+        unimplemented!("Not needed for test")
+    }
+
+    async fn candidate_events(&self, _: PHash) -> RelayChainResult<Vec<CandidateEvent>> {
         unimplemented!("Not needed for test")
     }
 }

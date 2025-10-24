@@ -6,7 +6,7 @@ import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 import { WebSocketProvider, ethers, parseUnits } from "ethers";
-import { getHeaderFromRelay, getTmpZombiePath, signAndSendAndInclude, waitForLogs } from "utils";
+import { getHeaderFromRelay, getTmpZombiePath, signAndSendAndInclude, sleep, waitForLogs } from "utils";
 
 // Checks every second the log file to find the watcher best block notification until it is found or
 // timeout is reached. If timeout is reached, throws an error.
@@ -205,7 +205,25 @@ describeSuite({
         });
 
         it({
+            id: "T07b",
+            title: "RPC endpoint 2001 is synced to latest block",
+            test: async () => {
+                const wsProvider = new WsProvider("ws://127.0.0.1:9952");
+                dataProvider2001Api = await ApiPromise.create({ provider: wsProvider });
+
+                while (true) {
+                    const blockNum = (await dataProvider2001Api.rpc.chain.getBlock()).block.header.number.toNumber();
+                    if (blockNum > 0) {
+                        break;
+                    }
+                    await sleep(1000);
+                }
+            },
+        });
+
+        it({
             id: "T08",
+            timeout: 120_000,
             title: "RPC endpoint 2001 is Ethereum compatible",
             test: async () => {
                 const url = "ws://127.0.0.1:9952";
@@ -214,31 +232,17 @@ describeSuite({
 
                 const signer = new ethers.Wallet(BALTATHAR_PRIVATE_KEY, customHttpProvider);
 
+                const balanceBefore = await customHttpProvider.getBalance(CHARLETH_ADDRESS);
                 // Try to send a test transaction.
-                // Ideally this could be done in one line, but there is a strange bug somewhere
-                // that causes transactions to never be included. As a workaround, we set a 60
-                // second timeout and retry sending the same transaction, and for some reason that
-                // fixes the bug.
-                for (let i = 0; i <= 5; i++) {
-                    if (i === 5) {
-                        expect.fail("failed to send tx");
-                    }
-                    try {
-                        const nonce = await customHttpProvider.getTransactionCount(BALTATHAR_ADDRESS);
-                        const tx = await signer.sendTransaction({
-                            to: CHARLETH_ADDRESS,
-                            value: parseUnits("0.001", "ether"),
-                            nonce,
-                        });
-
-                        await customHttpProvider.waitForTransaction(tx.hash, 1, 60_000);
-                        // Transaction included, don't need to try again
-                        break;
-                    } catch (e) {
-                        console.log("tx inclusion failed: ", e);
-                    }
-                }
-                expect(Number(await customHttpProvider.getBalance(CHARLETH_ADDRESS))).to.be.greaterThan(0);
+                const nonce = await customHttpProvider.getTransactionCount(BALTATHAR_ADDRESS);
+                const tx = await signer.sendTransaction({
+                    to: CHARLETH_ADDRESS,
+                    value: parseUnits("0.001", "ether"),
+                    nonce,
+                });
+                await customHttpProvider.waitForTransaction(tx.hash, 1, 119_000);
+                const balanceAfter = await customHttpProvider.getBalance(CHARLETH_ADDRESS);
+                expect(Number(balanceAfter - balanceBefore)).to.be.greaterThan(0);
             },
         });
 

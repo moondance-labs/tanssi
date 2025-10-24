@@ -397,11 +397,7 @@ async fn try_spawn<
             container_chain_cli_config.database.set_path(&db_path);
 
             let (container_chain_task_manager, container_chain_client, container_chain_db) =
-                match container_chain_cli_config
-                    .network
-                    .network_backend
-                    .unwrap_or(sc_network::config::NetworkBackendType::Libp2p)
-                {
+                match container_chain_cli_config.network.network_backend {
                     sc_network::config::NetworkBackendType::Libp2p => {
                         start_node_impl_container::<_, _, sc_network::NetworkWorker<_, _>>(
                             container_chain_cli_config,

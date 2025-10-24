@@ -273,7 +273,14 @@ pub fn run() -> Result<()> {
                     let builder = NodeConfig::new_builder(&config, None)?;
                     let db = builder.backend.expose_db();
                     let storage = builder.backend.expose_storage();
-                    cmd.run(config, builder.client, db, storage)
+                    let shared_trie_cache = builder.backend.expose_shared_trie_cache();
+                    cmd.run(
+                        config,
+                        builder.client.clone(),
+                        db,
+                        storage,
+                        shared_trie_cache,
+                    )
                 }),
                 BenchmarkCmd::Machine(cmd) => {
                     runner.sync_run(|config| cmd.run(&config, SUBSTRATE_REFERENCE_HARDWARE.clone()))
@@ -442,7 +449,7 @@ pub fn run() -> Result<()> {
                     container_chain_config = Some((container_chain_cli, tokio_handle));
                 }
 
-                match config.network.network_backend.unwrap_or(sc_network::config::NetworkBackendType::Libp2p) {
+                match config.network.network_backend {
                     sc_network::config::NetworkBackendType::Libp2p => {
                          tc_service_orchestrator_chain::parachain::start_parachain_node::<sc_network::NetworkWorker<_, _>>(
                             config,

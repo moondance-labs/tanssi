@@ -382,8 +382,8 @@ pub fn run() -> Result<()> {
                         polkadot_service::new_chain_ops(&mut config)?;
                     let db = backend.expose_db();
                     let storage = backend.expose_storage();
-
-                    cmd.run(config, client.clone(), db, storage)
+                    let shared_trie_cache = backend.expose_shared_trie_cache();
+                    cmd.run(config, client.clone(), db, storage, shared_trie_cache)
                         .map_err(Error::SubstrateCli)
                 }),
                 BenchmarkCmd::Block(cmd) => runner.sync_run(|mut config| {

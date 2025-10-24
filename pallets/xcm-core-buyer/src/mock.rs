@@ -218,7 +218,6 @@ parameter_types! {
 }
 
 impl pallet_xcm_core_buyer::Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type XcmSender = DevNull;
     type GetPurchaseCoreCall = EncodedCallToBuyCore;

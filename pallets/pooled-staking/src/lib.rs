@@ -77,7 +77,7 @@ pub mod pallet {
         frame_support::{
             pallet_prelude::*,
             storage::types::{StorageDoubleMap, StorageValue, ValueQuery},
-            traits::{fungible, tokens::Balance, IsType},
+            traits::{fungible, tokens::Balance},
             Blake2_128Concat,
         },
         frame_system::pallet_prelude::*,
@@ -285,8 +285,6 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
-        /// Overarching event type
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         /// The currency type.
         /// Shares will use the same Balance type.
         type Currency: fungible::Inspect<Self::AccountId, Balance = Self::Balance>

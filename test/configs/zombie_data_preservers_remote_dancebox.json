@@ -69,7 +69,8 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "--pool-type=fork-aware"
+                        "--pool-type=fork-aware",
+                        "-- --port 31001"
                     ]
                 },
                 {
@@ -79,7 +80,8 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "--pool-type=fork-aware"
+                        "--pool-type=fork-aware",
+                        "-- --port 31002"
                     ]
                 },
                 {
@@ -89,7 +91,8 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "--pool-type=fork-aware"
+                        "--pool-type=fork-aware",
+                        "-- --port 31003"
                     ]
                 },
                 {
@@ -99,7 +102,8 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "--pool-type=fork-aware"
+                        "--pool-type=fork-aware",
+                        "-- --port 31004"
                     ]
                 },
                 {
@@ -109,7 +113,8 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "--pool-type=fork-aware"
+                        "--pool-type=fork-aware",
+                        "-- --port 31005"
                     ]
                 },
                 {
@@ -119,7 +124,8 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "--pool-type=fork-aware"
+                        "--pool-type=fork-aware",
+                        "-- --port 31006"
                     ]
                 },
                 {
