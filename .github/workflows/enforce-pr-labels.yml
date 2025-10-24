@@ -7,6 +7,7 @@ jobs:
   enforce-noteworthiness-label:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: yogevbd/enforce-label-action@2.2.2
         with:
           REQUIRED_LABELS_ANY: "B0-silent,B5-clientnoteworthy,B7-runtimenoteworthy"
