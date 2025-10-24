@@ -15,9 +15,9 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    super::*,
     core::marker::PhantomData,
     parity_scale_codec::DecodeAll,
+    snowbridge_core::Channel,
     snowbridge_inbound_queue_primitives::v1::{
         Command as SnowbridgeCommand, Envelope, MessageProcessor, MessageV1, VersionedXcmMessage,
     },
@@ -25,12 +25,12 @@ use {
 };
 
 /// Generic token message processor to handle both native and foreign token commands, as well as token registration.
-pub struct GenericTokenMessageProcessor<T, NativeTokenProcessor, ForeignTokenProcessor>(
+pub struct GenericTokenInboundMessageProcessor<T, NativeTokenProcessor, ForeignTokenProcessor>(
     PhantomData<(T, NativeTokenProcessor, ForeignTokenProcessor)>,
 );
 
 impl<T, NativeTokenProcessor, ForeignTokenProcessor> MessageProcessor
-    for GenericTokenMessageProcessor<T, NativeTokenProcessor, ForeignTokenProcessor>
+    for GenericTokenInboundMessageProcessor<T, NativeTokenProcessor, ForeignTokenProcessor>
 where
     T: frame_system::Config,
     NativeTokenProcessor: MessageProcessor,
@@ -52,7 +52,7 @@ where
             })) => true,
             Err(e) => {
                 log::trace!(
-                    "GenericTokenMessageProcessor: failed to decode message. Error: {:?}",
+                    "GenericTokenInboundMessageProcessor: failed to decode message. Error: {:?}",
                     e
                 );
                 false
@@ -76,7 +76,7 @@ where
             })) => Ok(()),
             Err(e) => {
                 log::trace!(
-                    "GenericTokenMessageProcessor: failed to process message. Error: {:?}",
+                    "GenericTokenInboundMessageProcessor: failed to process message. Error: {:?}",
                     e
                 );
                 Ok(())
