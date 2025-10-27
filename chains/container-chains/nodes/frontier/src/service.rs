@@ -418,7 +418,7 @@ pub async fn start_dev_node(
 
                 let mut timestamp = 0u64;
                 TIMESTAMP.with(|x| {
-                    timestamp = x.clone().take();
+                    timestamp = *x.borrow();
                 });
 
                 timestamp += slot_duration;
