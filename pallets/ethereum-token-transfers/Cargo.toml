@@ -40,6 +40,7 @@ xcm = { workspace = true }
 [dev-dependencies]
 pallet-timestamp = { workspace = true }
 sp-io = { workspace = true }
+xcm-builder = { workspace = true, features = ["std"] }
 
 [features]
 default = [ "std" ]

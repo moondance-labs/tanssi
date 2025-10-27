@@ -296,6 +296,11 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
     type FeesAccount = SnowbridgeFeesAccount;
     type TokenLocationReanchored = TokenLocationReanchored;
     type TokenIdFromLocation = EthereumSystem;
+    type UniversalLocation = xcm_config::UniversalLocation;
+    type OriginToLocation = xcm_config::LocalOriginToLocation;
+    type MinV2Reward = xcm_config::MinV2Reward;
+    type EthereumLocation = EthereumLocation;
+    type LocationHashOf = tp_bridge::AgentIdOf;
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = tp_bridge::EthereumTokenTransfersBenchHelper<Runtime>;
     type WeightInfo = crate::weights::pallet_ethereum_token_transfers::SubstrateWeight<Runtime>;

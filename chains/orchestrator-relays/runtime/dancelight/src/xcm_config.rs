@@ -380,7 +380,8 @@ parameter_types! {
         pallet_ethereum_token_transfers::CurrentChannelInfo::<Runtime>::get()
             .map(|x| (x.channel_id, x.agent_id));
 
-    pub MinSnowbridgeV2Reward: Asset = (TokenLocation::get(), 1u128).into();
+    pub const MinV2Reward: u128 = 1u128; 
+    pub MinSnowbridgeV2Reward: Asset = (TokenLocation::get(), MinV2Reward::get()).into();
 }
 
 /// Exports message to the Ethereum Gateway contract.
@@ -413,6 +414,7 @@ pub type ContainerToSnowbridgeMessageExporter = ContainerEthereumBlobExporter<
 >;
 
 /// Exports message to the Ethereum Gateway contract.
+/// TODO:CHANGE
 pub type ContainerToSnowbridgeMessageExporterV2 = ContainerEthereumBlobExporter<
     UniversalLocation,
     EthereumNetwork,

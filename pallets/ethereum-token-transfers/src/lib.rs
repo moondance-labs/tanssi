@@ -64,7 +64,7 @@ use {
             Get,
         },
     },
-    frame_system::pallet_prelude::*,
+    frame_system::{pallet_prelude::*, unique},
     snowbridge_core::{AgentId, ChannelId, ParaId, TokenId},
     snowbridge_outbound_queue_primitives::v1::{
         Command as SnowbridgeCommand, Message as SnowbridgeMessage, SendMessage,
@@ -150,6 +150,9 @@ pub mod pallet {
         /// This chain's Universal Location.
         type UniversalLocation: Get<InteriorLocation>;
 
+        /// The minimum reward for v2 transfers
+        type MinV2Reward: Get<u128>;
+
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
 
@@ -191,6 +194,7 @@ pub mod pallet {
         OriginConversionFailed,
         LocationToOriginConversionFailed,
         LocationReanchorFailed,
+        MinV2RewardNotAchieved,
     }
 
     #[pallet::pallet]
@@ -304,6 +308,10 @@ pub mod pallet {
             let origin = Self::location_to_message_origin(origin_location)?;
 
             ensure!(T::ShouldUseV2::get(), Error::<T>::V2SendingIsNotAllowed);
+            ensure!(
+                reward >= T::MinV2Reward::get(),
+                Error::<T>::MinV2RewardNotAchieved
+            );
 
             let channel_info =
                 CurrentChannelInfo::<T>::get().ok_or(Error::<T>::ChannelInfoNotSet)?;
@@ -335,16 +343,11 @@ pub mod pallet {
             };
 
             let mut commands: Vec<SnowbridgeCommandV2> = Vec::new();
-            commands.push(command);
+            commands.push(command.clone());
 
-            // TODO! half of this stuff should be fixed
-            // for starters, fee cannot be 0, we should probably ask through args
-            // OR charge a certain amount (the export amount)
-            // Origin needs to be converted from the account calling this
-            // although for this command it does not affect
-            // ID should be generated somehow
+            // Check for minimum fee
             let message = SnowbridgeMessageV2 {
-                id: [0u8; 32].into(),
+                id: unique((origin, &command)).into(),
                 commands: BoundedVec::try_from(commands)
                     .map_err(|_| Error::<T>::TooManyCommands)?,
                 fee: reward,

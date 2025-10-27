@@ -200,11 +200,14 @@ fn test_transfer_native_token() {
             assert_eq!(Balances::free_balance(SnowbridgeFeesAccount::get()), 0u128);
 
             let amount_to_transfer = 100 * UNIT;
+            let reward = 1 * UNIT;
+
             let recipient = H160::random();
             assert_ok!(EthereumTokenTransfers::transfer_native_token_v2(
                 origin_of(AccountId::from(ALICE)),
                 amount_to_transfer,
-                recipient
+                recipient,
+                reward
             ));
 
             assert_eq!(
@@ -260,7 +263,6 @@ fn test_transfer_native_token() {
             let expected_token_id = EthereumSystem::convert_back(&TokenLocationReanchored::get());
 
             // Check channel data and transfer info.
-            assert_eq!(message_id_found.unwrap(), [0u8; 32].into());
             assert_eq!(channel_id_found, channel_id);
             assert_eq!(source_found, AccountId::from(ALICE));
             assert_eq!(recipient_found, recipient);
@@ -311,13 +313,16 @@ fn test_transfer_native_token_fails_if_channel_info_not_set() {
             run_to_block(4);
 
             let amount_to_transfer = 100 * UNIT;
+            let reward = 1 * UNIT;
+
             let recipient = H160::random();
 
             assert_noop!(
                 EthereumTokenTransfers::transfer_native_token_v2(
                     origin_of(AccountId::from(ALICE)),
                     amount_to_transfer,
-                    recipient
+                    recipient,
+                    reward
                 ),
                 pallet_ethereum_token_transfers::Error::<Runtime>::ChannelInfoNotSet
             );
@@ -350,13 +355,15 @@ fn test_transfer_native_token_fails_if_token_not_registered_in_ethereum_system()
             ));
 
             let amount_to_transfer = 100 * UNIT;
+            let reward = 1 * UNIT;
             let recipient = H160::random();
 
             assert_noop!(
                 EthereumTokenTransfers::transfer_native_token_v2(
                     origin_of(AccountId::from(ALICE)),
                     amount_to_transfer,
-                    recipient
+                    recipient,
+                    reward
                 ),
                 pallet_ethereum_token_transfers::Error::<Runtime>::UnknownLocationForToken
             );
@@ -402,13 +409,16 @@ fn test_transfer_native_token_fails_if_not_enough_balance() {
 
             // Try to send more than the account's balance.
             let amount_to_transfer = 70_000 * UNIT;
+            let reward = 1 * UNIT;
+
             let recipient = H160::random();
 
             assert_noop!(
                 EthereumTokenTransfers::transfer_native_token_v2(
                     origin_of(AccountId::from(ALICE)),
                     amount_to_transfer,
-                    recipient
+                    recipient,
+                    reward
                 ),
                 TokenError::FundsUnavailable
             );
@@ -1562,117 +1572,6 @@ fn process_message_fee_greater_than_amount_ok() {
         });
 }
 
-#[test]
-/*fn test_pricing_parameters() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .build()
-        .execute_with(|| {
-            run_to_block(2);
-            let token_location: VersionedLocation = Location::here().into();
-
-            assert_ok!(EthereumSystem::register_token(
-                root_origin(),
-                Box::new(token_location),
-                snowbridge_core::AssetMetadata {
-                    name: "dance".as_bytes().to_vec().try_into().unwrap(),
-                    symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
-                    decimals: 12,
-                }
-            ));
-
-            run_to_block(4);
-            let channel_id = ChannelId::new([5u8; 32]);
-            let agent_id = AgentId::from_low_u64_be(10);
-            let para_id: ParaId = 2000u32.into();
-
-            assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
-                root_origin(),
-                channel_id,
-                agent_id,
-                para_id
-            ));
-
-            let amount_to_transfer = 100 * UNIT;
-            let recipient = H160::random();
-
-            assert_ok!(EthereumTokenTransfers::transfer_native_token_v2(
-                origin_of(AccountId::from(ALICE)),
-                amount_to_transfer,
-                recipient
-            ));
-
-            let mut first_fee_found = 0u128;
-
-            let token_transfer_event = System::events()
-                .iter()
-                .filter(|r| match &r.event {
-                    RuntimeEvent::EthereumTokenTransfers(
-                        pallet_ethereum_token_transfers::Event::NativeTokenTransferred {
-                            fee, ..
-                        },
-                    ) => {
-                        first_fee_found = *fee;
-                        true
-                    }
-                    _ => false,
-                })
-                .count();
-
-            assert_eq!(
-                token_transfer_event, 1,
-                "NativeTokenTransferred event should be emitted!"
-            );
-
-            assert_eq!(
-                Balances::free_balance(SnowbridgeFeesAccount::get()),
-                first_fee_found
-            );
-
-            let mut pricing_parameters =
-                snowbridge_pallet_system::PricingParameters::<Runtime>::get();
-            pricing_parameters.multiplier = FixedU128::from_rational(2, 1);
-
-            snowbridge_pallet_system::PricingParameters::<Runtime>::set(pricing_parameters.clone());
-
-            assert_ok!(EthereumTokenTransfers::transfer_native_token_v2(
-                origin_of(AccountId::from(ALICE)),
-                amount_to_transfer,
-                recipient
-            ));
-
-            let mut second_fee_found = 0u128;
-
-            System::events().iter().for_each(|r| {
-                if let RuntimeEvent::EthereumTokenTransfers(
-                    pallet_ethereum_token_transfers::Event::NativeTokenTransferred { fee, .. },
-                ) = &r.event
-                {
-                    second_fee_found = *fee;
-                }
-            });
-
-            println!("first fee found {:?}", first_fee_found);
-            println!("second fee found {:?}", second_fee_found);
-
-            // Check the relation between two fees is the pricing parameters multiplier
-            assert!(
-                FixedU128::from_rational(second_fee_found.div_ceil(first_fee_found), 1)
-                    == pricing_parameters.multiplier
-            );
-
-            assert_eq!(
-                Balances::free_balance(SnowbridgeFeesAccount::get()),
-                first_fee_found + second_fee_found
-            );
-        });
-}*/
 #[test]
 fn send_eth_native_token_works_v2() {
     ExtBuilder::default()
