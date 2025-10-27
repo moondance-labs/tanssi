@@ -160,17 +160,23 @@ fn test_transfer_native_token_succeeds() {
 }
 
 #[test]
-fn test_add_tip_succeeds() {
+fn test_add_tip_transfers_balances_succeeds() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
 
+        let recipient_balance_before = Balances::free_balance(BOB);
+
         let message_id = MessageId::Inbound(1);
-        let amount = 1000000000;
+        let amount = 50;
 
         assert_ok!(EthereumTokenTransfers::add_tip(
             RuntimeOrigin::signed(ALICE),
             message_id,
             amount,
         ),);
+
+        let recipient_balance_after = Balances::free_balance(BOB);
+
+        assert_eq!(recipient_balance_after - recipient_balance_before, amount);
     });
 }

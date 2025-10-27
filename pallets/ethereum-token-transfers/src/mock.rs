@@ -19,7 +19,7 @@ use {
     core::cell::RefCell,
     frame_support::{
         parameter_types,
-        traits::{ConstU32, ConstU64},
+        traits::{fungible::Mutate, tokens::Preservation, ConstU32, ConstU64},
     },
     pallet_balances::AccountData,
     parity_scale_codec::{Decode, Encode},
@@ -215,8 +215,8 @@ impl pallet_ethereum_token_transfers::Config for Test {
     type WeightInfo = ();
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = ();
-    type TipHandler = DoNothingTipHandler<Test>;
-    type PalletOrigin = Self::RuntimeOrigin;
+    type TipHandler = DoNothingTipHandler;
+    type PalletOrigin = pallet_ethereum_token_transfers::Origin<Test>;
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
@@ -238,15 +238,30 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 }
 
 pub const ALICE: u64 = 1;
+pub const BOB: u64 = 2;
 
 pub fn run_to_block(n: u64) {
     System::run_to_block_with::<AllPalletsWithSystem>(n, frame_system::RunToBlockHooks::default());
 }
 
-pub struct DoNothingTipHandler<T>(core::marker::PhantomData<T>);
+pub struct DoNothingTipHandler;
 
-impl<T, Origin> pallet_ethereum_token_transfers::TipHandler<Origin> for DoNothingTipHandler<T> {
-    fn add_tip(_origin: Origin, _message_id: MessageId, _amount: u128) -> DispatchResult {
+impl pallet_ethereum_token_transfers::TipHandler<pallet_ethereum_token_transfers::Origin<Test>>
+    for DoNothingTipHandler
+{
+    fn add_tip(
+        origin: pallet_ethereum_token_transfers::Origin<Test>,
+        _message_id: MessageId,
+        amount: u128,
+    ) -> DispatchResult {
+        let sender = match origin {
+            pallet_ethereum_token_transfers::Origin::<Test>::EthereumTokenTransfers(account) => {
+                account
+            }
+        };
+
+        Balances::transfer(&sender, &BOB, amount.into(), Preservation::Preserve)?;
+
         Ok(())
     }
 }
