@@ -41,29 +41,3 @@ where
         Ok(O::from(Origin::EthereumTokenTransfers(account)))
     }
 }
-
-// Probably need to propose upstream
-pub struct EitherOfDiverseWithSuccess<L, R, Success>(PhantomData<(L, R, Success)>);
-
-impl<OuterOrigin: Clone, L, R, Success> EnsureOrigin<OuterOrigin>
-    for EitherOfDiverseWithSuccess<L, R, Success>
-where
-    L: EnsureOrigin<OuterOrigin>,
-    R: EnsureOrigin<OuterOrigin>,
-    Success: TypedGet,
-{
-    type Success = Success::Type;
-
-    fn try_origin(o: OuterOrigin) -> Result<Self::Success, OuterOrigin> {
-        if L::try_origin(o.clone()).is_ok() || R::try_origin(o.clone()).is_ok() {
-            Ok(Success::get())
-        } else {
-            Err(o)
-        }
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn try_successful_origin() -> Result<OuterOrigin, ()> {
-        L::try_successful_origin().or_else(|_| R::try_successful_origin())
-    }
-}

@@ -31,7 +31,7 @@ use parity_scale_codec::{Decode, MaxEncodedLen};
 use snowbridge_core::reward::{AddTip, AddTipError, MessageId};
 use snowbridge_outbound_queue_primitives::v2::{Message, SendMessage};
 use snowbridge_outbound_queue_primitives::SendError;
-use sp_runtime::traits::BadOrigin;
+use sp_runtime::traits::{BadOrigin, Replace};
 
 #[cfg(not(feature = "runtime-benchmarks"))]
 use {
@@ -55,7 +55,10 @@ use {
         OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, SnowbridgeFeesAccount,
         TokenLocationReanchored, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
-    frame_support::{traits::PalletInfoAccess, weights::ConstantMultiplier},
+    frame_support::{
+        traits::{EitherOf, MapSuccess, PalletInfoAccess},
+        weights::ConstantMultiplier,
+    },
     pallet_xcm::EnsureXcm,
     snowbridge_beacon_primitives::ForkVersions,
     snowbridge_core::{gwei, meth, PricingParameters, Rewards},
@@ -283,10 +286,12 @@ impl snowbridge_pallet_system_v2::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type OutboundQueue = DoNothingOutboundQueue;
     type InboundQueue = EthereumInboundQueueV2;
-    type FrontendOrigin = pallet_ethereum_token_transfers::origins::EitherOfDiverseWithSuccess<
-        EnsureRoot<AccountId>,
-        pallet_ethereum_token_transfers::origins::EnsureEthereumTokenTransfers<Runtime>,
-        EthereumLocation,
+    type FrontendOrigin = EitherOf<
+        MapSuccess<EnsureRoot<AccountId>, Replace<EthereumLocation>>,
+        MapSuccess<
+            pallet_ethereum_token_transfers::origins::EnsureEthereumTokenTransfers<Runtime>,
+            Replace<EthereumLocation>,
+        >,
     >;
     type GovernanceOrigin = EnsureRootWithSuccess<AccountId, EthereumLocation>;
     type WeightInfo = ();
