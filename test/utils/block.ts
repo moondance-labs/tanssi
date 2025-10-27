@@ -335,8 +335,7 @@ export async function signAndSendAndInclude(
                 }
             }).catch((error) => {
                 console.error("callerStack", callerStack);
-                console.error("error", error);
-                reject(error);
+                reject(error.toHuman());
             });
         });
     };
@@ -362,7 +361,7 @@ export async function signAndSendAndInclude(
             })
             .catch((error) => {
                 clearTimeout(timer);
-                reject(error);
+                reject(error.toHuman());
             });
     });
 }

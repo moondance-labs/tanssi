@@ -31,11 +31,10 @@ use {
     cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
     fc_mapping_sync::{kv::MappingSyncWorker, SyncStrategy},
     fc_rpc::{
-        EthApiServer, EthFilterApiServer, EthPubSubApiServer, EthTask, TxPool, TxPoolApiServer,
+        EthApiServer, EthFilterApiServer, EthPubSubApiServer, EthTask, EthereumRuntimeRPCApi,
+        NoTransactionConverter, TxPool, TxPoolApiServer,
     },
     fc_storage::StorageOverride,
-    fp_rpc::EthereumRuntimeRPCApi,
-    fp_rpc::NoTransactionConverter,
     frame_support::CloneNoBound,
     futures::StreamExt,
     jsonrpsee::RpcModule,

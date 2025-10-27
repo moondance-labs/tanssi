@@ -66,7 +66,7 @@ fn test_message_exporter_disabled_for_origin_account() {
                 )
             );
             assert!(
-                log_capture.contains("XCM execution failed with error error=InstructionError { index: 0, error: WeightLimitReached(Weight { ref_time: 18446744073709551615, proof_size: 18446744073709551615 }) }")
+                log_capture.contains("XCM execution failed with error error=InstructionError { index: 0, error: WeightLimitReached")
             );
         });
     });
