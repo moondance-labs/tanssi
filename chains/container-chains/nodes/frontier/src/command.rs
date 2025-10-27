@@ -292,7 +292,7 @@ pub fn run() -> Result<()> {
             let runner = cli.create_runner(&cli.run.normalize())?;
             let collator_options = cli.run.collator_options();
 
-            runner.run_node_until_exit(|config| async move {
+            runner.run_node_until_exit(|mut config| async move {
                 let relaychain_args = cli.relay_chain_args;
                 let hwbench = (!cli.no_hardware_benchmarks).then(||
                     config.database.path().map(|database_path| {
