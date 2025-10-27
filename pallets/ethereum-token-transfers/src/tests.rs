@@ -18,7 +18,7 @@ use {
     super::*,
     crate::mock::*,
     frame_support::{assert_noop, assert_ok},
-    snowbridge_core::{AgentId, ChannelId, ParaId},
+    snowbridge_core::{reward::MessageId, AgentId, ChannelId, ParaId},
     sp_runtime::DispatchError::BadOrigin,
 };
 
@@ -156,5 +156,21 @@ fn test_transfer_native_token_succeeds() {
         assert_eq!(Balances::free_balance(FeesAccount::get()), 50u128);
 
         assert_eq!(sent_ethereum_message_nonce(), 1);
+    });
+}
+
+#[test]
+fn test_add_tip_succeeds() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+
+        let message_id = MessageId::Inbound(1);
+        let amount = 1000000000;
+
+        assert_ok!(EthereumTokenTransfers::add_tip(
+            RuntimeOrigin::signed(ALICE),
+            message_id,
+            amount,
+        ),);
     });
 }

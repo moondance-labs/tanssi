@@ -180,7 +180,8 @@ fn test_add_tip_for_ethereum_system_v2_succeeded_with_correct_pallet_origin() {
             let amount = 100;
 
             let origin: RuntimeOrigin =
-                pallet_ethereum_token_transfers::Origin::EthereumTokenTransfers.into();
+                pallet_ethereum_token_transfers::Origin::EthereumTokenTransfers(sender.clone())
+                    .into();
 
             assert_ok!(EthereumSystemV2::add_tip(
                 origin,

@@ -132,11 +132,12 @@ pub mod pallet {
         #[cfg(feature = "runtime-benchmarks")]
         type BenchmarkHelper: TokenChannelSetterBenchmarkHelperTrait;
         /// Tip Handler which is used for adding tips to the EthereumSystemV2 transaction.
-        type TipHandler: TipHandler<Self::AccountId>;
+        type TipHandler: TipHandler<Self::PalletOrigin>;
+        type PalletOrigin: From<Origin<Self>>;
     }
 
-    pub trait TipHandler<AccountId> {
-        fn add_tip(sender: AccountId, message_id: MessageId, amount: u128) -> DispatchResult;
+    pub trait TipHandler<Origin> {
+        fn add_tip(origin: Origin, message_id: MessageId, amount: u128) -> DispatchResult;
     }
 
     // Events
@@ -193,9 +194,9 @@ pub mod pallet {
         RuntimeDebug,
     )]
     #[pallet::origin]
-    pub enum Origin {
+    pub enum Origin<T: Config> {
         /// The origin for the pallet to make extrinsics.
-        EthereumTokenTransfers,
+        EthereumTokenTransfers(T::AccountId),
     }
 
     // Calls
@@ -295,14 +296,10 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            T::Currency::transfer(
-                &sender,
-                &T::FeesAccount::get(),
-                amount.into(),
-                Preservation::Preserve,
-            )?;
+            let custom_origin =
+                T::PalletOrigin::from(Origin::<T>::EthereumTokenTransfers(sender.clone()));
 
-            T::TipHandler::add_tip(sender.clone(), message_id.clone(), amount)
+            T::TipHandler::add_tip(custom_origin, message_id.clone(), amount)
                 .map_err(|_| Error::<T>::TipFailed)?;
 
             Ok(())
@@ -312,8 +309,8 @@ pub mod pallet {
 
 pub struct DenyTipHandler<T>(core::marker::PhantomData<T>);
 
-impl<T> TipHandler<T> for DenyTipHandler<T> {
-    fn add_tip(_sender: T, _message_id: MessageId, _amount: u128) -> DispatchResult {
+impl<T, Origin> TipHandler<Origin> for DenyTipHandler<T> {
+    fn add_tip(_origin: Origin, _message_id: MessageId, _amount: u128) -> DispatchResult {
         Err("Execution is not permitted!".into())
     }
 }

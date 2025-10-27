@@ -144,7 +144,8 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = tp_bridge::EthereumTokenTransfersBenchHelper<Runtime>;
     type WeightInfo = crate::weights::pallet_ethereum_token_transfers::SubstrateWeight<Runtime>;
-    type TipHandler = DenyTipHandler<sp_runtime::AccountId32>;
+    type TipHandler = DenyTipHandler<Runtime>;
+    type PalletOrigin = Self::RuntimeOrigin;
 }
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmark_helper {

@@ -14,18 +14,20 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use {super::pallet::Origin, frame_support::pallet_prelude::*};
+use {super::pallet::Origin, crate::Config, frame_support::pallet_prelude::*};
 
 /// Implementation of the [EnsureOrigin] trait for the [Origin::EthereumTokenTransfers] origin.
-pub struct EnsureEthereumTokenTransfers;
-impl<O: OriginTrait + From<Origin>> EnsureOrigin<O> for EnsureEthereumTokenTransfers
+pub struct EnsureEthereumTokenTransfers<T>(core::marker::PhantomData<T>);
+impl<T: Config, O: OriginTrait + From<Origin<T>>> EnsureOrigin<O>
+    for EnsureEthereumTokenTransfers<T>
 where
-    for<'a> &'a O::PalletsOrigin: TryInto<&'a Origin>,
+    for<'a> &'a O::PalletsOrigin: TryInto<&'a Origin<T>>,
 {
-    type Success = ();
+    type Success = T::AccountId;
+
     fn try_origin(o: O) -> Result<Self::Success, O> {
         match o.caller().try_into() {
-            Ok(Origin::EthereumTokenTransfers) => return Ok(()),
+            Ok(Origin::EthereumTokenTransfers(account_id)) => return Ok(account_id.clone()),
             _ => (),
         }
 
@@ -34,7 +36,9 @@ where
 
     #[cfg(feature = "runtime-benchmarks")]
     fn try_successful_origin() -> Result<O, ()> {
-        Ok(O::from(Origin::EthereumTokenTransfers))
+        use frame_support::traits::Get;
+        let account = T::BenchmarkHelper::get();
+        Ok(O::from(Origin::EthereumTokenTransfers(account)))
     }
 }
 
