@@ -3,9 +3,9 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import { generateEmptyGenesisData, initializeCustomCreateBlock } from "utils";
 import type { DpContainerChainGenesisDataContainerChainGenesisData } from "@polkadot/types/lookup";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_DATA_PRESERVERS, checkCallIsFiltered } from "helpers";
+import { generateEmptyGenesisData, initializeCustomCreateBlock } from "utils";
 
 describeSuite({
     id: "DEVT0901",
@@ -41,10 +41,13 @@ describeSuite({
             title: "User can create profile",
             test: async () => {
                 const profile = {
-                    url: "exemple",
+                    bootnodeUrl: "example",
                     paraIds: { whitelist: [42, 43] },
-                    mode: "Bootnode",
+                    nodeType: "Substrate",
                     assignmentRequest: "Free",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
+                    additionalInfo: "0x",
                 };
 
                 const tx = polkadotJs.tx.dataPreservers.createProfile(profile);
@@ -61,12 +64,15 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 102_000_000_000,
+                    deposit: 102_400_000_000,
                     profile: {
-                        url: "0x6578656d706c65",
+                        bootnodeUrl: "0x6578616d706c65",
                         paraIds: { whitelist: [42, 43] },
-                        mode: { bootnode: null },
+                        nodeType: "Substrate",
                         assignmentRequest: { free: null },
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
+                        additionalInfo: "0x",
                     },
                     assignment: null,
                 });
@@ -78,9 +84,13 @@ describeSuite({
             title: "User can update profile",
             test: async () => {
                 const profile = {
-                    url: "exemple",
+                    bootnodeUrl: "exemple",
                     paraIds: { whitelist: [42, 43] },
-                    mode: "Bootnode",
+                    nodeType: "Substrate",
+                    assignmentRequest: "Free",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
+                    additionalInfo: "0x",
                 };
 
                 const tx = polkadotJs.tx.dataPreservers.createProfile(profile);
@@ -101,20 +111,27 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(++profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 102_000_000_000,
+                    deposit: 102_400_000_000,
                     profile: {
-                        url: "0x6578656d706c65",
+                        bootnodeUrl: "0x6578656d706c65",
                         paraIds: { whitelist: [42, 43] },
-                        mode: { bootnode: null },
+                        nodeType: "Substrate",
                         assignmentRequest: { free: null },
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
+                        additionalInfo: "0x",
                     },
                     assignment: null,
                 });
 
                 const profile2 = {
-                    url: "exemple2",
+                    bootnodeUrl: "example2",
                     paraIds: { whitelist: [42, 43] },
-                    mode: { Rpc: { supportsEthereumRpcs: false } },
+                    nodeType: "Substrate",
+                    assignmentRequest: "Free",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
+                    additionalInfo: "0x",
                 };
 
                 const tx2 = polkadotJs.tx.dataPreservers.updateProfile(profileId, profile2);
@@ -124,12 +141,15 @@ describeSuite({
                 const storedProfile2 = await polkadotJs.query.dataPreservers.profiles(profileId);
                 expect(storedProfile2.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 102_200_000_000,
+                    deposit: 102_500_000_000,
                     profile: {
-                        url: "0x6578656d706c6532",
+                        bootnodeUrl: "0x6578616d706c6532",
                         paraIds: { whitelist: [42, 43] },
-                        mode: { rpc: { supportsEthereumRpcs: false } },
+                        nodeType: "Substrate",
                         assignmentRequest: { free: null },
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
+                        additionalInfo: "0x",
                     },
                     assignment: null,
                 });
@@ -141,9 +161,13 @@ describeSuite({
             title: "User can delete profile",
             test: async () => {
                 const profile = {
-                    url: "exemple",
+                    bootnodeUrl: "exemple",
                     paraIds: { whitelist: [42, 43] },
-                    mode: "Bootnode",
+                    nodeType: "Substrate",
+                    assignmentRequest: "Free",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
+                    additionalInfo: "0x",
                 };
 
                 const tx = polkadotJs.tx.dataPreservers.createProfile(profile);
@@ -164,11 +188,14 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(++profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 102_000_000_000,
+                    deposit: 102_400_000_000,
                     profile: {
-                        url: "0x6578656d706c65",
+                        bootnodeUrl: "0x6578656d706c65",
                         paraIds: { whitelist: [42, 43] },
-                        mode: { bootnode: null },
+                        nodeType: "Substrate",
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
+                        additionalInfo: "0x",
                         assignmentRequest: { free: null },
                     },
                     assignment: null,
@@ -188,9 +215,13 @@ describeSuite({
             title: "Root can force create profile",
             test: async () => {
                 const profile = {
-                    url: "exemple",
+                    bootnodeUrl: "example",
                     paraIds: { whitelist: [42, 43] },
-                    mode: "Bootnode",
+                    nodeType: "Substrate",
+                    assignmentRequest: "Free",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
+                    additionalInfo: "0x",
                 };
 
                 const tx = polkadotJs.tx.dataPreservers.forceCreateProfile(profile, general_user_bob.address);
@@ -209,9 +240,12 @@ describeSuite({
                     account: general_user_bob.address,
                     deposit: 0,
                     profile: {
-                        url: "0x6578656d706c65",
+                        bootnodeUrl: "0x6578616d706c65",
                         paraIds: { whitelist: [42, 43] },
-                        mode: { bootnode: null },
+                        nodeType: "Substrate",
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
+                        additionalInfo: "0x",
                         assignmentRequest: { free: null },
                     },
                     assignment: null,
@@ -224,9 +258,13 @@ describeSuite({
             title: "Root can force update profile",
             test: async () => {
                 const profile = {
-                    url: "exemple",
+                    bootnodeUrl: "example",
                     paraIds: { whitelist: [42, 43] },
-                    mode: "Bootnode",
+                    nodeType: "Substrate",
+                    assignmentRequest: "Free",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
+                    additionalInfo: "0x",
                 };
 
                 const tx = polkadotJs.tx.dataPreservers.createProfile(profile);
@@ -246,20 +284,27 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(++profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 102_000_000_000,
+                    deposit: 102_400_000_000,
                     profile: {
-                        url: "0x6578656d706c65",
+                        bootnodeUrl: "0x6578616d706c65",
                         paraIds: { whitelist: [42, 43] },
-                        mode: { bootnode: null },
                         assignmentRequest: { free: null },
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
+                        additionalInfo: "0x",
+                        nodeType: "Substrate",
                     },
                     assignment: null,
                 });
 
                 const profile2 = {
-                    url: "exemple2",
+                    bootnodeUrl: "example2",
                     paraIds: { whitelist: [42, 43] },
-                    mode: { Rpc: { supportsEthereumRpcs: false } },
+                    nodeType: "Substrate",
+                    assignmentRequest: "Free",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
+                    additionalInfo: "0x",
                 };
 
                 const tx2 = polkadotJs.tx.dataPreservers.forceUpdateProfile(profileId, profile2);
@@ -271,10 +316,13 @@ describeSuite({
                     account: general_user_bob.address,
                     deposit: 0,
                     profile: {
-                        url: "0x6578656d706c6532",
+                        bootnodeUrl: "0x6578616d706c6532",
                         paraIds: { whitelist: [42, 43] },
-                        mode: { rpc: { supportsEthereumRpcs: false } },
+                        nodeType: "Substrate",
                         assignmentRequest: { free: null },
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
+                        additionalInfo: "0x",
                     },
                     assignment: null,
                 });
@@ -286,9 +334,13 @@ describeSuite({
             title: "Root can force delete profile",
             test: async () => {
                 const profile = {
-                    url: "exemple",
+                    bootnodeUrl: "example",
                     paraIds: { whitelist: [42, 43] },
-                    mode: "Bootnode",
+                    nodeType: "Substrate",
+                    assignmentRequest: "Free",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
+                    additionalInfo: "0x",
                 };
 
                 const tx = polkadotJs.tx.dataPreservers.createProfile(profile);
@@ -308,12 +360,15 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(++profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 102_000_000_000,
+                    deposit: 102_400_000_000,
                     profile: {
-                        url: "0x6578656d706c65",
+                        bootnodeUrl: "0x6578616d706c65",
                         paraIds: { whitelist: [42, 43] },
-                        mode: { bootnode: null },
+                        nodeType: "Substrate",
                         assignmentRequest: { free: null },
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
+                        additionalInfo: "0x",
                     },
                     assignment: null,
                 });
@@ -355,10 +410,13 @@ describeSuite({
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
                 const profile = {
-                    url: "exemple",
+                    bootnodeUrl: "exemple",
                     paraIds: { whitelist: [paraId] },
-                    mode: "Bootnode",
+                    nodeType: "Substrate",
                     assignmentRequest: "Free",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
+                    additionalInfo: "0x",
                 };
 
                 const profileTx = polkadotJs.tx.dataPreservers.createProfile(profile);
@@ -373,11 +431,14 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 101_600_000_000,
+                    deposit: 102_000_000_000,
                     profile: {
-                        url: "0x6578656d706c65",
+                        bootnodeUrl: "0x6578656d706c65",
                         paraIds: { whitelist: [paraId] },
-                        mode: { bootnode: null },
+                        nodeType: "Substrate",
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
+                        additionalInfo: "0x",
                         assignmentRequest: { free: null },
                     },
                     assignment: [paraId, { free: null }],
@@ -411,10 +472,13 @@ describeSuite({
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
                 const profile = {
-                    url: "exemple",
+                    bootnodeUrl: "example",
                     paraIds: { whitelist: [paraId] },
-                    mode: "Bootnode",
+                    nodeType: "Substrate",
                     assignmentRequest: "Free",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
+                    additionalInfo: "0x",
                 };
 
                 const profileTx = polkadotJs.tx.dataPreservers.createProfile(profile);
@@ -429,12 +493,15 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 101_600_000_000,
+                    deposit: 102_000_000_000,
                     profile: {
-                        url: "0x6578656d706c65",
+                        bootnodeUrl: "0x6578616d706c65",
                         paraIds: { whitelist: [paraId] },
-                        mode: { bootnode: null },
+                        nodeType: "Substrate",
                         assignmentRequest: { free: null },
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
+                        additionalInfo: "0x",
                     },
                     assignment: [paraId, { free: null }],
                 });
@@ -467,9 +534,12 @@ describeSuite({
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
                 const profile = {
-                    url: "exemple",
+                    bootnodeUrl: "exemple",
                     paraIds: { whitelist: [paraId] },
-                    mode: "Bootnode",
+                    nodeType: "Substrate",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
+                    additionalInfo: "0x",
                     assignmentRequest: "Free",
                 };
 
@@ -487,11 +557,14 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 101_600_000_000,
+                    deposit: 102_000_000_000,
                     profile: {
-                        url: "0x6578656d706c65",
+                        bootnodeUrl: "0x6578656d706c65",
                         paraIds: { whitelist: [paraId] },
-                        mode: { bootnode: null },
+                        nodeType: "Substrate",
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
+                        additionalInfo: "0x",
                         assignmentRequest: { free: null },
                     },
                     assignment: null,
@@ -522,10 +595,13 @@ describeSuite({
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
                 const profile = {
-                    url: "exemple",
+                    bootnodeUrl: "exemple",
                     paraIds: { whitelist: [paraId] },
-                    mode: "Bootnode",
+                    nodeType: "Substrate",
                     assignmentRequest: "Free",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
+                    additionalInfo: "0x",
                 };
 
                 const profileTx = polkadotJs.tx.dataPreservers.createProfile(profile);
@@ -542,11 +618,14 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 101_600_000_000,
+                    deposit: 102_000_000_000,
                     profile: {
-                        url: "0x6578656d706c65",
+                        bootnodeUrl: "0x6578656d706c65",
                         paraIds: { whitelist: [paraId] },
-                        mode: { bootnode: null },
+                        nodeType: "Substrate",
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
+                        additionalInfo: "0x",
                         assignmentRequest: { free: null },
                     },
                     assignment: null,
