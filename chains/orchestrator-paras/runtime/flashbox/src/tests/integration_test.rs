@@ -3955,7 +3955,7 @@ fn test_migration_data_preservers_profile_content() {
                     url: b"charlie".to_vec().try_into().unwrap(),
                     para_ids: ParaIdsFilter::AnyParaId,
                     assignment_request: tp_data_preservers_common::ProviderRequest::StreamPayment {
-                        config: stream_config.clone(),
+                        config: stream_config,
                     },
                     mode: ProfileMode::Rpc {
                         supports_ethereum_rpcs: true,
