@@ -59,6 +59,7 @@ decl_test_parachains! {
         pallets = {
             System: System,
             Balances: Balances,
+            ParachainInfo: ParachainInfo,
             ParachainSystem: ParachainSystem,
             PolkadotXcm: PolkadotXcm,
             ForeignAssets:  ForeignAssets,
