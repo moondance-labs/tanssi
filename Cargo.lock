@@ -746,13 +746,18 @@ dependencies = [
  "dancelight-runtime",
  "dancelight-runtime-constants",
  "dancelight-system-emulated-network",
+ "fp-account",
  "frame-support",
  "frontier-template-emulated-chain",
+ "hex-literal 0.3.4",
  "pallet-message-queue",
  "pallet-xcm",
  "polkadot-primitives",
  "simple-template-emulated-chain",
+ "snowbridge-beacon-primitives",
  "snowbridge-core",
+ "snowbridge-inbound-queue-primitives",
+ "snowbridge-pallet-outbound-queue",
  "sp-core",
  "sp-runtime",
  "sp-tracing",
@@ -2432,6 +2437,7 @@ dependencies = [
  "substrate-wasm-builder",
  "tanssi-runtime-common",
  "tp-container-chain",
+ "tp-xcm-commons",
  "xcm-primitives",
  "xcm-runtime-apis",
 ]
@@ -2515,6 +2521,7 @@ dependencies = [
  "substrate-wasm-builder",
  "tanssi-runtime-common",
  "tp-container-chain",
+ "tp-xcm-commons",
  "xcm-primitives",
  "xcm-runtime-apis",
 ]
@@ -19458,12 +19465,20 @@ name = "tanssi-utils"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "ethabi-decode",
  "hex",
+ "hex-literal 0.3.4",
  "pallet-external-validators-rewards",
+ "parity-scale-codec",
  "serde",
  "serde_json",
+ "snowbridge-core",
+ "snowbridge-inbound-queue-primitives",
  "snowbridge-merkle-tree",
+ "sp-core",
  "sp-runtime",
+ "staging-xcm",
+ "staging-xcm-executor",
 ]
 
 [[package]]
