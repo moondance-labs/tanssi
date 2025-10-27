@@ -104,7 +104,6 @@ where
         let expected_network = EthereumNetwork::get();
         let universal_location = UniversalLocation::get();
 
-        log::info!("HEREE");
         if network != expected_network {
             log::trace!(target: "xcm::ethereum_blob_exporterv2", "skipped due to unmatched bridge network {network:?}.");
             return Err(SendError::NotApplicable);
@@ -177,10 +176,6 @@ where
             log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue validation of message failed. {err:?}");
             SendError::Unroutable
         })?;
-
-        log::info!("dest view {:?}", min_reward_destination_view);
-        log::info!("dest 2 view {:?}", dest);
-        log::info!("dest 2 view {:?}", UniversalLocation::get());
 
         let mut converter = XcmConverterV2::<ConvertAssetId, ()>::new(
             &message,
@@ -331,12 +326,8 @@ where
             _ => Err(XcmConverterError::AssetResolutionFailed),
         }?;
 
-        log::info!("before");
-
         let fee_asset =
             match_expression!(self.next()?, PayFees { asset: fee }, fee).ok_or(InvalidFeeAsset)?;
-
-        log::info!("fee asset {:?}", fee_asset.id.0);
 
         let (fee_asset_id, fee_amount) = match fee_asset {
             Asset {
@@ -354,26 +345,16 @@ where
             _ => Err(XcmConverterError::AssetResolutionFailed),
         }?;
 
-        log::info!("min_reward_asset_id {:?}", min_reward_asset_id.0);
-        log::info!("fee {:?}", fee_asset_id.0);
-        log::info!("reserved_fee_asset_id {:?}", reserved_fee_asset_id.0);
-        log::info!("fee_amount {:?}", fee_amount);
-        log::info!("min_reward_amount {:?}", min_reward_amount);
-
         ensure!(fee_asset_id.0 == min_reward_asset_id.0, InvalidFeeAsset);
-        log::info!("here 1");
 
         ensure!(
             reserved_fee_asset_id.0 == min_reward_asset_id.0,
             InvalidFeeAsset
         );
-        log::info!("here 2");
 
         ensure!(reserved_fee_amount >= fee_amount, InvalidFeeAsset);
-        log::info!("here 3");
 
         ensure!(fee_amount >= *min_reward_amount, InvalidFeeAsset);
-        log::info!("here 4");
 
         Ok(fee_amount)
     }
@@ -472,7 +453,6 @@ where
             amount,
         });
 
-        log::info!("fee is {:?}", fee);
         let message = Message {
             id: (*topic_id).into(),
             origin,

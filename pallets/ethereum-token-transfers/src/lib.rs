@@ -75,8 +75,11 @@ use {
     },
     snowbridge_outbound_queue_primitives::SendError,
     sp_core::{H160, H256},
-    sp_runtime::{traits::MaybeEquivalence, DispatchResult},
-    tp_bridge::{ChannelInfo, EthereumSystemChannelManager, TicketInfo},
+    sp_runtime::{
+        traits::{MaybeEquivalence, TryConvert},
+        DispatchResult,
+    },
+    tp_bridge::{ChannelInfo, ConvertLocation, EthereumSystemChannelManager, TicketInfo},
     xcm::prelude::*,
 };
 
@@ -92,7 +95,7 @@ pub type BalanceOf<T> =
 pub mod pallet {
     use super::*;
     pub use crate::weights::WeightInfo;
-
+    use frame_system::Config as SysConfig;
     /// The current storage version.
     const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
@@ -134,6 +137,19 @@ pub mod pallet {
         /// How to convert from a given Location to a specific TokenId.
         type TokenIdFromLocation: MaybeEquivalence<TokenId, Location>;
 
+        /// Converts Location to H256
+        type LocationHashOf: ConvertLocation<H256>;
+
+        // The bridges configured Ethereum location
+        type EthereumLocation: Get<Location>;
+
+        /// Means of converting a runtime origin to location
+        /// Necessary to build the origin in the v2 message
+        type OriginToLocation: TryConvert<<Self as SysConfig>::RuntimeOrigin, Location>;
+
+        /// This chain's Universal Location.
+        type UniversalLocation: Get<InteriorLocation>;
+
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
 
@@ -172,6 +188,9 @@ pub mod pallet {
         TransferMessageNotSent(SendError),
         V2SendingIsNotAllowed,
         TooManyCommands,
+        OriginConversionFailed,
+        LocationToOriginConversionFailed,
+        LocationReanchorFailed,
     }
 
     #[pallet::pallet]
@@ -277,8 +296,13 @@ pub mod pallet {
             origin: OriginFor<T>,
             amount: u128,
             recipient: H160,
+            reward: u128,
         ) -> DispatchResult {
-            let source = ensure_signed(origin)?;
+            let source = ensure_signed(origin.clone())?;
+            let origin_location = T::OriginToLocation::try_convert(origin)
+                .map_err(|_| Error::<T>::OriginConversionFailed)?;
+            let origin = Self::location_to_message_origin(origin_location)?;
+
             ensure!(T::ShouldUseV2::get(), Error::<T>::V2SendingIsNotAllowed);
 
             let channel_info =
@@ -293,6 +317,14 @@ pub mod pallet {
                 &source,
                 &T::EthereumSovereignAccount::get(),
                 amount.into(),
+                Preservation::Preserve,
+            )?;
+
+            // Transfer fee to fee's account.
+            T::Currency::transfer(
+                &source,
+                &T::FeesAccount::get(),
+                reward.into(),
                 Preservation::Preserve,
             )?;
 
@@ -315,8 +347,8 @@ pub mod pallet {
                 id: [0u8; 32].into(),
                 commands: BoundedVec::try_from(commands)
                     .map_err(|_| Error::<T>::TooManyCommands)?,
-                fee: 0u128.into(),
-                origin: [0u8; 32].into(),
+                fee: reward,
+                origin,
             };
 
             let ticket = T::OutboundQueueV2::validate(&message)
@@ -325,7 +357,6 @@ pub mod pallet {
 
             T::OutboundQueueV2::deliver(ticket)
                 .map_err(|err| Error::<T>::TransferMessageNotSent(err))?;
-            let fee = 0u128.into();
 
             Self::deposit_event(Event::<T>::NativeTokenTransferred {
                 message_id,
@@ -334,10 +365,24 @@ pub mod pallet {
                 recipient,
                 token_id,
                 amount,
-                fee,
+                fee: reward.into(),
             });
 
             Ok(())
+        }
+    }
+
+    impl<T: Config> Pallet<T> {
+        pub fn location_to_message_origin(location: Location) -> Result<H256, Error<T>> {
+            let reanchored_location = Self::reanchor(location)?;
+            T::LocationHashOf::convert_location(&reanchored_location)
+                .ok_or(Error::<T>::LocationToOriginConversionFailed)
+        }
+        /// Reanchor the `location` in context of ethereum
+        pub fn reanchor(location: Location) -> Result<Location, Error<T>> {
+            location
+                .reanchored(&T::EthereumLocation::get(), &T::UniversalLocation::get())
+                .map_err(|_| Error::<T>::LocationReanchorFailed)
         }
     }
 }
