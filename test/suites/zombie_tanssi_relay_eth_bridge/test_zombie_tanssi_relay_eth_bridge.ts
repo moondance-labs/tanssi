@@ -1247,7 +1247,7 @@ describeSuite({
                     await container2001PolkadotJs.query.system.account(randomEthAccount.address)
                 ).data.free;
 
-                // Send native ETH from Ethereum
+                // Send native container token from Ethereum
                 const sendNativeContainerTokenTx = await gatewayContract.sendToken(
                     containerTokenAddress,
                     CONTAINER_PARA_ID_20,
