@@ -15,9 +15,11 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
+    async_channel::Receiver,
     async_io::Timer,
     core::time::Duration,
     core_extensions::TypeIdentity,
+    cumulus_client_bootnodes::{start_bootnode_tasks, StartBootnodeTasksParams},
     cumulus_client_cli::CollatorOptions,
     cumulus_client_consensus_common::ParachainConsensus,
     cumulus_client_service::{
@@ -62,6 +64,10 @@ use {
 
 #[allow(deprecated)]
 use sc_executor::NativeElseWasmExecutor;
+use sc_network::request_responses::IncomingRequest;
+use sc_network::service::traits::NetworkService;
+use sc_service::config::Multiaddr;
+use sp_core::H256;
 use {sc_transaction_pool_api::TransactionPool, sp_api::StorageProof, sp_core::traits::SpawnNamed};
 
 tp_traits::alias!(
@@ -316,6 +322,17 @@ where
     }
 }
 
+pub struct StartBootnodeParams {
+    pub relay_chain_fork_id: Option<String>,
+    pub parachain_fork_id: Option<String>,
+    pub advertise_non_global_ips: bool,
+    pub parachain_public_addresses: Vec<Multiaddr>,
+    pub relay_chain_network: Arc<dyn NetworkService>,
+    pub paranode_rx: Receiver<IncomingRequest>,
+    pub embedded_dht_bootnode: bool,
+    pub dht_bootnode_discovery: bool,
+}
+
 impl<T: NodeBuilderConfig, SNetwork, STxHandler, SImportQueueService>
     NodeBuilder<T, SNetwork, STxHandler, SImportQueueService>
 where
@@ -331,9 +348,20 @@ where
     ) -> sc_service::error::Result<(
         Arc<(dyn RelayChainInterface + 'static)>,
         Option<CollatorPair>,
+        StartBootnodeParams,
     )> {
-        // FIXME(MD-1374): support DHT bootnodes
-        let (relay_chain_interface, collator_key, _relay_chain_network, _paranode_rx) =
+        let relay_chain_fork_id = polkadot_config
+            .chain_spec
+            .fork_id()
+            .map(ToString::to_string);
+        let parachain_fork_id = parachain_config
+            .chain_spec
+            .fork_id()
+            .map(ToString::to_string);
+        let advertise_non_global_ips = parachain_config.network.allow_non_globals_in_dht;
+        let parachain_public_addresses = parachain_config.network.public_addresses.clone();
+
+        let (relay_chain_interface, collator_key, relay_chain_network, paranode_rx) =
             build_relay_chain_interface(
                 polkadot_config,
                 parachain_config,
@@ -345,7 +373,18 @@ where
             .await
             .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
 
-        Ok((relay_chain_interface, collator_key))
+        let start_bootnode_params = StartBootnodeParams {
+            relay_chain_fork_id,
+            parachain_fork_id,
+            advertise_non_global_ips,
+            parachain_public_addresses,
+            relay_chain_network,
+            paranode_rx,
+            embedded_dht_bootnode: collator_options.embedded_dht_bootnode,
+            dht_bootnode_discovery: collator_options.dht_bootnode_discovery,
+        };
+
+        Ok((relay_chain_interface, collator_key, start_bootnode_params))
     }
 
     /// Given an import queue, calls [`cumulus_client_service::build_network`] and
@@ -733,11 +772,14 @@ where
         para_id: ParaId,
         relay_chain_interface: RCInterface,
         relay_chain_slot_duration: Duration,
+        start_bootnode_params: StartBootnodeParams,
     ) -> sc_service::error::Result<NodeBuilder<T, SNetwork, STxHandler, ()>>
     where
         SNetwork: TypeIdentity<Type = Network<BlockOf<T>>>,
         SImportQueueService: TypeIdentity<Type = ImportQueueServiceOf<T>>,
         RCInterface: RelayChainInterface + Clone + 'static,
+        RCInterface: TypeIdentity<Type = Arc<dyn RelayChainInterface + 'static>>,
+        BlockHashOf<T>: TypeIdentity<Type = H256>,
     {
         let NodeBuilder {
             client,
@@ -771,7 +813,7 @@ where
             announce_block,
             task_manager: &mut task_manager,
             para_id,
-            relay_chain_interface,
+            relay_chain_interface: relay_chain_interface.clone(),
             relay_chain_slot_duration,
             import_queue: import_queue_service,
             recovery_handle: Box::new(overseer_handle),
@@ -780,8 +822,38 @@ where
         };
 
         // TODO: change for async backing
+        // TODO: to fix deprecation warning, we only need to change
+        // `start_full_node` to `start_relay_chain_tasks`
         #[allow(deprecated)]
         cumulus_client_service::start_full_node(params)?;
+
+        let StartBootnodeParams {
+            relay_chain_fork_id,
+            parachain_fork_id,
+            advertise_non_global_ips,
+            parachain_public_addresses,
+            relay_chain_network,
+            paranode_rx,
+            embedded_dht_bootnode,
+            dht_bootnode_discovery,
+        } = start_bootnode_params;
+
+        // Advertise parachain bootnode address in relay chain DHT
+        start_bootnode_tasks(StartBootnodeTasksParams {
+            embedded_dht_bootnode,
+            dht_bootnode_discovery,
+            para_id,
+            task_manager: &mut task_manager,
+            relay_chain_interface: TypeIdentity::into_type(relay_chain_interface),
+            relay_chain_fork_id,
+            relay_chain_network,
+            request_receiver: paranode_rx,
+            parachain_network: network.network.clone(),
+            advertise_non_global_ips,
+            parachain_genesis_hash: TypeIdentity::into_type(client.chain_info().genesis_hash),
+            parachain_fork_id,
+            parachain_public_addresses,
+        });
 
         Ok(NodeBuilder {
             client,
