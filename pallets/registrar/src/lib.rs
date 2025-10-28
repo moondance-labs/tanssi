@@ -777,8 +777,6 @@ pub mod pallet {
         #[pallet::call_index(11)]
         #[pallet::weight(T::WeightInfo::poke_deposit())]
         pub fn poke_deposit(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
-            use frame_support::traits::tokens::Precision;
-
             let who = ensure_signed(origin)?;
 
             // Mutate the deposit entry in-place
