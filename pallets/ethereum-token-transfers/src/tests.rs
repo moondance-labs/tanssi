@@ -158,3 +158,317 @@ fn test_transfer_native_token_succeeds() {
         assert_eq!(sent_ethereum_message_nonce(), 1);
     });
 }
+
+#[test]
+fn test_transfer_native_token_succeeds_v2() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+        ShouldUseV2::set(&true);
+
+        let channel_id = ChannelId::new([5u8; 32]);
+        let agent_id = AgentId::random();
+        let para_id: ParaId = 2000u32.into();
+
+        assert_eq!(ethereum_system_handler_nonce(), 0);
+
+        assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+            RuntimeOrigin::root(),
+            channel_id,
+            agent_id,
+            para_id
+        ));
+
+        // No amount transferred to sovereign yet.
+        assert_eq!(
+            Balances::free_balance(EthereumSovereignAccount::get()),
+            0u128
+        );
+        assert_eq!(Balances::free_balance(FeesAccount::get()), 0u128);
+
+        let alice_balance_before = Balances::free_balance(ALICE);
+        assert_eq!(alice_balance_before, 100u128);
+
+        let expected_channel_info = ChannelInfo {
+            channel_id,
+            para_id,
+            agent_id,
+        };
+
+        System::assert_last_event(RuntimeEvent::EthereumTokenTransfers(
+            crate::Event::ChannelInfoSet {
+                channel_info: expected_channel_info,
+            },
+        ));
+
+        assert_eq!(ethereum_system_handler_nonce(), 1);
+        assert_eq!(sent_ethereum_message_nonce(), 0);
+
+        assert_ok!(EthereumTokenTransfers::transfer_native_token_v2(
+            RuntimeOrigin::signed(ALICE),
+            // transferred amount
+            10u128,
+            H160::default(),
+            // fee
+            10u128
+        ));
+
+        let expected_token_id = MockTokenIdConvert::convert_back(&TokenLocation::get());
+
+        System::assert_last_event(RuntimeEvent::EthereumTokenTransfers(
+            crate::Event::NativeTokenTransferred {
+                message_id: Default::default(),
+                channel_id,
+                source: ALICE,
+                recipient: H160::default(),
+                token_id: expected_token_id.unwrap(),
+                amount: 10u128,
+                fee: 10u128,
+            },
+        ));
+
+        // Alice balance = balance_before - fee - amount_transferred
+        assert_eq!(
+            Balances::free_balance(ALICE),
+            alice_balance_before - 10u128 - 10u128
+        );
+        assert_eq!(
+            Balances::free_balance(EthereumSovereignAccount::get()),
+            10u128
+        );
+        assert_eq!(Balances::free_balance(FeesAccount::get()), 10u128);
+
+        assert_eq!(sent_ethereum_message_nonce_v2(), 1);
+    });
+}
+
+#[test]
+fn test_transfer_native_token_does_not_succeed_v2_when_not_enabled() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+        ShouldUseV2::set(&false);
+
+        let channel_id = ChannelId::new([5u8; 32]);
+        let agent_id = AgentId::random();
+        let para_id: ParaId = 2000u32.into();
+
+        assert_eq!(ethereum_system_handler_nonce(), 0);
+
+        assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+            RuntimeOrigin::root(),
+            channel_id,
+            agent_id,
+            para_id
+        ));
+
+        // No amount transferred to sovereign yet.
+        assert_eq!(
+            Balances::free_balance(EthereumSovereignAccount::get()),
+            0u128
+        );
+        assert_eq!(Balances::free_balance(FeesAccount::get()), 0u128);
+
+        let alice_balance_before = Balances::free_balance(ALICE);
+        assert_eq!(alice_balance_before, 100u128);
+
+        let expected_channel_info = ChannelInfo {
+            channel_id,
+            para_id,
+            agent_id,
+        };
+
+        System::assert_last_event(RuntimeEvent::EthereumTokenTransfers(
+            crate::Event::ChannelInfoSet {
+                channel_info: expected_channel_info,
+            },
+        ));
+
+        assert_eq!(ethereum_system_handler_nonce(), 1);
+        assert_eq!(sent_ethereum_message_nonce(), 0);
+
+        assert_noop!(
+            EthereumTokenTransfers::transfer_native_token_v2(
+                RuntimeOrigin::signed(ALICE),
+                // transferred amount
+                10u128,
+                H160::default(),
+                // fee
+                10u128
+            ),
+            Error::<Test>::V2SendingIsNotAllowed
+        );
+    });
+}
+
+#[test]
+fn test_transfer_native_token_does_not_succeed_v2_when_reward_below_min() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+        ShouldUseV2::set(&true);
+
+        let channel_id = ChannelId::new([5u8; 32]);
+        let agent_id = AgentId::random();
+        let para_id: ParaId = 2000u32.into();
+
+        assert_eq!(ethereum_system_handler_nonce(), 0);
+
+        assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+            RuntimeOrigin::root(),
+            channel_id,
+            agent_id,
+            para_id
+        ));
+
+        // No amount transferred to sovereign yet.
+        assert_eq!(
+            Balances::free_balance(EthereumSovereignAccount::get()),
+            0u128
+        );
+        assert_eq!(Balances::free_balance(FeesAccount::get()), 0u128);
+
+        let alice_balance_before = Balances::free_balance(ALICE);
+        assert_eq!(alice_balance_before, 100u128);
+
+        let expected_channel_info = ChannelInfo {
+            channel_id,
+            para_id,
+            agent_id,
+        };
+
+        System::assert_last_event(RuntimeEvent::EthereumTokenTransfers(
+            crate::Event::ChannelInfoSet {
+                channel_info: expected_channel_info,
+            },
+        ));
+
+        assert_eq!(ethereum_system_handler_nonce(), 1);
+        assert_eq!(sent_ethereum_message_nonce(), 0);
+
+        assert_noop!(
+            EthereumTokenTransfers::transfer_native_token_v2(
+                RuntimeOrigin::signed(ALICE),
+                // transferred amount
+                10u128,
+                H160::default(),
+                // fee
+                0u128
+            ),
+            Error::<Test>::MinV2RewardNotAchieved
+        );
+    });
+}
+
+#[test]
+fn test_transfer_native_token_does_not_succeed_v2_when_reward_does_not_cover_ed() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+        ShouldUseV2::set(&true);
+
+        let channel_id = ChannelId::new([5u8; 32]);
+        let agent_id = AgentId::random();
+        let para_id: ParaId = 2000u32.into();
+
+        assert_eq!(ethereum_system_handler_nonce(), 0);
+
+        assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+            RuntimeOrigin::root(),
+            channel_id,
+            agent_id,
+            para_id
+        ));
+
+        // No amount transferred to sovereign yet.
+        assert_eq!(
+            Balances::free_balance(EthereumSovereignAccount::get()),
+            0u128
+        );
+        assert_eq!(Balances::free_balance(FeesAccount::get()), 0u128);
+
+        let alice_balance_before = Balances::free_balance(ALICE);
+        assert_eq!(alice_balance_before, 100u128);
+
+        let expected_channel_info = ChannelInfo {
+            channel_id,
+            para_id,
+            agent_id,
+        };
+
+        System::assert_last_event(RuntimeEvent::EthereumTokenTransfers(
+            crate::Event::ChannelInfoSet {
+                channel_info: expected_channel_info,
+            },
+        ));
+
+        assert_eq!(ethereum_system_handler_nonce(), 1);
+        assert_eq!(sent_ethereum_message_nonce(), 0);
+
+        assert_noop!(
+            EthereumTokenTransfers::transfer_native_token_v2(
+                RuntimeOrigin::signed(ALICE),
+                // transferred amount
+                10u128,
+                H160::default(),
+                // fee 4, ED 5 for fees account
+                4u128
+            ),
+            sp_runtime::TokenError::BelowMinimum
+        );
+    });
+}
+
+#[test]
+fn test_transfer_native_token_does_not_succeed_v2_when_origin_location_fails() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+        ShouldUseV2::set(&true);
+
+        let channel_id = ChannelId::new([5u8; 32]);
+        let agent_id = AgentId::random();
+        let para_id: ParaId = 2000u32.into();
+
+        assert_eq!(ethereum_system_handler_nonce(), 0);
+
+        assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+            RuntimeOrigin::root(),
+            channel_id,
+            agent_id,
+            para_id
+        ));
+
+        // No amount transferred to sovereign yet.
+        assert_eq!(
+            Balances::free_balance(EthereumSovereignAccount::get()),
+            0u128
+        );
+        assert_eq!(Balances::free_balance(FeesAccount::get()), 0u128);
+
+        let alice_balance_before = Balances::free_balance(ALICE);
+        assert_eq!(alice_balance_before, 100u128);
+
+        let expected_channel_info = ChannelInfo {
+            channel_id,
+            para_id,
+            agent_id,
+        };
+
+        System::assert_last_event(RuntimeEvent::EthereumTokenTransfers(
+            crate::Event::ChannelInfoSet {
+                channel_info: expected_channel_info,
+            },
+        ));
+
+        assert_eq!(ethereum_system_handler_nonce(), 1);
+        assert_eq!(sent_ethereum_message_nonce(), 0);
+
+        assert_noop!(
+            EthereumTokenTransfers::transfer_native_token_v2(
+                // This account has the token conversion prohibited
+                RuntimeOrigin::signed(PROHIBITED_ACCOUNT),
+                // transferred amount
+                10u128,
+                H160::default(),
+                10u128
+            ),
+            Error::<Test>::LocationToOriginConversionFailed
+        );
+    });
+}
