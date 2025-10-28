@@ -254,9 +254,12 @@ describeSuite({
 
                 const profileId = await paraApi.query.dataPreservers.nextProfileId();
                 const profileTx = paraApi.tx.dataPreservers.createProfile({
-                    url: "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
+                    bootnodeUrl: "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
                     paraIds: "AnyParaId",
-                    mode: "Bootnode",
+                    nodeType: "Substrate",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
+                    additionalInfo: "0x",
                     assignmentRequest: "Free",
                 });
 
@@ -264,7 +267,7 @@ describeSuite({
                 const tx4 = paraApi.tx.registrar.markValidForCollating(2002);
                 // Send the batch transaction: [register, purchaseCredits, sudo(setBootNodes), sudo(markValidForCollating)]
                 const txBatch = paraApi.tx.utility.batchAll([
-                    tx1,
+                    dataPreservers.createProfiletx1,
                     tx2,
                     profileTx,
                     paraApi.tx.sudo.sudo(tx3),
