@@ -8,15 +8,15 @@ import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { Signer } from "ethers";
 import fs from "node:fs/promises";
 import {
-    checkLogsNotExist,
     chainSpecToContainerChainGenesisData,
+    checkLogsNotExist,
+    countUniqueBlockAuthors,
     getAuthorFromDigest,
     getHeaderFromRelay,
     getKeyringNimbusIdHex,
+    getTmpZombiePath,
     signAndSendAndInclude,
     waitSessions,
-    countUniqueBlockAuthors,
-    getTmpZombiePath,
 } from "utils";
 
 describeSuite({
@@ -267,7 +267,7 @@ describeSuite({
                 const tx4 = paraApi.tx.registrar.markValidForCollating(2002);
                 // Send the batch transaction: [register, purchaseCredits, sudo(setBootNodes), sudo(markValidForCollating)]
                 const txBatch = paraApi.tx.utility.batchAll([
-                    dataPreservers.createProfiletx1,
+                    tx1,
                     tx2,
                     profileTx,
                     paraApi.tx.sudo.sudo(tx3),
