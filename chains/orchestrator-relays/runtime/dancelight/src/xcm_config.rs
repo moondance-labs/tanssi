@@ -24,9 +24,7 @@ use {
         ForeignAssetsCreator, ParaId, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin,
         TransactionByteFee, Treasury, WeightToFee, XcmPallet,
     },
-    crate::{
-        governance::StakingAdmin, EthereumSystem, SnowbridgeFeesAccount, TokenLocationReanchored,
-    },
+    crate::{governance::StakingAdmin, EthereumSystem, SnowbridgeFeesAccount},
     dancelight_runtime_constants::{
         currency::CENTS,
         snowbridge::{EthereumLocation, EthereumNetwork},
@@ -239,7 +237,7 @@ impl xcm_executor::Config for XcmConfig {
         WaivedLocations,
         ExporterFeeHandler<Self::AssetTransactor, SnowbridgeFeesAccount, SnowbridgeFeesAccount>,
     >;
-    type MessageExporter = (ContainerToSnowbridgeMessageExporter);
+    type MessageExporter = ContainerToSnowbridgeMessageExporter;
     type UniversalAliases = Nothing;
     type CallDispatcher = RuntimeCall;
     type SafeCallFilter = Everything;
@@ -380,7 +378,7 @@ parameter_types! {
         pallet_ethereum_token_transfers::CurrentChannelInfo::<Runtime>::get()
             .map(|x| (x.channel_id, x.agent_id));
 
-    pub const MinV2Reward: u128 = 1u128; 
+    pub const MinV2Reward: u128 = 1u128;
     pub MinSnowbridgeV2Reward: Asset = (TokenLocation::get(), MinV2Reward::get()).into();
 }
 
@@ -399,7 +397,6 @@ pub type SnowbridgeExporterv2 = EthereumBlobExporterV2<
     EthereumNetwork,
     snowbridge_pallet_outbound_queue_v2::Pallet<Runtime>,
     EthereumSystem,
-    SnowbridgeChannelInfo,
     MinSnowbridgeV2Reward,
 >;
 

@@ -18,7 +18,7 @@
 // Rewrite of the following code which cause issues as Tanssi is not a parachain
 // https://github.com/moondance-labs/polkadot-sdk/blob/tanssi-polkadot-stable2412/bridges/snowbridge/primitives/router/src/outbound/mod.rs#L98
 
-use crate::AgentIdOf;
+use crate::XcmConverterError;
 use alloc::vec::Vec;
 use core::iter::Peekable;
 use core::marker::PhantomData;
@@ -30,31 +30,19 @@ use frame_support::{
     BoundedVec,
 };
 use parity_scale_codec::{Decode, Encode};
-use snowbridge_core::{
-    location::{DescribeGlobalPrefix, DescribeHere, DescribeTokenTerminal},
-    AgentId, ChannelId, TokenId,
-};
+use snowbridge_core::TokenId;
 use snowbridge_outbound_queue_primitives::v2::message::{Command, Message, SendMessage};
 use sp_core::H160;
-use sp_runtime::traits::{MaybeEquivalence, TryConvert};
+use sp_runtime::traits::MaybeEquivalence;
 use xcm::prelude::*;
-use xcm::{
-    latest::SendError::{MissingArgument, NotApplicable},
-    VersionedLocation, VersionedXcm,
-};
-use xcm_builder::{
-    ensure_is_remote, CreateMatcher, DescribeAccountId32Terminal, DescribeAllTerminal,
-    DescribeFamily, DescribeLocation, DescribeTerminus, HashedDescription, InspectMessageQueues,
-    MatchXcm,
-};
-use xcm_executor::traits::{validate_export, ConvertLocation, ExportXcm};
+use xcm_builder::{CreateMatcher, MatchXcm};
+use xcm_executor::traits::{ConvertLocation, ExportXcm};
 
 pub struct EthereumBlobExporterV2<
     UniversalLocation,
     EthereumNetwork,
     OutboundQueue,
     ConvertAssetId,
-    BridgeChannelInfo,
     MinReward,
 >(
     PhantomData<(
@@ -62,25 +50,16 @@ pub struct EthereumBlobExporterV2<
         EthereumNetwork,
         OutboundQueue,
         ConvertAssetId,
-        BridgeChannelInfo,
         MinReward,
     )>,
 );
 
-impl<
-        UniversalLocation,
-        EthereumNetwork,
-        OutboundQueue,
-        ConvertAssetId,
-        BridgeChannelInfo,
-        MinReward,
-    > ExportXcm
+impl<UniversalLocation, EthereumNetwork, OutboundQueue, ConvertAssetId, MinReward> ExportXcm
     for EthereumBlobExporterV2<
         UniversalLocation,
         EthereumNetwork,
         OutboundQueue,
         ConvertAssetId,
-        BridgeChannelInfo,
         MinReward,
     >
 where
@@ -88,7 +67,6 @@ where
     EthereumNetwork: Get<NetworkId>,
     OutboundQueue: SendMessage,
     ConvertAssetId: MaybeEquivalence<TokenId, Location>,
-    BridgeChannelInfo: Get<Option<(ChannelId, AgentId)>>,
     // Evaluated in XCM context!
     MinReward: Get<Asset>,
 {
@@ -143,11 +121,6 @@ where
             return Err(SendError::NotApplicable);
         }
 
-        let (channel_id, agent_id) = BridgeChannelInfo::get().ok_or_else(|| {
-            log::error!(target: "xcm::ethereum_blob_exporterv2", "channel id and agent id cannot be fetched");
-            SendError::Unroutable
-        })?;
-
         let message = message.take().ok_or_else(|| {
             log::error!(target: "xcm::ethereum_blob_exporterv2", "xcm message not provided.");
             SendError::MissingArgument
@@ -180,11 +153,9 @@ where
         let mut converter = XcmConverterV2::<ConvertAssetId, ()>::new(
             &message,
             expected_network,
-            agent_id,
             min_reward_destination_view,
         );
 
-        let mut commands: Vec<Command> = Vec::new();
         let outbound_message = converter.convert().map_err(|err|{
             log::error!(target: "xcm::ethereum_blob_exporter", "unroutable due to pattern matching error '{err:?}'.");
             SendError::Unroutable
@@ -219,29 +190,6 @@ where
     }
 }
 
-/// Errors that can be thrown to the pattern matching step.
-#[derive(PartialEq, Debug)]
-pub enum XcmConverterError {
-    UnexpectedEndOfXcm,
-    EndOfXcmMessageExpected,
-    WithdrawAssetExpected,
-    DepositAssetExpected,
-    NoReserveAssets,
-    FilterDoesNotConsumeAllAssets,
-    TooManyAssets,
-    ZeroAssetTransfer,
-    BeneficiaryResolutionFailed,
-    AssetResolutionFailed,
-    InvalidFeeAsset,
-    SetTopicExpected,
-    ReserveAssetDepositedExpected,
-    InvalidAsset,
-    UnexpectedInstruction,
-    AliasOriginExpected,
-    InvalidOrigin,
-    TooManyCommands,
-}
-
 macro_rules! match_expression {
 	($expression:expr, $(|)? $( $pattern:pat_param )|+ $( if $guard: expr )?, $value:expr $(,)?) => {
 		match $expression {
@@ -254,7 +202,6 @@ macro_rules! match_expression {
 pub struct XcmConverterV2<'a, ConvertAssetId, Call> {
     iter: Peekable<Iter<'a, Instruction<Call>>>,
     ethereum_network: NetworkId,
-    agent_id: AgentId,
     min_reward: Asset,
     _marker: PhantomData<ConvertAssetId>,
 }
@@ -262,16 +209,10 @@ impl<'a, ConvertAssetId, Call> XcmConverterV2<'a, ConvertAssetId, Call>
 where
     ConvertAssetId: MaybeEquivalence<TokenId, Location>,
 {
-    pub fn new(
-        message: &'a Xcm<Call>,
-        ethereum_network: NetworkId,
-        agent_id: AgentId,
-        min_reward: Asset,
-    ) -> Self {
+    pub fn new(message: &'a Xcm<Call>, ethereum_network: NetworkId, min_reward: Asset) -> Self {
         Self {
             iter: message.inner().iter().peekable(),
             ethereum_network,
-            agent_id,
             min_reward,
             _marker: Default::default(),
         }
@@ -364,8 +305,6 @@ where
         fee: u128,
     ) -> Result<Message, XcmConverterError> {
         use XcmConverterError::*;
-
-        let instructions: Vec<_> = self.iter.clone().cloned().collect();
 
         // Get the fee asset from ReserveAssetDeposited, if any.
         // Get the reserve assets from WithdrawAsset.
@@ -487,7 +426,10 @@ where
     /// # BuyExecution
     /// # DepositAsset
     /// # SetTopic
-    fn make_mint_foreign_token_command(&mut self, fee: u128) -> Result<Message, XcmConverterError> {
+    fn make_mint_foreign_token_command(
+        &mut self,
+        _fee: u128,
+    ) -> Result<Message, XcmConverterError> {
         // TODO: This function will be used only when we start receiving tokens from containers.
         // The whole struct is copied from Snowbridge and modified for our needs, and thus function
         // will be modified in a latter PR.

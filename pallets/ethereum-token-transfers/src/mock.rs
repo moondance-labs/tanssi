@@ -272,11 +272,10 @@ impl DescribeLocation for DescribeAccountAccountIndex64Terminal {
             (0, [AccountIndex64 { index, .. }]) => {
                 if index == &PROHIBITED_ACCOUNT {
                     None
-                }
-                else {
+                } else {
                     println!("index g{:?}", index);
                 }
-            },
+            }
             _ => return None,
         }
     }
