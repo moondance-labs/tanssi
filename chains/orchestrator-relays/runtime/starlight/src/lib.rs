@@ -99,6 +99,7 @@ use {
         SessionTimer,
     },
     tp_bridge::ConvertLocation,
+    tp_message_queue::{MessageQueueWrapper, OnQueueChangedWrapper},
     tp_stream_payment_common::StreamId,
     tp_traits::{
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
@@ -259,6 +260,28 @@ impl From<u32> for AggregateMessageOrigin {
     fn from(n: u32) -> Self {
         // Some dummy for the benchmarks.
         Self::Ump(UmpQueueId::Para(n.into()))
+    }
+}
+
+impl From<parachains_inclusion::AggregateMessageOrigin> for AggregateMessageOrigin {
+    fn from(origin: parachains_inclusion::AggregateMessageOrigin) -> Self {
+        let para = match origin {
+            parachains_inclusion::AggregateMessageOrigin::Ump(UmpQueueId::Para(p)) => p,
+        };
+        // Some dummy for the benchmarks.
+        Self::Ump(UmpQueueId::Para(para.into()))
+    }
+}
+
+impl TryInto<parachains_inclusion::AggregateMessageOrigin> for AggregateMessageOrigin {
+    type Error = ();
+    fn try_into(self) -> Result<parachains_inclusion::AggregateMessageOrigin, ()> {
+        match self {
+            AggregateMessageOrigin::Ump(UmpQueueId::Para(p)) => Ok(
+                parachains_inclusion::AggregateMessageOrigin::Ump(UmpQueueId::Para(p)),
+            ),
+            _ => Err(()),
+        }
     }
 }
 
@@ -1068,10 +1091,11 @@ impl parachains_inclusion::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type DisputesHandler = ParasDisputes;
     type RewardValidators = RewardValidators;
-    type AggregateMessageOrigin = AggregateMessageOrigin;
-    type GetAggregateMessageOrigin = GetAggregateMessageOrigin;
-    type GetParaFromAggregateMessageOrigin = GetParaFromAggregateMessageOrigin;
-    type MessageQueue = MessageQueue;
+    type MessageQueue = MessageQueueWrapper<
+        parachains_inclusion::AggregateMessageOrigin,
+        AggregateMessageOrigin,
+        MessageQueue,
+    >;
     type WeightInfo = weights::runtime_parachains_inclusion::SubstrateWeight<Runtime>;
 }
 
@@ -1152,7 +1176,11 @@ impl pallet_message_queue::Config for Runtime {
     #[cfg(feature = "runtime-benchmarks")]
     type MessageProcessor =
         pallet_message_queue::mock_helpers::NoopMessageProcessor<AggregateMessageOrigin>;
-    type QueueChangeHandler = ParaInclusion;
+    type QueueChangeHandler = OnQueueChangedWrapper<
+        AggregateMessageOrigin,
+        parachains_inclusion::AggregateMessageOrigin,
+        ParaInclusion,
+    >;
     type QueuePausedQuery = ();
     type WeightInfo = weights::pallet_message_queue::SubstrateWeight<Runtime>;
 }

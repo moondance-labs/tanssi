@@ -130,6 +130,7 @@ dp-container-chain-genesis-data = { workspace = true }
 tp-author-noting-inherent = { workspace = true }
 tp-data-preservers-common = { workspace = true }
 tp-invulnerables-filter-common = { workspace = true }
+tp-message-queue = { workspace = true }
 tp-parathread-filter-common = { workspace = true }
 tp-stream-payment-common = { workspace = true }
 tp-traits = { workspace = true }
@@ -331,6 +332,7 @@ std = [
 	"tp-bridge/std",
 	"tp-data-preservers-common/std",
 	"tp-invulnerables-filter-common/std",
+	"tp-message-queue/std",
 	"tp-parathread-filter-common/std",
 	"tp-stream-payment-common/std",
 	"tp-traits/std",
