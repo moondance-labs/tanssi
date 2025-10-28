@@ -19,6 +19,7 @@
 #[cfg(all(not(test), not(feature = "testing-helpers")))]
 use crate::EthereumBeaconClient;
 use crate::EthereumInboundQueueV2;
+use cumulus_primitives_core::Location;
 use frame_support::dispatch::DispatchResult;
 use frame_support::pallet_prelude::{DecodeWithMemTracking, Encode, TypeInfo};
 use frame_support::traits::{
@@ -27,11 +28,15 @@ use frame_support::traits::{
 use frame_support::BoundedSlice;
 use frame_system::EnsureRoot;
 use frame_system::EnsureRootWithSuccess;
+use pallet_ethereum_token_transfers::{
+    origins::{ConvertAccountIdTo, ConvertUnitTo, EnsureEthereumTokenTransfersOrigin},
+    pallet::TipHandler,
+};
 use parity_scale_codec::{Decode, MaxEncodedLen};
 use snowbridge_core::reward::{AddTip, AddTipError, MessageId};
 use snowbridge_outbound_queue_primitives::v2::{Message, SendMessage};
 use snowbridge_outbound_queue_primitives::SendError;
-use sp_runtime::traits::{BadOrigin, Replace};
+use sp_runtime::traits::{BadOrigin};
 
 #[cfg(not(feature = "runtime-benchmarks"))]
 use {
@@ -287,20 +292,15 @@ impl snowbridge_pallet_system_v2::Config for Runtime {
     type OutboundQueue = DoNothingOutboundQueue;
     type InboundQueue = EthereumInboundQueueV2;
     type FrontendOrigin = EitherOf<
-        MapSuccess<EnsureRoot<AccountId>, Replace<EthereumLocation>>,
-        MapSuccess<
-            pallet_ethereum_token_transfers::origins::EnsureEthereumTokenTransfers<Runtime>,
-            Replace<EthereumLocation>,
-        >,
+        MapSuccess<EnsureRoot<AccountId>, ConvertUnitTo<Location>>,
+        MapSuccess<EnsureEthereumTokenTransfersOrigin<Runtime>, ConvertAccountIdTo<AccountId, Location, xcm_config::RelayNetwork>>,
     >;
     type GovernanceOrigin = EnsureRootWithSuccess<AccountId, EthereumLocation>;
     type WeightInfo = ();
 }
 
 pub struct EthereumTipForwarder<T>(core::marker::PhantomData<T>);
-impl pallet_ethereum_token_transfers::pallet::TipHandler<crate::RuntimeOrigin>
-    for EthereumTipForwarder<Runtime>
-{
+impl TipHandler<crate::RuntimeOrigin> for EthereumTipForwarder<Runtime> {
     fn add_tip(
         origin: crate::RuntimeOrigin,
         message_id: MessageId,
