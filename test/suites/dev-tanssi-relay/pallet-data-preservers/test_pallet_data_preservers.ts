@@ -659,9 +659,12 @@ describeSuite({
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
                 const profile = {
-                    url: "exemple",
+                    bootnodeUrl: "exemple",
                     paraIds: { whitelist: [paraId] },
-                    mode: "Bootnode",
+                    nodeType: "Substrate",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
+                    additionalInfo: "0x",
                     assignmentRequest: "Free",
                 };
 

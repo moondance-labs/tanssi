@@ -234,9 +234,12 @@ describeSuite({
 
                 const profileId = await relayApi.query.dataPreservers.nextProfileId();
                 const profileTx = relayApi.tx.dataPreservers.createProfile({
-                    url: "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
+                    bootnodeUrl: "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
                     paraIds: "AnyParaId",
-                    mode: "Bootnode",
+                    nodeType: "Substrate",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
+                    additionalInfo: "0x",
                     assignmentRequest: "Free",
                 });
 
