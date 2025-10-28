@@ -288,7 +288,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(2)]
-        #[pallet::weight(T::WeightInfo::add_tip_v2())]
+        #[pallet::weight(T::WeightInfo::add_tip())]
         pub fn add_tip(
             origin: OriginFor<T>,
             message_id: MessageId,

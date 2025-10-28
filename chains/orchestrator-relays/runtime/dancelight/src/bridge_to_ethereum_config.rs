@@ -36,7 +36,7 @@ use parity_scale_codec::{Decode, MaxEncodedLen};
 use snowbridge_core::reward::{AddTip, AddTipError, MessageId};
 use snowbridge_outbound_queue_primitives::v2::{Message, SendMessage};
 use snowbridge_outbound_queue_primitives::SendError;
-use sp_runtime::traits::{BadOrigin};
+use sp_runtime::traits::BadOrigin;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
 use {
@@ -293,7 +293,10 @@ impl snowbridge_pallet_system_v2::Config for Runtime {
     type InboundQueue = EthereumInboundQueueV2;
     type FrontendOrigin = EitherOf<
         MapSuccess<EnsureRoot<AccountId>, ConvertUnitTo<Location>>,
-        MapSuccess<EnsureEthereumTokenTransfersOrigin<Runtime>, ConvertAccountIdTo<AccountId, Location, xcm_config::RelayNetwork>>,
+        MapSuccess<
+            EnsureEthereumTokenTransfersOrigin<Runtime>,
+            ConvertAccountIdTo<AccountId, Location, xcm_config::RelayNetwork>,
+        >,
     >;
     type GovernanceOrigin = EnsureRootWithSuccess<AccountId, EthereumLocation>;
     type WeightInfo = ();

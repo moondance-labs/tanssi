@@ -39,9 +39,7 @@ where
 
     #[cfg(feature = "runtime-benchmarks")]
     fn try_successful_origin() -> Result<O, ()> {
-        use frame_support::traits::Get;
-        let account = T::BenchmarkHelper::get();
-        Ok(O::from(Origin::EthereumTokenTransfers(account)))
+        Ok(O::root())
     }
 }
 
@@ -59,10 +57,11 @@ where
 }
 
 pub struct ConvertAccountIdTo<AccountId, T, Network>(
-    core::marker::PhantomData<(AccountId, T, Network)>
+    core::marker::PhantomData<(AccountId, T, Network)>,
 );
 
-impl<T1, AccountId, OutcomeType, Network> Morph<T1> for ConvertAccountIdTo<AccountId, OutcomeType, Network>
+impl<T1, AccountId, OutcomeType, Network> Morph<T1>
+    for ConvertAccountIdTo<AccountId, OutcomeType, Network>
 where
     AccountId: From<T1> + Into<[u8; 32]>,
     OutcomeType: From<xcm::latest::Junction>,
@@ -76,6 +75,6 @@ where
             network: Network::get(),
             id: account_id_32.into(),
         }
-            .into()
+        .into()
     }
 }
