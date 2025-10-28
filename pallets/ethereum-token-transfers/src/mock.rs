@@ -215,7 +215,7 @@ impl pallet_ethereum_token_transfers::Config for Test {
     type WeightInfo = ();
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = ();
-    type TipHandler = DoNothingTipHandler;
+    type TipHandler = MockTipHandler;
     type PalletOrigin = pallet_ethereum_token_transfers::Origin<Test>;
 }
 
@@ -244,10 +244,10 @@ pub fn run_to_block(n: u64) {
     System::run_to_block_with::<AllPalletsWithSystem>(n, frame_system::RunToBlockHooks::default());
 }
 
-pub struct DoNothingTipHandler;
+pub struct MockTipHandler;
 
 impl pallet_ethereum_token_transfers::TipHandler<pallet_ethereum_token_transfers::Origin<Test>>
-    for DoNothingTipHandler
+    for MockTipHandler
 {
     fn add_tip(
         origin: pallet_ethereum_token_transfers::Origin<Test>,
