@@ -4,13 +4,13 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import type { u32 } from "@polkadot/types";
-import { initializeCustomCreateBlock, jumpSessions } from "utils";
 import {
-    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_PROXY,
-    checkCallIsFiltered,
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR,
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR_BESIDES_REGISTER,
+    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_PROXY,
+    checkCallIsFiltered,
 } from "helpers";
+import { initializeCustomCreateBlock, jumpSessions } from "utils";
 
 describeSuite({
     id: "DEVT1501",
@@ -197,9 +197,13 @@ describeSuite({
                 // Proxy creates a data preserver. "The URL" translates to 0x5468652055524c when scale encoded
 
                 const profile = {
-                    url: "The URL",
+                    bootnodeUrl: "The URL",
                     paraIds: { whitelist: [reservedParaId] },
-                    mode: "Bootnode",
+                    nodeType: "Substrate",
+                    assignmentRequest: "Free",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
+                    additionalInfo: "0x",
                 };
 
                 const profileId = await polkadotJs.query.dataPreservers.nextProfileId();
@@ -217,10 +221,13 @@ describeSuite({
                     account: delegateBob.address,
                     deposit: 0,
                     profile: {
-                        url: "0x5468652055524c",
+                        bootnodeUrl: "0x5468652055524c",
                         paraIds: { whitelist: [reservedParaId] },
-                        mode: { bootnode: null },
+                        nodeType: "Substrate",
                         assignmentRequest: { free: null },
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
+                        additionalInfo: "0x",
                     },
                     assignment: null,
                 });

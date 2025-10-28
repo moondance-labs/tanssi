@@ -3,8 +3,8 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import { generateEmptyGenesisData, jumpSessions } from "utils";
 import type { DpContainerChainGenesisDataContainerChainGenesisData } from "@polkadot/types/lookup";
+import { generateEmptyGenesisData, jumpSessions } from "utils";
 
 describeSuite({
     id: "COMMO1104",
@@ -68,9 +68,12 @@ describeSuite({
 
                 const profileId = await polkadotJs.query.dataPreservers.nextProfileId();
                 const profileTx = polkadotJs.tx.dataPreservers.createProfile({
-                    url: "dummy",
+                    bootnodeUrl: "dummy",
                     paraIds: "AnyParaId",
-                    mode: "Bootnode",
+                    nodeType: "Substrate",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
+                    additionalInfo: "0x",
                     assignmentRequest: "Free",
                 });
 
