@@ -98,7 +98,7 @@ export const checkIfInvulnerableWasAssignedAfterFullRotation = async (
             const eventJSON = event.toHuman() as {
                 section: string;
                 method: string;
-                data: { fullRotation: boolean };
+                data: Record<string, unknown>;
             };
             if (eventJSON.section === "tanssiCollatorAssignment" && eventJSON.method === "NewPendingAssignment") {
                 const fullRotation = eventJSON.data?.fullRotation;
