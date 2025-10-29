@@ -34,7 +34,7 @@
         "nodes": [
             {
                 "name": "alice",
-                "rpc_port": 9947,
+                "rpc_port": "9947",
                 "validator": true
             },
             {
@@ -43,12 +43,10 @@
             },
             {
                 "name": "charlie",
-                "rpc_port": 9948,
                 "validator": true
             },
             {
                 "name": "dave",
-                "rpc_port": 9946,
                 "validator": true
             }
         ]
@@ -93,6 +91,20 @@
                         "--pool-type=fork-aware"
                     ],
                     "prometheus_port": 33102
+                }
+            ]
+        },
+        {
+            "id": 2001,
+            "chain_spec_path": "specs/single-container-template-container-2001.json",
+            "collators": [
+                {
+                    "name": "FullNode-2001",
+                    "validator": false,
+                    "command": "../target/release/container-chain-frontier-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "rpc_port": 9950,
+                    "p2p_port": 33050
                 }
             ]
         }

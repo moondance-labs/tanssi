@@ -68,9 +68,9 @@ jobs:
 
           if [ -z "$test_name" ]; then
             if [ "$test_bundle" == "weekly_bundle" ]; then
-              tests='["zombie_tanssi_warp_sync", "zombie_tanssi_parathreads", "zombie_tanssi_metrics"]'
+              tests='["zombie_tanssi_warp_sync", "zombie_tanssi_parathreads", "zombie_tanssi_metrics", "zombie_tanssi_relay_finalization_recovery"]'
             elif [ "$test_bundle" == "manual_bundle" ]; then
-              tests='["zombie_tanssi_relay_finalization_recovery", "zombie_simple_template_offchain", "zombie_tanssi_keep_db", "zombie_tanssi_one_node", "zombie_tanssi_relay_starlight", "zombie_tanssi_relay_unneeded_para", "zombie_tanssi_relay_keystore"]'
+              tests='["zombie_tanssi_relay_finalization_recovery", "zombie_simple_template_offchain", "zombie_tanssi_keep_db", "zombie_tanssi_one_node", "zombie_tanssi_relay_starlight", "zombie_tanssi_relay_unneeded_para", "zombie_tanssi_relay_keystore", "zombie_tanssi_relay_foreign_tokens"]'
             else
               echo "Unknown bundle: $test_bundle"
               exit 1
