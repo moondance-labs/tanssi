@@ -271,7 +271,6 @@ impl From<ParaInclusionAggregateMessageOrigin> for TanssiAggregateMessageOrigin 
         let para = match origin {
             ParaInclusionAggregateMessageOrigin::Ump(UmpQueueId::Para(p)) => p,
         };
-        // Some dummy for the benchmarks.
         Self::Ump(UmpQueueId::Para(para.into()))
     }
 }

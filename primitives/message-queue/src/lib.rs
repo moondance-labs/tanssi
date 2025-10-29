@@ -98,7 +98,6 @@ pub struct OnQueueChangedWrapper<Origin, NewOrigin, InnerOnQueueChanged>(
     PhantomData<(Origin, NewOrigin, InnerOnQueueChanged)>,
 );
 
-// This one we need to not do anything in case we
 impl<Origin, NewOrigin, InnerOnQueueChanged> OnQueueChanged<Origin>
     for OnQueueChangedWrapper<Origin, NewOrigin, InnerOnQueueChanged>
 where
