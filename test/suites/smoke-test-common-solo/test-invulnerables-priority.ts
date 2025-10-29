@@ -95,9 +95,12 @@ export const checkIfInvulnerableWasAssignedAfterFullRotation = async (
         const events = await apiAt.query.system.events();
 
         for (const { event } of events) {
-            const { section, method } = event.toHuman();
-            if (section === "tanssiCollatorAssignment" && method === "NewPendingAssignment") {
-                const eventJSON = event.toHuman() as any;
+            const eventJSON = event.toHuman() as {
+                section: string;
+                method: string;
+                data: { fullRotation: boolean };
+            };
+            if (eventJSON.section === "tanssiCollatorAssignment" && eventJSON.method === "NewPendingAssignment") {
                 const fullRotation = eventJSON.data?.fullRotation;
 
                 if (fullRotation) {
