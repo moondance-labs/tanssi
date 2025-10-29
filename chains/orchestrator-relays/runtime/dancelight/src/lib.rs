@@ -306,32 +306,6 @@ impl Convert<ChannelId, TanssiAggregateMessageOrigin> for GetAggregateMessageOri
     }
 }
 
-/// This is used by [parachains_inclusion::Pallet::on_queue_changed]
-pub struct GetParaFromAggregateMessageOrigin;
-
-impl Convert<TanssiAggregateMessageOrigin, ParaId> for GetParaFromAggregateMessageOrigin {
-    fn convert(x: TanssiAggregateMessageOrigin) -> ParaId {
-        match x {
-            TanssiAggregateMessageOrigin::Ump(UmpQueueId::Para(para_id)) => para_id,
-            TanssiAggregateMessageOrigin::Snowbridge(channel_id)
-            | TanssiAggregateMessageOrigin::SnowbridgeTanssi(channel_id) => {
-                // Read para id from EthereumSystem::channels storage map
-                match EthereumSystem::channels(channel_id) {
-                    Some(x) => x.para_id,
-                    None => {
-                        // This should be unreachable, but return para id 0 if channel does not exist
-                        log::warn!(
-                            "Got snowbridge message from channel that does not exist: {:?}",
-                            channel_id
-                        );
-                        ParaId::from(0)
-                    }
-                }
-            }
-        }
-    }
-}
-
 /// The relay register and deregister calls should no longer be necessary
 /// Everything is handled by the containerRegistrar
 pub struct IsRelayRegister;
