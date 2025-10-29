@@ -272,10 +272,14 @@ impl From<ParaInclusionAggregateMessageOrigin> for TanssiAggregateMessageOrigin 
     }
 }
 
-impl TryInto<ParaInclusionAggregateMessageOrigin> for TanssiAggregateMessageOrigin {
+impl TryFrom<TanssiAggregateMessageOrigin> for ParaInclusionAggregateMessageOrigin {
     type Error = ();
-    fn try_into(self) -> Result<ParaInclusionAggregateMessageOrigin, ()> {
-        match self {
+    fn try_from(origin: TanssiAggregateMessageOrigin) -> Result<Self, ()> {
+        // Before this change we had a bug in which we entered parachains_inclusion pallet
+        // OnQueueChanged hook with origins that where not UMP. using the OnQueueChangedWrapper
+        // and erroring for origins that are not UMP will allow us to NOT DO ANYTHING and therefore
+        // not enter the hook for non-desired origins
+        match origin {
             TanssiAggregateMessageOrigin::Ump(UmpQueueId::Para(p)) => Ok(
                 ParaInclusionAggregateMessageOrigin::Ump(UmpQueueId::Para(p)),
             ),

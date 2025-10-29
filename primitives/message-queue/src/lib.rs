@@ -102,12 +102,16 @@ pub struct OnQueueChangedWrapper<Origin, NewOrigin, InnerOnQueueChanged>(
 impl<Origin, NewOrigin, InnerOnQueueChanged> OnQueueChanged<Origin>
     for OnQueueChangedWrapper<Origin, NewOrigin, InnerOnQueueChanged>
 where
-    Origin: Clone + MaxEncodedLen + TryInto<NewOrigin>,
-    NewOrigin: Clone + MaxEncodedLen,
+    Origin: Clone + MaxEncodedLen,
+    NewOrigin: Clone + MaxEncodedLen + TryFrom<Origin>,
     InnerOnQueueChanged: OnQueueChanged<NewOrigin>,
 {
     fn on_queue_changed(origin: Origin, fp: QueueFootprint) {
         // Do not do anyhting if the result is not OK
+        // This is important, an example of this is what we are going to use it for in our runtimes
+        // we have a multi-vaiant enum aggregate origin but parachains_inclusion pallet only works with
+        // single-variant enum aggregate origin. therefore we need to convert one of our variants to the single-enum origin
+        // we dont want to do anything if the conversion is unsuccesful
         let new_origin = origin.try_into();
         match new_origin {
             Ok(new_origin) => InnerOnQueueChanged::on_queue_changed(new_origin, fp),
