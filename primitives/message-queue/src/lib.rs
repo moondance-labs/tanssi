@@ -30,7 +30,9 @@ use {
     sp_core::MaxEncodedLen,
 };
 
-// Means of converting a message queue implementation coming from a different origin
+/// Means of converting an origin to a different one before calling an EnqueueMessage impl
+/// Useful for certain cases like pallet parachains inclusion
+/// This pallet assumes single-aggregate origin which is not the case in our runtime
 pub struct MessageQueueWrapper<Origin, NewOrigin, InnerMessageQueue>(
     PhantomData<(Origin, NewOrigin, InnerMessageQueue)>,
 );
@@ -63,6 +65,9 @@ where
     }
 }
 
+/// Means of converting an origin to a different one before calling a QueueFootprintQuery impl
+/// Useful for certain cases like pallet parachains inclusion
+/// This pallet assumes single-aggregate origin which is not the case in our runtime
 impl<Origin, NewOrigin, InnerMessageQueue> QueueFootprintQuery<Origin>
     for MessageQueueWrapper<Origin, NewOrigin, InnerMessageQueue>
 where
@@ -86,7 +91,9 @@ where
     }
 }
 
-// Means of converting a message queue implementation coming from a different origin
+/// Means of converting an origin to a different one before calling an OnQueueChanged impl
+/// Useful for certain cases like pallet parachains inclusion
+/// This pallet assumes single-aggregate origin which is not the case in our runtime
 pub struct OnQueueChangedWrapper<Origin, NewOrigin, InnerOnQueueChanged>(
     PhantomData<(Origin, NewOrigin, InnerOnQueueChanged)>,
 );
@@ -99,8 +106,8 @@ where
     NewOrigin: Clone + MaxEncodedLen,
     InnerOnQueueChanged: OnQueueChanged<NewOrigin>,
 {
-    // Write back the remaining queue capacity into `relay_dispatch_queue_remaining_capacity`.
     fn on_queue_changed(origin: Origin, fp: QueueFootprint) {
+        // Do not do anyhting if the result is not OK
         let new_origin = origin.try_into();
         match new_origin {
             Ok(new_origin) => InnerOnQueueChanged::on_queue_changed(new_origin, fp),
