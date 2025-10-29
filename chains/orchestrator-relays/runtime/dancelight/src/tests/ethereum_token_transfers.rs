@@ -25,6 +25,7 @@ use {
     },
     alloc::vec,
     alloy_sol_types::SolEvent,
+    cumulus_primitives_core::relay_chain::well_known_keys,
     dancelight_runtime_constants::snowbridge::EthereumNetwork,
     frame_support::{
         assert_err, assert_noop, assert_ok,
@@ -1769,6 +1770,17 @@ fn send_eth_native_token_works() {
                 .count(),
                 1,
                 "MessageQueued event should be emitted!"
+            );
+
+            // Due to a bug, we were entering parachains_inclusion with a para-id 0 when
+            // we have a snowbridge message. this test ensures that is present, with the goal
+            // of removing it later
+            // By ensuring those storage items are none, we make sure they were not written by
+            // para-inclusion, and therefore, we did not enter
+            assert!(
+                well_known_keys::relay_dispatch_queue_remaining_capacity(para_id)
+                    .get()
+                    .is_none()
             );
         })
 }
