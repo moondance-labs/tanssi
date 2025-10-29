@@ -12,7 +12,7 @@ workspace = true
 workspace = true
 
 [dependencies]
-dancelight-runtime = { workspace = true }
+dancelight-runtime = { workspace = true, features = ["std"] }
 dancelight-runtime-constants = { workspace = true }
 emulated-integration-tests-common = { workspace = true }
 polkadot-parachain-primitives = { workspace = true }
