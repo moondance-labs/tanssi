@@ -17,6 +17,7 @@ describeSuite({
             title: "Invulnerables have priority over staking candidates",
             test: async () => {
                 const currentBlock = await api.rpc.chain.getBlock();
+                const currentBlockNumber = currentBlock.block.header.number.toNumber();
                 const currentBlockApi = await context.polkadotJs().at(currentBlock.block.hash);
 
                 let collators = [];
@@ -30,7 +31,7 @@ describeSuite({
                 // there should be no collator in orchestrator
                 expect(
                     currentAssignment.orchestratorChain.toHuman(),
-                    "In tanssi-solo there should be no collator assigned to orchestrator"
+                    `[#${currentBlockNumber}] In tanssi-solo there should be no collator assigned to orchestrator`
                 ).to.be.empty;
 
                 const containerAssignment = currentAssignment.containerChains.toHuman();
@@ -47,16 +48,19 @@ describeSuite({
                 if (collators.length <= invulnerables.length) {
                     // Less collators than invulnerables - all collators must be invulnerables
                     for (const collator of collators) {
-                        expect(invulnerables.includes(collator), `Collator should be in invulnerable list: ${collator}`)
-                            .to.be.true;
+                        expect(
+                            invulnerables.includes(collator),
+                            `[#${currentBlockNumber}] Collator should be in invulnerable list: ${collator}`
+                        ).to.be.true;
                     }
                 } else {
                     // More collators than invulnerables: all invulnerables must be collators
                     for (const invulnerable of invulnerables) {
-                        expect(
-                            collators.includes(invulnerable),
-                            `Invulnerable should be in collators list: ${invulnerable}`
-                        ).to.be.true;
+                        if (!collators.includes(invulnerable)) {
+                            // Sometimes if the chain is de-registered, the invulnerable is not in the collators list
+                            // we check if it was in the list after the full_rotation
+                            await checkIfInvulnerableWasAssignedAfterFullRotation(api, invulnerable);
+                        }
                     }
 
                     // Remaining collators must be from staking
@@ -64,7 +68,7 @@ describeSuite({
                     for (const collator of collatorsNotInvulnerables) {
                         expect(
                             eligibleCandidates.includes(collator),
-                            `Collator should be a staking candidate: ${collator}`
+                            `[#${currentBlockNumber}] Collator should be a staking candidate: ${collator}`
                         ).to.be.true;
                     }
                 }
@@ -72,3 +76,57 @@ describeSuite({
         });
     },
 });
+
+export const checkIfInvulnerableWasAssignedAfterFullRotation = async (
+    api: ApiPromise,
+    invulnerable: string
+): Promise<void> => {
+    const epochDuration = api.consts.babe.epochDuration.toNumber();
+    const fullRotationSessions = 24; // for both Dancelight and Starlight
+
+    const epochStart = (await api.query.babe.epochStart())[0].toNumber();
+
+    for (let i = 1; i <= fullRotationSessions; i++) {
+        const sessionFirstBlock = epochStart - i * epochDuration;
+        if (sessionFirstBlock < 0) break;
+
+        const blockHash = await api.rpc.chain.getBlockHash(sessionFirstBlock);
+        const apiAt = await api.at(blockHash);
+        const events = await apiAt.query.system.events();
+
+        for (const { event } of events) {
+            const { section, method } = event.toHuman();
+            if (section === "tanssiCollatorAssignment" && method === "NewPendingAssignment") {
+                const eventJSON = event.toHuman() as any;
+                const fullRotation = eventJSON.data?.fullRotation;
+
+                if (fullRotation) {
+                    console.log(`Found full rotation assignment at block ${sessionFirstBlock}`);
+
+                    let collators = [];
+                    const blockHash = await api.rpc.chain.getBlockHash(sessionFirstBlock);
+                    const currentBlockApi = await api.at(blockHash);
+                    const currentAssignment =
+                        await currentBlockApi.query.tanssiCollatorAssignment.collatorContainerChain();
+                    const containerAssignment = currentAssignment.containerChains.toHuman();
+
+                    for (const para in containerAssignment) {
+                        const collatorsForPara = containerAssignment[para.toString()];
+                        collators = collators.concat(collatorsForPara);
+                    }
+
+                    if (!collators.includes(invulnerable)) {
+                        throw new Error(
+                            `${invulnerable} not found in full-rotation assignment at block ${sessionFirstBlock}`
+                        );
+                    }
+
+                    // Collator found in full-rotation assignment, all good
+                    return;
+                }
+            }
+        }
+    }
+
+    throw new Error(`No full-rotation assignment event found in the last ${fullRotationSessions} sessions.`);
+};
