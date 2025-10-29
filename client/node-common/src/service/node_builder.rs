@@ -333,16 +333,17 @@ where
         Option<CollatorPair>,
     )> {
         // FIXME(MD-1374): support DHT bootnodes
-        let (relay_chain_interface, collator_key, _relay_chain_network, _paranode_rx) = build_relay_chain_interface(
-            polkadot_config,
-            parachain_config,
-            self.telemetry_worker_handle.clone(),
-            &mut self.task_manager,
-            collator_options.clone(),
-            self.hwbench.clone(),
-        )
-        .await
-        .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
+        let (relay_chain_interface, collator_key, _relay_chain_network, _paranode_rx) =
+            build_relay_chain_interface(
+                polkadot_config,
+                parachain_config,
+                self.telemetry_worker_handle.clone(),
+                &mut self.task_manager,
+                collator_options.clone(),
+                self.hwbench.clone(),
+            )
+            .await
+            .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
 
         Ok((relay_chain_interface, collator_key))
     }

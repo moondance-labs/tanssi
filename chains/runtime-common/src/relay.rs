@@ -832,7 +832,7 @@ where
 
         let ethereum_location = EthereumLocation::get();
 
-        // TODO: review Weight::MAX https://github.com/paritytech/polkadot-sdk/pull/7730
+        // Using Weight::MAX here because we don't have a limit, same as they do in pallet-xcm
         if let Ok(weight) = XcmWeigher::weight(&mut xcm, Weight::MAX) {
             let mut message_id = xcm.using_encoded(sp_io::hashing::blake2_256);
 
