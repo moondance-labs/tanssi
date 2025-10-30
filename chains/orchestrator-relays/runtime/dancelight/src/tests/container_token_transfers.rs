@@ -49,6 +49,10 @@ fn receive_container_native_tokens_from_eth_works() {
         .with_balances(vec![
             (AccountId::from(ALICE), 100_000 * UNIT),
             (AccountId::from(BOB), 100_000 * UNIT),
+            (
+                SnowbridgeFeesAccount::get(),
+                100_000_000_000_000_000_000 * UNIT,
+            ),
         ])
         .build()
         .execute_with(|| {
@@ -146,6 +150,7 @@ fn receive_container_native_tokens_from_eth_works() {
 
             let tanssi_location = Location::here();
             let container_location = Location::new(0, [Parachain(container_para_id)]);
+            let bridge_location = Location::new(2, GlobalConsensus(EthereumNetwork::get()));
             let inbound_queue_pallet_index = InboundQueuePalletInstance::get();
             let network = EthereumNetwork::get();
             let token_split = token_location_reanchored
@@ -158,18 +163,13 @@ fn receive_container_native_tokens_from_eth_works() {
                 .reanchored(&container_location, &UniversalLocation::get())
                 .unwrap();
 
-            let total_container_asset = amount_to_transfer.saturating_add(container_fee);
-
-            let container_asset_to_withdraw: XcmAsset = (
+            let container_asset: XcmAsset = (
                 container_token_location_reanchored.clone(),
-                total_container_asset,
+                amount_to_transfer,
             )
                 .into();
 
-            let container_asset_fee: XcmAsset =
-                (container_token_location_reanchored.clone(), container_fee).into();
-            let container_asset_to_deposit: XcmAsset =
-                (container_token_location_reanchored, amount_to_transfer).into();
+            let container_asset_fee: XcmAsset = (Location::parent(), container_fee).into();
 
             let beneficiary = Location::new(
                 0,
@@ -182,15 +182,23 @@ fn receive_container_native_tokens_from_eth_works() {
             let remote_xcm = Xcm::<()>(vec![
                 DescendOrigin(PalletInstance(inbound_queue_pallet_index).into()),
                 UniversalOrigin(GlobalConsensus(network)),
-                WithdrawAsset(vec![container_asset_to_withdraw.clone()].into()),
+                ReserveAssetDeposited(vec![container_asset_fee.clone()].into()),
+                WithdrawAsset(vec![container_asset.clone()].into()),
                 BuyExecution {
                     fees: container_asset_fee,
                     weight_limit: Unlimited,
                 },
                 DepositAsset {
-                    assets: Definite(container_asset_to_deposit.into()),
+                    assets: Definite(container_asset.into()),
                     beneficiary,
                 },
+                SetAppendix(Xcm(vec![DepositAsset {
+                    assets: Wild(AllOf {
+                        id: Location::parent().into(),
+                        fun: WildFungibility::Fungible,
+                    }),
+                    beneficiary: bridge_location,
+                }])),
             ]);
 
             let xcm_sent_event = System::events()
