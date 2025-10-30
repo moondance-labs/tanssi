@@ -33,6 +33,7 @@ use {
     hex_literal::hex,
     pallet_xcm::ExecutionError,
     parity_scale_codec::Encode,
+    snowbridge_core::TokenIdOf,
     snowbridge_core::{AgentId, Channel, ChannelId, ParaId},
     snowbridge_inbound_queue_primitives::v1::{
         Command, Destination, Envelope, MessageProcessor, MessageV1, OutboundMessageAccepted,
@@ -49,6 +50,7 @@ use {
         },
         VersionedAssets, VersionedLocation, VersionedXcm,
     },
+    xcm_executor::traits::ConvertLocation,
 };
 
 #[test]
@@ -2378,6 +2380,503 @@ fn create_payload_with_token_id(token_id: H256) -> Vec<u8> {
     });
 
     message.encode()
+}
+
+#[test]
+fn test_token_id_hashing_lts_vs_latest_xcm_versions() {
+    // This test compares TokenIdOf hashes between xcm::lts and xcm::latest versions
+    // to ensure cross-version compatibility and detect breaking changes in hashing.
+
+    ExtBuilder::default().build().execute_with(|| {
+        use xcm::latest::Junction::Parachain as ParachainXcmLatest;
+        use xcm::lts::Junction::Parachain as ParachainXcmLts;
+        use xcm::lts::Junction::{
+            AccountKey20 as AccountKey20Lts, GeneralIndex as GeneralIndexLts,
+            GeneralKey as GeneralKeyLts, GlobalConsensus as GlobalConsensusLts,
+            PalletInstance as PalletInstanceLts,
+        };
+
+        // Helper function to convert LTS location to the type TokenIdOf expects
+        let convert_lts_location = |lts_loc: xcm::lts::Location| -> xcm::latest::Location {
+            let versioned = VersionedLocation::V4(lts_loc);
+            versioned.try_into().expect("Should convert LTS to latest")
+        };
+
+        // Helper function to test token ID comparison between LTS and latest
+        let test_token_id_equality = |latest_loc: xcm::latest::Location,
+                                      lts_loc: xcm::lts::Location,
+                                      test_name: &str,
+                                      should_convert: bool| {
+            let latest_result = TokenIdOf::convert_location(&latest_loc);
+            let lts_result = TokenIdOf::convert_location(&convert_lts_location(lts_loc));
+
+            if should_convert {
+                let latest_id =
+                    latest_result.expect(&format!("Latest {} should convert", test_name));
+                let lts_id = lts_result.expect(&format!("LTS {} should convert", test_name));
+                assert_eq!(
+                    latest_id, lts_id,
+                    "LTS and latest {} location hashes should match",
+                    test_name
+                );
+            } else {
+                assert_eq!(
+                    latest_result.is_none(),
+                    lts_result.is_none(),
+                    "Both LTS and latest {} locations should have same convertibility",
+                    test_name
+                );
+            }
+        };
+
+        // Test data
+        let key_data = [
+            0x01, 0x02, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+        ];
+        let account_key = [
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e,
+            0x0f, 0x10, 0x11, 0x12, 0x13, 0x14,
+        ];
+        let genesis_hash = [
+            0x91, 0xb1, 0x71, 0xbb, 0x15, 0x8e, 0x2d, 0x38, 0x48, 0xfa, 0x23, 0xa9, 0xf1, 0xc2,
+            0x51, 0x82, 0xfb, 0x8e, 0x20, 0x31, 0x3b, 0x2c, 0x1e, 0xb4, 0x92, 0x19, 0xda, 0x7a,
+            0x70, 0xce, 0x90, 0xc3,
+        ];
+
+        // Define test cases as (latest_location, lts_location, test_name, should_convert)
+        let test_cases: Vec<(xcm::latest::Location, xcm::lts::Location, &str, bool)> = vec![
+            // Test Case 1: parents:0, interior: here (should not convert)
+            (
+                xcm::latest::Location::new(0, []),
+                xcm::lts::Location::new(0, []),
+                "'here'",
+                false,
+            ),
+            // Test Case 2: parents: 0, parachain 2000 (should not convert)
+            (
+                xcm::latest::Location::new(0, [ParachainXcmLatest(2000)]),
+                xcm::lts::Location::new(0, [ParachainXcmLts(2000)]),
+                "parachain-only",
+                false,
+            ),
+            // Test Case 3: parents: 1, GlobalConsensus(ethereum), empty interior
+            (
+                xcm::latest::Location::new(
+                    1,
+                    [xcm::latest::Junction::GlobalConsensus(
+                        EthereumNetwork::get(),
+                    )],
+                ),
+                xcm::lts::Location::new(1, [GlobalConsensusLts(EthereumNetwork::get().into())]),
+                "ethereum empty",
+                true,
+            ),
+            // Test Case 4: parents: 1, GlobalConsensus(ethereum), parachain 2000
+            (
+                xcm::latest::Location::new(
+                    1,
+                    [
+                        xcm::latest::Junction::GlobalConsensus(EthereumNetwork::get()),
+                        xcm::latest::Junction::Parachain(2000),
+                    ],
+                ),
+                xcm::lts::Location::new(
+                    1,
+                    [
+                        GlobalConsensusLts(EthereumNetwork::get().into()),
+                        ParachainXcmLts(2000),
+                    ],
+                ),
+                "ethereum + parachain",
+                true,
+            ),
+            // Test Case 5: parents: 1, GlobalConsensus(ethereum), parachain 2000, GeneralIndex(5)
+            (
+                xcm::latest::Location::new(
+                    1,
+                    [
+                        xcm::latest::Junction::GlobalConsensus(EthereumNetwork::get()),
+                        xcm::latest::Junction::Parachain(2000),
+                        xcm::latest::Junction::GeneralIndex(5),
+                    ],
+                ),
+                xcm::lts::Location::new(
+                    1,
+                    [
+                        GlobalConsensusLts(EthereumNetwork::get().into()),
+                        ParachainXcmLts(2000),
+                        GeneralIndexLts(5),
+                    ],
+                ),
+                "ethereum + parachain + index",
+                true,
+            ),
+            // Test Case 6: General Key comparison
+            (
+                xcm::latest::Location::new(
+                    1,
+                    [
+                        xcm::latest::Junction::GlobalConsensus(EthereumNetwork::get()),
+                        xcm::latest::Junction::Parachain(2000),
+                        xcm::latest::Junction::GeneralKey {
+                            length: 32,
+                            data: key_data,
+                        },
+                    ],
+                ),
+                xcm::lts::Location::new(
+                    1,
+                    [
+                        GlobalConsensusLts(EthereumNetwork::get().into()),
+                        ParachainXcmLts(2000),
+                        GeneralKeyLts {
+                            length: 32,
+                            data: key_data,
+                        },
+                    ],
+                ),
+                "general key",
+                true,
+            ),
+            // Test Case 7: AccountKey20 comparison
+            (
+                xcm::latest::Location::new(
+                    1,
+                    [
+                        xcm::latest::Junction::GlobalConsensus(EthereumNetwork::get()),
+                        xcm::latest::Junction::Parachain(2000),
+                        xcm::latest::Junction::AccountKey20 {
+                            network: Some(EthereumNetwork::get()),
+                            key: account_key,
+                        },
+                    ],
+                ),
+                xcm::lts::Location::new(
+                    1,
+                    [
+                        GlobalConsensusLts(EthereumNetwork::get().into()),
+                        ParachainXcmLts(2000),
+                        AccountKey20Lts {
+                            network: Some(EthereumNetwork::get().into()),
+                            key: account_key,
+                        },
+                    ],
+                ),
+                "account key20",
+                true,
+            ),
+            // Test Case 8: PalletInstance comparison
+            (
+                xcm::latest::Location::new(
+                    1,
+                    [
+                        xcm::latest::Junction::GlobalConsensus(EthereumNetwork::get()),
+                        xcm::latest::Junction::Parachain(2000),
+                        xcm::latest::Junction::PalletInstance(50),
+                    ],
+                ),
+                xcm::lts::Location::new(
+                    1,
+                    [
+                        GlobalConsensusLts(EthereumNetwork::get().into()),
+                        ParachainXcmLts(2000),
+                        PalletInstanceLts(50),
+                    ],
+                ),
+                "pallet",
+                true,
+            ),
+            // Test Case 9: Complex case - PalletInstance + GeneralIndex
+            (
+                xcm::latest::Location::new(
+                    1,
+                    [
+                        xcm::latest::Junction::GlobalConsensus(EthereumNetwork::get()),
+                        xcm::latest::Junction::Parachain(2000),
+                        xcm::latest::Junction::PalletInstance(50),
+                        xcm::latest::Junction::GeneralIndex(10),
+                    ],
+                ),
+                xcm::lts::Location::new(
+                    1,
+                    [
+                        GlobalConsensusLts(EthereumNetwork::get().into()),
+                        ParachainXcmLts(2000),
+                        PalletInstanceLts(50),
+                        GeneralIndexLts(10),
+                    ],
+                ),
+                "pallet + index",
+                true,
+            ),
+            // Test Case 10: ByGenesis comparison
+            (
+                xcm::latest::Location::new(
+                    1,
+                    [
+                        xcm::latest::Junction::GlobalConsensus(xcm::latest::NetworkId::ByGenesis(
+                            genesis_hash,
+                        )),
+                        xcm::latest::Junction::Parachain(2000),
+                    ],
+                ),
+                xcm::lts::Location::new(
+                    1,
+                    [
+                        GlobalConsensusLts(xcm::lts::NetworkId::ByGenesis(genesis_hash)),
+                        ParachainXcmLts(2000),
+                    ],
+                ),
+                "ByGenesis",
+                true,
+            ),
+        ];
+
+        // Run all test cases
+        for (latest_loc, lts_loc, test_name, should_convert) in test_cases {
+            test_token_id_equality(latest_loc, lts_loc, test_name, should_convert);
+        }
+    });
+}
+
+#[test]
+fn test_token_id_hashing_consistency_across_xcm_versions() {
+    // This test ensures that TokenIdOf hashing remains consistent across XCM versions.
+    // If Parity changes the hashing mechanism, we'll notice through these exact value checks.
+
+    ExtBuilder::default().build().execute_with(|| {
+        // Helper function to test token ID against expected hash
+        let test_token_id_hash = |location: Location, expected_hash: [u8; 32], test_name: &str| {
+            let token_id = TokenIdOf::convert_location(&location)
+                .expect(&format!("Should convert {} location", test_name));
+            assert_eq!(
+                token_id,
+                expected_hash.into(),
+                "{} location hash changed unexpectedly",
+                test_name
+            );
+        };
+
+        // Test data
+        let general_key_data = [
+            0x01, 0x02, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+        ];
+        let account_key_20 = [
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e,
+            0x0f, 0x10, 0x11, 0x12, 0x13, 0x14,
+        ];
+        let account_id_32 = [
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e,
+            0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c,
+            0x1d, 0x1e, 0x1f, 0x20,
+        ];
+        let genesis_hash = [
+            0x91, 0xb1, 0x71, 0xbb, 0x15, 0x8e, 0x2d, 0x38, 0x48, 0xfa, 0x23, 0xa9, 0xf1, 0xc2,
+            0x51, 0x82, 0xfb, 0x8e, 0x20, 0x31, 0x3b, 0x2c, 0x1e, 0xb4, 0x92, 0x19, 0xda, 0x7a,
+            0x70, 0xce, 0x90, 0xc3,
+        ];
+
+        // Define test cases as (location, expected_hash, test_name)
+        let test_cases: Vec<(Location, [u8; 32], &str)> = vec![
+            // Case 1: Empty interior (parents: 1, GlobalConsensus + empty)
+            (
+                Location::new(1, [GlobalConsensus(EthereumNetwork::get())]),
+                hex!("cf761dfb05ca10f0cfb78a7c149cf13a22bf3cd7517bd4e3d1196b9a6349f6dd"),
+                "Empty",
+            ),
+            // Case 2: Parachain location (parents: 1, GlobalConsensus + Parachain)
+            (
+                Location::new(
+                    1,
+                    [GlobalConsensus(EthereumNetwork::get()), Parachain(2000)],
+                ),
+                hex!("76aa1af5ce575713aa4410cf75a0f3ecd2bdb6ee8ce599f39d1990cff53332ae"),
+                "Parachain",
+            ),
+            // Case 3: GlobalConsensus + Parachain + GeneralIndex
+            (
+                Location::new(
+                    1,
+                    [
+                        GlobalConsensus(EthereumNetwork::get()),
+                        Parachain(2000),
+                        GeneralIndex(5),
+                    ],
+                ),
+                hex!("1966773ea3f421e27db0372bc66ad3d31c55221ad96554cd325dc6e08300ecf8"),
+                "General index",
+            ),
+            // Case 4: GlobalConsensus + Parachain + GeneralKey
+            (
+                Location::new(
+                    1,
+                    [
+                        GlobalConsensus(EthereumNetwork::get()),
+                        Parachain(2000),
+                        GeneralKey {
+                            length: 32,
+                            data: general_key_data,
+                        },
+                    ],
+                ),
+                hex!("78682ef078bfec88e5c289faaf1cabd4b68f2f61062a67286eef874c45f16b5a"),
+                "General key",
+            ),
+            // Case 5: GlobalConsensus + Parachain + AccountKey20
+            (
+                Location::new(
+                    1,
+                    [
+                        GlobalConsensus(EthereumNetwork::get()),
+                        Parachain(2000),
+                        AccountKey20 {
+                            network: Some(EthereumNetwork::get()),
+                            key: account_key_20,
+                        },
+                    ],
+                ),
+                hex!("7ae2f78b73102c2c346534e70901eda406b9f58ace9fe53fc8cdb6abc6759f5c"),
+                "Account key20",
+            ),
+            // Case 6: GlobalConsensus + Parachain + AccountId32
+            (
+                Location::new(
+                    1,
+                    [
+                        GlobalConsensus(EthereumNetwork::get()),
+                        Parachain(2000),
+                        AccountId32 {
+                            network: Some(EthereumNetwork::get()),
+                            id: account_id_32,
+                        },
+                    ],
+                ),
+                hex!("eb0434d007f0d37a295239c02f593a73ca305f8d3a569a26acf755535e66512d"),
+                "Account id32",
+            ),
+            // Case 7: GlobalConsensus + Parachain + PalletInstance
+            (
+                Location::new(
+                    1,
+                    [
+                        GlobalConsensus(EthereumNetwork::get()),
+                        Parachain(2000),
+                        PalletInstance(50),
+                    ],
+                ),
+                hex!("26f864a258a84edbbf0d9ff45a3c914796b9ecf9f3a6e2c92e0b547372d131ab"),
+                "Pallet instance",
+            ),
+            // Case 8: GlobalConsensus + Parachain + PalletInstance + GeneralIndex
+            (
+                Location::new(
+                    1,
+                    [
+                        GlobalConsensus(EthereumNetwork::get()),
+                        Parachain(2000),
+                        PalletInstance(50),
+                        GeneralIndex(10),
+                    ],
+                ),
+                hex!("f330878262076f7c25b552609c6b4a6a302cd05311162dca5ab814ada827e3ad"),
+                "Pallet instance + general index",
+            ),
+            // Case 9: GlobalConsensus + Parachain + PalletInstance + GeneralKey
+            (
+                Location::new(
+                    1,
+                    [
+                        GlobalConsensus(EthereumNetwork::get()),
+                        Parachain(2000),
+                        PalletInstance(50),
+                        GeneralKey {
+                            length: 32,
+                            data: general_key_data,
+                        },
+                    ],
+                ),
+                hex!("21c31d297df7197c21ee61bc2847ec61879e33117f9f5f33bfb96208bb27e754"),
+                "Pallet instance + general key",
+            ),
+            // Case 10: GlobalConsensus + Parachain + PalletInstance + AccountKey20
+            (
+                Location::new(
+                    1,
+                    [
+                        GlobalConsensus(EthereumNetwork::get()),
+                        Parachain(2000),
+                        PalletInstance(50),
+                        AccountKey20 {
+                            network: Some(EthereumNetwork::get()),
+                            key: account_key_20,
+                        },
+                    ],
+                ),
+                hex!("1708fece73094e2e5bbd902e81baf49c168f2a1bc694722044cf55d6fa19c365"),
+                "Pallet instance + account key20",
+            ),
+            // Case 11: GlobalConsensus + Parachain + PalletInstance + AccountId32
+            (
+                Location::new(
+                    1,
+                    [
+                        GlobalConsensus(EthereumNetwork::get()),
+                        Parachain(2000),
+                        PalletInstance(50),
+                        AccountId32 {
+                            network: Some(EthereumNetwork::get()),
+                            id: account_id_32,
+                        },
+                    ],
+                ),
+                hex!("2f6f48be2a60c236aa2df01cceabed25ba220d5ccf14342b5af429d9d67be835"),
+                "Pallet instance + account id32",
+            ),
+            // Case 12: GlobalConsensus(ByGenesis) + Parachain
+            (
+                Location::new(
+                    1,
+                    [
+                        GlobalConsensus(NetworkId::ByGenesis(genesis_hash)),
+                        Parachain(2000),
+                    ],
+                ),
+                hex!("b69f922fcae5982201a713ec30c51ea68b46d899b27922d569cefb8f3e5f951c"),
+                "ByGenesis",
+            ),
+        ];
+
+        // Run all test cases
+        for (location, expected_hash, test_name) in test_cases {
+            test_token_id_hash(location, expected_hash, test_name);
+        }
+
+        // Edge case: Location that should not be convertible (missing GlobalConsensus)
+        let invalid_location = Location::new(0, [Parachain(2000)]);
+        assert!(
+            TokenIdOf::convert_location(&invalid_location).is_none(),
+            "Invalid location should not be convertible"
+        );
+
+        // Edge case: Location with unsupported junction pattern
+        let unsupported_location = Location::new(
+            1,
+            [
+                GlobalConsensus(EthereumNetwork::get()),
+                Parachain(2000),
+                GeneralIndex(1),
+                GeneralIndex(2), // This should be unsupported
+            ],
+        );
+        assert!(
+            TokenIdOf::convert_location(&unsupported_location).is_none(),
+            "Unsupported junction pattern should not be convertible"
+        );
+    });
 }
 
 #[test]
