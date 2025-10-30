@@ -15,5 +15,6 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 mod container_chain_to_eth_transfer;
+mod container_chain_to_eth_transfer_v2;
 mod reserver_transfers_polkadot_xcm;
 mod xcm_message_exporter;
