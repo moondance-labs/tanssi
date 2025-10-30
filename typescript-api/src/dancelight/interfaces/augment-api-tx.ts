@@ -1423,6 +1423,10 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [u64, PalletDataPreserversProfile]
             >;
+            pokeDeposit: AugmentedSubmittable<
+                (profileId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u64]
+            >;
             startAssignment: AugmentedSubmittable<
                 (
                     profileId: u64 | AnyNumber | Uint8Array,

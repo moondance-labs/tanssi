@@ -2367,6 +2367,10 @@ declare module "@polkadot/types/lookup" {
             readonly paraId: u32;
             readonly assignmentWitness: TpDataPreserversCommonAssignmentWitness;
         } & Struct;
+        readonly isPokeDeposit: boolean;
+        readonly asPokeDeposit: {
+            readonly profileId: u64;
+        } & Struct;
         readonly type:
             | "CreateProfile"
             | "UpdateProfile"
@@ -2376,7 +2380,8 @@ declare module "@polkadot/types/lookup" {
             | "ForceDeleteProfile"
             | "StartAssignment"
             | "StopAssignment"
-            | "ForceStartAssignment";
+            | "ForceStartAssignment"
+            | "PokeDeposit";
     }
 
     /** @name PalletDataPreserversProfile (188) */
