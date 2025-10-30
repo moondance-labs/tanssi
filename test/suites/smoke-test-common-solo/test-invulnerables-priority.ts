@@ -86,13 +86,19 @@ export const checkIfInvulnerableWasAssignedAfterFullRotation = async (
 
     let epochStartBlock = (await api.query.babe.epochStart())[0].toNumber();
 
+    if (epochStartBlock === 0) {
+        return; // We are at the very first session, skip the check
+    }
+
     for (let i = 1; i <= fullRotationSessions; i++) {
         const prevBlock = epochStartBlock - 1;
+        if (prevBlock < 0) {
+            return; // Skip the check since the current session is the first one
+        }
         const prevBlockHash = await api.rpc.chain.getBlockHash(prevBlock);
         const apiAtPrevBlock = await api.at(prevBlockHash);
 
         epochStartBlock = (await apiAtPrevBlock.query.babe.epochStart())[1].toNumber();
-        if (epochStartBlock < 0) break;
 
         const blockHash = await api.rpc.chain.getBlockHash(epochStartBlock);
         const apiAt = await api.at(blockHash);
