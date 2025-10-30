@@ -16,7 +16,7 @@ emulated-integration-tests-common = { workspace = true }
 polkadot-parachain-primitives = { workspace = true }
 runtime-parachains = { workspace = true }
 sp-core = { workspace = true }
-starlight-runtime = { workspace = true }
+starlight-runtime = { workspace = true, features = [ "std" ] }
 starlight-runtime-constants = { workspace = true }
 tanssi-emulated-integration-tests-common = { workspace = true }
 xcm = { workspace = true }

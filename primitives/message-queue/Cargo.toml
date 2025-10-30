@@ -1,0 +1,30 @@
+[package]
+name = "tp-message-queue"
+authors = { workspace = true }
+description = "Tanssi mathematics primitives"
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.1.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+frame-support = { workspace = true }
+pallet-message-queue = { workspace = true }
+sp-core = { workspace = true }
+sp-runtime = { workspace = true }
+
+[features]
+default = [ "std" ]
+std = [
+	"frame-support/std",
+	"pallet-message-queue/std",
+	"sp-core/std",
+	"sp-runtime/std",
+]
+runtime-benchmarks = [
+	"frame-support/runtime-benchmarks",
+	"pallet-message-queue/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks",
+]
