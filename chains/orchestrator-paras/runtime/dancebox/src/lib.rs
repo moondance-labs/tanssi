@@ -2225,6 +2225,9 @@ impl_runtime_apis! {
                     let initial_asset_amount = asset_amount * 10;
 
                     // inject it into pallet-foreign-asset-creator.
+                    // we cannot use the parent token directly because the extrinsic does not allow transferring the
+                    // parent token to the parent chain anymore, because of an assets hub migration. We bypass that
+                    // by adding a pallet instance to the token location.
                     let (asset_id, asset_location) = pallet_foreign_asset_creator::benchmarks::create_minted_asset::<Runtime>(
                         initial_asset_amount,
                         who.clone(),
