@@ -424,6 +424,7 @@ runtime-benchmarks = [
 	"tp-bridge/runtime-benchmarks",
 	"tp-data-preservers-common/runtime-benchmarks",
 	"tp-invulnerables-filter-common/runtime-benchmarks",
+	"tp-message-queue/runtime-benchmarks",
 	"tp-parathread-filter-common/runtime-benchmarks",
 	"tp-stream-payment-common/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",

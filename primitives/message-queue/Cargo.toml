@@ -10,10 +10,10 @@ version = "0.1.0"
 workspace = true
 
 [dependencies]
-sp-core = { workspace = true }
-sp-runtime = { workspace = true }
 frame-support = { workspace = true }
 pallet-message-queue = { workspace = true }
+sp-core = { workspace = true }
+sp-runtime = { workspace = true }
 
 [features]
 default = [ "std" ]
@@ -24,5 +24,7 @@ std = [
 	"sp-runtime/std",
 ]
 runtime-benchmarks = [
+	"frame-support/runtime-benchmarks",
+	"pallet-message-queue/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 ]
