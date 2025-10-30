@@ -81,16 +81,20 @@ export const checkIfInvulnerableWasAssignedAfterFullRotation = async (
     api: ApiPromise,
     invulnerable: string
 ): Promise<void> => {
-    const epochDuration = api.consts.babe.epochDuration.toNumber();
-    const fullRotationSessions = 24; // for both Dancelight and Starlight
+    const config = await api.query.collatorConfiguration.activeConfig();
+    const fullRotationSessions = config.fullRotationPeriod.toNumber();
 
-    const epochStart = (await api.query.babe.epochStart())[0].toNumber();
+    let epochStartBlock = (await api.query.babe.epochStart())[0].toNumber();
 
     for (let i = 1; i <= fullRotationSessions; i++) {
-        const sessionFirstBlock = epochStart - i * epochDuration;
-        if (sessionFirstBlock < 0) break;
+        const prevBlock = epochStartBlock - 1;
+        const prevBlockHash = await api.rpc.chain.getBlockHash(prevBlock);
+        const apiAtPrevBlock = await api.at(prevBlockHash);
 
-        const blockHash = await api.rpc.chain.getBlockHash(sessionFirstBlock);
+        epochStartBlock = (await apiAtPrevBlock.query.babe.epochStart())[1].toNumber();
+        if (epochStartBlock < 0) break;
+
+        const blockHash = await api.rpc.chain.getBlockHash(epochStartBlock);
         const apiAt = await api.at(blockHash);
         const events = await apiAt.query.system.events();
 
@@ -104,10 +108,10 @@ export const checkIfInvulnerableWasAssignedAfterFullRotation = async (
                 const fullRotation = eventJSON.data?.fullRotation;
 
                 if (fullRotation) {
-                    console.log(`Found full rotation assignment at block ${sessionFirstBlock}`);
+                    console.log(`Found full rotation assignment at block ${epochStartBlock}`);
 
                     let collators = [];
-                    const blockHash = await api.rpc.chain.getBlockHash(sessionFirstBlock);
+                    const blockHash = await api.rpc.chain.getBlockHash(epochStartBlock);
                     const currentBlockApi = await api.at(blockHash);
                     const currentAssignment =
                         await currentBlockApi.query.tanssiCollatorAssignment.collatorContainerChain();
@@ -120,7 +124,7 @@ export const checkIfInvulnerableWasAssignedAfterFullRotation = async (
 
                     if (!collators.includes(invulnerable)) {
                         throw new Error(
-                            `${invulnerable} not found in full-rotation assignment at block ${sessionFirstBlock}`
+                            `${invulnerable} not found in full-rotation assignment at block ${epochStartBlock}`
                         );
                     }
 
