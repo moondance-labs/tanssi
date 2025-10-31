@@ -29,6 +29,13 @@ interface XCM {
         uint256 amount;
     }
 
+    // The values start at `0` and are represented as `uint8`
+    enum TransferType {
+        Teleport,
+        LocalReserve,
+        DestinationReserve
+    }
+
     /// @dev Function to send assets via XCM using transfer_assets() pallet-xcm extrinsic.
     /// @custom:selector 59df8416
     /// @param dest The destination chain.
@@ -80,5 +87,81 @@ interface XCM {
         bytes32 beneficiary,
         AssetAddressInfo[] memory assets,
         uint32 feeAssetItem
+    ) external;
+
+    /// @dev Function to send assets through transfer_assets_using_type_and_then() pallet-xcm
+    /// extrinsic.
+    /// Important: in this selector RemoteReserve type (for either assets or fees) is not allowed.
+    /// If users want to send assets and fees (in Location format) with a remote reserve,
+    /// they must use the selector fc19376c.
+    /// @custom:selector 8425d893
+    /// @param dest The destination chain.
+    /// @param assets The combination (array) of assets to send in Location format.
+    /// @param assetsTransferType The TransferType corresponding to assets being sent.
+    /// @param remoteFeesIdIndex The index of the asset (inside assets array) to use as fees.
+    /// @param feesTransferType The TransferType corresponding to the asset used as fees.
+    /// @param customXcmOnDest The XCM message to execute on destination chain.
+    function transferAssetsUsingTypeAndThenLocation(
+        Location memory dest,
+        AssetLocationInfo[] memory assets,
+        TransferType assetsTransferType,
+        uint8 remoteFeesIdIndex,
+        TransferType feesTransferType,
+        bytes memory customXcmOnDest
+    ) external;
+
+    /// @dev Function to send assets through transfer_assets_using_type_and_then() pallet-xcm
+    /// extrinsic.
+    /// @custom:selector fc19376c
+    /// @param dest The destination chain.
+    /// @param assets The combination (array) of assets to send in Location format.
+    /// @param remoteFeesIdIndex The index of the asset (inside assets array) to use as fees.
+    /// @param customXcmOnDest The XCM message to execute on destination chain.
+    /// @param remoteReserve The remote reserve corresponding for assets and fees. They MUST
+    /// share the same reserve.
+    function transferAssetsUsingTypeAndThenLocation(
+        Location memory dest,
+        AssetLocationInfo[] memory assets,
+        uint8 remoteFeesIdIndex,
+        bytes memory customXcmOnDest,
+        Location memory remoteReserve
+    ) external;
+
+    /// @dev Function to send assets through transfer_assets_using_type_and_then() pallet-xcm
+    /// extrinsic.
+    /// Important: in this selector RemoteReserve type (for either assets or fees) is not allowed.
+    /// If users want to send assets and fees (in Address format) with a remote reserve,
+    /// they must use the selector aaecfc62.
+    /// @custom:selector 998093ee
+    /// @param dest The destination chain.
+    /// @param assets The combination (array) of assets to send in Address format.
+    /// @param assetsTransferType The TransferType corresponding to assets being sent.
+    /// @param remoteFeesIdIndex The index of the asset (inside assets array) to use as fees.
+    /// @param feesTransferType The TransferType corresponding to the asset used as fees.
+    /// @param customXcmOnDest The XCM message to execute on destination chain.
+    function transferAssetsUsingTypeAndThenAddress(
+        Location memory dest,
+        AssetAddressInfo[] memory assets,
+        TransferType assetsTransferType,
+        uint8 remoteFeesIdIndex,
+        TransferType feesTransferType,
+        bytes memory customXcmOnDest
+    ) external;
+
+    /// @dev Function to send assets through transfer_assets_using_type_and_then() pallet-xcm
+    /// extrinsic.
+    /// @custom:selector aaecfc62
+    /// @param dest The destination chain.
+    /// @param assets The combination (array) of assets to send in Address format.
+    /// @param remoteFeesIdIndex The index of the asset (inside assets array) to use as fees.
+    /// @param customXcmOnDest The XCM message to execute on destination chain.
+    /// @param remoteReserve The remote reserve corresponding for assets and fees. They MUST
+    /// share the same reserve.
+    function transferAssetsUsingTypeAndThenAddress(
+        Location memory dest,
+        AssetAddressInfo[] memory assets,
+        uint8 remoteFeesIdIndex,
+        bytes memory customXcmOnDest,
+        Location memory remoteReserve
     ) external;
 }
