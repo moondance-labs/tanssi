@@ -1,11 +1,11 @@
 import "@moonbeam-network/api-augment";
 import { beforeAll, describeSuite, expect, fetchCompiledContract } from "@moonwall/cli";
-import { ALITH_ADDRESS, BALTATHAR_ADDRESS, alith, createEthersTransaction } from "@moonwall/util";
+import { ALITH_ADDRESS, BALTATHAR_ADDRESS, alith, createEthersTransaction, generateKeyringPair } from "@moonwall/util";
 import type { u16 } from "@polkadot/types-codec";
 import { expectEVMResult } from "helpers";
 import { RELAY_SOURCE_LOCATION, SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS, TESTNET_ETHEREUM_NETWORK_ID } from "utils";
 import { encodeFunctionData } from "viem";
-import { mockAssetCreation, relayAssetMetadata } from "../../../helpers/assets.ts";
+import { type AssetMetadata, mockAssetCreation, relayAssetMetadata } from "../../../helpers/assets.ts";
 import { numberToHex } from "@polkadot/util";
 
 const PRECOMPILE_PALLET_XCM_ADDRESS: `0x${string}` = "0x0000000000000000000000000000000000000804";
@@ -15,28 +15,68 @@ describeSuite({
     title: "Precompiles - PalletXcm",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
-        let assetId: u16;
+        let relayAssetId: u16;
+        let erc20AssetId: u16;
+
         const ADDRESS_ERC20 = "0xfFfFFFffFffFFFFffFFfFfffFfFFFFFfffFF000f";
-        const ASSET_ID = 15n;
+        const RELAY_ASSET_ID = 15n;
+        const ERC20_RELAY_ASSET_ID = 16n;
         const amountToSend = 100n;
         const holdingAccount = SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS;
         const tokenToTransfer = 123_321_000_000_000n;
 
         beforeAll(async () => {
-            assetId = context.polkadotJs().createType("u16", ASSET_ID);
-            const balance = 200000000000000n;
+            relayAssetId = context.polkadotJs().createType("u16", RELAY_ASSET_ID);
+            erc20AssetId = context.polkadotJs().createType("u16", ERC20_RELAY_ASSET_ID);
+
+            const relayAssetBalance = 200000000000000n;
             await mockAssetCreation(
                 context,
                 alith,
-                assetId,
+                relayAssetId,
                 ALITH_ADDRESS,
                 RELAY_SOURCE_LOCATION,
                 relayAssetMetadata,
                 true
             );
-
             await context.createBlock(
-                context.polkadotJs().tx.foreignAssets.mint(assetId.toU8a(), ALITH_ADDRESS, balance)
+                context.polkadotJs().tx.foreignAssets.mint(relayAssetId.toU8a(), ALITH_ADDRESS, relayAssetBalance)
+            );
+
+            const erc20AssetMetadata: AssetMetadata = {
+                name: "erc20",
+                symbol: "erc20",
+                decimals: 18n,
+                isFrozen: false,
+            };
+            const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
+            const erc20Location = {
+                parents: 2,
+                interior: {
+                    X2: [
+                        { GlobalConsensus: ethereumNetwork },
+                        {
+                            AccountKey20: {
+                                network: ethereumNetwork,
+                                key: ADDRESS_ERC20,
+                            },
+                        },
+                    ],
+                },
+            };
+            await mockAssetCreation(
+                context,
+                alith,
+                erc20AssetId,
+                ALITH_ADDRESS,
+                erc20Location,
+                erc20AssetMetadata,
+                true
+            );
+
+            const erc20AssetBalance = 123_321_000_000_000_001n; // Adding 1 extra for the check
+            await context.createBlock(
+                context.polkadotJs().tx.foreignAssets.mint(erc20AssetId.toU8a(), ALITH_ADDRESS, erc20AssetBalance)
             );
         });
 
@@ -46,7 +86,7 @@ describeSuite({
             test: async () => {
                 const { abi: xcmInterface } = fetchCompiledContract("XCM");
                 const assetBalanceBefore = (
-                    await context.polkadotJs().query.foreignAssets.account(assetId.toU8a(), ALITH_ADDRESS)
+                    await context.polkadotJs().query.foreignAssets.account(relayAssetId.toU8a(), ALITH_ADDRESS)
                 )
                     .unwrap()
                     .balance.toBigInt();
@@ -78,7 +118,7 @@ describeSuite({
                 expectEVMResult(result.result?.events, "Succeed");
 
                 const assetBalanceAfter = (
-                    await context.polkadotJs().query.foreignAssets.account(assetId.toU8a(), ALITH_ADDRESS)
+                    await context.polkadotJs().query.foreignAssets.account(relayAssetId.toU8a(), ALITH_ADDRESS)
                 )
                     .unwrap()
                     .balance.toBigInt();
@@ -92,7 +132,7 @@ describeSuite({
             test: async () => {
                 const { abi: xcmInterface } = fetchCompiledContract("XCM");
                 const assetBalanceBefore = (
-                    await context.polkadotJs().query.foreignAssets.account(assetId.toU8a(), ALITH_ADDRESS)
+                    await context.polkadotJs().query.foreignAssets.account(relayAssetId.toU8a(), ALITH_ADDRESS)
                 )
                     .unwrap()
                     .balance.toBigInt();
@@ -114,7 +154,7 @@ describeSuite({
                 expectEVMResult(result.result?.events, "Succeed");
 
                 const assetBalanceAfter = (
-                    await context.polkadotJs().query.foreignAssets.account(assetId.toU8a(), ALITH_ADDRESS)
+                    await context.polkadotJs().query.foreignAssets.account(relayAssetId.toU8a(), ALITH_ADDRESS)
                 )
                     .unwrap()
                     .balance.toBigInt();
@@ -128,7 +168,7 @@ describeSuite({
             test: async () => {
                 const { abi: xcmInterface } = fetchCompiledContract("XCM");
                 const assetBalanceBefore = (
-                    await context.polkadotJs().query.foreignAssets.account(assetId.toU8a(), ALITH_ADDRESS)
+                    await context.polkadotJs().query.foreignAssets.account(relayAssetId.toU8a(), ALITH_ADDRESS)
                 )
                     .unwrap()
                     .balance.toBigInt();
@@ -151,7 +191,7 @@ describeSuite({
                 expectEVMResult(result.result?.events, "Succeed");
 
                 const assetBalanceAfter = (
-                    await context.polkadotJs().query.foreignAssets.account(assetId.toU8a(), ALITH_ADDRESS)
+                    await context.polkadotJs().query.foreignAssets.account(relayAssetId.toU8a(), ALITH_ADDRESS)
                 )
                     .unwrap()
                     .balance.toBigInt();
@@ -165,7 +205,7 @@ describeSuite({
             test: async () => {
                 const { abi: xcmInterface } = fetchCompiledContract("XCM");
                 const assetBalanceBefore = (
-                    await context.polkadotJs().query.foreignAssets.account(assetId.toU8a(), ALITH_ADDRESS)
+                    await context.polkadotJs().query.foreignAssets.account(relayAssetId.toU8a(), ALITH_ADDRESS)
                 )
                     .unwrap()
                     .balance.toBigInt();
@@ -187,7 +227,7 @@ describeSuite({
                 expectEVMResult(result.result?.events, "Succeed");
 
                 const assetBalanceAfter = (
-                    await context.polkadotJs().query.foreignAssets.account(assetId.toU8a(), ALITH_ADDRESS)
+                    await context.polkadotJs().query.foreignAssets.account(relayAssetId.toU8a(), ALITH_ADDRESS)
                 )
                     .unwrap()
                     .balance.toBigInt();
@@ -362,6 +402,179 @@ describeSuite({
                     ],
                     messageId: expect.any(String),
                 });
+
+                expectEVMResult(result.result?.events, "Succeed");
+            },
+        });
+
+        it({
+            id: "T06",
+            title: "allows to call transferAssetsLocation precompile for exporting assets (container chain ERC20 token) to Ethereum",
+            test: async () => {
+                const ERC20_ASSET_AMOUNT = 123_321_000_000_000_000n;
+                const RELAY_ASSET_FEE_AMOUNT = 3_500_000_000_000n;
+
+                const { abi: xcmInterface } = fetchCompiledContract("XCM");
+                const dest = [
+                    // one parents
+                    1,
+                    // Here
+                    [],
+                ];
+                const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
+                const accountKey20Interior = {
+                    AccountKey20: {
+                        network: ethereumNetwork,
+                        key: ADDRESS_ERC20,
+                    },
+                };
+                const globalConsensusEthereumInterior = { GlobalConsensus: ethereumNetwork };
+                const erc20AssetIdForRelayContext = {
+                    parents: 1,
+                    interior: { X2: [globalConsensusEthereumInterior, accountKey20Interior] },
+                };
+
+                // DestinationReserve
+                const assetsAndFeesTransferType = 2;
+
+                const erc20AssetIdForEthereumContext = {
+                    parents: 0,
+                    interior: {
+                        X1: accountKey20Interior,
+                    },
+                };
+                const erc20AssetReceiverAddress = generateKeyringPair("ethereum").address;
+                const beneficiary = {
+                    parents: 0,
+                    interior: {
+                        X1: {
+                            AccountKey20: {
+                                network: ethereumNetwork,
+                                key: erc20AssetReceiverAddress,
+                            },
+                        },
+                    },
+                };
+                const xcmOnDest = context.polkadotJs().createType("XcmVersionedXcm", {
+                    V3: [
+                        {
+                            InitiateReserveWithdraw: {
+                                assets: {
+                                    Definite: [
+                                        {
+                                            id: {
+                                                Concrete: erc20AssetIdForRelayContext,
+                                            },
+                                            fun: { Fungible: ERC20_ASSET_AMOUNT },
+                                        },
+                                    ],
+                                },
+                                reserve: {
+                                    parents: 1,
+                                    interior: { X1: globalConsensusEthereumInterior },
+                                },
+                                xcm: [
+                                    {
+                                        DepositAsset: {
+                                            assets: {
+                                                Definite: [
+                                                    {
+                                                        id: {
+                                                            Concrete: erc20AssetIdForEthereumContext,
+                                                        },
+                                                        fun: { Fungible: ERC20_ASSET_AMOUNT },
+                                                    },
+                                                ],
+                                            },
+                                            beneficiary,
+                                        },
+                                    },
+                                ],
+                            },
+                        },
+                    ],
+                });
+                const chainIdHex = numberToHex(TESTNET_ETHEREUM_NETWORK_ID, 64);
+
+                const rawTxn = await createEthersTransaction(context, {
+                    to: PRECOMPILE_PALLET_XCM_ADDRESS,
+                    data: encodeFunctionData({
+                        abi: xcmInterface,
+                        // args: [dest, assets, assetsTransferType, remoteFeesId, feesTransferType, customXcmOnDest],
+                        args: [
+                            dest,
+                            [
+                                [
+                                    [
+                                        // parents: 1
+                                        1,
+                                        // Here
+                                        [],
+                                    ],
+                                    RELAY_ASSET_FEE_AMOUNT,
+                                ],
+                                [
+                                    [
+                                        // parents = 2
+                                        2,
+                                        [
+                                            // X2 -> 0: GlobalConsensus + Ethereum + networkId
+                                            ["0x", "09", "08", chainIdHex.slice(2)].join(""),
+                                            //X2 -> 1: AccountId20 + key + network + Ethereum + networkId
+                                            ["0x", "03", ADDRESS_ERC20.slice(2), "08", chainIdHex.slice(2)].join(""),
+                                        ],
+                                    ],
+                                    ERC20_ASSET_AMOUNT,
+                                ],
+                            ],
+                            assetsAndFeesTransferType,
+                            0n,
+                            assetsAndFeesTransferType,
+                            xcmOnDest.toHex(),
+                        ],
+                        functionName: "transferAssetsUsingTypeAndThenLocation",
+                    }),
+                    gasLimit: 500_000n,
+                });
+
+                const erc20AssetBalanceBefore = (
+                    await context.polkadotJs().query.foreignAssets.account(erc20AssetId.toU8a(), ALITH_ADDRESS)
+                )
+                    .unwrap()
+                    .balance.toBigInt();
+                const relayAssetBalanceBefore = (
+                    await context.polkadotJs().query.foreignAssets.account(relayAssetId.toU8a(), ALITH_ADDRESS)
+                )
+                    .unwrap()
+                    .balance.toBigInt();
+
+                type EventType = { event: { section: string; method: string; data: any } };
+                const result = await context.createBlock(rawTxn);
+                const sentXcmEvent = result.result?.events
+                    .map((e) => e.toHuman())
+                    .find((e) => {
+                        const event = e as unknown as EventType;
+                        return event.event.section === "polkadotXcm" && event.event.method === "Sent";
+                    }) as unknown as EventType;
+
+                expect(!!sentXcmEvent).toEqual(true); // Event exists
+
+                const erc20AssetBalanceAfter = (
+                    await context.polkadotJs().query.foreignAssets.account(erc20AssetId.toU8a(), ALITH_ADDRESS)
+                )
+                    .unwrap()
+                    .balance.toBigInt();
+                const relayAssetBalanceAfter = (
+                    await context.polkadotJs().query.foreignAssets.account(relayAssetId.toU8a(), ALITH_ADDRESS)
+                )
+                    .unwrap()
+                    .balance.toBigInt();
+
+                // Check that ERC20 asset was transferred to the destination address
+                expect(erc20AssetBalanceBefore - erc20AssetBalanceAfter).toEqual(ERC20_ASSET_AMOUNT);
+                expect(relayAssetBalanceBefore - relayAssetBalanceAfter).toEqual(RELAY_ASSET_FEE_AMOUNT);
+
+                expect(erc20AssetBalanceAfter).to.equal(1n);
 
                 expectEVMResult(result.result?.events, "Succeed");
             },
