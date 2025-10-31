@@ -1,7 +1,10 @@
 {
   "compilerOptions": {
-    "module": "ESNext",
-    "target": "ESNext",
+    "types": ["node"],
+     // enable latest features
+    "lib": ["esnext"],
+    "module": "esnext",
+    "target": "esnext",
     "baseUrl": "./",
     "moduleResolution": "Bundler",
     "importHelpers": true,
