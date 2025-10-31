@@ -1986,7 +1986,8 @@ mod poke_deposit {
 
                 // Manually update profile to have longer URL
                 let mut reg = Profiles::<Test>::get(0).unwrap();
-                reg.profile.bootnode_url = Some(b"this_is_a_much_longer_url_that_requires_more_deposit"
+                reg.profile.bootnode_url = Some(
+                    b"this_is_a_much_longer_url_that_requires_more_deposit"
                         .to_vec()
                         .try_into()
                         .unwrap(),
@@ -2040,10 +2041,12 @@ mod poke_deposit {
             .execute_with(|| {
                 // Create profile with long URL (higher deposit)
                 let profile = Profile {
-                    bootnode_url: Some(b"this_is_a_much_longer_url_that_requires_more_deposit"
-                        .to_vec()
-                        .try_into()
-                        .unwrap()),
+                    bootnode_url: Some(
+                        b"this_is_a_much_longer_url_that_requires_more_deposit"
+                            .to_vec()
+                            .try_into()
+                            .unwrap(),
+                    ),
                     para_ids: ParaIdsFilter::AnyParaId,
                     node_type: NodeType::Substrate,
                     proxy_rpc_urls: Default::default(),
@@ -2217,10 +2220,12 @@ mod poke_deposit {
 
                 // Manually update profile to require more deposit
                 let mut reg = Profiles::<Test>::get(0).unwrap();
-                reg.profile.bootnode_url = Some(b"this_is_a_much_longer_url_that_requires_more_deposit"
-                    .to_vec()
-                    .try_into()
-                    .unwrap());
+                reg.profile.bootnode_url = Some(
+                    b"this_is_a_much_longer_url_that_requires_more_deposit"
+                        .to_vec()
+                        .try_into()
+                        .unwrap(),
+                );
                 Profiles::<Test>::insert(0, reg);
 
                 // Try to poke deposit but ALICE doesn't have enough balance
