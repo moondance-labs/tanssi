@@ -180,14 +180,14 @@ fn receive_container_native_tokens_from_eth_works() {
             );
 
             let remote_xcm = Xcm::<()>(vec![
-                DescendOrigin(PalletInstance(inbound_queue_pallet_index).into()),
-                UniversalOrigin(GlobalConsensus(network)),
                 ReserveAssetDeposited(vec![container_asset_fee.clone()].into()),
-                WithdrawAsset(vec![container_asset.clone()].into()),
                 BuyExecution {
                     fees: container_asset_fee,
                     weight_limit: Unlimited,
                 },
+                DescendOrigin(PalletInstance(inbound_queue_pallet_index).into()),
+                UniversalOrigin(GlobalConsensus(network)),
+                WithdrawAsset(vec![container_asset.clone()].into()),
                 DepositAsset {
                     assets: Definite(container_asset.into()),
                     beneficiary,
