@@ -480,12 +480,16 @@ mod benchmarks {
     fn poke_deposit() {
         // Create initial profile with minimal data (smallest deposit)
         let url = BoundedVec::try_from(vec![b'A'; 1]).unwrap();
+        let urls = BoundedVec::try_from(vec![url]).unwrap();
 
         let profile = Profile {
-            url,
+            direct_rpc_urls: urls,
+            proxy_rpc_urls: Default::default(),
+            bootnode_url: None,
             para_ids: ParaIdsFilter::AnyParaId,
-            mode: ProfileMode::Bootnode,
+            node_type: NodeType::Substrate,
             assignment_request: T::AssignmentProcessor::benchmark_provider_request(),
+            additional_info: Default::default(),
         };
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
@@ -496,9 +500,29 @@ mod benchmarks {
         // Manually modify the profile to worst case scenario (maximum deposit required)
         let mut reg = Profiles::<T>::get(T::ProfileId::zero()).expect("profile exists");
 
-        // Max URL length
-        let max_url_len = T::MaxNodeUrlLen::get() as usize;
-        reg.profile.url = BoundedVec::try_from(vec![b'B'; max_url_len]).unwrap();
+        // Max URL lengths for all URL fields
+        let max_url_len = T::MaxStringLen::get() as usize;
+        let max_url_count = T::MaxNodeUrlCount::get() as usize;
+        
+        // Max direct_rpc_urls
+        let mut max_direct_urls = BoundedVec::new();
+        for _ in 0..max_url_count {
+            max_direct_urls.try_push(BoundedVec::try_from(vec![b'D'; max_url_len]).unwrap()).unwrap();
+        }
+        reg.profile.direct_rpc_urls = max_direct_urls;
+
+        // Max proxy_rpc_urls
+        let mut max_proxy_urls = BoundedVec::new();
+        for _ in 0..max_url_count {
+            max_proxy_urls.try_push(BoundedVec::try_from(vec![b'P'; max_url_len]).unwrap()).unwrap();
+        }
+        reg.profile.proxy_rpc_urls = max_proxy_urls;
+
+        // Max bootnode_url
+        reg.profile.bootnode_url = Some(BoundedVec::try_from(vec![b'B'; max_url_len]).unwrap());
+
+        // Max additional_info
+        reg.profile.additional_info = BoundedVec::try_from(vec![b'I'; max_url_len]).unwrap();
 
         // Max para_ids in whitelist
         let max_para_ids_len = T::MaxParaIdsVecLen::get();
