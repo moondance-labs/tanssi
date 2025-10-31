@@ -320,14 +320,17 @@ fn test_container_deregister_unassign_data_preserver() {
         .build()
         .execute_with(|| {
             use pallet_data_preservers::{
-                AssignerParameterOf, ParaIdsFilter, Profile, ProfileMode, ProviderRequestOf,
+                AssignerParameterOf, NodeType, ParaIdsFilter, Profile, ProviderRequestOf,
             };
 
             let profile = Profile {
-                url: b"test".to_vec().try_into().unwrap(),
+                bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
+                direct_rpc_urls: Default::default(),
+                proxy_rpc_urls: Default::default(),
                 para_ids: ParaIdsFilter::AnyParaId,
-                mode: ProfileMode::Bootnode,
+                node_type: NodeType::Substrate,
                 assignment_request: ProviderRequestOf::<Runtime>::Free,
+                additional_info: Default::default(),
             };
 
             let para_id = ParaId::from(2000);
@@ -445,13 +448,16 @@ fn test_data_preserver_with_stream_payment() {
         .build()
         .execute_with(|| {
             use pallet_data_preservers::{
-                AssignerParameterOf, ParaIdsFilter, Profile, ProfileMode, ProviderRequestOf,
+                AssignerParameterOf, NodeType, ParaIdsFilter, Profile, ProviderRequestOf,
             };
 
             let profile = Profile {
-                url: b"test".to_vec().try_into().unwrap(),
+                bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
+                direct_rpc_urls: Default::default(),
+                proxy_rpc_urls: Default::default(),
                 para_ids: ParaIdsFilter::AnyParaId,
-                mode: ProfileMode::Bootnode,
+                node_type: NodeType::Substrate,
+                additional_info: Default::default(),
                 assignment_request: ProviderRequestOf::<Runtime>::StreamPayment {
                     config: StreamConfig {
                         time_unit: StreamPaymentTimeUnit::BlockNumber,
@@ -512,13 +518,16 @@ fn test_data_preserver_kind_needs_to_match() {
         .build()
         .execute_with(|| {
             use pallet_data_preservers::{
-                AssignerParameterOf, ParaIdsFilter, Profile, ProfileMode, ProviderRequestOf,
+                AssignerParameterOf, NodeType, ParaIdsFilter, Profile, ProviderRequestOf,
             };
 
             let profile = Profile {
-                url: b"test".to_vec().try_into().unwrap(),
+                bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
+                direct_rpc_urls: Default::default(),
+                proxy_rpc_urls: Default::default(),
                 para_ids: ParaIdsFilter::AnyParaId,
-                mode: ProfileMode::Bootnode,
+                node_type: NodeType::Substrate,
+                additional_info: Default::default(),
                 assignment_request: ProviderRequestOf::<Runtime>::Free,
             };
 

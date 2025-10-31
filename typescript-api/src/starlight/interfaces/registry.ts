@@ -104,9 +104,9 @@ import type {
     PalletDataPreserversError,
     PalletDataPreserversEvent,
     PalletDataPreserversHoldReason,
+    PalletDataPreserversNodeType,
     PalletDataPreserversParaIdsFilter,
     PalletDataPreserversProfile,
-    PalletDataPreserversProfileMode,
     PalletDataPreserversRegisteredProfile,
     PalletEthereumTokenTransfersCall,
     PalletEthereumTokenTransfersError,
@@ -656,9 +656,9 @@ declare module "@polkadot/types/types/registry" {
         PalletDataPreserversError: PalletDataPreserversError;
         PalletDataPreserversEvent: PalletDataPreserversEvent;
         PalletDataPreserversHoldReason: PalletDataPreserversHoldReason;
+        PalletDataPreserversNodeType: PalletDataPreserversNodeType;
         PalletDataPreserversParaIdsFilter: PalletDataPreserversParaIdsFilter;
         PalletDataPreserversProfile: PalletDataPreserversProfile;
-        PalletDataPreserversProfileMode: PalletDataPreserversProfileMode;
         PalletDataPreserversRegisteredProfile: PalletDataPreserversRegisteredProfile;
         PalletEthereumTokenTransfersCall: PalletEthereumTokenTransfersCall;
         PalletEthereumTokenTransfersError: PalletEthereumTokenTransfersError;

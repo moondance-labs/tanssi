@@ -109,9 +109,9 @@ import type {
     PalletDataPreserversError,
     PalletDataPreserversEvent,
     PalletDataPreserversHoldReason,
+    PalletDataPreserversNodeType,
     PalletDataPreserversParaIdsFilter,
     PalletDataPreserversProfile,
-    PalletDataPreserversProfileMode,
     PalletDataPreserversRegisteredProfile,
     PalletForeignAssetCreatorCall,
     PalletForeignAssetCreatorError,
@@ -444,9 +444,9 @@ declare module "@polkadot/types/types/registry" {
         PalletDataPreserversError: PalletDataPreserversError;
         PalletDataPreserversEvent: PalletDataPreserversEvent;
         PalletDataPreserversHoldReason: PalletDataPreserversHoldReason;
+        PalletDataPreserversNodeType: PalletDataPreserversNodeType;
         PalletDataPreserversParaIdsFilter: PalletDataPreserversParaIdsFilter;
         PalletDataPreserversProfile: PalletDataPreserversProfile;
-        PalletDataPreserversProfileMode: PalletDataPreserversProfileMode;
         PalletDataPreserversRegisteredProfile: PalletDataPreserversRegisteredProfile;
         PalletForeignAssetCreatorCall: PalletForeignAssetCreatorCall;
         PalletForeignAssetCreatorError: PalletForeignAssetCreatorError;

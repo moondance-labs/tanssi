@@ -1374,7 +1374,15 @@ declare module "@polkadot/api-base/types/submittable" {
                 (
                     profile:
                         | PalletDataPreserversProfile
-                        | { url?: any; paraIds?: any; mode?: any; assignmentRequest?: any }
+                        | {
+                              paraIds?: any;
+                              assignmentRequest?: any;
+                              directRpcUrls?: any;
+                              proxyRpcUrls?: any;
+                              bootnodeUrl?: any;
+                              nodeType?: any;
+                              additionalInfo?: any;
+                          }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -1388,7 +1396,15 @@ declare module "@polkadot/api-base/types/submittable" {
                 (
                     profile:
                         | PalletDataPreserversProfile
-                        | { url?: any; paraIds?: any; mode?: any; assignmentRequest?: any }
+                        | {
+                              paraIds?: any;
+                              assignmentRequest?: any;
+                              directRpcUrls?: any;
+                              proxyRpcUrls?: any;
+                              bootnodeUrl?: any;
+                              nodeType?: any;
+                              additionalInfo?: any;
+                          }
                         | string
                         | Uint8Array,
                     forAccount: AccountId32 | string | Uint8Array
@@ -1417,7 +1433,15 @@ declare module "@polkadot/api-base/types/submittable" {
                     profileId: u64 | AnyNumber | Uint8Array,
                     profile:
                         | PalletDataPreserversProfile
-                        | { url?: any; paraIds?: any; mode?: any; assignmentRequest?: any }
+                        | {
+                              paraIds?: any;
+                              assignmentRequest?: any;
+                              directRpcUrls?: any;
+                              proxyRpcUrls?: any;
+                              bootnodeUrl?: any;
+                              nodeType?: any;
+                              additionalInfo?: any;
+                          }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -1452,7 +1476,15 @@ declare module "@polkadot/api-base/types/submittable" {
                     profileId: u64 | AnyNumber | Uint8Array,
                     profile:
                         | PalletDataPreserversProfile
-                        | { url?: any; paraIds?: any; mode?: any; assignmentRequest?: any }
+                        | {
+                              paraIds?: any;
+                              assignmentRequest?: any;
+                              directRpcUrls?: any;
+                              proxyRpcUrls?: any;
+                              bootnodeUrl?: any;
+                              nodeType?: any;
+                              additionalInfo?: any;
+                          }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,

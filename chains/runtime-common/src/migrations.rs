@@ -49,7 +49,7 @@ use {
             StorageVersion,
         },
         weights::Weight,
-        Blake2_128Concat, BoundedVec, StoragePrefixedMap,
+        Blake2_128Concat, StoragePrefixedMap,
     },
     pallet_configuration::{weights::WeightInfo as _, HostConfiguration},
     pallet_foreign_asset_creator::{AssetId, AssetIdToForeignAsset, ForeignAssetToAssetId},
@@ -640,148 +640,6 @@ where
     }
 }
 
-pub struct DataPreserversAssignmentsMigration<T>(pub PhantomData<T>);
-impl<T> Migration for DataPreserversAssignmentsMigration<T>
-where
-    T: pallet_data_preservers::Config + pallet_registrar::Config,
-    T::AccountId: From<[u8; 32]>,
-{
-    fn friendly_name(&self) -> &str {
-        "TM_DataPreserversAssignmentsMigration"
-    }
-
-    fn migrate(&self, _available_weight: Weight) -> Weight {
-        use {
-            frame_support::BoundedBTreeSet,
-            frame_system::RawOrigin,
-            pallet_data_preservers::{AssignmentProcessor, ParaIdsFilter, Profile, ProfileMode},
-        };
-
-        let mut total_weight = Weight::default();
-
-        let (request, _extra, witness) = T::AssignmentProcessor::free_variant_values()
-            .expect("free variant values are necessary to perform migration");
-
-        let dummy_profile_owner = T::AccountId::from([0u8; 32]);
-
-        let pallet_prefix: &[u8] = b"DataPreservers";
-        let storage_item_prefix: &[u8] = b"BootNodes";
-        let bootnodes_storage: Vec<_> = storage_key_iter::<
-            ParaId,
-            BoundedVec<BoundedVec<u8, T::MaxNodeUrlLen>, T::MaxAssignmentsPerParaId>,
-            Blake2_128Concat,
-        >(pallet_prefix, storage_item_prefix)
-        .collect();
-
-        total_weight = total_weight.saturating_add(
-            T::DbWeight::get()
-                .reads(bootnodes_storage.len() as u64)
-                .saturating_add(T::DbWeight::get().writes(bootnodes_storage.len() as u64)),
-        );
-
-        for (para_id, bootnodes) in bootnodes_storage {
-            for bootnode_url in bootnodes {
-                let profile = Profile {
-                    url: bootnode_url,
-                    para_ids: ParaIdsFilter::Whitelist({
-                        let mut set = BoundedBTreeSet::new();
-                        set.try_insert(para_id).expect("to be in bound");
-                        set
-                    }),
-                    mode: ProfileMode::Bootnode,
-                    assignment_request: request.clone(),
-                };
-
-                let profile_id = pallet_data_preservers::NextProfileId::<T>::get();
-
-                if let Some(weight) = pallet_data_preservers::Pallet::<T>::force_create_profile(
-                    RawOrigin::Root.into(),
-                    profile,
-                    dummy_profile_owner.clone(),
-                )
-                .expect("to create profile")
-                .actual_weight
-                {
-                    total_weight = total_weight.saturating_add(weight);
-                }
-
-                if let Some(weight) = pallet_data_preservers::Pallet::<T>::force_start_assignment(
-                    RawOrigin::Root.into(),
-                    profile_id,
-                    para_id,
-                    witness.clone(),
-                )
-                .expect("to start assignment")
-                .actual_weight
-                {
-                    total_weight = total_weight.saturating_add(weight);
-                }
-            }
-        }
-
-        let _ = clear_storage_prefix(pallet_prefix, storage_item_prefix, &[], None, None);
-
-        total_weight
-    }
-
-    #[cfg(feature = "try-runtime")]
-    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
-        use parity_scale_codec::Encode;
-
-        let pallet_prefix: &[u8] = b"DataPreservers";
-        let storage_item_prefix: &[u8] = b"BootNodes";
-        let state: Vec<_> = storage_key_iter::<
-            ParaId,
-            BoundedVec<BoundedVec<u8, T::MaxNodeUrlLen>, T::MaxAssignmentsPerParaId>,
-            Blake2_128Concat,
-        >(pallet_prefix, storage_item_prefix)
-        .collect();
-
-        Ok(state.encode())
-    }
-
-    #[cfg(feature = "try-runtime")]
-    fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
-        use parity_scale_codec::Decode;
-
-        let pallet_prefix: &[u8] = b"DataPreservers";
-        let storage_item_prefix: &[u8] = b"BootNodes";
-
-        let pre_state: Vec<(ParaId, Vec<Vec<u8>>)> =
-            Decode::decode(&mut &state[..]).expect("state to be decoded properly");
-
-        for (para_id, bootnodes) in pre_state {
-            let assignments = pallet_data_preservers::Assignments::<T>::get(para_id);
-            assert_eq!(assignments.len(), bootnodes.len());
-
-            let profiles: Vec<_> =
-                pallet_data_preservers::Pallet::<T>::assignments_profiles(para_id).collect();
-
-            for bootnode in bootnodes {
-                assert_eq!(
-                    profiles
-                        .iter()
-                        .filter(|profile| profile.url == bootnode)
-                        .count(),
-                    1
-                );
-            }
-        }
-
-        assert_eq!(
-            storage_key_iter::<
-                ParaId,
-                BoundedVec<BoundedVec<u8, T::MaxNodeUrlLen>, T::MaxAssignmentsPerParaId>,
-                Blake2_128Concat,
-            >(pallet_prefix, storage_item_prefix)
-            .count(),
-            0
-        );
-
-        Ok(())
-    }
-}
-
 pub struct ForeignAssetCreatorMigration<Runtime>(pub PhantomData<Runtime>);
 
 impl<Runtime> Migration for ForeignAssetCreatorMigration<Runtime>
@@ -1215,6 +1073,30 @@ where
     }
 }
 
+pub struct DataPreserversProfileContentMigration<Runtime>(pub PhantomData<Runtime>);
+impl<Runtime> Migration for DataPreserversProfileContentMigration<Runtime>
+where
+    Runtime: pallet_data_preservers::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_DataPreserversProfileContentMigration"
+    }
+
+    fn migrate(&self, available_weight: Weight) -> Weight {
+        pallet_data_preservers::migrations::migrate_profiles_content::<Runtime>(available_weight)
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        Ok(vec![])
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        Ok(())
+    }
+}
+
 pub struct FlashboxMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for FlashboxMigrations<Runtime>
@@ -1251,6 +1133,7 @@ where
         //let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
         //let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
         let migrate_pallet_session_v0_to_v1 = MigratePalletSessionV0toV1::<Runtime>(Default::default());
+        let migrate_data_preservers_profiles = DataPreserversProfileContentMigration::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 400
@@ -1276,6 +1159,7 @@ where
             // Applied in runtime 1200
             //Box::new(migrate_stream_payment_new_config_items),
             Box::new(migrate_pallet_session_v0_to_v1),
+            Box::new(migrate_data_preservers_profiles),
         ]
     }
 }
@@ -1338,6 +1222,8 @@ where
         let migrate_pallet_session_v0_to_v1 = MigratePalletSessionV0toV1::<Runtime>(Default::default());
         let migrate_offline_marking_storage =
             OfflineMarkingStorageMigration::<Runtime>(Default::default());
+            let migrate_data_preservers_profiles = DataPreserversProfileContentMigration::<Runtime>(Default::default());
+
 
         vec![
             // Applied in runtime 200
@@ -1384,6 +1270,7 @@ where
             //Box::new(migrate_pallet_xcm_v5),
             Box::new(migrate_pallet_session_v0_to_v1),
             Box::new(migrate_offline_marking_storage),
+            Box::new(migrate_data_preservers_profiles),
         ]
     }
 }
@@ -1511,6 +1398,7 @@ mod relay {
         Runtime: runtime_parachains::shared::Config,
         Runtime: pallet_xcm::Config,
         Runtime: pallet_inactivity_tracking::Config,
+        Runtime: pallet_data_preservers::Config,
     {
         fn get_migrations() -> Vec<Box<dyn Migration>> {
             /*let migrate_config_full_rotation_mode =
@@ -1532,6 +1420,8 @@ mod relay {
             >(Default::default());
             let migrate_offline_marking_storage =
                 OfflineMarkingStorageMigration::<Runtime>(Default::default());
+            let migrate_data_preservers_profiles =
+                DataPreserversProfileContentMigration::<Runtime>(Default::default());
 
             vec![
                 // Applied in runtime 1000
@@ -1554,6 +1444,7 @@ mod relay {
                 Box::new(migrate_snowbridge_fee_per_gas_migration_v0_to_v1),
                 Box::new(eth_system_genesis_hashes),
                 Box::new(migrate_offline_marking_storage),
+                Box::new(migrate_data_preservers_profiles),
             ]
         }
     }
@@ -1566,6 +1457,7 @@ mod relay {
         Runtime: pallet_session::Config,
         Runtime: snowbridge_pallet_system::Config,
         Runtime: pallet_inactivity_tracking::Config,
+        Runtime: pallet_data_preservers::Config,
     {
         fn get_migrations() -> Vec<Box<dyn Migration>> {
             let migrate_pallet_session_v0_to_v1 =
@@ -1578,11 +1470,15 @@ mod relay {
             >(Default::default());
             let migrate_offline_marking_storage =
                 OfflineMarkingStorageMigration::<Runtime>(Default::default());
+            let migrate_data_preservers_profiles =
+                DataPreserversProfileContentMigration::<Runtime>(Default::default());
+
             vec![
                 Box::new(migrate_pallet_session_v0_to_v1),
                 Box::new(migrate_snowbridge_fee_per_gas_migration_v0_to_v1),
                 Box::new(eth_system_genesis_hashes),
                 Box::new(migrate_offline_marking_storage),
+                Box::new(migrate_data_preservers_profiles),
             ]
         }
     }

@@ -201,7 +201,13 @@ pub fn start_node_impl_container<
     )>,
 > + 'a {
     async move {
-        let parachain_config = prepare_node_config(parachain_config);
+        let mut parachain_config = prepare_node_config(parachain_config);
+
+        // Disable RPC if the flag is set
+        if container_chain_cli.base.disable_rpc {
+            log::info!("RPC service disabled for bootnode-only node");
+            parachain_config.rpc.addr = None;
+        }
 
         // Create a `NodeBuilder` which helps setup parachain nodes common systems.
         let node_builder = ContainerChainNodeConfig::new_builder(&parachain_config, None)?;
