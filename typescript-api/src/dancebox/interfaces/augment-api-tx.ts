@@ -3428,6 +3428,16 @@ declare module "@polkadot/api-base/types/submittable" {
                 [u32]
             >;
             /**
+             * Recalculate and reconcile the reserved deposit for `para_id`.
+             *
+             * If the required amount differs from the currently held deposit,
+             * this extrinsic increases or releases the difference on the creator's account.
+             **/
+            pokeDeposit: AugmentedSubmittable<
+                (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u32]
+            >;
+            /**
              * Register container-chain
              **/
             register: AugmentedSubmittable<
