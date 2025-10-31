@@ -11,6 +11,7 @@ import {
     injectDmpMessageAndSeal,
     SEPOLIA_CONTAINER_SOVEREIGN_ADDRESS_FRONTIER,
     SEPOLIA_CONTAINER_SOVEREIGN_ADDRESS_SUBSTRATE,
+    ETHEREUM_NETWORK_TESTNET,
 } from "utils";
 
 describeSuite({
@@ -24,6 +25,12 @@ describeSuite({
         let chain: any;
         let ethereumSovereignAddress: any;
         let balancesPalletIndex: number;
+        let containerAssetFee: bigint;
+        let bridgeLocation: any;
+        let relayNativeTokenLocation: any;
+        let relayNativeTokenAssetId: number;
+        let containerTokenLocation: any;
+        let aliceLocation: any;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -47,7 +54,20 @@ describeSuite({
                           name: "Alice default",
                       });
 
+            aliceLocation =
+                chain === "frontier-template"
+                    ? { AccountKey20: { network: "Any", key: alice.address } }
+                    : { AccountId32: { network: "Any", id: u8aToHex(alice.addressRaw) } };
+
             transferredBalance = context.isEthereumChain ? 10_000_000_000_000_000_000n : 10_000_000_000_000n;
+            containerAssetFee = 500_000_000_000_000n;
+
+            bridgeLocation = {
+                parents: 2,
+                interior: {
+                    X1: { GlobalConsensus: ETHEREUM_NETWORK_TESTNET },
+                },
+            };
 
             ethereumSovereignAddress = context.isEthereumChain
                 ? SEPOLIA_CONTAINER_SOVEREIGN_ADDRESS_FRONTIER
@@ -63,6 +83,51 @@ describeSuite({
             await context.createBlock(await txSigned.signAsync(alice), {
                 allowFailures: false,
             });
+
+            containerTokenLocation = {
+                parents: 0,
+                interior: {
+                    X1: { PalletInstance: balancesPalletIndex },
+                },
+            };
+
+            // Register relay token as foreign in container
+            relayNativeTokenLocation = {
+                parents: 1,
+                interior: "Here",
+            };
+
+            relayNativeTokenAssetId = 42;
+
+            const registerRelayNativeTokenLocation = polkadotJs.tx.sudo.sudo(
+                polkadotJs.tx.foreignAssetsCreator.createForeignAsset(
+                    relayNativeTokenLocation,
+                    relayNativeTokenAssetId,
+                    alice.address,
+                    true,
+                    1
+                )
+            );
+
+            await context.createBlock(await registerRelayNativeTokenLocation.signAsync(alice), {
+                allowFailures: false,
+            });
+
+            // Create asset rate for tanssi token in container
+            const assetRateTx = polkadotJs.tx.sudo.sudo(
+                polkadotJs.tx.assetRate.create(
+                    relayNativeTokenAssetId,
+                    // this defines how much the asset costs with respect to the
+                    // new asset
+                    // in this case, asset*2=native
+                    // that means that we will charge 0.5 of the native balance
+                    2000000000000000000n
+                )
+            );
+
+            await context.createBlock(await assetRateTx.signAsync(alice), {
+                allowFailures: false,
+            });
         });
 
         it({
@@ -72,36 +137,55 @@ describeSuite({
                 const aliceBalanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free;
                 const ethSovereignBalanceBefore = (await polkadotJs.query.system.account(ethereumSovereignAddress)).data
                     .free;
+                const ethSovereignRelayTokenBalanceBefore = (
+                    await polkadotJs.query.foreignAssets.account(relayNativeTokenAssetId, ethereumSovereignAddress)
+                )
+                    .unwrapOrDefault()
+                    .balance.toBigInt();
+                expect(ethSovereignRelayTokenBalanceBefore).to.be.eq(0n);
 
                 // Send an XCM and create block to execute it
                 // This is composed of
                 /*
+                ReserveAssetDeposited(vec![container_asset_fee.clone()].into()),
+                BuyExecution {
+                    fees: container_asset_fee,
+                    weight_limit: Unlimited,
+                },
                 DescendOrigin(PalletInstance(inbound_queue_pallet_index).into()),
-                    UniversalOrigin(GlobalConsensus(network)),
-                    WithdrawAsset(vec![container_asset_to_withdraw.clone()].into()),
-                    BuyExecution {
-                        fees: container_asset_fee,
-                        weight_limit: Unlimited,
-                    },
-                    DepositAsset {
-                        assets: Definite(container_asset_to_deposit.into()),
-                        beneficiary,
-                    },
+                UniversalOrigin(GlobalConsensus(network)),
+                WithdrawAsset(vec![container_asset_to_withdraw.clone()].into()),
+                DepositAsset {
+                    assets: Definite(container_asset_to_deposit.into()),
+                    beneficiary,
+                },
+                SetAppendix(Xcm(vec![DepositAsset {
+                    assets: Wild(AllOf {
+                        id: Location::parent().into(),
+                        fun: WildFungibility::Fungible,
+                    }),
+                    beneficiary: bridge_location,
+                }])),
                 */
                 const xcmMessage = new XcmFragment({
                     assets: [
                         {
-                            multilocation: {
-                                parents: 0,
-                                interior: {
-                                    X1: { PalletInstance: balancesPalletIndex },
-                                },
-                            },
-                            fungible: transferredBalance,
+                            multilocation: relayNativeTokenLocation,
+                            fungible: containerAssetFee,
                         },
                     ],
-                    beneficiary: u8aToHex(alice.addressRaw),
                 })
+                    .push_any({
+                        ReserveAssetDeposited: [
+                            {
+                                id: {
+                                    Concrete: relayNativeTokenLocation,
+                                },
+                                fun: { Fungible: containerAssetFee },
+                            },
+                        ],
+                    })
+                    .buy_execution() // fee index 0
                     .push_any({
                         DescendOrigin: {
                             X1: {
@@ -111,16 +195,54 @@ describeSuite({
                     })
                     .push_any({
                         UniversalOrigin: {
-                            GlobalConsensus: {
-                                Ethereum: {
-                                    chainId: 11155111,
+                            GlobalConsensus: ETHEREUM_NETWORK_TESTNET,
+                        },
+                    })
+                    .push_any({
+                        WithdrawAsset: [
+                            {
+                                id: {
+                                    Concrete: containerTokenLocation,
                                 },
+                                fun: { Fungible: transferredBalance },
+                            },
+                        ],
+                    })
+                    .push_any({
+                        DepositAsset: {
+                            assets: {
+                                Definite: [
+                                    {
+                                        id: {
+                                            Concrete: containerTokenLocation,
+                                        },
+                                        fun: { Fungible: transferredBalance },
+                                    },
+                                ],
+                            },
+                            beneficiary: {
+                                parents: 0,
+                                interior: { X1: aliceLocation },
                             },
                         },
                     })
-                    .withdraw_asset()
-                    .buy_execution()
-                    .deposit_asset()
+                    .push_any({
+                        SetAppendix: [
+                            {
+                                DepositAsset: {
+                                    assets: {
+                                        Wild: {
+                                            AllOf: {
+                                                id: { Concrete: relayNativeTokenLocation },
+                                                fun: "Fungible",
+                                            },
+                                        },
+                                    },
+                                    beneficiary: bridgeLocation,
+                                },
+                            },
+                        ],
+                    })
                     .as_v3();
 
                 // Send an XCM and create block to execute it
@@ -137,10 +259,19 @@ describeSuite({
                 const ethSovereignBalanceAfter = (await polkadotJs.query.system.account(ethereumSovereignAddress)).data
                     .free;
 
-                // it's not clear how much alice should receive since it will depend on fee, but it has to be greater
-                expect(aliceBalanceAfter.toBigInt()).to.be.greaterThan(aliceBalanceBefore.toBigInt());
+                // Check that fees were spent and the remaining ones were deposited to the eth sovereign account
+                const ethSovereignRelayTokenBalanceAfter = (
+                    await polkadotJs.query.foreignAssets.account(relayNativeTokenAssetId, ethereumSovereignAddress)
+                )
+                    .unwrapOrDefault()
+                    .balance.toBigInt();
+                expect(ethSovereignRelayTokenBalanceAfter).toBeGreaterThan(ethSovereignRelayTokenBalanceBefore);
+                expect(ethSovereignRelayTokenBalanceAfter).toBeLessThan(containerAssetFee);
 
-                // what it's clear is that the sovereign will have lost ths
+                // Alice should have received the transferred balance
+                expect(aliceBalanceAfter.toBigInt()).to.be.eq(aliceBalanceBefore.toBigInt() + transferredBalance);
+
+                // Sovereign will have lost the transferred balance
                 expect(ethSovereignBalanceBefore.toBigInt()).to.be.eq(
                     ethSovereignBalanceAfter.toBigInt() + transferredBalance
                 );
