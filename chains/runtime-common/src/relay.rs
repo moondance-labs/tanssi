@@ -518,8 +518,21 @@ where
             return;
         }
 
-        let network = EthereumNetwork::get();
-        let bridge_location = Location::new(2, GlobalConsensus(network));
+        // Reanchor Ethereum location to the container chain's point of view
+        let bridge_location = match EthereumLocation::get().clone().reanchored(
+            &container_location,
+            &<T as pallet_xcm::Config>::UniversalLocation::get(),
+        ) {
+            Ok(loc) => loc,
+            Err(e) => {
+                log::error!(
+                    "NativeContainerTokensProcessor: failed to reanchor bridge location: {:?}",
+                    e
+                );
+                return;
+            }
+        };
+
         let container_asset: Asset = (token_location_reanchored.clone(), token_data.amount).into();
         let inbound_queue_pallet_index = InboundQueuePalletInstance::get();
 
@@ -530,7 +543,7 @@ where
                 weight_limit: Unlimited,
             },
             DescendOrigin(PalletInstance(inbound_queue_pallet_index).into()),
-            UniversalOrigin(GlobalConsensus(network)),
+            UniversalOrigin(GlobalConsensus(EthereumNetwork::get())),
             WithdrawAsset(vec![container_asset.clone()].into()),
             DepositAsset {
                 assets: Definite(container_asset.into()),
