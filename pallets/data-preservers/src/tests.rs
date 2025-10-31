@@ -1968,9 +1968,12 @@ mod poke_deposit {
             .execute_with(|| {
                 // Create profile with small URL (lower deposit)
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
@@ -1983,10 +1986,11 @@ mod poke_deposit {
 
                 // Manually update profile to have longer URL
                 let mut reg = Profiles::<Test>::get(0).unwrap();
-                reg.profile.url = b"this_is_a_much_longer_url_that_requires_more_deposit"
-                    .to_vec()
-                    .try_into()
-                    .unwrap();
+                reg.profile.bootnode_url = Some(b"this_is_a_much_longer_url_that_requires_more_deposit"
+                        .to_vec()
+                        .try_into()
+                        .unwrap(),
+                );
 
                 // Calculate expected deposit before inserting
                 let new_required_deposit = profile_deposit(&reg.profile);
@@ -2036,12 +2040,15 @@ mod poke_deposit {
             .execute_with(|| {
                 // Create profile with long URL (higher deposit)
                 let profile = Profile {
-                    url: b"this_is_a_much_longer_url_that_requires_more_deposit"
+                    bootnode_url: Some(b"this_is_a_much_longer_url_that_requires_more_deposit"
                         .to_vec()
                         .try_into()
-                        .unwrap(),
+                        .unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
@@ -2054,7 +2061,7 @@ mod poke_deposit {
 
                 // Manually update profile to have shorter URL
                 let mut reg = Profiles::<Test>::get(0).unwrap();
-                reg.profile.url = b"test".to_vec().try_into().unwrap();
+                reg.profile.bootnode_url = Some(b"test".to_vec().try_into().unwrap());
 
                 let new_required_deposit = profile_deposit(&reg.profile);
                 assert!(new_required_deposit < initial_deposit);
@@ -2102,9 +2109,12 @@ mod poke_deposit {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
@@ -2160,9 +2170,12 @@ mod poke_deposit {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
@@ -2186,9 +2199,12 @@ mod poke_deposit {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
@@ -2201,10 +2217,10 @@ mod poke_deposit {
 
                 // Manually update profile to require more deposit
                 let mut reg = Profiles::<Test>::get(0).unwrap();
-                reg.profile.url = b"this_is_a_much_longer_url_that_requires_more_deposit"
+                reg.profile.bootnode_url = Some(b"this_is_a_much_longer_url_that_requires_more_deposit"
                     .to_vec()
                     .try_into()
-                    .unwrap();
+                    .unwrap());
                 Profiles::<Test>::insert(0, reg);
 
                 // Try to poke deposit but ALICE doesn't have enough balance
@@ -2223,14 +2239,17 @@ mod poke_deposit {
             .execute_with(|| {
                 // Create profile with AnyParaId
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
                 let initial_deposit = profile_deposit(&profile);
-                assert_eq!(initial_deposit, 1_408);
+                assert_eq!(initial_deposit, 1_612);
 
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
@@ -2284,9 +2303,12 @@ mod poke_deposit {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
@@ -2311,7 +2333,7 @@ mod poke_deposit {
 
                 // Manually update profile to require different deposit
                 let mut reg = Profiles::<Test>::get(0).unwrap();
-                reg.profile.url = b"updated_url".to_vec().try_into().unwrap();
+                reg.profile.bootnode_url = Some(b"updated_url".to_vec().try_into().unwrap());
                 Profiles::<Test>::insert(0, reg.clone());
 
                 let new_required_deposit = profile_deposit(&reg.profile);
