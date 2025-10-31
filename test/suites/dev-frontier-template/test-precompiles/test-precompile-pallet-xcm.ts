@@ -409,7 +409,7 @@ describeSuite({
 
         it({
             id: "T06",
-            title: "allows to call transferAssetsLocation precompile for exporting assets (container chain ERC20 token) to Ethereum",
+            title: "allows to call transferAssetsUsingTypeAndThenLocation precompile for exporting assets (container chain ERC20 token) to Ethereum",
             test: async () => {
                 const ERC20_ASSET_AMOUNT = 123_321_000_000_000_000n;
                 const RELAY_ASSET_FEE_AMOUNT = 3_500_000_000_000n;
