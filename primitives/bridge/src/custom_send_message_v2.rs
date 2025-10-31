@@ -16,45 +16,46 @@
 
 use {
     super::*, core::marker::PhantomData, frame_support::traits::EnqueueMessage,
-    snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL, snowbridge_outbound_queue_primitives::SendError,
+    snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL,
+    snowbridge_outbound_queue_primitives::v2::Message as MessageV2,
+    snowbridge_outbound_queue_primitives::SendError, sp_runtime::BoundedVec,
 };
 
 /// Alternative to [snowbridge_pallet_outbound_queue::Pallet::deliver] using a different
 /// origin.
-pub struct CustomSendMessage<T, GetAggregateMessageOrigin>(
+pub struct TanssiEthMessageSenderV2<T, GetAggregateMessageOrigin>(
     PhantomData<(T, GetAggregateMessageOrigin)>,
 );
 
 impl<T, GetAggregateMessageOrigin> DeliverMessage
-    for CustomSendMessage<T, GetAggregateMessageOrigin>
+    for TanssiEthMessageSenderV2<T, GetAggregateMessageOrigin>
 where
-    T: snowbridge_pallet_outbound_queue::Config,
-    GetAggregateMessageOrigin:
-        Convert<ChannelId, <T as snowbridge_pallet_outbound_queue::Config>::AggregateMessageOrigin>,
+    T: snowbridge_pallet_outbound_queue_v2::Config,
+    GetAggregateMessageOrigin: Convert<
+        H256,
+        <T as snowbridge_pallet_outbound_queue_v2::Config>::AggregateMessageOrigin,
+    >,
 {
-    type Ticket = Ticket<T>;
+    type Ticket = TanssiMessageV2<T>;
 
     fn deliver(ticket: Self::Ticket) -> Result<sp_core::H256, SendError> {
-        let origin = GetAggregateMessageOrigin::convert(ticket.channel_id);
-
-        if ticket.channel_id != PRIMARY_GOVERNANCE_CHANNEL {
-            ensure!(
-                !<snowbridge_pallet_outbound_queue::Pallet<T>>::operating_mode().is_halted(),
-                SendError::Halted
-            );
-        }
+        let origin = GetAggregateMessageOrigin::convert(ticket.origin);
 
         let message = ticket.message.as_bounded_slice();
-
-        <T as snowbridge_pallet_outbound_queue::Config>::MessageQueue::enqueue_message(
+        <T as snowbridge_pallet_outbound_queue_v2::Config>::MessageQueue::enqueue_message(
             message, origin,
         );
-        snowbridge_pallet_outbound_queue::Pallet::<T>::deposit_event(
-            snowbridge_pallet_outbound_queue::Event::MessageQueued {
-                id: ticket.message_id,
+        snowbridge_pallet_outbound_queue_v2::Pallet::<T>::deposit_event(
+            snowbridge_pallet_outbound_queue_v2::Event::MessageQueued {
+                message: MessageV2 {
+                    origin: ticket.origin,
+                    fee: ticket.fee,
+                    id: ticket.id,
+                    commands: vec![].try_into().unwrap(),
+                },
             },
         );
 
-        Ok(ticket.message_id)
+        Ok(ticket.id)
     }
 }
