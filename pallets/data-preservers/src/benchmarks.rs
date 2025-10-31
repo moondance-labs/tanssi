@@ -503,18 +503,22 @@ mod benchmarks {
         // Max URL lengths for all URL fields
         let max_url_len = T::MaxStringLen::get() as usize;
         let max_url_count = T::MaxNodeUrlCount::get() as usize;
-        
+
         // Max direct_rpc_urls
         let mut max_direct_urls = BoundedVec::new();
         for _ in 0..max_url_count {
-            max_direct_urls.try_push(BoundedVec::try_from(vec![b'D'; max_url_len]).unwrap()).unwrap();
+            max_direct_urls
+                .try_push(BoundedVec::try_from(vec![b'D'; max_url_len]).unwrap())
+                .unwrap();
         }
         reg.profile.direct_rpc_urls = max_direct_urls;
 
         // Max proxy_rpc_urls
         let mut max_proxy_urls = BoundedVec::new();
         for _ in 0..max_url_count {
-            max_proxy_urls.try_push(BoundedVec::try_from(vec![b'P'; max_url_len]).unwrap()).unwrap();
+            max_proxy_urls
+                .try_push(BoundedVec::try_from(vec![b'P'; max_url_len]).unwrap())
+                .unwrap();
         }
         reg.profile.proxy_rpc_urls = max_proxy_urls;
 
