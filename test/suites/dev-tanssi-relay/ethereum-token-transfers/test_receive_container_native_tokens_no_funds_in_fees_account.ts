@@ -2,7 +2,7 @@ import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { generateEventLog, generateUpdate, mockAndInsertHeadData, SNOWBRIDGE_FEES_ACCOUNT } from "utils";
+import { generateEventLog, generateUpdate, mockAndInsertHeadData } from "utils";
 import { expectEventCount, STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_TRANSFERS } from "helpers";
 import type { KeyringPair } from "@moonwall/util";
 
