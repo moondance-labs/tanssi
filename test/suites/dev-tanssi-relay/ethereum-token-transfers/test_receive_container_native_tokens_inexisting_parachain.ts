@@ -2,7 +2,7 @@ import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { generateEventLog, generateUpdate } from "utils";
+import { generateEventLog, generateUpdate, SNOWBRIDGE_FEES_ACCOUNT } from "utils";
 import { expectEventCount, STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_TRANSFERS } from "helpers";
 import type { KeyringPair } from "@moonwall/util";
 
@@ -124,6 +124,12 @@ describeSuite({
                     .signAsync(alice);
 
                 await context.createBlock([tx2], { allowFailures: false });
+
+                // Add funds to snowbridge fees account
+                const transferFeesAccountTx = await polkadotJs.tx.sudo
+                    .sudo(polkadotJs.tx.balances.forceSetBalance(SNOWBRIDGE_FEES_ACCOUNT, 500_000_000_000_000_000n))
+                    .signAsync(alice);
+                await context.createBlock([transferFeesAccountTx], { allowFailures: false });
 
                 // We DON'T mock the para head data, so the parachain is unreachable.
                 //const paraId = polkadotJs.createType("ParaId", 5000);
