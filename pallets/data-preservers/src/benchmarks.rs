@@ -32,7 +32,7 @@ use {
         BoundedBTreeSet, BoundedVec,
     },
     frame_system::RawOrigin,
-    sp_runtime::traits::Zero,
+    sp_runtime::traits::{Get, Zero},
     tp_traits::{ParaId, StorageDeposit},
 };
 
@@ -474,6 +474,50 @@ mod benchmarks {
             Assignments::<T>::get(para_id).into_inner(),
             set![T::ProfileId::zero()]
         );
+    }
+
+    #[benchmark]
+    fn poke_deposit() {
+        // Create initial profile with minimal data (smallest deposit)
+        let url = BoundedVec::try_from(vec![b'A'; 1]).unwrap();
+
+        let profile = Profile {
+            url,
+            para_ids: ParaIdsFilter::AnyParaId,
+            mode: ProfileMode::Bootnode,
+            assignment_request: T::AssignmentProcessor::benchmark_provider_request(),
+        };
+
+        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
+
+        Pallet::<T>::create_profile(RawOrigin::Signed(caller.clone()).into(), profile)
+            .expect("to create profile");
+
+        // Manually modify the profile to worst case scenario (maximum deposit required)
+        let mut reg = Profiles::<T>::get(T::ProfileId::zero()).expect("profile exists");
+
+        // Max URL length
+        let max_url_len = T::MaxNodeUrlLen::get() as usize;
+        reg.profile.url = BoundedVec::try_from(vec![b'B'; max_url_len]).unwrap();
+
+        // Max para_ids in whitelist
+        let max_para_ids_len = T::MaxParaIdsVecLen::get();
+        let mut max_para_ids = BoundedBTreeSet::new();
+        for i in 0..max_para_ids_len {
+            max_para_ids.try_insert(ParaId::from(i)).unwrap();
+        }
+        reg.profile.para_ids = ParaIdsFilter::Whitelist(max_para_ids);
+
+        Profiles::<T>::insert(T::ProfileId::zero(), reg);
+
+        #[extrinsic_call]
+        Pallet::<T>::poke_deposit(RawOrigin::Signed(caller.clone()), T::ProfileId::zero());
+
+        // Verify the deposit was updated
+        let updated_reg = Profiles::<T>::get(T::ProfileId::zero()).expect("profile exists");
+        let expected_deposit = T::ProfileDeposit::compute_deposit(&updated_reg.profile)
+            .expect("deposit to be computed");
+        assert_eq!(updated_reg.deposit, expected_deposit);
     }
 
     impl_benchmark_test_suite!(
