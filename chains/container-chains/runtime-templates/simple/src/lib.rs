@@ -74,7 +74,7 @@ use {
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
     sp_consensus_slots::{Slot, SlotDuration},
-    sp_core::{MaxEncodedLen, OpaqueMetadata},
+    sp_core::{Get, MaxEncodedLen, OpaqueMetadata},
     sp_runtime::{
         generic,
         generic::SignedPayload,
@@ -213,7 +213,7 @@ parameter_types! {
         /// to is the Ethereum mainnet, with chain ID 1.
         /// <https://chainlist.org/chain/1>
         /// <https://ethereum.org/en/developers/docs/apis/json-rpc/#net_version>
-        pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 11155111 };
+        pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: crate::dynamic_params::xcm_config::EthereumNetworkChainId::get() };
         pub EthereumLocation: Location = Location::new(2, EthereumNetwork::get());
 }
 
@@ -442,6 +442,9 @@ pub mod dynamic_params {
     pub const DANCELIGHT_GENESIS_HASH: [u8; 32] =
         hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"];
 
+    /// The Sepolia chain_id used as the default chain_id identifier.
+    pub const SEPOLIA_CHAIN_ID: u64 = 11155111;
+
     #[dynamic_pallet_params]
     #[codec(index = 0)]
     pub mod xcm_config {
@@ -452,6 +455,9 @@ pub mod dynamic_params {
         #[codec(index = 0)]
         pub static RelayNetwork: xcm::latest::NetworkId =
             xcm::latest::NetworkId::ByGenesis(DANCELIGHT_GENESIS_HASH);
+
+        #[codec(index = 1)]
+        pub static EthereumNetworkChainId: u64 = SEPOLIA_CHAIN_ID;
     }
 }
 

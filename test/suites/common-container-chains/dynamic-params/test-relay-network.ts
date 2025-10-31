@@ -155,5 +155,73 @@ describeSuite({
                 expect(onChainParametersAfterReset.isNone).toBe(true);
             },
         });
+
+        it({
+            id: "T04",
+            title: "should allow root to update EthereumNetworkChainId parameter",
+            test: async () => {
+                const sepoliaChainId = 11155111;
+                const mainnetChainId = 1;
+                let onChainParameters = await polkadotJs.query.parameters.parameters({
+                    XcmConfig: "EthereumNetworkChainId",
+                });
+
+                expect(onChainParameters.isSome).toBe(false);
+
+                const runtimeParameters = {
+                    XcmConfig: {
+                        EthereumNetworkChainId: [null, sepoliaChainId],
+                    },
+                };
+
+                // Set the parameter using sudo
+                await context.createBlock(
+                    context
+                        .polkadotJs()
+                        .tx.sudo.sudo(polkadotJs.tx.parameters.setParameter(runtimeParameters))
+                        .signAsync(alice),
+                    { allowFailures: false }
+                );
+
+                onChainParameters = await polkadotJs.query.parameters.parameters({
+                    XcmConfig: "EthereumNetworkChainId",
+                });
+
+                const expectedParameters = {
+                    XcmConfig: {
+                        EthereumNetworkChainId: context.polkadotJs().createType("u64", sepoliaChainId).toHuman(),
+                    },
+                };
+
+                expect(onChainParameters.isSome).toBe(true);
+                expect(onChainParameters.toHuman()).toEqual(expectedParameters);
+
+                const updatedRuntimeParameters = {
+                    XcmConfig: {
+                        EthereumNetworkChainId: [null, mainnetChainId],
+                    },
+                };
+
+                await context.createBlock(
+                    context
+                        .polkadotJs()
+                        .tx.sudo.sudo(polkadotJs.tx.parameters.setParameter(updatedRuntimeParameters))
+                        .signAsync(alice),
+                    { allowFailures: false }
+                );
+
+                const onChainParametersAfterUpdate = await polkadotJs.query.parameters.parameters({
+                    XcmConfig: "EthereumNetworkChainId",
+                });
+
+                const expectedParametersAfterUpdate = {
+                    XcmConfig: {
+                        EthereumNetworkChainId: context.polkadotJs().createType("u64", mainnetChainId).toHuman(),
+                    },
+                };
+                expect(onChainParametersAfterUpdate.isSome).toBe(true);
+                expect(onChainParametersAfterUpdate.toHuman()).toEqual(expectedParametersAfterUpdate);
+            },
+        });
     },
 });
