@@ -1,14 +1,7 @@
 import { beforeAll, describeSuite, expect, fetchCompiledContract } from "@moonwall/cli";
-import {
-    ALITH_ADDRESS,
-    ALITH_PRIVATE_KEY,
-    BALTATHAR_ADDRESS,
-    BALTATHAR_PRIVATE_KEY,
-    createViemTransaction,
-} from "@moonwall/util";
+import { ALITH_ADDRESS, BALTATHAR_ADDRESS, BALTATHAR_PRIVATE_KEY, createViemTransaction } from "@moonwall/util";
 import { getSignatureParameters } from "utils";
 import { type Abi, encodeFunctionData, fromHex } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
 import { expectEVMResult } from "../../../helpers";
 
 const PRECOMPILE_CALL_PERMIT_ADDRESS = "0x0000000000000000000000000000000000000802";
@@ -64,7 +57,7 @@ describeSuite({
             ).data;
 
             const signature = await context.viem().signTypedData({
-                account: privateKeyToAccount(ALITH_PRIVATE_KEY),
+                account: ALITH_ADDRESS,
                 types: {
                     EIP712Domain: [
                         {
