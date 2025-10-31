@@ -60,7 +60,8 @@
       "@polkadot/types-known": "16.1.2",
       "@polkadot/types-support": "16.1.2",
       "@polkadot/util": "13.5.1",
-      "@polkadot/util-crypto": "13.5.1"
+      "@polkadot/util-crypto": "13.5.1",
+      "viem": "2.38.0"
     },
     "onlyBuiltDependencies": [
       "@biomejs/biome",
