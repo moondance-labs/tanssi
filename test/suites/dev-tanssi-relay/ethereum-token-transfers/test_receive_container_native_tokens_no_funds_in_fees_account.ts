@@ -7,8 +7,8 @@ import { expectEventCount, STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_TRANSFER
 import type { KeyringPair } from "@moonwall/util";
 
 describeSuite({
-    id: "DTR1806",
-    title: "NativeContainerTokensProcessor: reception of container native tokens (wrong channel)",
+    id: "DTR1807",
+    title: "NativeContainerTokensProcessor: reception of container native tokens (no funds in fees account)",
     foundationMethods: "dev",
 
     testCases: ({ it, context }) => {
@@ -44,9 +44,8 @@ describeSuite({
                 const log = await generateEventLog(
                     polkadotJs,
                     Uint8Array.from(Buffer.from("eda338e4dc46038493b885327842fd3e301cab39", "hex")),
-                    // Wrong channel id
                     Uint8Array.from(
-                        Buffer.from("0000000000000000000000000000000000000000000000000000000000000008", "hex")
+                        Buffer.from("0000000000000000000000000000000000000000000000000000000000000004", "hex")
                     ),
                     Uint8Array.from(
                         Buffer.from("0000000000000000000000000000000000000000000000000000000000000000", "hex")
@@ -129,27 +128,25 @@ describeSuite({
                 const paraId = polkadotJs.createType("ParaId", 2001);
                 await mockAndInsertHeadData(context, paraId, 2, 2, alice);
 
-                // Add funds to snowbridge fees account
-                const transferFeesAccountTx = await polkadotJs.tx.sudo
-                    .sudo(polkadotJs.tx.balances.forceSetBalance(SNOWBRIDGE_FEES_ACCOUNT, 500_000_000_000_000_000n))
-                    .signAsync(alice);
-                await context.createBlock([transferFeesAccountTx], { allowFailures: false });
+                // We don't add funds to the fees account in purpose, so it should fail.
+                // const transferFeesAccountTx = polkadotJs.tx.sudo.sudo(
+                //     polkadotJs.tx.balances.forceSetBalance(SNOWBRIDGE_FEES_ACCOUNT, 500_000_000_000_000_000n)
+                // ).signAsync(alice);
+                // await context.createBlock([transferFeesAccountTx], { allowFailures: false });
 
                 const nonceBefore = await polkadotJs.query.ethereumInboundQueue.nonce(newChannelId);
 
                 // Submit the message
                 const tx3 = await polkadotJs.tx.ethereumInboundQueue.submit(messageExtrinsics[0]).signAsync(alice);
 
-                // Since the channel is wrong, execution should fail in can_process_message.
-                const { result } = await context.createBlock([tx3]);
-                expect(result[0].successful).to.be.false;
+                await context.createBlock([tx3], { allowFailures: false });
 
                 const nonceAfter = await polkadotJs.query.ethereumInboundQueue.nonce(newChannelId);
 
                 // Nonce should stay the same
                 expect(nonceAfter.toNumber()).to.be.equal(nonceBefore.toNumber());
 
-                // XCM Sent event should not be emitted
+                // Check for the XCM Sent event
                 await expectEventCount(polkadotJs, {
                     Sent: 0,
                 });
