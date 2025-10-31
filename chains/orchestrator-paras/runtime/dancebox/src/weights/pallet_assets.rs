@@ -53,451 +53,579 @@ use core::marker::PhantomData;
 /// Weights for pallet_assets using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
+	/// Storage: `ParachainInfo::ParachainId` (r:1 w:0)
+	/// Proof: `ParachainInfo::ParachainId` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Storage: `ForeignAssets::NextAssetId` (r:1 w:0)
+	/// Proof: `ForeignAssets::NextAssetId` (`max_values`: Some(1), `max_size`: Some(602), added: 1097, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	fn create() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `0`
-		//  Estimated: `0`
-		// Minimum execution time: 0_000 picoseconds.
-		Weight::from_parts(0, 0)
+		//  Measured:  `139`
+		//  Estimated: `4273`
+		// Minimum execution time: 29_713_000 picoseconds.
+		Weight::from_parts(30_405_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(4))
+			.saturating_add(T::DbWeight::get().writes(2))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::NextAssetId` (r:1 w:0)
-	/// Proof: `ForeignAssets::NextAssetId` (`max_values`: Some(1), `max_size`: Some(2), added: 497, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::NextAssetId` (`max_values`: Some(1), `max_size`: Some(602), added: 1097, mode: `MaxEncodedLen`)
 	fn force_create() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `4`
-		//  Estimated: `3673`
-		// Minimum execution time: 14_431_000 picoseconds.
-		Weight::from_parts(14_751_000, 3673)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		//  Estimated: `4273`
+		// Minimum execution time: 11_430_000 picoseconds.
+		Weight::from_parts(11_825_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Storage: `ForeignAssetsFreezer::Freezes` (r:1 w:0)
+	/// Proof: `ForeignAssetsFreezer::Freezes` (`max_values`: None, `max_size`: Some(685), added: 3160, mode: `MaxEncodedLen`)
 	fn start_destroy() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `274`
-		//  Estimated: `3673`
-		// Minimum execution time: 14_096_000 picoseconds.
-		Weight::from_parts(14_342_000, 3673)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		//  Measured:  `324`
+		//  Estimated: `4273`
+		// Minimum execution time: 16_882_000 picoseconds.
+		Weight::from_parts(17_360_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Account` (r:1001 w:1000)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
+	/// Storage: `ForeignAssetsFreezer::FrozenBalances` (r:1000 w:1000)
+	/// Proof: `ForeignAssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(682), added: 3157, mode: `MaxEncodedLen`)
 	/// Storage: `System::Account` (r:1000 w:1000)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `ForeignAssetsFreezer::Freezes` (r:1000 w:1000)
+	/// Proof: `ForeignAssetsFreezer::Freezes` (`max_values`: None, `max_size`: Some(685), added: 3160, mode: `MaxEncodedLen`)
+	/// The range of component `c` is `[0, 1000]`.
+	/// The range of component `c` is `[0, 1000]`.
 	/// The range of component `c` is `[0, 1000]`.
 	fn destroy_accounts(c: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `212 + c * (208 ±0)`
-		//  Estimated: `3673 + c * (2607 ±0)`
-		// Minimum execution time: 19_950_000 picoseconds.
-		Weight::from_parts(20_288_000, 3673)
-			// Standard Error: 10_861
-			.saturating_add(Weight::from_parts(16_706_716, 0).saturating_mul(c.into()))
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(c.into())))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
-			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(c.into())))
-			.saturating_add(Weight::from_parts(0, 2607).saturating_mul(c.into()))
+		//  Measured:  `0 + c * (208 ±0)`
+		//  Estimated: `4273 + c * (3207 ±0)`
+		// Minimum execution time: 15_990_000 picoseconds.
+		Weight::from_parts(16_161_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			// Standard Error: 16_995
+			.saturating_add(Weight::from_parts(25_624_471, 0).saturating_mul(c.into()))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().reads((4_u64).saturating_mul(c.into())))
+			.saturating_add(T::DbWeight::get().writes(1))
+			.saturating_add(T::DbWeight::get().writes((4_u64).saturating_mul(c.into())))
+			.saturating_add(Weight::from_parts(0, 3207).saturating_mul(c.into()))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Approvals` (r:1001 w:1000)
-	/// Proof: `ForeignAssets::Approvals` (`max_values`: None, `max_size`: Some(146), added: 2621, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Approvals` (`max_values`: None, `max_size`: Some(746), added: 3221, mode: `MaxEncodedLen`)
+	/// The range of component `a` is `[0, 1000]`.
+	/// The range of component `a` is `[0, 1000]`.
 	/// The range of component `a` is `[0, 1000]`.
 	fn destroy_approvals(a: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `409 + a * (86 ±0)`
-		//  Estimated: `3673 + a * (2621 ±0)`
-		// Minimum execution time: 20_258_000 picoseconds.
-		Weight::from_parts(20_674_000, 3673)
-			// Standard Error: 3_491
-			.saturating_add(Weight::from_parts(6_261_868, 0).saturating_mul(a.into()))
-			.saturating_add(T::DbWeight::get().reads(2_u64))
+		//  Measured:  `413 + a * (86 ±0)`
+		//  Estimated: `4273 + a * (3221 ±0)`
+		// Minimum execution time: 16_532_000 picoseconds.
+		Weight::from_parts(16_865_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			// Standard Error: 4_823
+			.saturating_add(Weight::from_parts(15_353_976, 0).saturating_mul(a.into()))
+			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(a.into())))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1))
 			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(a.into())))
-			.saturating_add(Weight::from_parts(0, 2621).saturating_mul(a.into()))
+			.saturating_add(Weight::from_parts(0, 3221).saturating_mul(a.into()))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Metadata` (r:1 w:0)
-	/// Proof: `ForeignAssets::Metadata` (`max_values`: None, `max_size`: Some(138), added: 2613, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Metadata` (`max_values`: None, `max_size`: Some(738), added: 3213, mode: `MaxEncodedLen`)
 	fn finish_destroy() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `240`
-		//  Estimated: `3673`
-		// Minimum execution time: 16_652_000 picoseconds.
-		Weight::from_parts(17_116_000, 3673)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		//  Measured:  `242`
+		//  Estimated: `4273`
+		// Minimum execution time: 13_451_000 picoseconds.
+		Weight::from_parts(14_019_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Account` (r:1 w:1)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
 	fn mint() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `240`
-		//  Estimated: `3673`
-		// Minimum execution time: 28_578_000 picoseconds.
-		Weight::from_parts(29_455_000, 3673)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
+		//  Measured:  `242`
+		//  Estimated: `4273`
+		// Minimum execution time: 22_965_000 picoseconds.
+		Weight::from_parts(23_855_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(2))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Account` (r:1 w:1)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
+	/// Storage: `ForeignAssetsFreezer::FrozenBalances` (r:1 w:1)
+	/// Proof: `ForeignAssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(682), added: 3157, mode: `MaxEncodedLen`)
+	/// Storage: `ForeignAssetsFreezer::Freezes` (r:1 w:1)
+	/// Proof: `ForeignAssetsFreezer::Freezes` (`max_values`: None, `max_size`: Some(685), added: 3160, mode: `MaxEncodedLen`)
 	fn burn() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `346`
-		//  Estimated: `3673`
-		// Minimum execution time: 38_440_000 picoseconds.
-		Weight::from_parts(38_965_000, 3673)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
+		//  Measured:  `356`
+		//  Estimated: `4273`
+		// Minimum execution time: 47_536_000 picoseconds.
+		Weight::from_parts(49_071_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(4))
+			.saturating_add(T::DbWeight::get().writes(4))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Account` (r:2 w:2)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
+	/// Storage: `ForeignAssetsFreezer::FrozenBalances` (r:1 w:1)
+	/// Proof: `ForeignAssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(682), added: 3157, mode: `MaxEncodedLen`)
 	/// Storage: `System::Account` (r:1 w:1)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `ForeignAssetsFreezer::Freezes` (r:1 w:1)
+	/// Proof: `ForeignAssetsFreezer::Freezes` (`max_values`: None, `max_size`: Some(685), added: 3160, mode: `MaxEncodedLen`)
 	fn transfer() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `385`
-		//  Estimated: `6204`
-		// Minimum execution time: 53_511_000 picoseconds.
-		Weight::from_parts(54_687_000, 6204)
-			.saturating_add(T::DbWeight::get().reads(4_u64))
-			.saturating_add(T::DbWeight::get().writes(4_u64))
+		//  Measured:  `356`
+		//  Estimated: `7404`
+		// Minimum execution time: 59_854_000 picoseconds.
+		Weight::from_parts(61_262_000, 0)
+			.saturating_add(Weight::from_parts(0, 7404))
+			.saturating_add(T::DbWeight::get().reads(6))
+			.saturating_add(T::DbWeight::get().writes(6))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Account` (r:2 w:2)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
+	/// Storage: `ForeignAssetsFreezer::FrozenBalances` (r:1 w:0)
+	/// Proof: `ForeignAssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(682), added: 3157, mode: `MaxEncodedLen`)
 	/// Storage: `System::Account` (r:1 w:1)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	fn transfer_keep_alive() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `385`
-		//  Estimated: `6204`
-		// Minimum execution time: 48_383_000 picoseconds.
-		Weight::from_parts(49_249_000, 6204)
-			.saturating_add(T::DbWeight::get().reads(4_u64))
-			.saturating_add(T::DbWeight::get().writes(4_u64))
+		//  Measured:  `356`
+		//  Estimated: `7404`
+		// Minimum execution time: 45_638_000 picoseconds.
+		Weight::from_parts(46_477_000, 0)
+			.saturating_add(Weight::from_parts(0, 7404))
+			.saturating_add(T::DbWeight::get().reads(5))
+			.saturating_add(T::DbWeight::get().writes(4))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Account` (r:2 w:2)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
+	/// Storage: `ForeignAssetsFreezer::FrozenBalances` (r:1 w:1)
+	/// Proof: `ForeignAssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(682), added: 3157, mode: `MaxEncodedLen`)
 	/// Storage: `System::Account` (r:1 w:1)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `ForeignAssetsFreezer::Freezes` (r:1 w:1)
+	/// Proof: `ForeignAssetsFreezer::Freezes` (`max_values`: None, `max_size`: Some(685), added: 3160, mode: `MaxEncodedLen`)
 	fn force_transfer() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `385`
-		//  Estimated: `6204`
-		// Minimum execution time: 53_740_000 picoseconds.
-		Weight::from_parts(54_468_000, 6204)
-			.saturating_add(T::DbWeight::get().reads(4_u64))
-			.saturating_add(T::DbWeight::get().writes(4_u64))
+		//  Measured:  `356`
+		//  Estimated: `7404`
+		// Minimum execution time: 59_607_000 picoseconds.
+		Weight::from_parts(61_405_000, 0)
+			.saturating_add(Weight::from_parts(0, 7404))
+			.saturating_add(T::DbWeight::get().reads(6))
+			.saturating_add(T::DbWeight::get().writes(6))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:0)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Account` (r:1 w:1)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
 	fn freeze() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `346`
-		//  Estimated: `3673`
-		// Minimum execution time: 19_475_000 picoseconds.
-		Weight::from_parts(19_866_000, 3673)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		//  Measured:  `350`
+		//  Estimated: `4273`
+		// Minimum execution time: 16_524_000 picoseconds.
+		Weight::from_parts(17_268_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:0)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Account` (r:1 w:1)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
 	fn thaw() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `346`
-		//  Estimated: `3673`
-		// Minimum execution time: 19_473_000 picoseconds.
-		Weight::from_parts(19_976_000, 3673)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		//  Measured:  `350`
+		//  Estimated: `4273`
+		// Minimum execution time: 16_618_000 picoseconds.
+		Weight::from_parts(17_201_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	fn freeze_asset() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `274`
-		//  Estimated: `3673`
-		// Minimum execution time: 13_958_000 picoseconds.
-		Weight::from_parts(14_424_000, 3673)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		//  Measured:  `276`
+		//  Estimated: `4273`
+		// Minimum execution time: 11_755_000 picoseconds.
+		Weight::from_parts(12_366_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	fn thaw_asset() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `274`
-		//  Estimated: `3673`
-		// Minimum execution time: 13_967_000 picoseconds.
-		Weight::from_parts(14_440_000, 3673)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		//  Measured:  `276`
+		//  Estimated: `4273`
+		// Minimum execution time: 11_872_000 picoseconds.
+		Weight::from_parts(12_490_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Metadata` (r:1 w:0)
-	/// Proof: `ForeignAssets::Metadata` (`max_values`: None, `max_size`: Some(138), added: 2613, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Metadata` (`max_values`: None, `max_size`: Some(738), added: 3213, mode: `MaxEncodedLen`)
 	fn transfer_ownership() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `240`
-		//  Estimated: `3673`
-		// Minimum execution time: 17_340_000 picoseconds.
-		Weight::from_parts(17_627_000, 3673)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		//  Measured:  `242`
+		//  Estimated: `4273`
+		// Minimum execution time: 13_752_000 picoseconds.
+		Weight::from_parts(14_440_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	fn set_team() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `240`
-		//  Estimated: `3673`
-		// Minimum execution time: 15_082_000 picoseconds.
-		Weight::from_parts(15_271_000, 3673)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		//  Measured:  `242`
+		//  Estimated: `4273`
+		// Minimum execution time: 11_860_000 picoseconds.
+		Weight::from_parts(12_186_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:0)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Metadata` (r:1 w:1)
-	/// Proof: `ForeignAssets::Metadata` (`max_values`: None, `max_size`: Some(138), added: 2613, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Metadata` (`max_values`: None, `max_size`: Some(738), added: 3213, mode: `MaxEncodedLen`)
 	/// The range of component `n` is `[0, 50]`.
 	/// The range of component `s` is `[0, 50]`.
-	fn set_metadata(n: u32, s: u32, ) -> Weight {
+	/// The range of component `n` is `[0, 50]`.
+	/// The range of component `s` is `[0, 50]`.
+	/// The range of component `n` is `[0, 50]`.
+	/// The range of component `s` is `[0, 50]`.
+	fn set_metadata(_n: u32, s: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `240`
-		//  Estimated: `3673`
-		// Minimum execution time: 16_898_000 picoseconds.
-		Weight::from_parts(17_859_171, 3673)
-			// Standard Error: 417
-			.saturating_add(Weight::from_parts(373, 0).saturating_mul(n.into()))
-			// Standard Error: 417
-			.saturating_add(Weight::from_parts(753, 0).saturating_mul(s.into()))
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		//  Measured:  `242`
+		//  Estimated: `4273`
+		// Minimum execution time: 27_274_000 picoseconds.
+		Weight::from_parts(28_578_070, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			// Standard Error: 776
+			.saturating_add(Weight::from_parts(1_087, 0).saturating_mul(s.into()))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:0)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Metadata` (r:1 w:1)
-	/// Proof: `ForeignAssets::Metadata` (`max_values`: None, `max_size`: Some(138), added: 2613, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Metadata` (`max_values`: None, `max_size`: Some(738), added: 3213, mode: `MaxEncodedLen`)
 	fn clear_metadata() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `402`
-		//  Estimated: `3673`
-		// Minimum execution time: 18_231_000 picoseconds.
-		Weight::from_parts(18_662_000, 3673)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		//  Measured:  `406`
+		//  Estimated: `4273`
+		// Minimum execution time: 27_414_000 picoseconds.
+		Weight::from_parts(28_274_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:0)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Metadata` (r:1 w:1)
-	/// Proof: `ForeignAssets::Metadata` (`max_values`: None, `max_size`: Some(138), added: 2613, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Metadata` (`max_values`: None, `max_size`: Some(738), added: 3213, mode: `MaxEncodedLen`)
 	/// The range of component `n` is `[0, 50]`.
 	/// The range of component `s` is `[0, 50]`.
-	fn force_set_metadata(_n: u32, s: u32, ) -> Weight {
+	/// The range of component `n` is `[0, 50]`.
+	/// The range of component `s` is `[0, 50]`.
+	/// The range of component `n` is `[0, 50]`.
+	/// The range of component `s` is `[0, 50]`.
+	fn force_set_metadata(n: u32, s: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `79`
-		//  Estimated: `3673`
-		// Minimum execution time: 16_025_000 picoseconds.
-		Weight::from_parts(16_725_474, 3673)
-			// Standard Error: 330
-			.saturating_add(Weight::from_parts(468, 0).saturating_mul(s.into()))
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		//  Measured:  `81`
+		//  Estimated: `4273`
+		// Minimum execution time: 12_087_000 picoseconds.
+		Weight::from_parts(12_745_826, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			// Standard Error: 440
+			.saturating_add(Weight::from_parts(1_010, 0).saturating_mul(n.into()))
+			// Standard Error: 440
+			.saturating_add(Weight::from_parts(1_303, 0).saturating_mul(s.into()))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:0)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Metadata` (r:1 w:1)
-	/// Proof: `ForeignAssets::Metadata` (`max_values`: None, `max_size`: Some(138), added: 2613, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Metadata` (`max_values`: None, `max_size`: Some(738), added: 3213, mode: `MaxEncodedLen`)
 	fn force_clear_metadata() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `402`
-		//  Estimated: `3673`
-		// Minimum execution time: 17_576_000 picoseconds.
-		Weight::from_parts(18_234_000, 3673)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		//  Measured:  `406`
+		//  Estimated: `4273`
+		// Minimum execution time: 26_528_000 picoseconds.
+		Weight::from_parts(27_478_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	fn force_asset_status() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `240`
-		//  Estimated: `3673`
-		// Minimum execution time: 14_686_000 picoseconds.
-		Weight::from_parts(14_984_000, 3673)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		//  Measured:  `242`
+		//  Estimated: `4273`
+		// Minimum execution time: 10_881_000 picoseconds.
+		Weight::from_parts(11_268_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Approvals` (r:1 w:1)
-	/// Proof: `ForeignAssets::Approvals` (`max_values`: None, `max_size`: Some(146), added: 2621, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Approvals` (`max_values`: None, `max_size`: Some(746), added: 3221, mode: `MaxEncodedLen`)
 	fn approve_transfer() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `274`
-		//  Estimated: `3673`
-		// Minimum execution time: 22_517_000 picoseconds.
-		Weight::from_parts(22_913_000, 3673)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
+		//  Measured:  `276`
+		//  Estimated: `4273`
+		// Minimum execution time: 31_216_000 picoseconds.
+		Weight::from_parts(32_411_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(2))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Approvals` (r:1 w:1)
-	/// Proof: `ForeignAssets::Approvals` (`max_values`: None, `max_size`: Some(146), added: 2621, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Approvals` (`max_values`: None, `max_size`: Some(746), added: 3221, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Account` (r:2 w:2)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
+	/// Storage: `ForeignAssetsFreezer::FrozenBalances` (r:1 w:1)
+	/// Proof: `ForeignAssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(682), added: 3157, mode: `MaxEncodedLen`)
 	/// Storage: `System::Account` (r:1 w:1)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `ForeignAssetsFreezer::Freezes` (r:1 w:1)
+	/// Proof: `ForeignAssetsFreezer::Freezes` (`max_values`: None, `max_size`: Some(685), added: 3160, mode: `MaxEncodedLen`)
 	fn transfer_approved() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `553`
-		//  Estimated: `6204`
-		// Minimum execution time: 65_972_000 picoseconds.
-		Weight::from_parts(67_810_000, 6204)
-			.saturating_add(T::DbWeight::get().reads(5_u64))
-			.saturating_add(T::DbWeight::get().writes(5_u64))
+		//  Measured:  `526`
+		//  Estimated: `7404`
+		// Minimum execution time: 79_133_000 picoseconds.
+		Weight::from_parts(81_252_000, 0)
+			.saturating_add(Weight::from_parts(0, 7404))
+			.saturating_add(T::DbWeight::get().reads(7))
+			.saturating_add(T::DbWeight::get().writes(7))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Approvals` (r:1 w:1)
-	/// Proof: `ForeignAssets::Approvals` (`max_values`: None, `max_size`: Some(146), added: 2621, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Approvals` (`max_values`: None, `max_size`: Some(746), added: 3221, mode: `MaxEncodedLen`)
 	fn cancel_approval() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `442`
-		//  Estimated: `3673`
-		// Minimum execution time: 25_554_000 picoseconds.
-		Weight::from_parts(25_919_000, 3673)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
+		//  Measured:  `446`
+		//  Estimated: `4273`
+		// Minimum execution time: 33_529_000 picoseconds.
+		Weight::from_parts(34_768_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(2))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Approvals` (r:1 w:1)
-	/// Proof: `ForeignAssets::Approvals` (`max_values`: None, `max_size`: Some(146), added: 2621, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Approvals` (`max_values`: None, `max_size`: Some(746), added: 3221, mode: `MaxEncodedLen`)
 	fn force_cancel_approval() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `442`
-		//  Estimated: `3673`
-		// Minimum execution time: 25_637_000 picoseconds.
-		Weight::from_parts(26_125_000, 3673)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
+		//  Measured:  `446`
+		//  Estimated: `4273`
+		// Minimum execution time: 33_558_000 picoseconds.
+		Weight::from_parts(34_197_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(2))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	fn set_min_balance() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `240`
-		//  Estimated: `3673`
-		// Minimum execution time: 15_875_000 picoseconds.
-		Weight::from_parts(16_361_000, 3673)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		//  Measured:  `242`
+		//  Estimated: `4273`
+		// Minimum execution time: 12_533_000 picoseconds.
+		Weight::from_parts(12_956_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `ForeignAssets::Account` (r:1 w:1)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	fn touch() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `240`
-		//  Estimated: `3673`
-		// Minimum execution time: 22_230_000 picoseconds.
-		Weight::from_parts(22_633_000, 3673)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
+		//  Measured:  `345`
+		//  Estimated: `4273`
+		// Minimum execution time: 32_643_000 picoseconds.
+		Weight::from_parts(33_899_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(3))
+			.saturating_add(T::DbWeight::get().writes(3))
 	}
 	/// Storage: `ForeignAssets::Account` (r:1 w:1)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	fn touch_other() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `240`
-		//  Estimated: `3673`
-		// Minimum execution time: 21_240_000 picoseconds.
-		Weight::from_parts(21_682_000, 3673)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
+		//  Measured:  `242`
+		//  Estimated: `4273`
+		// Minimum execution time: 31_276_000 picoseconds.
+		Weight::from_parts(32_155_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(2))
 	}
 	/// Storage: `ForeignAssets::Account` (r:1 w:1)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Storage: `ForeignAssetsFreezer::FrozenBalances` (r:1 w:1)
+	/// Proof: `ForeignAssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(682), added: 3157, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `ForeignAssetsFreezer::Freezes` (r:1 w:1)
+	/// Proof: `ForeignAssetsFreezer::Freezes` (`max_values`: None, `max_size`: Some(685), added: 3160, mode: `MaxEncodedLen`)
 	fn refund() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `364`
-		//  Estimated: `3673`
-		// Minimum execution time: 19_873_000 picoseconds.
-		Weight::from_parts(20_344_000, 3673)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
+		//  Measured:  `477`
+		//  Estimated: `4273`
+		// Minimum execution time: 43_426_000 picoseconds.
+		Weight::from_parts(45_064_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(5))
+			.saturating_add(T::DbWeight::get().writes(5))
 	}
 	/// Storage: `ForeignAssets::Account` (r:1 w:1)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Storage: `ForeignAssetsFreezer::FrozenBalances` (r:1 w:1)
+	/// Proof: `ForeignAssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(682), added: 3157, mode: `MaxEncodedLen`)
+	/// Storage: `ForeignAssetsFreezer::Freezes` (r:1 w:1)
+	/// Proof: `ForeignAssetsFreezer::Freezes` (`max_values`: None, `max_size`: Some(685), added: 3160, mode: `MaxEncodedLen`)
 	fn refund_other() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `397`
-		//  Estimated: `3673`
-		// Minimum execution time: 19_156_000 picoseconds.
-		Weight::from_parts(19_720_000, 3673)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
+		//  Measured:  `407`
+		//  Estimated: `4273`
+		// Minimum execution time: 41_885_000 picoseconds.
+		Weight::from_parts(43_300_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(4))
+			.saturating_add(T::DbWeight::get().writes(4))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:0)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Account` (r:1 w:1)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
 	fn block() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `346`
-		//  Estimated: `3673`
-		// Minimum execution time: 19_584_000 picoseconds.
-		Weight::from_parts(20_079_000, 3673)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		//  Measured:  `350`
+		//  Estimated: `4273`
+		// Minimum execution time: 16_833_000 picoseconds.
+		Weight::from_parts(17_265_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Account` (r:2 w:2)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
+	/// Storage: `ForeignAssetsFreezer::FrozenBalances` (r:1 w:1)
+	/// Proof: `ForeignAssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(682), added: 3157, mode: `MaxEncodedLen`)
+	/// Storage: `ForeignAssetsFreezer::Freezes` (r:1 w:1)
+	/// Proof: `ForeignAssetsFreezer::Freezes` (`max_values`: None, `max_size`: Some(685), added: 3160, mode: `MaxEncodedLen`)
 	/// Storage: `System::Account` (r:1 w:1)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	fn transfer_all() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `385`
-		//  Estimated: `6204`
-		// Minimum execution time: 65_657_000 picoseconds.
-		Weight::from_parts(66_822_000, 6204)
-			.saturating_add(T::DbWeight::get().reads(4_u64))
-			.saturating_add(T::DbWeight::get().writes(4_u64))
+		//  Measured:  `356`
+		//  Estimated: `7404`
+		// Minimum execution time: 72_880_000 picoseconds.
+		Weight::from_parts(74_426_000, 0)
+			.saturating_add(Weight::from_parts(0, 7404))
+			.saturating_add(T::DbWeight::get().reads(6))
+			.saturating_add(T::DbWeight::get().writes(6))
+	}
+	/// Storage: `ForeignAssets::Asset` (r:1 w:0)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	fn total_issuance() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `276`
+		//  Estimated: `4273`
+		// Minimum execution time: 5_454_000 picoseconds.
+		Weight::from_parts(5_742_000, 0)
+			.saturating_add(Weight::from_parts(0, 4273))
+			.saturating_add(T::DbWeight::get().reads(1))
+	}
+	/// Storage: `ForeignAssets::Account` (r:1 w:0)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
+	fn balance() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `150`
+		//  Estimated: `4197`
+		// Minimum execution time: 6_480_000 picoseconds.
+		Weight::from_parts(6_813_000, 0)
+			.saturating_add(Weight::from_parts(0, 4197))
+			.saturating_add(T::DbWeight::get().reads(1))
+	}
+	/// Storage: `ForeignAssets::Approvals` (r:1 w:0)
+	/// Proof: `ForeignAssets::Approvals` (`max_values`: None, `max_size`: Some(746), added: 3221, mode: `MaxEncodedLen`)
+	fn allowance() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `245`
+		//  Estimated: `4211`
+		// Minimum execution time: 8_685_000 picoseconds.
+		Weight::from_parts(9_177_000, 0)
+			.saturating_add(Weight::from_parts(0, 4211))
+			.saturating_add(T::DbWeight::get().reads(1))
 	}
 }

@@ -158,8 +158,6 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
-        /// Overarching event type.
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         type Currency: Inspect<Self::AccountId> + Balanced<Self::AccountId>;
 
         type XcmSender: SendXcm;
@@ -689,9 +687,14 @@ pub mod pallet {
                 .set_appendix(
                     Xcm::builder_unsafe()
                         .report_transact_status(QueryResponseInfo {
+                            // This location from the point of view of destination
                             destination: T::UniversalLocation::get()
                                 .invert_target(&relay_chain)
-                                .map_err(|_| Error::<T>::LocationInversionFailed)?, // This location from the point of view of destination
+                                .map_err(|e| {
+                                    log::error!("invert_target: {:?}", e);
+
+                                    Error::<T>::LocationInversionFailed
+                                })?,
                             query_id,
                             max_weight: notify_call_weight,
                         })
@@ -704,9 +707,16 @@ pub mod pallet {
 
             // We intentionally do not charge any fees
             let (ticket, _price) =
-                T::XcmSender::validate(&mut Some(relay_chain), &mut Some(message))
-                    .map_err(|_| Error::<T>::ErrorValidatingXCM)?;
-            T::XcmSender::deliver(ticket).map_err(|_| Error::<T>::ErrorDeliveringXCM)?;
+                T::XcmSender::validate(&mut Some(relay_chain), &mut Some(message)).map_err(
+                    |e| {
+                        log::error!("XcmSender::validate: {:?}", e);
+                        Error::<T>::ErrorValidatingXCM
+                    },
+                )?;
+            T::XcmSender::deliver(ticket).map_err(|e| {
+                log::error!("XcmSender::deliver: {:?}", e);
+                Error::<T>::ErrorDeliveringXCM
+            })?;
             Self::deposit_event(Event::BuyCoreXcmSent {
                 para_id,
                 transaction_status_query_id: query_id,

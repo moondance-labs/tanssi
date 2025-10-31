@@ -129,9 +129,6 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
-        /// Overarching event type.
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-
         type RuntimeHoldReason: From<HoldReason>;
 
         type Currency: Inspect<Self::AccountId>

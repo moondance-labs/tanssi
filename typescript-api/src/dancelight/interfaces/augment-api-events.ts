@@ -968,6 +968,20 @@ declare module "@polkadot/api-base/types/events" {
              **/
             [key: string]: AugmentedEvent<ApiType>;
         };
+        historical: {
+            /**
+             * The merkle roots of up to this session index were pruned
+             **/
+            RootsPruned: AugmentedEvent<ApiType, [upTo: u32], { upTo: u32 }>;
+            /**
+             * The merkle root of the validators of the said session were stored
+             **/
+            RootStored: AugmentedEvent<ApiType, [index: u32], { index: u32 }>;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         hrmp: {
             /**
              * HRMP channel closed.
@@ -1651,6 +1665,14 @@ declare module "@polkadot/api-base/types/events" {
              **/
             ActionQueued: AugmentedEvent<ApiType, [u32, u32]>;
             /**
+             * A new code hash has been authorized for a Para.
+             **/
+            CodeAuthorized: AugmentedEvent<
+                ApiType,
+                [paraId: u32, codeHash: H256, expireAt: u32],
+                { paraId: u32; codeHash: H256; expireAt: u32 }
+            >;
+            /**
              * A code upgrade has been scheduled for a Para. `para_id`
              **/
             CodeUpgradeScheduled: AugmentedEvent<ApiType, [u32]>;
@@ -1681,6 +1703,10 @@ declare module "@polkadot/api-base/types/events" {
              * code. `code_hash` `para_id`
              **/
             PvfCheckStarted: AugmentedEvent<ApiType, [H256, u32]>;
+            /**
+             * The upgrade cooldown was removed.
+             **/
+            UpgradeCooldownRemoved: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
             /**
              * Generic event
              **/
@@ -1963,6 +1989,24 @@ declare module "@polkadot/api-base/types/events" {
                 { pure: AccountId32; who: AccountId32; proxyType: DancelightRuntimeProxyType; disambiguationIndex: u16 }
             >;
             /**
+             * A pure proxy was killed by its spawner.
+             **/
+            PureKilled: AugmentedEvent<
+                ApiType,
+                [
+                    pure: AccountId32,
+                    spawner: AccountId32,
+                    proxyType: DancelightRuntimeProxyType,
+                    disambiguationIndex: u16,
+                ],
+                {
+                    pure: AccountId32;
+                    spawner: AccountId32;
+                    proxyType: DancelightRuntimeProxyType;
+                    disambiguationIndex: u16;
+                }
+            >;
+            /**
              * Generic event
              **/
             [key: string]: AugmentedEvent<ApiType>;
@@ -2221,6 +2265,11 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         session: {
+            /**
+             * The `NewSession` event in the current block also implies a new validator set to be
+             * queued.
+             **/
+            NewQueued: AugmentedEvent<ApiType, []>;
             /**
              * New session has happened. Note that the argument is the session index, not the
              * block number as the type might suggest.

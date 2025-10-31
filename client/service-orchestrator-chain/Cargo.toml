@@ -71,6 +71,7 @@ polkadot-cli = { workspace = true }
 polkadot-primitives = { workspace = true }
 
 # Cumulus
+cumulus-client-bootnodes = { workspace = true }
 cumulus-client-cli = { workspace = true }
 cumulus-client-collator = { workspace = true }
 cumulus-client-consensus-aura = { workspace = true }

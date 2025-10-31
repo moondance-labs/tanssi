@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use pallet_xcm::ExecutionError;
 use {
     frame_support::{assert_err, weights::Weight},
     pallet_xcm::Error,
@@ -58,11 +59,14 @@ fn test_message_exporter_disabled_for_origin_account() {
                 .unwrap_err()
                 .error,
                 DispatchError::from(
-                    Error::<<Starlight as Chain>::Runtime>::LocalExecutionIncomplete
+                    Error::<<Starlight as Chain>::Runtime>::LocalExecutionIncompleteWithError {
+                        index: 0,
+                        error: ExecutionError::WeightLimitReached,
+                    }
                 )
             );
             assert!(
-                log_capture.contains("XCM execution failed with error error=WeightLimitReached")
+                log_capture.contains("XCM execution failed with error error=InstructionError { index: 0, error: WeightLimitReached")
             );
         });
     });

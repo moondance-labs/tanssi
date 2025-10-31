@@ -226,7 +226,6 @@ impl tp_traits::StakingCandidateHelper<AccountId> for MockCollatorStakeHelper<Ac
 }
 
 impl pallet_inactivity_tracking::Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     type MaxInactiveSessions = ConstU32<2>;
     type MaxCollatorsPerSession = ConstU32<5>;
     type MaxContainerChains = ConstU32<3>;

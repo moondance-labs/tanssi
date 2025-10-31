@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use pallet_xcm::ExecutionError;
 use {
     dancelight_emulated_chain::DancelightRelayPallet,
     dancelight_system_emulated_network::DancelightRelay as Dancelight,
@@ -55,11 +56,14 @@ fn test_message_exporter_disabled_for_origin_account() {
                 .unwrap_err()
                 .error,
                 DispatchError::from(
-                    Error::<<Dancelight as Chain>::Runtime>::LocalExecutionIncomplete
+                    Error::<<Dancelight as Chain>::Runtime>::LocalExecutionIncompleteWithError {
+                        index: 0,
+                        error: ExecutionError::Unroutable,
+                    }
                 )
             );
             assert!(log_capture.contains("could not get parachain id from universal source"));
-            assert!(log_capture.contains("XCM execution failed with error error=Unroutable"));
+            assert!(log_capture.contains("XCM execution failed with error error=InstructionError { index: 0, error: Unroutable }"))
         });
     });
 }

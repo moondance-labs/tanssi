@@ -359,7 +359,6 @@ impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
 }
 
 impl pallet_foreign_asset_creator::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type ForeignAsset = Location;
     type ForeignAssetCreatorOrigin = EnsureRoot<AccountId>;
     type ForeignAssetModifierOrigin = EnsureRoot<AccountId>;

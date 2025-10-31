@@ -105,7 +105,6 @@ parameter_types! {
 }
 
 impl pallet_services_payment::Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     type OnChargeForBlock = ();
     type OnChargeForCollatorAssignment = ();
     type OnChargeForCollatorAssignmentTip = ();

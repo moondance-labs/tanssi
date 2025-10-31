@@ -267,7 +267,14 @@ pub fn run() -> Result<()> {
                     let partials = NodeConfig::new_builder(&config, None)?;
                     let db = partials.backend.expose_db();
                     let storage = partials.backend.expose_storage();
-                    cmd.run(config, partials.client.clone(), db, storage)
+                    let shared_trie_cache = partials.backend.expose_shared_trie_cache();
+                    cmd.run(
+                        config,
+                        partials.client.clone(),
+                        db,
+                        storage,
+                        shared_trie_cache,
+                    )
                 }),
                 BenchmarkCmd::Machine(cmd) => {
                     runner.sync_run(|config| cmd.run(&config, SUBSTRATE_REFERENCE_HARDWARE.clone()))
@@ -363,7 +370,7 @@ pub fn run() -> Result<()> {
                     }
                 }
 
-                match config.network.network_backend.unwrap_or(sc_network::config::NetworkBackendType::Libp2p) {
+                match config.network.network_backend {
                     sc_network::config::NetworkBackendType::Libp2p => {
                         crate::service::start_parachain_node::<sc_network::NetworkWorker<_, _>>(
                             config,

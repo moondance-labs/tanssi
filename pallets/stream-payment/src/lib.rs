@@ -126,9 +126,6 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
-        /// Overarching event type
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-
         /// Type used to represent stream ids. Should be large enough to not overflow.
         type StreamId: AtLeast32BitUnsigned
             + Default
