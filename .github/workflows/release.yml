@@ -324,7 +324,7 @@ jobs:
                   comment-author: "github-actions[bot]"
                   body-includes: "WASM runtime size check"
             - name: Create or update comment
-              uses: peter-evans/create-or-update-comment@v4
+              uses: peter-evans/create-or-update-comment@v5
               with:
                   comment-id: ${{ steps.fc.outputs.comment-id }}
                   issue-number: ${{ github.event.pull_request.number }}
@@ -374,7 +374,7 @@ jobs:
             body-includes: "Found problematic weights in PR diff."
         - name: Post detailed report
           if: env.HAS_REPORT == 'true'
-          uses: peter-evans/create-or-update-comment@v4
+          uses: peter-evans/create-or-update-comment@v5
           with:
             comment-id:   ${{ steps.fc.outputs.comment-id }}
             issue-number: ${{ github.event.pull_request.number }}
@@ -384,7 +384,7 @@ jobs:
           if: >
             env.HAS_REPORT == 'false' &&
             steps.fc.outputs.comment-id != ''
-          uses: peter-evans/create-or-update-comment@v4
+          uses: peter-evans/create-or-update-comment@v5
           with:
             comment-id:   ${{ steps.fc.outputs.comment-id }}
             issue-number: ${{ github.event.pull_request.number }}
