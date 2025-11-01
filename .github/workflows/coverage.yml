@@ -184,7 +184,7 @@ jobs:
         with:
           ref: ${{ needs.set-tags.outputs.git_ref }}
       - name: "Download coverage"
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: coverage
           path: coverage
