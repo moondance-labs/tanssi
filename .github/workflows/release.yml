@@ -160,7 +160,7 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: "Setup Node"
@@ -182,7 +182,7 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: "Setup Node"
@@ -466,7 +466,7 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: "Download binaries"
@@ -499,7 +499,7 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: "Download binaries"
@@ -532,7 +532,7 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: "Download binaries"
@@ -565,7 +565,7 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: Setup Node
@@ -598,7 +598,7 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: Setup Node
@@ -631,7 +631,7 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: Setup Node
@@ -661,7 +661,7 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: "Download binaries"
@@ -745,7 +745,7 @@ jobs:
               uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
-            - uses: pnpm/action-setup@v4.1.0
+            - uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - uses: actions/setup-node@v5
@@ -788,7 +788,7 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: Setup node
@@ -848,7 +848,7 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: Setup node
@@ -895,7 +895,7 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: Setup node
@@ -935,7 +935,7 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: Setup node
