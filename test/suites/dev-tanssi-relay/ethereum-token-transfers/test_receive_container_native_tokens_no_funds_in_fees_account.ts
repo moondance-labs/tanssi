@@ -143,10 +143,10 @@ describeSuite({
 
                 const nonceAfter = await polkadotJs.query.ethereumInboundQueue.nonce(newChannelId);
 
-                // Nonce should stay the same
-                expect(nonceAfter.toNumber()).to.be.equal(nonceBefore.toNumber());
+                // Since we don't error in case of failure here, nonce should increase.
+                expect(nonceAfter.toNumber()).to.be.equal(nonceBefore.toNumber() + 1);
 
-                // Check for the XCM Sent event
+                // XCM Sent event should not be emitted
                 await expectEventCount(polkadotJs, {
                     Sent: 0,
                 });

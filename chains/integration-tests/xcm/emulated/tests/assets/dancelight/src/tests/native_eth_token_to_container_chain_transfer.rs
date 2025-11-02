@@ -142,7 +142,7 @@ fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
                 root_origin.clone(),
                 RELAY_TOKEN_ASSET_LOCATION,
                 RELAY_NATIVE_TOKEN_ASSET_ID,
-                EthereumSender::get().clone().into(),
+                EthereumSender::get().clone(),
                 true,
                 1
             )
@@ -304,7 +304,7 @@ fn check_native_eth_token_to_simple_container_chain_transfer_works() {
                 root_origin.clone(),
                 RELAY_TOKEN_ASSET_LOCATION,
                 RELAY_NATIVE_TOKEN_ASSET_ID,
-                SimpleTemplateSender::get().clone().into(),
+                SimpleTemplateSender::get().clone(),
                 true,
                 1
             )

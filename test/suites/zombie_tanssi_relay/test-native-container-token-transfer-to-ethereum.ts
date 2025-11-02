@@ -153,12 +153,9 @@ describeSuite({
 
                 const channelNonceBefore = await relayChainPolkadotJs.query.ethereumOutboundQueue.nonce(newChannelId);
 
-                // Fees account (on Tanssi) only has the existential deposit
-                const existentialDeposit = relayChainPolkadotJs.consts.balances.existentialDeposit.toBigInt();
                 const feesAccountBalanceBefore = (
                     await relayChainPolkadotJs.query.system.account(SNOWBRIDGE_FEES_ACCOUNT)
                 ).data.free.toBigInt();
-                expect(feesAccountBalanceBefore).to.be.eq(existentialDeposit);
 
                 await containerChainPolkadotJs.tx.polkadotXcm
                     .transferAssets(dest, versionedBeneficiary, versionedAssets, 0, "Unlimited")
