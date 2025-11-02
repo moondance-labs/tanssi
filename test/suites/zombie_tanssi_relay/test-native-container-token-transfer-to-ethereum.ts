@@ -153,6 +153,9 @@ describeSuite({
 
                 const channelNonceBefore = await relayChainPolkadotJs.query.ethereumOutboundQueue.nonce(newChannelId);
 
+                // Since zombienet does not restart nodes, the fees account already has balance
+                // from previous tests, so no need to check for existential deposit.
+                // Thus, it's enough to check that the balance has increased later on.
                 const feesAccountBalanceBefore = (
                     await relayChainPolkadotJs.query.system.account(SNOWBRIDGE_FEES_ACCOUNT)
                 ).data.free.toBigInt();
