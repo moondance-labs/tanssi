@@ -730,6 +730,9 @@ export default {
                 paraId: "u32",
                 managerAddress: "AccountId32",
             },
+            DepositUpdated: {
+                paraId: "u32",
+            },
         },
     },
     /**
@@ -1816,6 +1819,9 @@ export default {
                 relayProofBlockNumber: "u32",
                 relayStorageProof: "SpTrieStorageProof",
             },
+            poke_deposit: {
+                paraId: "u32",
+            },
         },
     },
     /**
@@ -2078,6 +2084,9 @@ export default {
                 profileId: "u64",
                 paraId: "u32",
                 assignmentWitness: "TpDataPreserversCommonAssignmentWitness",
+            },
+            poke_deposit: {
+                profileId: "u64",
             },
         },
     },

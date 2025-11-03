@@ -956,6 +956,10 @@ declare module "@polkadot/types/lookup" {
             readonly paraId: u32;
             readonly managerAddress: AccountId32;
         } & Struct;
+        readonly isDepositUpdated: boolean;
+        readonly asDepositUpdated: {
+            readonly paraId: u32;
+        } & Struct;
         readonly type:
             | "ParaIdRegistered"
             | "ParaIdDeregistered"
@@ -963,7 +967,8 @@ declare module "@polkadot/types/lookup" {
             | "ParaIdPaused"
             | "ParaIdUnpaused"
             | "ParathreadParamsChanged"
-            | "ParaManagerChanged";
+            | "ParaManagerChanged"
+            | "DepositUpdated";
     }
 
     /** @name PalletCollatorAssignmentEvent (66) */
@@ -2198,6 +2203,10 @@ declare module "@polkadot/types/lookup" {
             readonly relayProofBlockNumber: u32;
             readonly relayStorageProof: SpTrieStorageProof;
         } & Struct;
+        readonly isPokeDeposit: boolean;
+        readonly asPokeDeposit: {
+            readonly paraId: u32;
+        } & Struct;
         readonly type:
             | "Register"
             | "Deregister"
@@ -2208,7 +2217,8 @@ declare module "@polkadot/types/lookup" {
             | "SetParathreadParams"
             | "SetParaManager"
             | "RegisterWithRelayProof"
-            | "DeregisterWithRelayProof";
+            | "DeregisterWithRelayProof"
+            | "PokeDeposit";
     }
 
     /** @name DpContainerChainGenesisDataContainerChainGenesisData (226) */
@@ -2437,6 +2447,10 @@ declare module "@polkadot/types/lookup" {
             readonly paraId: u32;
             readonly assignmentWitness: TpDataPreserversCommonAssignmentWitness;
         } & Struct;
+        readonly isPokeDeposit: boolean;
+        readonly asPokeDeposit: {
+            readonly profileId: u64;
+        } & Struct;
         readonly type:
             | "CreateProfile"
             | "UpdateProfile"
@@ -2446,7 +2460,8 @@ declare module "@polkadot/types/lookup" {
             | "ForceDeleteProfile"
             | "StartAssignment"
             | "StopAssignment"
-            | "ForceStartAssignment";
+            | "ForceStartAssignment"
+            | "PokeDeposit";
     }
 
     /** @name PalletDataPreserversProfile (249) */
