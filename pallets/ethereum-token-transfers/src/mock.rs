@@ -286,7 +286,6 @@ pub type LocalOriginToLocation = MockSignedToAccountIndex64<RuntimeOrigin, u64>;
 pub type MockAgentIdOf =
     HashedDescription<H256, DescribeGlobalPrefix<DescribeAccountAccountIndex64Terminal>>;
 impl pallet_ethereum_token_transfers::Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type OutboundQueue = MockOkOutboundQueue;
     type OutboundQueueV2 = MockOkOutboundQueueV2;

@@ -269,6 +269,7 @@ pub fn start_node_impl_container<
             relay_chain_slot_duration,
             recovery_handle: Box::new(overseer_handle.clone()),
             sync_service: node_builder.network.sync_service.clone(),
+            prometheus_registry: prometheus_registry.as_ref(),
         })?;
 
         if let Some(collation_params) = collation_params {

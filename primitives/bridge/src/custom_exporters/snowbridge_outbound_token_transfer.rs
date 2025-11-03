@@ -83,16 +83,15 @@ where
         let expected_network = EthereumNetwork::get();
         let universal_location = UniversalLocation::get();
 
+        log::trace!(target: "xcm::ethereum_blob_exporter", "validate params: network={network:?}, _channel={_channel:?}, universal_source={universal_source:?}, destination={destination:?}, message={message:?}");
+
         if network != expected_network {
             log::trace!(target: "xcm::ethereum_blob_exporter", "skipped due to unmatched bridge network {network:?}.");
             return Err(SendError::NotApplicable);
         }
 
         // Cloning destination to avoid modifying the value so subsequent exporters can use it.
-        let dest = destination
-            .clone()
-            .take()
-            .ok_or(SendError::MissingArgument)?;
+        let dest = destination.clone().ok_or(SendError::MissingArgument)?;
         if dest != Here {
             log::trace!(target: "xcm::ethereum_blob_exporter", "skipped due to unmatched remote destination {dest:?}.");
             return Err(SendError::NotApplicable);
@@ -100,7 +99,6 @@ where
 
         // Cloning universal_source to avoid modifying the value so subsequent exporters can use it.
         let (local_net, local_sub) = universal_source.clone()
-            .take()
             .ok_or_else(|| {
                 log::error!(target: "xcm::ethereum_blob_exporter", "universal source not provided.");
                 SendError::MissingArgument

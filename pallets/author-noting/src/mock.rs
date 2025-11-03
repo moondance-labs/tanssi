@@ -211,7 +211,6 @@ impl RelaychainStateProvider for MockRelayStateProvider {
 
 impl Config for Test {
     type WeightInfo = ();
-    type RuntimeEvent = RuntimeEvent;
     type ContainerChainAuthor = MockAuthorFetcher;
     type SlotBeacon = DummyBeacon;
     type ContainerChains = MockContainerChainGetter;

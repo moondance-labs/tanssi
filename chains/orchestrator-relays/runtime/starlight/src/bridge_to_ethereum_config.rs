@@ -73,9 +73,7 @@ impl OnNewCommitment for CommitmentRecorder {
     }
 }
 
-impl pallet_outbound_message_commitment_recorder::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-}
+impl pallet_outbound_message_commitment_recorder::Config for Runtime {}
 
 // https://github.com/paritytech/polkadot-sdk/blob/2ae79be8e028a995b850621ee55f46c041eceefe/cumulus/parachains/runtimes/bridge-hubs/bridge-hub-westend/src/bridge_to_ethereum_config.rs#L105
 impl snowbridge_pallet_outbound_queue::Config for Runtime {
@@ -150,7 +148,6 @@ impl snowbridge_outbound_queue_primitives::v2::SendMessage for ForbidOutboundQue
 }
 
 impl pallet_ethereum_token_transfers::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type OutboundQueue = EthereumOutboundQueue;
     type EthereumSystemHandler = EthereumSystemHandler<Runtime>;
@@ -247,12 +244,16 @@ mod test_helpers {
     }
 }
 
+type AssetTransactor = <xcm_config::XcmConfig as xcm_executor::Config>::AssetTransactor;
+
 pub type EthTokensProcessor = EthTokensLocalProcessor<
     Runtime,
     xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
     <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+    AssetTransactor,
     starlight_runtime_constants::snowbridge::EthereumLocation,
     starlight_runtime_constants::snowbridge::EthereumNetwork,
+    frame_support::traits::ConstBool<false>,
 >;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
@@ -279,7 +280,7 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     // TODO: Revisit this when we enable xcmp messages
     type MaxMessageSize = ConstU32<2048>;
-    type AssetTransactor = <xcm_config::XcmConfig as xcm_executor::Config>::AssetTransactor;
+    type AssetTransactor = AssetTransactor;
     #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (
         SymbioticInboundMessageProcessor<Self>,

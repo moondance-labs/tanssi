@@ -37,9 +37,6 @@ pub mod pallet {
     pub trait Config:
         CreateSignedTransaction<Call<Self>> + CreateInherent<Call<Self>> + frame_system::Config
     {
-        /// The overarching event type.
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-
         /// Number of blocks of cooldown after unsigned transaction is included.
         ///
         /// This ensures that we only accept unsigned transactions once, every `UnsignedInterval`
@@ -186,7 +183,7 @@ impl<T: Config> Pallet<T> {
 
         let call = Call::submit_event_unsigned { block_number };
 
-        let xt = T::create_inherent(call.into());
+        let xt = T::create_bare(call.into());
         SubmitTransaction::<T, Call<T>>::submit_transaction(xt)
             .map_err(|()| "Unable to submit unsigned transaction.")?;
 

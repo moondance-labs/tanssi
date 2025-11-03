@@ -14,7 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-mod container_chain_to_eth_transfer;
 mod container_chain_to_eth_transfer_v2;
+mod erc20_token_transfer_from_container_to_eth;
+mod foreign_eth_token_to_container_chain_transfer;
+mod native_container_chain_token_to_eth_transfer;
+mod native_eth_token_to_container_chain_transfer;
 mod reserver_transfers_polkadot_xcm;
 mod xcm_message_exporter;

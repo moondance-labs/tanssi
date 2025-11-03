@@ -91,6 +91,7 @@ use {
     snowbridge_outbound_queue_primitives::v1::Command,
     snowbridge_outbound_queue_primitives::v1::Fee,
     sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
+    sp_core::{ConstUint, OpaqueMetadata, H256},
     sp_genesis_builder::PresetId,
     sp_runtime::{traits::ConvertInto, AccountId32},
     tanssi_runtime_common::{
@@ -130,7 +131,6 @@ use {
     pallet_identity::legacy::IdentityInfo,
     pallet_session::historical as session_historical,
     pallet_transaction_payment::{FeeDetails, FungibleAdapter, RuntimeDispatchInfo},
-    sp_core::{OpaqueMetadata, H256},
     sp_runtime::{
         generic, impl_opaque_keys,
         traits::{
@@ -622,6 +622,7 @@ impl Convert<AccountId, Option<()>> for FullIdentificationOf {
 }
 
 impl pallet_session::historical::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
     type FullIdentification = ();
     type FullIdentificationOf = FullIdentificationOf;
 }
@@ -807,11 +808,11 @@ where
     type RuntimeCall = RuntimeCall;
 }
 
-impl<LocalCall> frame_system::offchain::CreateInherent<LocalCall> for Runtime
+impl<LocalCall> frame_system::offchain::CreateBare<LocalCall> for Runtime
 where
     RuntimeCall: From<LocalCall>,
 {
-    fn create_inherent(call: RuntimeCall) -> UncheckedExtrinsic {
+    fn create_bare(call: RuntimeCall) -> UncheckedExtrinsic {
         UncheckedExtrinsic::new_bare(call)
     }
 }
@@ -847,6 +848,8 @@ impl pallet_identity::Config for Runtime {
     type UsernameGracePeriod = ConstU32<{ 30 * DAYS }>;
     type MaxSuffixLength = ConstU32<7>;
     type MaxUsernameLength = ConstU32<32>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = ();
     type WeightInfo = weights::pallet_identity::SubstrateWeight<Runtime>;
 }
 
@@ -1084,6 +1087,11 @@ impl parachains_paras::Config for Runtime {
     type NextSessionRotation = Babe;
     type OnNewHead = Registrar;
     type AssignCoretime = ();
+    type Fungible = Balances;
+    // TODO: this could be set to 1 because we don't care, but benchmarks fail in that case
+    // Per day the cooldown is removed earlier, it should cost 1000.
+    type CooldownRemovalMultiplier = ConstUint<{ 1000 * UNITS / DAYS as u128 }>;
+    type AuthorizeCurrentCodeOrigin = EnsureRoot<Self::AccountId>;
 }
 
 parameter_types! {
@@ -1464,7 +1472,6 @@ prod_or_fast_parameter_types! {
 }
 
 impl pallet_external_validators::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type UpdateOrigin = EnsureRoot<AccountId>;
     type HistoryDepth = ConstU32<84>;
     type MaxWhitelistedValidators = MaxWhitelistedValidators;
@@ -1525,7 +1532,6 @@ impl tp_bridge::TokenChannelSetterBenchmarkHelperTrait for RewardsBenchHelper {
 
 // Pallet to reward validators.
 impl pallet_external_validators_rewards::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type EraIndexProvider = ExternalValidators;
     type HistoryDepth = ConstU32<64>;
     type BackingPoints = ConstU32<20>;
@@ -1550,7 +1556,6 @@ impl pallet_external_validators_rewards::Config for Runtime {
 }
 
 impl pallet_external_validator_slashes::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type ValidatorId = AccountId;
     type ValidatorIdOf = ValidatorIdOf;
     type SlashDeferDuration = SlashDeferDuration;
@@ -1596,7 +1601,6 @@ parameter_types! {
 }
 
 impl pallet_invulnerables::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type UpdateOrigin = EnsureRoot<AccountId>;
     type MaxInvulnerables = MaxInvulnerables;
     type CollatorId = <Self as frame_system::Config>::AccountId;
@@ -1632,7 +1636,6 @@ impl pallet_configuration::Config for Runtime {
 }
 
 impl pallet_migrations::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type MigrationsList = (tanssi_runtime_common::migrations::StarlightMigrations<Runtime>,);
     type XcmExecutionManager = ();
 }
@@ -1692,7 +1695,6 @@ type NormalFilter = EverythingBut<(
 )>;
 
 impl pallet_maintenance_mode::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
@@ -1724,7 +1726,6 @@ parameter_types! {
 }
 
 impl pallet_services_payment::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     /// Handler for fees
     type OnChargeForBlock = ();
     type OnChargeForCollatorAssignment = ();
@@ -1751,7 +1752,6 @@ parameter_types! {
 }
 
 impl pallet_stream_payment::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type StreamId = tp_stream_payment_common::StreamId;
     type TimeUnit = tp_stream_payment_common::TimeUnit;
     type Balance = Balance;
@@ -1776,7 +1776,6 @@ parameter_types! {
 pub type DataPreserversProfileId = u64;
 
 impl pallet_data_preservers::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type RuntimeHoldReason = RuntimeHoldReason;
     type Currency = Balances;
     type WeightInfo = weights::pallet_data_preservers::SubstrateWeight<Runtime>;
@@ -1823,7 +1822,6 @@ impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnba
 
 // Pallet to reward container chains collators.
 impl pallet_inflation_rewards::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type ContainerChains = ContainerRegistrar;
     type GetSelfChainBlockAuthor = ();
@@ -1886,7 +1884,6 @@ parameter_types! {
 }
 
 impl pallet_pooled_staking::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type Balance = Balance;
     type StakingAccount = StakingAccount;
@@ -1907,7 +1904,6 @@ parameter_types! {
     pub const CooldownLenghtInSessions: u32 = 2;
 }
 impl pallet_inactivity_tracking::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type MaxInactiveSessions = MaxInactiveSessions;
     type MaxCollatorsPerSession = MaxCandidatesBufferSize;
     type MaxContainerChains = MaxLengthParaIds;
@@ -2205,7 +2201,6 @@ where
 }
 
 impl pallet_registrar::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin =
         EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
@@ -2308,7 +2303,6 @@ impl pallet_registrar::RegistrarHooks for StarlightRegistrarHooks {
 }
 
 impl pallet_author_noting::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type ContainerChains = TanssiCollatorAssignment;
     type SlotBeacon = BabeSlotBeacon<Runtime>;
     type ContainerChainAuthor = TanssiCollatorAssignment;
@@ -3401,11 +3395,11 @@ sp_api::impl_runtime_apis! {
                     Ok((origin, ticket, assets))
                 }
 
-                fn fee_asset() -> Result<Asset, BenchmarkError> {
-                    Ok(Asset {
+                fn worst_case_for_trader() -> Result<(Asset, WeightLimit), BenchmarkError> {
+                    Ok((Asset {
                         id: AssetId(TokenLocation::get()),
                         fun: Fungible(1_000_000 * UNITS),
-                    })
+                    }, WeightLimit::Unlimited))
                 }
 
                 fn unlockable_asset() -> Result<(Location, Location, Asset), BenchmarkError> {
@@ -3820,7 +3814,6 @@ impl Get<Option<CoreAllocationConfiguration>> for GetCoreAllocationConfiguration
 }
 
 impl pallet_collator_assignment::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type HostConfiguration = CollatorConfiguration;
     type ContainerChains = ContainerRegistrar;
     type SessionIndex = u32;

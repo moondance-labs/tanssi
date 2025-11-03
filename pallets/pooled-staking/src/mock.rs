@@ -162,7 +162,6 @@ parameter_types! {
 }
 
 impl pallet_pooled_staking::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type Balance = Balance;
     type StakingAccount = StakingAccount;

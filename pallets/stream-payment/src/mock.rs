@@ -268,7 +268,6 @@ parameter_types! {
 }
 
 impl pallet_stream_payment::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type StreamId = u64;
     type TimeUnit = TimeUnit;
     type Balance = Balance;

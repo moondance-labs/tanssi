@@ -82,48 +82,47 @@ where
         let expected_network = EthereumNetwork::get();
         let universal_location = UniversalLocation::get();
 
-        log::info!("validate params: network={network:?}, _channel={_channel:?}, universal_source={universal_source:?}, destination={destination:?}, message={message:?}, ");
+        log::trace!(target: "xcm::container_ethereum_blob_exporter", "validate params: network={network:?}, _channel={_channel:?}, universal_source={universal_source:?}, destination={destination:?}, message={message:?}");
 
         if network != expected_network {
-            log::trace!(target: "xcm::ethereum_blob_exporter", "skipped due to unmatched bridge network {network:?}.");
+            log::trace!(target: "xcm::container_ethereum_blob_exporter", "skipped due to unmatched bridge network {network:?}.");
             return Err(NotApplicable);
         }
 
         // Cloning destination to avoid modifying the value so subsequent exporters can use it.
-        let dest = destination.clone().take().ok_or(MissingArgument)?;
+        let dest = destination.clone().ok_or(MissingArgument)?;
         if dest != Here {
-            log::trace!(target: "xcm::ethereum_blob_exporter", "skipped due to unmatched remote destination {dest:?}.");
+            log::trace!(target: "xcm::container_ethereum_blob_exporter", "skipped due to unmatched remote destination {dest:?}.");
             return Err(NotApplicable);
         }
 
         // Cloning universal_source to avoid modifying the value so subsequent exporters can use it.
         let (local_net, local_sub) = universal_source.clone()
-            .take()
             .ok_or_else(|| {
-                log::error!(target: "xcm::ethereum_blob_exporter", "universal source not provided.");
+                log::error!(target: "xcm::container_ethereum_blob_exporter", "universal source not provided.");
                 MissingArgument
             })?
             .split_global()
             .map_err(|()| {
-                log::error!(target: "xcm::ethereum_blob_exporter", "could not get global consensus from universal source '{universal_source:?}'.");
+                log::error!(target: "xcm::container_ethereum_blob_exporter", "could not get global consensus from universal source '{universal_source:?}'.");
                 NotApplicable
             })?;
 
         if Ok(local_net) != universal_location.global_consensus() {
-            log::trace!(target: "xcm::ethereum_blob_exporter", "skipped due to unmatched relay network {local_net:?}.");
+            log::trace!(target: "xcm::container_ethereum_blob_exporter", "skipped due to unmatched relay network {local_net:?}.");
             return Err(NotApplicable);
         }
 
         let para_id = match local_sub.as_slice() {
             [Parachain(para_id)] => *para_id,
             _ => {
-                log::error!(target: "xcm::ethereum_blob_exporter", "could not get parachain id from universal source '{local_sub:?}'.");
+                log::error!(target: "xcm::container_ethereum_blob_exporter", "could not get parachain id from universal source '{local_sub:?}'.");
                 return Err(NotApplicable);
             }
         };
 
         let message = message.take().ok_or_else(|| {
-            log::error!(target: "xcm::ethereum_blob_exporter", "xcm message not provided.");
+            log::error!(target: "xcm::container_ethereum_blob_exporter", "xcm message not provided.");
             MissingArgument
         })?;
 
@@ -134,12 +133,12 @@ where
                 para_id,
             );
         let (command, message_id) = converter.convert().map_err(|err|{
-            log::error!(target: "xcm::ethereum_blob_exporter", "unroutable due to pattern matching error '{err:?}'.");
+            log::error!(target: "xcm::container_ethereum_blob_exporter", "unroutable due to pattern matching error '{err:?}'.");
             Unroutable
         })?;
 
         let (channel_id, _) = BridgeChannelInfo::get().ok_or_else(|| {
-            log::error!(target: "xcm::ethereum_blob_exporter", "channel id and agent id cannot be fetched");
+            log::error!(target: "xcm::container_ethereum_blob_exporter", "channel id and agent id cannot be fetched");
             Unroutable
         })?;
 
@@ -151,7 +150,7 @@ where
 
         // validate the message
         let (ticket, fee) = OutboundQueue::validate(&outbound_message).map_err(|err| {
-            log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue validation of message failed. {err:?}");
+            log::error!(target: "xcm::container_ethereum_blob_exporter", "OutboundQueue validation of message failed. {err:?}");
             Unroutable
         })?;
 
@@ -164,16 +163,16 @@ where
     fn deliver(blob: (Vec<u8>, XcmHash)) -> Result<XcmHash, SendError> {
         let ticket: OutboundQueue::Ticket = OutboundQueue::Ticket::decode(&mut blob.0.as_ref())
             .map_err(|_| {
-                log::trace!(target: "xcm::ethereum_blob_exporter", "undeliverable due to decoding error");
+                log::trace!(target: "xcm::container_ethereum_blob_exporter", "undeliverable due to decoding error");
                 NotApplicable
             })?;
 
         let message_id = OutboundQueue::deliver(ticket).map_err(|_| {
-            log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue submit of message failed");
+            log::error!(target: "xcm::container_ethereum_blob_exporter", "OutboundQueue submit of message failed");
             SendError::Transport("other transport error")
         })?;
 
-        log::info!(target: "xcm::ethereum_blob_exporter", "message delivered {message_id:#?}.");
+        log::info!(target: "xcm::container_ethereum_blob_exporter", "message delivered {message_id:#?}.");
         Ok(message_id.into())
     }
 }

@@ -19,15 +19,16 @@
 use {
     crate::{
         bridge_to_ethereum_config::EthereumGatewayAddress, filter_events, tests::common::*,
-        Balances, EthereumInboundQueue, EthereumLocation, EthereumSovereignAccount, EthereumSystem,
-        EthereumTokenTransfers, ForeignAssets, ForeignAssetsCreator, RuntimeEvent,
-        SnowbridgeFeesAccount, TokenLocationReanchored, XcmPallet,
+        xcm_config::MinV2Reward, Balances, EthereumInboundQueue, EthereumLocation,
+        EthereumSovereignAccount, EthereumSystem, EthereumTokenTransfers, ForeignAssets,
+        ForeignAssetsCreator, RuntimeEvent, SnowbridgeFeesAccount, TokenLocationReanchored,
+        XcmPallet,
     },
     alloc::vec,
     alloy_sol_types::SolEvent,
     dancelight_runtime_constants::snowbridge::EthereumNetwork,
     frame_support::{
-        assert_err, assert_noop, assert_ok,
+        assert_err, assert_err_ignore_postinfo, assert_noop, assert_ok,
         traits::{fungible::Inspect, fungibles::Mutate},
         BoundedVec,
     },
@@ -1656,25 +1657,12 @@ fn send_eth_native_token_works_v2() {
             let fee_asset = AssetId(crate::xcm_config::TokenLocation::get().clone())
                 .into_asset(Fungibility::Fungible(fee_amount));
 
-            log::info!("fee asset is {:?}", fee_asset);
-
             let balance_before = Balances::balance(&AccountId::from(BOB));
-
-            // In order to put aliasOrigin, we need to do this with EXECUTE
-            /*assert_ok!(XcmPallet::transfer_assets(
-                RuntimeOrigin::signed(AccountId::from(BOB)),
-                Box::new(EthereumLocation::get().into()),
-                Box::new(beneficiary_location.into()),
-                Box::new(vec![eth_asset].into()),
-                0u32,
-                Unlimited,
-            ));*/
+            let balance_fees_account_before = Balances::balance(&SnowbridgeFeesAccount::get());
 
             let assets = vec![fee_asset_withdrawn.clone(), eth_asset.clone()];
 
-            // remote-fees = None does not put a paysAsset
-            // remote-fees = Some puts a paysAsset
-            // should we support both?
+            // fees should go into ethereumfeesAccount
             let xcm = VersionedXcm::from(Xcm(vec![
                 WithdrawAsset(assets.clone().into()),
                 InitiateTransfer {
@@ -1702,9 +1690,15 @@ fn send_eth_native_token_works_v2() {
             // Correct amount has been sent
             assert_eq!(ForeignAssets::balance(asset_id, AccountId::from(BOB)), 10);
 
-            // Check some fees have been payed
+            // Check some fees have been payed. ideally this covers fee_amount plus weight exec
             let balance_after = Balances::balance(&AccountId::from(BOB));
-            assert!(balance_before - balance_after > 0);
+            assert!(balance_before - balance_after > fee_amount);
+
+            let balance_fees_account_after = Balances::balance(&SnowbridgeFeesAccount::get());
+            assert_eq!(
+                balance_fees_account_after - balance_fees_account_before,
+                fee_amount
+            );
 
             assert_eq!(
                 filter_events!(RuntimeEvent::EthereumOutboundQueueV2(
@@ -1713,6 +1707,509 @@ fn send_eth_native_token_works_v2() {
                 .count(),
                 1,
                 "MessageQueued event should be emitted!"
+            );
+        })
+}
+
+#[test]
+fn send_eth_native_does_not_work_if_min_reward_not_covered() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (EthereumSovereignAccount::get(), 100_000 * UNIT),
+            (SnowbridgeFeesAccount::get(), 100_000 * UNIT),
+            (AccountId::from(ALICE), 100_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            sp_tracing::try_init_simple();
+            // Setup bridge and token
+            let channel_id: ChannelId = ChannelId::new(hex!(
+                "00000000000000000000006e61746976655f746f6b656e5f7472616e73666572"
+            ));
+            let agent_id = AgentId::from_low_u64_be(10);
+            let para_id: ParaId = 2000u32.into();
+            let amount_to_transfer = 10_000u128;
+
+            assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+                root_origin(),
+                channel_id,
+                agent_id,
+                para_id
+            ));
+
+            // Define a mock ERC20 token address
+            let token_address = H160(hex!("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"));
+
+            let erc20_asset_location = Location {
+                parents: 1,
+                interior: X2([
+                    GlobalConsensus(EthereumNetwork::get()),
+                    AccountKey20 {
+                        network: Some(EthereumNetwork::get()),
+                        key: token_address.into(),
+                    },
+                ]
+                .into()),
+            };
+
+            let asset_id = 42u16;
+
+            assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+                root_origin(),
+                erc20_asset_location.clone(), // Use the ERC20 location
+                asset_id,
+                AccountId::from(ALICE),
+                true,
+                1
+            ));
+
+            // Give tokens to user as if tokens were bridged before + extra to check the correct
+            // amount is sent
+            ForeignAssets::mint_into(asset_id, &AccountId::from(BOB), amount_to_transfer + 10)
+                .expect("to mint amount");
+
+            // User tries to send tokens
+            let beneficiary_address = H160(hex!("0123456789abcdef0123456789abcdef01234567"));
+
+            // Beneficiary location must be represented using destination's point of view.
+            let beneficiary_location = Location {
+                parents: 0,
+                interior: X1([AccountKey20 {
+                    network: Some(EthereumNetwork::get()),
+                    key: beneficiary_address.into(),
+                }]
+                .into()),
+            };
+
+            let eth_asset = AssetId(erc20_asset_location.clone())
+                .into_asset(Fungibility::Fungible(amount_to_transfer));
+
+            let fee_amount_withdrawn = 1_000_000_000_000u128;
+
+            let fee_asset_withdrawn = AssetId(crate::xcm_config::TokenLocation::get().clone())
+                .into_asset(Fungibility::Fungible(fee_amount_withdrawn));
+
+            let fee_amount = MinV2Reward::get().saturating_sub(1);
+
+            let fee_asset = AssetId(crate::xcm_config::TokenLocation::get().clone())
+                .into_asset(Fungibility::Fungible(fee_amount));
+
+            let assets = vec![fee_asset_withdrawn.clone(), eth_asset.clone()];
+
+            // fees should go into ethereumfeesAccount
+            let xcm = VersionedXcm::from(Xcm(vec![
+                WithdrawAsset(assets.clone().into()),
+                InitiateTransfer {
+                    destination: EthereumLocation::get().into(),
+                    remote_fees: Some(AssetTransferFilter::ReserveDeposit(
+                        fee_asset.clone().into(),
+                    )),
+                    preserve_origin: true,
+                    assets: BoundedVec::truncate_from(vec![AssetTransferFilter::ReserveWithdraw(
+                        Definite(eth_asset.clone().into()),
+                    )]),
+                    remote_xcm: Xcm(vec![DepositAsset {
+                        assets: Wild(AllCounted(1)),
+                        beneficiary: beneficiary_location,
+                    }]),
+                },
+            ]));
+
+            assert_err_ignore_postinfo!(
+                XcmPallet::execute(
+                    RuntimeOrigin::signed(AccountId::from(BOB)),
+                    Box::new(xcm),
+                    Weight::from(16_000_000_000),
+                ),
+                pallet_xcm::Error::<Runtime>::LocalExecutionIncomplete
+            );
+        })
+}
+
+#[test]
+fn send_eth_native_does_not_work_if_reward_diff_asset() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (EthereumSovereignAccount::get(), 100_000 * UNIT),
+            (SnowbridgeFeesAccount::get(), 100_000 * UNIT),
+            (AccountId::from(ALICE), 100_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            sp_tracing::try_init_simple();
+            // Setup bridge and token
+            let channel_id: ChannelId = ChannelId::new(hex!(
+                "00000000000000000000006e61746976655f746f6b656e5f7472616e73666572"
+            ));
+            let agent_id = AgentId::from_low_u64_be(10);
+            let para_id: ParaId = 2000u32.into();
+            let amount_to_transfer = 10_000u128;
+
+            assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+                root_origin(),
+                channel_id,
+                agent_id,
+                para_id
+            ));
+
+            // Define a mock ERC20 token address
+            let token_address = H160(hex!("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"));
+
+            let erc20_asset_location = Location {
+                parents: 1,
+                interior: X2([
+                    GlobalConsensus(EthereumNetwork::get()),
+                    AccountKey20 {
+                        network: Some(EthereumNetwork::get()),
+                        key: token_address.into(),
+                    },
+                ]
+                .into()),
+            };
+
+            let asset_id = 42u16;
+
+            assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+                root_origin(),
+                erc20_asset_location.clone(), // Use the ERC20 location
+                asset_id,
+                AccountId::from(ALICE),
+                true,
+                1
+            ));
+
+            // Give tokens to user as if tokens were bridged before + extra to check the correct
+            // amount is sent
+            ForeignAssets::mint_into(asset_id, &AccountId::from(BOB), amount_to_transfer + 10)
+                .expect("to mint amount");
+
+            // User tries to send tokens
+            let beneficiary_address = H160(hex!("0123456789abcdef0123456789abcdef01234567"));
+
+            // Beneficiary location must be represented using destination's point of view.
+            let beneficiary_location = Location {
+                parents: 0,
+                interior: X1([AccountKey20 {
+                    network: Some(EthereumNetwork::get()),
+                    key: beneficiary_address.into(),
+                }]
+                .into()),
+            };
+
+            let eth_asset = AssetId(erc20_asset_location.clone())
+                .into_asset(Fungibility::Fungible(amount_to_transfer));
+
+            let fee_amount_withdrawn = 1_000_000_000_000u128;
+
+            let fee_asset_withdrawn = AssetId(crate::xcm_config::TokenLocation::get().clone())
+                .into_asset(Fungibility::Fungible(fee_amount_withdrawn));
+
+            let fee_amount = 1_000_000_000u128;
+
+            // Instead of the proper asset, we put another one here. for instance, the eth one
+            // only paying in tanssi is allowed
+            let fee_asset =
+                AssetId(erc20_asset_location.clone()).into_asset(Fungibility::Fungible(fee_amount));
+
+            let assets = vec![fee_asset_withdrawn.clone(), eth_asset.clone()];
+
+            // fees should go into ethereumfeesAccount
+            let xcm = VersionedXcm::from(Xcm(vec![
+                WithdrawAsset(assets.clone().into()),
+                InitiateTransfer {
+                    destination: EthereumLocation::get().into(),
+                    remote_fees: Some(AssetTransferFilter::ReserveDeposit(
+                        fee_asset.clone().into(),
+                    )),
+                    preserve_origin: true,
+                    assets: BoundedVec::truncate_from(vec![AssetTransferFilter::ReserveWithdraw(
+                        Definite(eth_asset.clone().into()),
+                    )]),
+                    remote_xcm: Xcm(vec![DepositAsset {
+                        assets: Wild(AllCounted(1)),
+                        beneficiary: beneficiary_location,
+                    }]),
+                },
+            ]));
+
+            assert_err_ignore_postinfo!(
+                XcmPallet::execute(
+                    RuntimeOrigin::signed(AccountId::from(BOB)),
+                    Box::new(xcm),
+                    Weight::from(16_000_000_000),
+                ),
+                pallet_xcm::Error::<Runtime>::LocalExecutionIncomplete
+            );
+        })
+}
+
+#[test]
+fn sending_eth_native_withdrawing_non_sufficient_amount_eth_works_but_only_sends_withdrawn() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (EthereumSovereignAccount::get(), 100_000 * UNIT),
+            (SnowbridgeFeesAccount::get(), 100_000 * UNIT),
+            (AccountId::from(ALICE), 100_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            sp_tracing::try_init_simple();
+            // Setup bridge and token
+            let channel_id: ChannelId = ChannelId::new(hex!(
+                "00000000000000000000006e61746976655f746f6b656e5f7472616e73666572"
+            ));
+            let agent_id = AgentId::from_low_u64_be(10);
+            let para_id: ParaId = 2000u32.into();
+            let amount_to_transfer = 10_000u128;
+
+            assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+                root_origin(),
+                channel_id,
+                agent_id,
+                para_id
+            ));
+
+            // Define a mock ERC20 token address
+            let token_address = H160(hex!("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"));
+
+            let erc20_asset_location = Location {
+                parents: 1,
+                interior: X2([
+                    GlobalConsensus(EthereumNetwork::get()),
+                    AccountKey20 {
+                        network: Some(EthereumNetwork::get()),
+                        key: token_address.into(),
+                    },
+                ]
+                .into()),
+            };
+
+            let asset_id = 42u16;
+
+            assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+                root_origin(),
+                erc20_asset_location.clone(), // Use the ERC20 location
+                asset_id,
+                AccountId::from(ALICE),
+                true,
+                1
+            ));
+
+            // Give tokens to user as if tokens were bridged before + extra to check the correct
+            // amount is sent
+            ForeignAssets::mint_into(asset_id, &AccountId::from(BOB), amount_to_transfer + 10)
+                .expect("to mint amount");
+
+            // User tries to send tokens
+            let beneficiary_address = H160(hex!("0123456789abcdef0123456789abcdef01234567"));
+
+            // Beneficiary location must be represented using destination's point of view.
+            let beneficiary_location = Location {
+                parents: 0,
+                interior: X1([AccountKey20 {
+                    network: Some(EthereumNetwork::get()),
+                    key: beneficiary_address.into(),
+                }]
+                .into()),
+            };
+
+            let eth_asset = AssetId(erc20_asset_location.clone())
+                .into_asset(Fungibility::Fungible(amount_to_transfer));
+
+            // We withdraw less than what is allowed to be transferred
+            // We only withdraw 1 unit instead of 10_000
+            let eth_asset_withdrawn =
+                AssetId(erc20_asset_location.clone()).into_asset(Fungibility::Fungible(1));
+
+            // We are withdrawing more in the fee than what we need
+            let fee_amount_withdrawn = 1_000_000_000_000u128;
+
+            let fee_asset_withdrawn = AssetId(crate::xcm_config::TokenLocation::get().clone())
+                .into_asset(Fungibility::Fungible(fee_amount_withdrawn));
+
+            let fee_amount = 1_000_000_000u128;
+
+            // Instead of the proper asset, we put another one here. for instance, the eth one
+            // only paying in tanssi is allowed
+            let fee_asset = AssetId(crate::xcm_config::TokenLocation::get().clone())
+                .into_asset(Fungibility::Fungible(fee_amount));
+
+            // WithdrawnAssets
+            // 1e12 tanssi
+            // 1 unit ETH
+            let assets = vec![fee_asset_withdrawn.clone(), eth_asset_withdrawn.clone()];
+
+            let balance_before = Balances::balance(&AccountId::from(BOB));
+            let balance_fees_account_before = Balances::balance(&SnowbridgeFeesAccount::get());
+
+            let xcm = VersionedXcm::from(Xcm(vec![
+                WithdrawAsset(assets.clone().into()),
+                InitiateTransfer {
+                    destination: EthereumLocation::get().into(),
+                    remote_fees: Some(AssetTransferFilter::ReserveDeposit(
+                        fee_asset.clone().into(),
+                    )),
+                    preserve_origin: true,
+                    assets: BoundedVec::truncate_from(vec![AssetTransferFilter::ReserveWithdraw(
+                        Definite(eth_asset.clone().into()),
+                    )]),
+                    remote_xcm: Xcm(vec![DepositAsset {
+                        assets: Wild(AllCounted(1)),
+                        beneficiary: beneficiary_location,
+                    }]),
+                },
+            ]));
+
+            assert_ok!(XcmPallet::execute(
+                RuntimeOrigin::signed(AccountId::from(BOB)),
+                Box::new(xcm),
+                Weight::from(16_000_000_000),
+            ));
+
+            // Correct amount has been sent
+            assert_eq!(
+                ForeignAssets::balance(asset_id, AccountId::from(BOB)),
+                amount_to_transfer + 9
+            );
+
+            // Check some fees have been payed. ideally this covers fee_amount plus weight exec
+            let balance_after = Balances::balance(&AccountId::from(BOB));
+            assert!(balance_before - balance_after > fee_amount);
+
+            let balance_fees_account_after = Balances::balance(&SnowbridgeFeesAccount::get());
+            assert_eq!(
+                balance_fees_account_after - balance_fees_account_before,
+                fee_amount
+            );
+
+            assert_eq!(
+                filter_events!(RuntimeEvent::EthereumOutboundQueueV2(
+                    snowbridge_pallet_outbound_queue_v2::Event::MessageQueued { .. },
+                ))
+                .count(),
+                1,
+                "MessageQueued event should be emitted!"
+            );
+        })
+}
+
+#[test]
+fn sending_eth_native_withdrawing_non_sufficient_amount_fee_does_not_work() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (EthereumSovereignAccount::get(), 100_000 * UNIT),
+            (SnowbridgeFeesAccount::get(), 100_000 * UNIT),
+            (AccountId::from(ALICE), 100_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            sp_tracing::try_init_simple();
+            // Setup bridge and token
+            let channel_id: ChannelId = ChannelId::new(hex!(
+                "00000000000000000000006e61746976655f746f6b656e5f7472616e73666572"
+            ));
+            let agent_id = AgentId::from_low_u64_be(10);
+            let para_id: ParaId = 2000u32.into();
+            let amount_to_transfer = 10_000u128;
+
+            assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+                root_origin(),
+                channel_id,
+                agent_id,
+                para_id
+            ));
+
+            // Define a mock ERC20 token address
+            let token_address = H160(hex!("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"));
+
+            let erc20_asset_location = Location {
+                parents: 1,
+                interior: X2([
+                    GlobalConsensus(EthereumNetwork::get()),
+                    AccountKey20 {
+                        network: Some(EthereumNetwork::get()),
+                        key: token_address.into(),
+                    },
+                ]
+                .into()),
+            };
+
+            let asset_id = 42u16;
+
+            assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+                root_origin(),
+                erc20_asset_location.clone(), // Use the ERC20 location
+                asset_id,
+                AccountId::from(ALICE),
+                true,
+                1
+            ));
+
+            // Give tokens to user as if tokens were bridged before + extra to check the correct
+            // amount is sent
+            ForeignAssets::mint_into(asset_id, &AccountId::from(BOB), amount_to_transfer + 10)
+                .expect("to mint amount");
+
+            // User tries to send tokens
+            let beneficiary_address = H160(hex!("0123456789abcdef0123456789abcdef01234567"));
+
+            // Beneficiary location must be represented using destination's point of view.
+            let beneficiary_location = Location {
+                parents: 0,
+                interior: X1([AccountKey20 {
+                    network: Some(EthereumNetwork::get()),
+                    key: beneficiary_address.into(),
+                }]
+                .into()),
+            };
+
+            let eth_asset = AssetId(erc20_asset_location.clone())
+                .into_asset(Fungibility::Fungible(amount_to_transfer));
+
+            // We withdraw less thant what is allowed
+            let fee_amount_withdrawn = 1u128;
+
+            let fee_asset_withdrawn = AssetId(crate::xcm_config::TokenLocation::get().clone())
+                .into_asset(Fungibility::Fungible(fee_amount_withdrawn));
+
+            let fee_amount = 1_000_000_000u128;
+
+            // Instead of the proper asset, we put another one here. for instance, the eth one
+            // only paying in tanssi is allowed
+            let fee_asset = AssetId(crate::xcm_config::TokenLocation::get().clone())
+                .into_asset(Fungibility::Fungible(fee_amount));
+
+            let assets = vec![fee_asset_withdrawn.clone(), eth_asset.clone()];
+
+            let xcm = VersionedXcm::from(Xcm(vec![
+                WithdrawAsset(assets.clone().into()),
+                InitiateTransfer {
+                    destination: EthereumLocation::get().into(),
+                    remote_fees: Some(AssetTransferFilter::ReserveDeposit(
+                        fee_asset.clone().into(),
+                    )),
+                    preserve_origin: true,
+                    assets: BoundedVec::truncate_from(vec![AssetTransferFilter::ReserveWithdraw(
+                        Definite(eth_asset.clone().into()),
+                    )]),
+                    remote_xcm: Xcm(vec![DepositAsset {
+                        assets: Wild(AllCounted(1)),
+                        beneficiary: beneficiary_location,
+                    }]),
+                },
+            ]));
+
+            assert_err_ignore_postinfo!(
+                XcmPallet::execute(
+                    RuntimeOrigin::signed(AccountId::from(BOB)),
+                    Box::new(xcm),
+                    Weight::from(16_000_000_000),
+                ),
+                pallet_xcm::Error::<Runtime>::LocalExecutionIncomplete
             );
         })
 }
