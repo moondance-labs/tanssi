@@ -55,7 +55,7 @@ describeSuite({
                 }
                 log(`Current runtime spec version: ${rtBefore}`);
                 log("Runtime not upgraded, proceeding with test");
-                log(`Current runtime hash: ${rtHex.slice(0, 10)}...${rtHex.slice(-10)}`);
+                log(`Current runtime bytes: ${rtHex.slice(0, 10)}...${rtHex.slice(-10)}`);
                 log(`New runtime bytes: ${codeString.slice(0, 10)}...${codeString.slice(-10)}`);
 
                 await context.upgradeRuntime({ from: alice_or_alith });
@@ -83,20 +83,20 @@ describeSuite({
 
                 /// It might happen that by accident we hit a session change
                 /// A block in which a session change occurs cannot hold any tx
-                /// Chopsticks does not have the notion of tx pool either, so we need to retry
-                /// Therefore we just retry at most MAX_BALANCE_TRANSFER_TRIES
-                const MAX_BALANCE_TRANSFER_TRIES = 5;
-                while (tries < MAX_BALANCE_TRANSFER_TRIES) {
-                    const txHash = await paraApi.tx.balances
-                        .transferAllowDeath(randomAccount.address, 1_000_000_000)
-                        .signAndSend(alice_or_alith);
-                    await context.waitBlock(1);
-
+                /// But the txpool is smart and it will keep the transaction until it can be included.
+                /// So wait for MAX_BALANCE_TRANSFER_WAIT_BLOCKS
+                const txHash = await paraApi.tx.balances
+                    .transferAllowDeath(randomAccount.address, 1_000_000_000)
+                    .signAndSend(alice_or_alith);
+                await context.waitBlock(1);
+                const MAX_BALANCE_TRANSFER_WAIT_BLOCKS = 5;
+                while (tries < MAX_BALANCE_TRANSFER_WAIT_BLOCKS) {
                     const block = await paraApi.rpc.chain.getBlock();
                     const includedTxHashes = block.block.extrinsics.map((x) => x.hash.toString());
                     if (includedTxHashes.includes(txHash.toString())) {
                         break;
                     }
+                    await context.waitBlock(1);
                     tries++;
                 }
 

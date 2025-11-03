@@ -29,11 +29,12 @@ use {
     cumulus_client_parachain_inherent::ParachainInherentData,
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
+    fc_mapping_sync::{kv::MappingSyncWorker, SyncStrategy},
     fc_rpc::{
         EthApiServer, EthFilterApiServer, EthPubSubApiServer, EthTask, TxPool, TxPoolApiServer,
     },
     fc_storage::StorageOverride,
-    fp_rpc::EthereumRuntimeRPCApi,
+    fp_rpc::{EthereumRuntimeRPCApi, NoTransactionConverter},
     frame_support::CloneNoBound,
     futures::StreamExt,
     jsonrpsee::RpcModule,
@@ -175,16 +176,7 @@ where
     // TODO: are we supporting signing?
     let signers = Vec::new();
 
-    enum Never {}
-    impl<T> fp_rpc::ConvertTransaction<T> for Never {
-        fn convert_transaction(&self, _transaction: pallet_ethereum::Transaction) -> T {
-            // The Never type is not instantiable, but this method requires the type to be
-            // instantiated to be called (`&self` parameter), so if the code compiles we have the
-            // guarantee that this function will never be called.
-            unreachable!()
-        }
-    }
-    let convert_transaction: Option<Never> = None;
+    let convert_transaction: Option<NoTransactionConverter> = None;
     let authorities = vec![tc_consensus::get_aura_id_from_seed("alice")];
     let authorities_for_cdp = authorities.clone();
 
@@ -223,6 +215,8 @@ where
                 relay_chain_state,
                 downward_messages: Default::default(),
                 horizontal_messages: Default::default(),
+                relay_parent_descendants: Default::default(),
+                collator_peer_id: Default::default(),
             };
             Ok((
                 timestamp,
@@ -346,7 +340,6 @@ pub struct SpawnTasksParams<'a, B: BlockT, C, BE> {
     >,
 }
 
-use fc_mapping_sync::{kv::MappingSyncWorker, SyncStrategy};
 /// Spawn the tasks that are required to run Moonbeam.
 pub fn spawn_essential_tasks<B, C, BE>(params: SpawnTasksParams<B, C, BE>)
 where

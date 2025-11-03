@@ -20,6 +20,7 @@ import type { FrameSystemEventRecord } from "@polkadot/types/lookup";
 import Bottleneck from "bottleneck";
 import type { GenericExtrinsic } from "@polkadot/types/extrinsic/Extrinsic";
 import { isDancebox, isLightRuntime } from "./runtime.ts";
+import type { AddressOrPair } from "@polkadot/api-base/types/submittable";
 
 export async function jumpSessions(context: DevModeContext, count: number): Promise<string | null> {
     const session = (await context.polkadotJs().query.session.currentIndex()).addn(count.valueOf()).toNumber();
@@ -311,11 +312,15 @@ export function filterRewardFromContainer(events: EventRecord[], feePayer: strin
 // @param account - The account (keypair or address) used to sign the transaction.
 // @param timeout - The timeout in milliseconds, or null for no timeout. Defaults to 5 minutes.
 // @returns A Promise resolving with the transaction hash, block hash, and the full status object.
-export async function signAndSendAndInclude(tx, account, timeout: number | null = 3 * 60 * 1000) {
+export async function signAndSendAndInclude(
+    tx: SubmittableExtrinsic<"promise">,
+    account: AddressOrPair,
+    timeout: number | null = 3 * 60 * 1000
+) {
     const callerStack = new Error().stack;
 
     // Inner function that doesn't handle timeout
-    const signAndSendAndIncludeInner = (tx, account) => {
+    const signAndSendAndIncludeInner = (tx: SubmittableExtrinsic<"promise">, account: AddressOrPair) => {
         return new Promise((resolve, reject) => {
             tx.signAndSend(account, (result) => {
                 const { status, txHash } = result;
