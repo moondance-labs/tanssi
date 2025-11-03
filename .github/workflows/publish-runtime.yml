@@ -120,7 +120,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           registry: index.docker.io
       - name: Download original scripts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: original-scripts
           path: original-scripts
@@ -189,12 +189,12 @@ jobs:
         with:
           node-version: 22.x  
       - name: Download Original Tools
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: original-tools
           path: original-tools 
       - name: Download runtime-info
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           pattern: runtime-info-*
           merge-multiple: true
@@ -241,7 +241,7 @@ jobs:
           ref: ${{ github.event.inputs.to }}
           fetch-depth: 0
       - name: Download ${{ matrix.chain }} runtime
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           pattern: runtime-info-*
           merge-multiple: true
