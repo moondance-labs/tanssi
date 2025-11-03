@@ -53,11 +53,12 @@ fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
     let mut ethereum_sovereign_container_balance_before = 0;
     let mut receiver_native_container_balance_before = 0;
 
-    let ethereum_sovereign_account_address =
+    let ethereum_sovereign_account_address = FrontierTemplate::execute_with(|| {
         container_chain_template_frontier_runtime::xcm_config::LocationToAccountId::convert_location(
             &Location::new(2, container_chain_template_frontier_runtime::EthereumNetwork::get()),
         )
-            .unwrap();
+            .unwrap()
+    });
 
     let transfer_amount = 100_000_000;
 
@@ -159,14 +160,15 @@ fn check_native_eth_token_to_simple_container_chain_transfer_works() {
     let mut ethereum_sovereign_container_balance_before = 0;
     let mut receiver_native_container_balance_before = 0;
 
-    let ethereum_sovereign_account_address =
+    let ethereum_sovereign_account_address = SimpleTemplate::execute_with(|| {
         container_chain_template_simple_runtime::xcm_config::LocationToAccountId::convert_location(
             &Location::new(
                 2,
                 container_chain_template_simple_runtime::EthereumNetwork::get(),
             ),
         )
-        .unwrap();
+        .unwrap()
+    });
 
     let transfer_amount = 100_000_000;
 
