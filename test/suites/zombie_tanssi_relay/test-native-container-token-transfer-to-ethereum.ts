@@ -83,7 +83,9 @@ describeSuite({
                 const initialBalance = 100_000_000_000_000n;
                 const txHash = await relayChainPolkadotJs.tx.utility
                     .batch([
-                        relayChainPolkadotJs.tx.sudo.sudo(relayChainPolkadotJs.tx.balances.forceSetBalance(convertedAddress, initialBalance)),
+                        relayChainPolkadotJs.tx.sudo.sudo(
+                            relayChainPolkadotJs.tx.balances.forceSetBalance(convertedAddress, initialBalance)
+                        ),
                         relayChainPolkadotJs.tx.sudo.sudo(
                             relayChainPolkadotJs.tx.ethereumTokenTransfers.setTokenTransferChannel(
                                 newChannelId,
