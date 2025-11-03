@@ -160,7 +160,6 @@ parameter_types! {
 }
 
 impl pallet_external_validators_rewards::Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     type EraIndexProvider = Mock;
     type HistoryDepth = ConstU32<10>;
     type BackingPoints = ConstU32<20>;

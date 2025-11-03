@@ -196,7 +196,7 @@ describeSuite({
 
                 const errorEvents = await retrieveDispatchErrors(context.polkadotJs());
                 expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
-                expect(errorEvents[0]).to.be.eq("LocalExecutionIncomplete");
+                expect(errorEvents[0]).to.be.eq("LocalExecutionIncompleteWithError");
             },
         });
 
@@ -257,7 +257,7 @@ describeSuite({
 
                 const errorEvents = await retrieveSudoDispatchErrors(context.polkadotJs());
                 expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
-                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncomplete");
+                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncompleteWithError");
             },
         });
 
@@ -317,7 +317,7 @@ describeSuite({
                 await context.createBlock(polkadotJs.tx.sudo.sudo(executeMessageTx).signAsync(alice));
                 const errorEvents = await retrieveSudoDispatchErrors(context.polkadotJs());
                 expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
-                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncomplete");
+                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncompleteWithError");
             },
         });
 
@@ -379,7 +379,7 @@ describeSuite({
                 await context.createBlock(polkadotJs.tx.sudo.sudo(executeMessageTx).signAsync(alice));
                 const errorEvents = await retrieveSudoDispatchErrors(context.polkadotJs());
                 expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
-                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncomplete");
+                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncompleteWithError");
             },
         });
 
@@ -440,7 +440,7 @@ describeSuite({
 
                 const errorEvents = await retrieveSudoDispatchErrors(context.polkadotJs());
                 expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
-                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncomplete");
+                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncompleteWithError");
             },
         });
 
@@ -497,7 +497,7 @@ describeSuite({
 
                 const errorEvents = await retrieveSudoDispatchErrors(context.polkadotJs());
                 expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
-                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncomplete");
+                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncompleteWithError");
             },
         });
 
@@ -583,7 +583,7 @@ describeSuite({
 
                 const errorEvents = await retrieveSudoDispatchErrors(context.polkadotJs());
                 expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
-                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncomplete");
+                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncompleteWithError");
             },
         });
 
@@ -700,7 +700,7 @@ describeSuite({
 
                 const errorEvents = await retrieveBatchDispatchErrors(context.polkadotJs());
                 expect(errorEvents.length, "Amount of retrieveBatchDispatchErrorsf error events should be 1").toBe(1);
-                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncomplete");
+                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncompleteWithError");
             },
         });
 
@@ -789,7 +789,7 @@ describeSuite({
 
                 const errorEvents = await retrieveSudoDispatchErrors(context.polkadotJs());
                 expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
-                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncomplete");
+                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncompleteWithError");
             },
         });
     },
