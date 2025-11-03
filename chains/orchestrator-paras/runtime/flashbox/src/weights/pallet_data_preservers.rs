@@ -208,4 +208,20 @@ impl<T: frame_system::Config> pallet_data_preservers::WeightInfo for SubstrateWe
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
+
+	/// Storage: `DataPreservers::Profiles` (r:1 w:1)
+	/// Proof: `DataPreservers::Profiles` (`max_values`: None, `max_size`: Some(1144), added: 3619, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `Balances::Holds` (r:1 w:1)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(121), added: 2596, mode: `MaxEncodedLen`)
+	fn poke_deposit() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1299`
+		//  Estimated: `4609`
+		// Minimum execution time: 47_000_000 picoseconds.
+		Weight::from_parts(47_000_000, 4609)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
 }

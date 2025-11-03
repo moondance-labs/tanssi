@@ -17,10 +17,7 @@
 use {
     crate::*,
     alloc::boxed::Box,
-    alloy_core::{
-        primitives::{Bytes, FixedBytes},
-        sol_types::SolValue,
-    },
+    alloy_core::sol_types::SolValue,
     core::marker::PhantomData,
     frame_support::{
         ensure,
@@ -219,14 +216,14 @@ where
             .map(|command| CommandWrapper {
                 kind: command.kind,
                 gas: command.gas,
-                payload: Bytes::from(command.payload),
+                payload: command.payload.into(),
             })
             .collect();
 
         let committed_message = OutboundMessageWrapper {
-            origin: FixedBytes::from(origin.as_fixed_bytes()),
+            origin: origin.as_fixed_bytes().into(),
             nonce,
-            topic: FixedBytes::from(topic.as_fixed_bytes()),
+            topic: topic.as_fixed_bytes().into(),
             commands: abi_commands,
         };
 

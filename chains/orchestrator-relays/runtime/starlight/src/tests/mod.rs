@@ -25,8 +25,10 @@ mod author_noting_tests;
 mod beefy;
 mod collator_assignment_tests;
 mod common;
+mod container_token_transfers;
 mod core_scheduling_tests;
 mod ethereum_token_transfers;
+mod external_validator_rewards_tests;
 mod external_validators_tests;
 mod inactivity_tracking;
 mod inbound_queue_tests;
@@ -43,6 +45,16 @@ mod slashes;
 mod staking;
 mod sudo;
 mod test_disabled_extrinsics;
+
+#[macro_export]
+macro_rules! filter_events {
+    ($pat:pat) => {
+        System::events().iter().filter(|r| match r.event {
+            $pat => true,
+            _ => false,
+        })
+    };
+}
 
 #[test]
 fn check_whitelist() {

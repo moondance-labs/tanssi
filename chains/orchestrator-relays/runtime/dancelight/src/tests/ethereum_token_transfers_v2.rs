@@ -19,15 +19,16 @@
 use {
     crate::{
         bridge_to_ethereum_config::EthereumGatewayAddress, filter_events, tests::common::*,
-        Balances, EthereumInboundQueue, EthereumLocation, EthereumSovereignAccount, EthereumSystem,
-        EthereumTokenTransfers, ForeignAssets, ForeignAssetsCreator, RuntimeEvent,
-        SnowbridgeFeesAccount, TokenLocationReanchored, XcmPallet, xcm_config::MinV2Reward
+        xcm_config::MinV2Reward, Balances, EthereumInboundQueue, EthereumLocation,
+        EthereumSovereignAccount, EthereumSystem, EthereumTokenTransfers, ForeignAssets,
+        ForeignAssetsCreator, RuntimeEvent, SnowbridgeFeesAccount, TokenLocationReanchored,
+        XcmPallet,
     },
     alloc::vec,
     alloy_sol_types::SolEvent,
     dancelight_runtime_constants::snowbridge::EthereumNetwork,
     frame_support::{
-        assert_err, assert_noop, assert_ok, assert_err_ignore_postinfo,
+        assert_err, assert_err_ignore_postinfo, assert_noop, assert_ok,
         traits::{fungible::Inspect, fungibles::Mutate},
         BoundedVec,
     },
@@ -1909,8 +1910,8 @@ fn send_eth_native_does_not_work_if_reward_diff_asset() {
 
             // Instead of the proper asset, we put another one here. for instance, the eth one
             // only paying in tanssi is allowed
-            let fee_asset = AssetId(erc20_asset_location.clone())
-                .into_asset(Fungibility::Fungible(fee_amount));
+            let fee_asset =
+                AssetId(erc20_asset_location.clone()).into_asset(Fungibility::Fungible(fee_amount));
 
             let assets = vec![fee_asset_withdrawn.clone(), eth_asset.clone()];
 
@@ -2020,8 +2021,8 @@ fn sending_eth_native_withdrawing_non_sufficient_amount_eth_works_but_only_sends
 
             // We withdraw less than what is allowed to be transferred
             // We only withdraw 1 unit instead of 10_000
-            let eth_asset_withdrawn = AssetId(erc20_asset_location.clone())
-                .into_asset(Fungibility::Fungible(1));
+            let eth_asset_withdrawn =
+                AssetId(erc20_asset_location.clone()).into_asset(Fungibility::Fungible(1));
 
             // We are withdrawing more in the fee than what we need
             let fee_amount_withdrawn = 1_000_000_000_000u128;
@@ -2041,10 +2042,9 @@ fn sending_eth_native_withdrawing_non_sufficient_amount_eth_works_but_only_sends
             // 1 unit ETH
             let assets = vec![fee_asset_withdrawn.clone(), eth_asset_withdrawn.clone()];
 
-
             let balance_before = Balances::balance(&AccountId::from(BOB));
             let balance_fees_account_before = Balances::balance(&SnowbridgeFeesAccount::get());
-            
+
             let xcm = VersionedXcm::from(Xcm(vec![
                 WithdrawAsset(assets.clone().into()),
                 InitiateTransfer {
@@ -2063,7 +2063,6 @@ fn sending_eth_native_withdrawing_non_sufficient_amount_eth_works_but_only_sends
                 },
             ]));
 
-
             assert_ok!(XcmPallet::execute(
                 RuntimeOrigin::signed(AccountId::from(BOB)),
                 Box::new(xcm),
@@ -2071,7 +2070,10 @@ fn sending_eth_native_withdrawing_non_sufficient_amount_eth_works_but_only_sends
             ));
 
             // Correct amount has been sent
-            assert_eq!(ForeignAssets::balance(asset_id, AccountId::from(BOB)), amount_to_transfer + 9);
+            assert_eq!(
+                ForeignAssets::balance(asset_id, AccountId::from(BOB)),
+                amount_to_transfer + 9
+            );
 
             // Check some fees have been payed. ideally this covers fee_amount plus weight exec
             let balance_after = Balances::balance(&AccountId::from(BOB));
@@ -2167,7 +2169,7 @@ fn sending_eth_native_withdrawing_non_sufficient_amount_fee_does_not_work() {
 
             let eth_asset = AssetId(erc20_asset_location.clone())
                 .into_asset(Fungibility::Fungible(amount_to_transfer));
-            
+
             // We withdraw less thant what is allowed
             let fee_amount_withdrawn = 1u128;
 

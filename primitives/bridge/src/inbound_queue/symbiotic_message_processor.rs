@@ -22,7 +22,10 @@ use {
     frame_support::pallet_prelude::*,
     parity_scale_codec::DecodeAll,
     snowbridge_core::{Channel, PRIMARY_GOVERNANCE_CHANNEL},
-    snowbridge_inbound_queue_primitives::v1::{Envelope, MessageProcessor},
+    snowbridge_inbound_queue_primitives::{
+        v1::{Envelope, MessageProcessor},
+        v2::MessageProcessorError,
+    },
     sp_runtime::DispatchError,
 };
 
@@ -130,18 +133,23 @@ where
     T: pallet_external_validators::Config,
 {
     fn can_process_message(_who: &AccountId, message: &v2::Message) -> bool {
-        match &message.xcm {
-            v2::message::Payload::Raw(data) => Self::can_process_message(data),
+        match &message.payload {
+            v2::message::Payload::Raw(data) => Self::can_process_message(&data),
             v2::message::Payload::CreateAsset { .. } => false,
         }
     }
 
-    fn process_message(_who: AccountId, message: v2::Message) -> Result<[u8; 32], DispatchError> {
-        match &message.xcm {
-            v2::message::Payload::Raw(data) => Self::process_message(None, data).map(|_| [0; 32]),
-            v2::message::Payload::CreateAsset { .. } => {
-                Err(DispatchError::Other("Create asset is not supported"))
-            }
+    fn process_message(
+        _who: AccountId,
+        message: v2::Message,
+    ) -> Result<[u8; 32], MessageProcessorError> {
+        match &message.payload {
+            v2::message::Payload::Raw(data) => Self::process_message(None, &data)
+                .map(|_| [0; 32])
+                .map_err(|e| MessageProcessorError::ProcessMessage(e)),
+            v2::message::Payload::CreateAsset { .. } => Err(MessageProcessorError::ProcessMessage(
+                DispatchError::Other("Create asset is not supported"),
+            )),
         }
     }
 }
