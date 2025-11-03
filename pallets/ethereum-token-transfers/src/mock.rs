@@ -254,10 +254,10 @@ impl pallet_ethereum_token_transfers::TipHandler<pallet_ethereum_token_transfers
         _message_id: MessageId,
         amount: u128,
     ) -> DispatchResult {
-        let sender =
-            pallet_ethereum_token_transfers::origins::EnsureEthereumTokenTransfersOrigin::ensure_origin(
-                origin.clone(),
-            )?;
+        let origin = RuntimeOrigin::from(origin);
+        let sender = pallet_ethereum_token_transfers::origins::EnsureEthereumTokenTransfersOrigin::<
+            Test,
+        >::ensure_origin(origin)?;
 
         Balances::transfer(&sender, &BOB, amount.into(), Preservation::Preserve)?;
 
