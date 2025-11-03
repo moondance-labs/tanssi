@@ -19,7 +19,8 @@ async function main() {
     const polkadotVersionMappings: PolkadotVersionMapping = jsonFile;
     const fileContents = await fs.readFile(CONFIG.CARGO_PATH, "utf-8");
     const cargoToml = parse(fileContents) as CargoToml;
-    const stableVersion = findPolkadotStableVersion(cargoToml.workspace.dependencies);
+    //const stableVersion = findPolkadotStableVersion(cargoToml.workspace.dependencies);
+    const stableVersion = "stable2506";
     console.log(`🔎 Found polkadot-sdk version: ${stableVersion}`);
     if (!checkSupportedArch()) {
         // Skip binary download if running on unsupported architecture
