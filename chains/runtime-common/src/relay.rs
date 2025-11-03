@@ -484,7 +484,7 @@ where
         let asset_fee_relay: Asset = (Location::here(), container_fee).into();
 
         // Reanchor the asset fee to the container chain location
-        let container_asset_fee = match asset_fee_relay.clone().reanchored(
+        let relay_asset_fee_container_context = match asset_fee_relay.clone().reanchored(
             &container_location,
             &<T as pallet_xcm::Config>::UniversalLocation::get(),
         ) {
@@ -537,9 +537,9 @@ where
         let inbound_queue_pallet_index = InboundQueuePalletInstance::get();
 
         let remote_xcm = Xcm::<()>(vec![
-            ReserveAssetDeposited(vec![container_asset_fee.clone()].into()),
+            ReserveAssetDeposited(vec![relay_asset_fee_container_context.clone()].into()),
             BuyExecution {
-                fees: container_asset_fee,
+                fees: relay_asset_fee_container_context,
                 weight_limit: Unlimited,
             },
             DescendOrigin(PalletInstance(inbound_queue_pallet_index).into()),
