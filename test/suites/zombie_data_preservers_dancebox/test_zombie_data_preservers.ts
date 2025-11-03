@@ -100,10 +100,12 @@ describeSuite({
                 const logFilePath = `${getTmpZombiePath()}/DataPreserver-2000.log`;
 
                 const profile = {
-                    url: "exemple",
                     paraIds: "AnyParaId",
-                    mode: { rpc: { supportsEthereumRpc: false } },
                     assignmentRequest: "Free",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
+                    nodeType: "Substrate",
+                    additionalInfo: "",
                 };
 
                 profile1 = Number(await paraApi.query.dataPreservers.nextProfileId());
@@ -163,10 +165,12 @@ describeSuite({
                 const logFilePath = `${getTmpZombiePath()}/DataPreserver-2001.log`;
 
                 const profile = {
-                    url: "exemple",
                     paraIds: "AnyParaId",
-                    mode: { rpc: { supportsEthereumRpc: true } },
                     assignmentRequest: "Free",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
+                    nodeType: "Frontier",
+                    additionalInfo: "",
                 };
 
                 profile2 = Number(await paraApi.query.dataPreservers.nextProfileId());
@@ -276,9 +280,7 @@ describeSuite({
             timeout: 180000,
             test: async () => {
                 const newProfile = {
-                    url: "exemple",
                     paraIds: "AnyParaId",
-                    mode: { rpc: { supportsEthereumRpc: true } },
                     assignmentRequest: {
                         StreamPayment: {
                             config: {
@@ -288,6 +290,10 @@ describeSuite({
                             },
                         },
                     },
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
+                    nodeType: "Frontier",
+                    additionalInfo: "",
                 };
 
                 {

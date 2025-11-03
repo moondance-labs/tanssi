@@ -36,7 +36,7 @@ use {
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT, Get},
     std::marker::PhantomData,
-    tc_service_container_chain_rpc_provider::{RpcProviderCmd, RpcProviderMode},
+    tc_service_container_chain_data_preserver::{DataPreserverCmd, DataPreserverMode},
     tc_service_container_chain_spawner::cli::ContainerChainCli,
 };
 
@@ -127,8 +127,8 @@ pub fn run() -> Result<()> {
 
     // Match rpc provider subcommand in wrapper
     let subcommand = match &cli.subcommand {
-        Some(Subcommand::RpcProvider(cmd)) => {
-            return rpc_provider_mode(&cli, cmd);
+        Some(Subcommand::DataPreserver(cmd)) => {
+            return data_preserver_mode(&cli, cmd);
         }
         Some(Subcommand::Base(cmd)) => Some(cmd),
         None => None,
@@ -375,7 +375,7 @@ pub fn run() -> Result<()> {
     }
 }
 
-fn rpc_provider_mode(cli: &Cli, cmd: &RpcProviderCmd) -> Result<()> {
+fn data_preserver_mode(cli: &Cli, cmd: &DataPreserverCmd) -> Result<()> {
     let runner = cli.create_runner(&cmd.container_run.normalize())?;
 
     runner.run_node_until_exit(|config| async move {
@@ -407,7 +407,7 @@ fn rpc_provider_mode(cli: &Cli, cmd: &RpcProviderCmd) -> Result<()> {
                 container_chain_template_simple_runtime::RuntimeApi,
             >::new();
 
-        RpcProviderMode {
+        DataPreserverMode {
             config,
             provider_profile_id: cmd.profile_id,
             orchestrator_endpoints: cmd.orchestrator_endpoints.clone(),

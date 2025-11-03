@@ -2249,7 +2249,7 @@ dependencies = [
  "substrate-prometheus-endpoint",
  "tc-consensus",
  "tc-orchestrator-chain-interface-through-rpc",
- "tc-service-container-chain-rpc-provider",
+ "tc-service-container-chain-data-preserver",
  "tc-service-container-chain-spawner",
  "tp-traits",
  "url",
@@ -2333,7 +2333,7 @@ dependencies = [
  "substrate-prometheus-endpoint",
  "tc-consensus",
  "tc-orchestrator-chain-interface-through-rpc",
- "tc-service-container-chain-rpc-provider",
+ "tc-service-container-chain-data-preserver",
  "tc-service-container-chain-spawner",
  "tokio",
  "url",
@@ -19595,7 +19595,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "tc-service-container-chain-rpc-provider"
+name = "tc-service-container-chain-data-preserver"
 version = "0.16.0"
 dependencies = [
  "async-trait",

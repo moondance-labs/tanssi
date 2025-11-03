@@ -37,9 +37,9 @@ use {
     url::Url,
 };
 
-/// Watches for an assignment and provide RPC services for assigned chain.
+/// Watches for an assignment and provide data preservers services for assigned chain.
 #[derive(Clone, Debug, clap::Parser)]
-pub struct RpcProviderCmd {
+pub struct DataPreserverCmd {
     /// Arguments to run a container chain node.
     #[command(flatten)]
     pub container_run: ContainerChainRunCmd,
@@ -65,7 +65,7 @@ pub struct RpcProviderCmd {
     pub extra_args: Vec<String>,
 }
 
-impl RpcProviderCmd {
+impl DataPreserverCmd {
     fn split_extra_args_at_first_dashdash(&self) -> (&[String], &[String]) {
         let index_of_dashdash = self.extra_args.iter().position(|x| *x == "--");
 
@@ -91,7 +91,7 @@ impl RpcProviderCmd {
     }
 }
 
-pub struct RpcProviderMode<PolkaCli, GRB, RuntimeApi, DVC> {
+pub struct DataPreserverMode<PolkaCli, GRB, RuntimeApi, DVC> {
     /// General configuration made from container chain arguments
     pub config: Configuration,
     pub provider_profile_id: u64,
@@ -119,7 +119,7 @@ pub struct RpcProviderMode<PolkaCli, GRB, RuntimeApi, DVC> {
     pub phantom: PhantomData<(RuntimeApi, DVC)>,
 }
 
-impl<PolkaCli, GRB, RuntimeApi, DVC> RpcProviderMode<PolkaCli, GRB, RuntimeApi, DVC>
+impl<PolkaCli, GRB, RuntimeApi, DVC> DataPreserverMode<PolkaCli, GRB, RuntimeApi, DVC>
 where
     DVC: sc_cli::DefaultConfigurationValues,
     PolkaCli: sc_cli::CliConfiguration<DVC> + sc_cli::SubstrateCli,
