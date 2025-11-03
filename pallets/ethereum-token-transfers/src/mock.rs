@@ -19,7 +19,7 @@ use {
     core::cell::RefCell,
     frame_support::{
         parameter_types,
-        traits::{fungible::Mutate, tokens::Preservation, ConstU32, ConstU64},
+        traits::{fungible::Mutate, tokens::Preservation, ConstU32, ConstU64, EnsureOrigin},
     },
     pallet_balances::AccountData,
     parity_scale_codec::{Decode, Encode},
@@ -254,11 +254,10 @@ impl pallet_ethereum_token_transfers::TipHandler<pallet_ethereum_token_transfers
         _message_id: MessageId,
         amount: u128,
     ) -> DispatchResult {
-        let sender = match origin {
-            pallet_ethereum_token_transfers::Origin::<Test>::EthereumTokenTransfers(account) => {
-                account
-            }
-        };
+        let sender =
+            pallet_ethereum_token_transfers::origins::EnsureEthereumTokenTransfersOrigin::ensure_origin(
+                origin.clone(),
+            )?;
 
         Balances::transfer(&sender, &BOB, amount.into(), Preservation::Preserve)?;
 

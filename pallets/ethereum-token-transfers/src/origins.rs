@@ -60,16 +60,16 @@ pub struct ConvertAccountIdTo<AccountId, T, Network>(
     core::marker::PhantomData<(AccountId, T, Network)>,
 );
 
-impl<T1, AccountId, OutcomeType, Network> Morph<T1>
+impl<T, AccountId, OutcomeType, Network> Morph<T>
     for ConvertAccountIdTo<AccountId, OutcomeType, Network>
 where
-    AccountId: From<T1> + Into<[u8; 32]>,
+    AccountId: From<T> + Into<[u8; 32]>,
     OutcomeType: From<xcm::latest::Junction>,
     Network: Get<Option<xcm::latest::NetworkId>>,
 {
     type Outcome = OutcomeType;
 
-    fn morph(account_id: T1) -> OutcomeType {
+    fn morph(account_id: T) -> OutcomeType {
         let account_id_32: AccountId = AccountId::from(account_id);
         xcm::latest::Junction::AccountId32 {
             network: Network::get(),

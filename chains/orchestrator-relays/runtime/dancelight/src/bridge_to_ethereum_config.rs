@@ -23,7 +23,7 @@ use cumulus_primitives_core::Location;
 use frame_support::dispatch::DispatchResult;
 use frame_support::pallet_prelude::{DecodeWithMemTracking, Encode, TypeInfo};
 use frame_support::traits::{
-    fungible::Mutate, tokens::Preservation, EnqueueMessage, QueueFootprint,
+    fungible::Mutate, tokens::Preservation, EnqueueMessage, EnsureOrigin, QueueFootprint,
 };
 use frame_support::BoundedSlice;
 use frame_system::EnsureRoot;
@@ -36,7 +36,6 @@ use parity_scale_codec::{Decode, MaxEncodedLen};
 use snowbridge_core::reward::{AddTip, AddTipError, MessageId};
 use snowbridge_outbound_queue_primitives::v2::{Message, SendMessage};
 use snowbridge_outbound_queue_primitives::SendError;
-use sp_runtime::traits::BadOrigin;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
 use {
@@ -309,12 +308,9 @@ impl TipHandler<crate::RuntimeOrigin> for EthereumTipForwarder<Runtime> {
         message_id: MessageId,
         amount: u128,
     ) -> DispatchResult {
-        let sender = match origin.clone().into() {
-            Ok(pallet_ethereum_token_transfers::Origin::<Runtime>::EthereumTokenTransfers(
-                account,
-            )) => account,
-            _ => return Err(BadOrigin.into()),
-        };
+        let sender = pallet_ethereum_token_transfers::origins::EnsureEthereumTokenTransfersOrigin::<
+            Runtime,
+        >::ensure_origin(origin.clone())?;
 
         Balances::transfer(
             &sender,
