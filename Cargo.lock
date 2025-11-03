@@ -2396,6 +2396,7 @@ dependencies = [
  "pallet-evm-precompile-modexp",
  "pallet-evm-precompile-proxy",
  "pallet-evm-precompile-sha3fips",
+ "pallet-evm-precompile-sha3fips-benchmarking",
  "pallet-evm-precompile-simple",
  "pallet-evm-precompile-xcm",
  "pallet-evm-precompile-xcm-utils",
@@ -6814,7 +6815,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.5.10",
+ "socket2 0.4.10",
  "tokio",
  "tower-service",
  "tracing",
@@ -10415,6 +10416,18 @@ dependencies = [
  "fp-evm",
  "frame-support",
  "pallet-evm",
+ "tiny-keccak",
+]
+
+[[package]]
+name = "pallet-evm-precompile-sha3fips-benchmarking"
+version = "6.0.0-dev"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
+dependencies = [
+ "frame-benchmarking",
+ "frame-system",
+ "pallet-evm-precompile-sha3fips",
+ "sp-runtime",
  "tiny-keccak",
 ]
 
