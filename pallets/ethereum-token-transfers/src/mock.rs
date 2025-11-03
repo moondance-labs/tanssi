@@ -204,7 +204,6 @@ impl MaybeEquivalence<TokenId, Location> for MockTokenIdConvert {
 }
 
 impl pallet_ethereum_token_transfers::Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type OutboundQueue = MockOkOutboundQueue;
     type EthereumSystemHandler = EthereumSystemHandler;

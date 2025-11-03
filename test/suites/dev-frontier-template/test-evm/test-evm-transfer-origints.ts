@@ -25,6 +25,7 @@ describeSuite({
                         1_000_000_000n,
                         "0",
                         null,
+                        [],
                         []
                     );
                 expect(await context.createBlock([await tx.signAsync(alith)]).catch((e) => e.toString())).to.equal(
@@ -56,6 +57,7 @@ describeSuite({
                                     100_000_000_000_000n,
                                     "0",
                                     null,
+                                    [],
                                     []
                                 )
                         )

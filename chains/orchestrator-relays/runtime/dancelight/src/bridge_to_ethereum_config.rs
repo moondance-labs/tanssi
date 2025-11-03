@@ -19,7 +19,7 @@
 #[cfg(all(not(test), not(feature = "testing-helpers")))]
 use crate::EthereumBeaconClient;
 use frame_support::pallet_prelude::{DecodeWithMemTracking, Encode, TypeInfo};
-use frame_support::traits::{EnqueueMessage, QueueFootprint};
+use frame_support::traits::EnqueueMessage;
 use frame_support::BoundedSlice;
 use frame_system::EnsureRootWithSuccess;
 use parity_scale_codec::{Decode, MaxEncodedLen};
@@ -51,7 +51,11 @@ use {
     frame_support::{traits::PalletInfoAccess, weights::ConstantMultiplier},
     pallet_xcm::EnsureXcm,
     snowbridge_beacon_primitives::ForkVersions,
-    snowbridge_core::{gwei, meth, PricingParameters, Rewards},
+    snowbridge_core::{
+        gwei, meth,
+        reward::{AddTip, AddTipError},
+        PricingParameters, Rewards,
+    },
     snowbridge_pallet_outbound_queue::OnNewCommitment,
     sp_core::{ConstU32, ConstU8, H160, H256},
     tanssi_runtime_common::relay::{EthTokensLocalProcessor, RewardThroughFeesAccount},
@@ -82,9 +86,7 @@ impl OnNewCommitment for CommitmentRecorder {
     }
 }
 
-impl pallet_outbound_message_commitment_recorder::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-}
+impl pallet_outbound_message_commitment_recorder::Config for Runtime {}
 
 // https://github.com/paritytech/polkadot-sdk/blob/2ae79be8e028a995b850621ee55f46c041eceefe/cumulus/parachains/runtimes/bridge-hubs/bridge-hub-westend/src/bridge_to_ethereum_config.rs#L105
 impl snowbridge_pallet_outbound_queue::Config for Runtime {
@@ -143,10 +145,6 @@ impl EnqueueMessage<bridge_hub_common::AggregateMessageOrigin> for DoNothingMess
     }
 
     fn sweep_queue(_origin: bridge_hub_common::AggregateMessageOrigin) {}
-
-    fn footprint(_origin: bridge_hub_common::AggregateMessageOrigin) -> QueueFootprint {
-        QueueFootprint::default()
-    }
 }
 
 #[derive(
@@ -253,8 +251,8 @@ impl snowbridge_pallet_system::Config for Runtime {
 }
 
 // Added this since we do not have outbound queue integrated yet
-pub struct DoNothingOutboundQueue;
-impl SendMessage for DoNothingOutboundQueue {
+pub struct DoNothingQueue;
+impl SendMessage for DoNothingQueue {
     type Ticket = ();
 
     fn validate(_: &Message) -> Result<Self::Ticket, SendError> {
@@ -266,16 +264,22 @@ impl SendMessage for DoNothingOutboundQueue {
     }
 }
 
+impl AddTip for DoNothingQueue {
+    fn add_tip(_nonce: u64, _amount: u128) -> Result<(), AddTipError> {
+        Ok(())
+    }
+}
+
 impl snowbridge_pallet_system_v2::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type OutboundQueue = DoNothingOutboundQueue;
+    type OutboundQueue = DoNothingQueue;
+    type InboundQueue = DoNothingQueue;
     type FrontendOrigin = EnsureRootWithSuccess<AccountId, EthereumLocation>;
     type GovernanceOrigin = EnsureRootWithSuccess<AccountId, EthereumLocation>;
     type WeightInfo = ();
 }
 
 impl pallet_ethereum_token_transfers::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type OutboundQueue = EthereumOutboundQueue;
     type EthereumSystemHandler = EthereumSystemHandler<Runtime>;
@@ -392,12 +396,16 @@ parameter_types! {
     pub InboundQueuePalletInstance: u8 = <EthereumInboundQueue as PalletInfoAccess>::index() as u8;
 }
 
+pub type AssetTransactor = <xcm_config::XcmConfig as xcm_executor::Config>::AssetTransactor;
+
 pub type EthTokensProcessor = EthTokensLocalProcessor<
     Runtime,
     xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
     <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+    AssetTransactor,
     dancelight_runtime_constants::snowbridge::EthereumLocation,
     dancelight_runtime_constants::snowbridge::EthereumNetwork,
+    frame_support::traits::ConstBool<true>,
 >;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
@@ -433,7 +441,7 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     // TODO: Revisit this when we enable xcmp messages
     type MaxMessageSize = ConstU32<2048>;
-    type AssetTransactor = <xcm_config::XcmConfig as xcm_executor::Config>::AssetTransactor;
+    type AssetTransactor = AssetTransactor;
     #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (
         SymbioticMessageProcessor<Self>,

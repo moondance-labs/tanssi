@@ -1426,9 +1426,17 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             CannotUpgradeCode: AugmentedError<ApiType>;
             /**
+             * Invalid block number.
+             **/
+            InvalidBlockNumber: AugmentedError<ApiType>;
+            /**
              * Invalid validation code size.
              **/
             InvalidCode: AugmentedError<ApiType>;
+            /**
+             * No upgrade authorized.
+             **/
+            NothingAuthorized: AugmentedError<ApiType>;
             /**
              * Para is not registered in our system.
              **/
@@ -1457,6 +1465,10 @@ declare module "@polkadot/api-base/types/errors" {
              * Claimed validator index is out of bounds.
              **/
             PvfCheckValidatorIndexOutOfBounds: AugmentedError<ApiType>;
+            /**
+             * The submitted code is not authorized.
+             **/
+            Unauthorized: AugmentedError<ApiType>;
             /**
              * Generic error
              **/
@@ -2132,6 +2144,11 @@ declare module "@polkadot/api-base/types/errors" {
              * Local XCM execution incomplete.
              **/
             LocalExecutionIncomplete: AugmentedError<ApiType>;
+            /**
+             * Local XCM execution incomplete with the actual XCM error and the index of the
+             * instruction that caused the error.
+             **/
+            LocalExecutionIncompleteWithError: AugmentedError<ApiType>;
             /**
              * A remote lock with the corresponding data could not be found.
              **/

@@ -30,6 +30,7 @@ mod core_scheduling_tests;
 mod ethereum_client;
 mod ethereum_system_v2;
 mod ethereum_token_transfers;
+mod external_validator_rewards_tests;
 mod external_validators_tests;
 mod inactivity_tracking;
 mod inbound_queue_tests;
