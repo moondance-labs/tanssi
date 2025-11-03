@@ -29,9 +29,10 @@ use {
     },
     xcm::{
         latest::prelude::{Junctions::*, *},
-        VersionedLocation,
+        VersionedAssetId, VersionedLocation, VersionedXcm,
     },
     xcm_emulator::{assert_expected_events, bx, Chain, Parachain, TestExt},
+    xcm_executor::traits::TransferType,
 };
 
 #[allow(unused_assignments)]
@@ -50,21 +51,19 @@ fn receive_tokens_from_the_relay_to_simple_template() {
     }
     .into();
 
-    let simple_template_beneficiary: VersionedLocation = Location {
+    let simple_template_beneficiary = Location {
         parents: 0,
         interior: X1([AccountId32 {
             network: None,
             id: SimpleTemplateReceiver::get().into(),
         }]
         .into()),
-    }
-    .into();
+    };
 
     let amount_to_send: dancebox_runtime::Balance =
         westend_runtime::ExistentialDeposit::get() * 1000;
 
     let assets: Assets = (Here, amount_to_send).into();
-    let fee_asset_item = 0;
     let westend_token_asset_id = 1u16;
 
     // Register the asset first
@@ -93,13 +92,20 @@ fn receive_tokens_from_the_relay_to_simple_template() {
 
     // Send XCM message from Westend
     Westend::execute_with(|| {
+        let fees_id: VersionedAssetId = AssetId(Location::here()).into();
+        let xcm_on_dest = Xcm::<()>(vec![DepositAsset {
+            assets: Wild(AllCounted(assets.len() as u32)),
+            beneficiary: simple_template_beneficiary,
+        }]);
         assert_ok!(
-            <Westend as WestendRelayPallet>::XcmPallet::limited_reserve_transfer_assets(
+            <Westend as WestendRelayPallet>::XcmPallet::transfer_assets_using_type_and_then(
                 alice_origin,
                 bx!(simple_template_dest),
-                bx!(simple_template_beneficiary),
                 bx!(assets.into()),
-                fee_asset_item,
+                bx!(TransferType::LocalReserve),
+                bx!(fees_id),
+                bx!(TransferType::LocalReserve),
+                bx!(VersionedXcm::V5(xcm_on_dest)),
                 WeightLimit::Unlimited,
             )
         );
@@ -156,21 +162,19 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned_simple_template()
     }
     .into();
 
-    let simple_template_beneficiary: VersionedLocation = Location {
+    let simple_template_beneficiary = Location {
         parents: 0,
         interior: X1([AccountId32 {
             network: None,
             id: SimpleTemplateReceiver::get().into(),
         }]
         .into()),
-    }
-    .into();
+    };
 
     let amount_to_send: dancebox_runtime::Balance =
         westend_runtime::ExistentialDeposit::get() * 1000;
 
     let assets: Assets = (Here, amount_to_send).into();
-    let fee_asset_item = 0;
     let westend_token_asset_id = 1u16;
 
     // Register the asset first
@@ -192,13 +196,20 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned_simple_template()
 
     // Send XCM message from Westend
     Westend::execute_with(|| {
+        let fees_id: VersionedAssetId = AssetId(Location::here()).into();
+        let xcm_on_dest = Xcm::<()>(vec![DepositAsset {
+            assets: Definite(assets.clone()),
+            beneficiary: simple_template_beneficiary,
+        }]);
         assert_ok!(
-            <Westend as WestendRelayPallet>::XcmPallet::limited_reserve_transfer_assets(
+            <Westend as WestendRelayPallet>::XcmPallet::transfer_assets_using_type_and_then(
                 alice_origin,
                 bx!(simple_template_dest),
-                bx!(simple_template_beneficiary),
                 bx!(assets.into()),
-                fee_asset_item,
+                bx!(TransferType::LocalReserve),
+                bx!(fees_id),
+                bx!(TransferType::LocalReserve),
+                bx!(VersionedXcm::V5(xcm_on_dest)),
                 WeightLimit::Unlimited,
             )
         );
@@ -246,32 +257,37 @@ fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered_simple_templat
     }
     .into();
 
-    let simple_template_beneficiary: VersionedLocation = Location {
+    let simple_template_beneficiary = Location {
         parents: 0,
         interior: X1([AccountId32 {
             network: None,
             id: SimpleTemplateReceiver::get().into(),
         }]
         .into()),
-    }
-    .into();
+    };
 
     let amount_to_send: dancebox_runtime::Balance =
         westend_runtime::ExistentialDeposit::get() * 1000;
 
     let assets: Assets = (Here, amount_to_send).into();
-    let fee_asset_item = 0;
     let westend_token_asset_id = 1u16;
 
     // Send XCM message from Westend
     Westend::execute_with(|| {
+        let fees_id: VersionedAssetId = AssetId(Location::here()).into();
+        let xcm_on_dest = Xcm::<()>(vec![DepositAsset {
+            assets: Definite(assets.clone()),
+            beneficiary: simple_template_beneficiary,
+        }]);
         assert_ok!(
-            <Westend as WestendRelayPallet>::XcmPallet::limited_reserve_transfer_assets(
+            <Westend as WestendRelayPallet>::XcmPallet::transfer_assets_using_type_and_then(
                 alice_origin,
                 bx!(simple_template_dest),
-                bx!(simple_template_beneficiary),
                 bx!(assets.into()),
-                fee_asset_item,
+                bx!(TransferType::LocalReserve),
+                bx!(fees_id),
+                bx!(TransferType::LocalReserve),
+                bx!(VersionedXcm::V5(xcm_on_dest)),
                 WeightLimit::Unlimited,
             )
         );

@@ -490,6 +490,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
     type ConsensusHook = ConsensusHook;
     type SelectCore = cumulus_pallet_parachain_system::DefaultCoreSelector<Runtime>;
+    type RelayParentOffset = ConstU32<0>;
 }
 
 pub struct ParaSlotProvider;
@@ -789,7 +790,6 @@ impl ShouldRotateAllCollators<u32> for NeverRotateCollators {
 }
 
 impl pallet_collator_assignment::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type HostConfiguration = Configuration;
     type ContainerChains = Registrar;
     type SessionIndex = u32;
@@ -835,7 +835,6 @@ parameter_types! {
 }
 
 impl pallet_services_payment::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     /// Handler for fees
     type OnChargeForBlock = ();
     type OnChargeForCollatorAssignment = ();
@@ -867,7 +866,6 @@ parameter_types! {
 pub type DataPreserversProfileId = u64;
 
 impl pallet_data_preservers::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type RuntimeHoldReason = RuntimeHoldReason;
     type Currency = Balances;
     type WeightInfo = weights::pallet_data_preservers::SubstrateWeight<Runtime>;
@@ -885,7 +883,6 @@ impl pallet_data_preservers::Config for Runtime {
 }
 
 impl pallet_author_noting::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type ContainerChains = CollatorAssignment;
     type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
@@ -907,7 +904,6 @@ parameter_types! {
 }
 
 impl pallet_invulnerables::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type UpdateOrigin = EnsureRoot<AccountId>;
     type MaxInvulnerables = MaxInvulnerables;
     type CollatorId = CollatorId;
@@ -1055,7 +1051,6 @@ impl RelayStorageRootProvider for PalletRelayStorageRootProvider {
 }
 
 impl pallet_registrar::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin =
         EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
@@ -1203,7 +1198,6 @@ impl pallet_proxy::Config for Runtime {
 }
 
 impl pallet_migrations::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type MigrationsList = (tanssi_runtime_common::migrations::FlashboxMigrations<Runtime>,);
     type XcmExecutionManager = ();
 }
@@ -1256,7 +1250,6 @@ impl Contains<RuntimeCall> for IsRegisterParathreads {
 type NormalFilter = EverythingBut<IsRegisterParathreads>;
 
 impl pallet_maintenance_mode::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
@@ -1321,7 +1314,6 @@ impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnba
 }
 
 impl pallet_inflation_rewards::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type ContainerChains = Registrar;
     type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
@@ -1348,7 +1340,6 @@ parameter_types! {
 }
 
 impl pallet_stream_payment::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type StreamId = StreamId;
     type TimeUnit = tp_stream_payment_common::TimeUnit;
     type Balance = Balance;
@@ -1395,6 +1386,8 @@ impl pallet_identity::Config for Runtime {
     type UsernameGracePeriod = ConstU32<{ 30 * DAYS }>;
     type MaxSuffixLength = ConstU32<7>;
     type MaxUsernameLength = ConstU32<32>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = ();
     type WeightInfo = weights::pallet_identity::SubstrateWeight<Runtime>;
 }
 
