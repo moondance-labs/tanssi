@@ -128,7 +128,6 @@ parameter_types! {
 }
 
 impl Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     type UpdateOrigin = EnsureSignedBy<RootAccount, u64>;
     type HistoryDepth = ConstU32<84>;
     type MaxWhitelistedValidators = ConstU32<20>;

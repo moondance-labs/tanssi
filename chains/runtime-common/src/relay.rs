@@ -906,7 +906,8 @@ where
 
         let ethereum_location = EthereumLocation::get();
 
-        if let Ok(weight) = XcmWeigher::weight(&mut xcm) {
+        // Using Weight::MAX here because we don't have a limit, same as they do in pallet-xcm
+        if let Ok(weight) = XcmWeigher::weight(&mut xcm, Weight::MAX) {
             let mut message_id = xcm.using_encoded(sp_io::hashing::blake2_256);
 
             let outcome = XcmProcessor::prepare_and_execute(

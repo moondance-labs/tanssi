@@ -20,6 +20,7 @@ pub mod lookahead;
 use {
     crate::{find_pre_digest, AuthorityId, OrchestratorAuraWorkerAuxData},
     cumulus_client_collator::service::ServiceInterface as CollatorServiceInterface,
+    cumulus_client_consensus_aura::collators::RelayParentData,
     cumulus_client_consensus_common::ParachainCandidate,
     cumulus_client_consensus_proposer::ProposerInterface,
     cumulus_client_parachain_inherent::{ParachainInherentData, ParachainInherentDataProvider},
@@ -113,12 +114,16 @@ where
         validation_data: &PersistedValidationData,
         parent_hash: <Block as BlockT>::Hash,
         _timestamp: impl Into<Option<Timestamp>>,
+        relay_parent_descendants: Option<RelayParentData>,
     ) -> Result<(ParachainInherentData, InherentData), Box<dyn Error + Send + Sync + 'static>> {
         let paras_inherent_data = ParachainInherentDataProvider::create_at(
             relay_parent,
             &self.relay_client,
             validation_data,
             self.para_id,
+            relay_parent_descendants
+                .map(RelayParentData::into_inherent_descendant_list)
+                .unwrap_or_default(),
         )
         .await;
 
@@ -160,14 +165,8 @@ where
         inherent_data: (ParachainInherentData, InherentData),
         proposal_duration: Duration,
         max_pov_size: usize,
-    ) -> Result<
-        Option<(
-            Collation,
-            ParachainBlockData<Block>,
-            <Block as BlockT>::Hash,
-        )>,
-        Box<dyn Error + Send + 'static>,
-    > {
+    ) -> Result<Option<(Collation, ParachainBlockData<Block>)>, Box<dyn Error + Send + 'static>>
+    {
         let mut digest = additional_pre_digest.into().unwrap_or_default();
         digest.append(&mut slot_claim.pre_digest);
 
@@ -220,12 +219,14 @@ where
                 proof: proposal.proof,
             },
         ) {
+            // Inlining this function to change log target
+            //block_data.log_size_info();
             tracing::info!(
                 target: crate::LOG_TARGET,
-                "PoV size {{ header: {}kb, extrinsics: {}kb, storage_proof: {}kb }}",
-                block_data.header().encoded_size() as f64 / 1024f64,
-                block_data.extrinsics().encoded_size() as f64 / 1024f64,
-                block_data.storage_proof().encoded_size() as f64 / 1024f64,
+                header_kb = %block_data.blocks().iter().map(|b| b.header().encoded_size()).sum::<usize>() as f64 / 1024f64,
+                extrinsics_kb = %block_data.blocks().iter().map(|b| b.extrinsics().encoded_size()).sum::<usize>() as f64 / 1024f64,
+                storage_proof_kb = %block_data.proof().encoded_size() as f64 / 1024f64,
+                "PoV size",
             );
 
             if let MaybeCompressedPoV::Compressed(ref pov) = collation.proof_of_validity {
@@ -236,7 +237,7 @@ where
                 );
             }
 
-            Ok(Some((collation, block_data, post_hash)))
+            Ok(Some((collation, block_data)))
         } else {
             Err(
                 Box::<dyn Error + Send + Sync>::from("Unable to produce collation")
