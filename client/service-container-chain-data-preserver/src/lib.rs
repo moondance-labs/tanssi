@@ -162,12 +162,7 @@ where
 
                 let para_id = ParaId::from(para_id);
 
-                let started = match self
-                    .config
-                    .network
-                    .network_backend
-                    .unwrap_or(sc_network::config::NetworkBackendType::Libp2p)
-                {
+                let started = match self.config.network.network_backend {
                     sc_network::config::NetworkBackendType::Libp2p => {
                         tc_service_orchestrator_chain::parachain::start_parachain_node::<
                             sc_network::NetworkWorker<_, _>,

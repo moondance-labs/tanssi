@@ -434,7 +434,6 @@ impl pallet_data_preservers::AssignmentProcessor<AccountId> for AssignmentProces
 }
 
 impl pallet_data_preservers::Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     type RuntimeHoldReason = RuntimeHoldReason;
     type Currency = Balances;
     type ProfileId = u64;

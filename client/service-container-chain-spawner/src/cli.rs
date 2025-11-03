@@ -87,6 +87,18 @@ pub struct ContainerChainRunCmd {
     /// Disable RPC service for this node. Useful for bootnode-only nodes that only provide network services.
     #[arg(long)]
     pub disable_rpc: bool,
+    
+    /// Disable embedded DHT bootnode.
+    ///
+    /// Do not advertise the node as a parachain bootnode on the relay chain DHT.
+    #[arg(long)]
+    pub no_dht_bootnode: bool,
+
+    /// Disable DHT bootnode discovery.
+    ///
+    /// Disable discovery of the parachain bootnodes via the relay chain DHT.
+    #[arg(long)]
+    pub no_dht_bootnode_discovery: bool,
 }
 
 impl ContainerChainRunCmd {
@@ -127,7 +139,11 @@ impl ContainerChainRunCmd {
             _ => RelayChainMode::Embedded,
         };
 
-        CollatorOptions { relay_chain_mode }
+        CollatorOptions {
+            relay_chain_mode,
+            embedded_dht_bootnode: !self.no_dht_bootnode,
+            dht_bootnode_discovery: !self.no_dht_bootnode_discovery,
+        }
     }
 }
 

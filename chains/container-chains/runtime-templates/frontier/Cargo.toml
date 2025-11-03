@@ -13,6 +13,7 @@ targets = [ "x86_64-unknown-linux-gnu" ]
 workspace = true
 
 [dependencies]
+ethereum = { workspace = true }
 hex-literal = { workspace = true }
 log = { workspace = true }
 num_enum = { workspace = true }
@@ -147,6 +148,7 @@ std = [
 	"dp-consensus/std",
 	"dp-impl-tanssi-pallets-config/std",
 	"dp-slot-duration-runtime-api/std",
+	"ethereum/std",
 	"fp-account/std",
 	"fp-evm/std",
 	"fp-rpc/std",
@@ -322,6 +324,7 @@ try-runtime = [
 	"pallet-xcm-executor-utils/try-runtime",
 	"pallet-xcm/try-runtime",
 	"parachain-info/try-runtime",
+	"parachains-common/try-runtime",
 	"polkadot-runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",
