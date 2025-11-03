@@ -53,8 +53,7 @@ describeSuite({
                     log("Runtime already upgraded, skipping test");
                     skip();
                 }
-                // TODO: this log function is broken and it only logs the first argument
-                log("Current runtime spec version: ", rtBefore);
+                log(`Current runtime spec version: ${rtBefore}`);
                 log("Runtime not upgraded, proceeding with test");
                 log(`Current runtime bytes: ${rtHex.slice(0, 10)}...${rtHex.slice(-10)}`);
                 log(`New runtime bytes: ${codeString.slice(0, 10)}...${codeString.slice(-10)}`);
@@ -62,7 +61,7 @@ describeSuite({
                 await context.upgradeRuntime({ from: alice_or_alith });
                 await context.waitBlock(2);
                 const rtafter = paraApi.consts.system.version.specVersion.toNumber();
-                log("New runtime spec version:", rtafter);
+                log(`New runtime spec version: ${rtafter}`);
                 if (rtBefore === rtafter) {
                     throw new Error("Runtime upgrade failed");
                 }
