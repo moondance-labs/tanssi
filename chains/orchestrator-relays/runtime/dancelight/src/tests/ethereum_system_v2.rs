@@ -60,7 +60,8 @@ fn test_sudo_can_register_ethereum_system_v2() {
                     name: "dance".as_bytes().to_vec().try_into().unwrap(),
                     symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
                     decimals: 12,
-                }
+                },
+                1
             ));
 
             let received_token_id =
@@ -100,7 +101,8 @@ fn nobody_else_can_register_ethereum_v2() {
                         name: "dance".as_bytes().to_vec().try_into().unwrap(),
                         symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
                         decimals: 12,
-                    }
+                    },
+                    1
                 ),
                 BadOrigin
             );
