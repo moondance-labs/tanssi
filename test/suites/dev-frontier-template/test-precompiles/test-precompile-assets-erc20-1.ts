@@ -48,6 +48,7 @@ describeSuite({
                     address: ADDRESS_ERC20,
                     abi: erc20Abi,
                     functionName: "name",
+                    authorizationList: [],
                 });
 
                 expect(name).equals("DOT");
@@ -62,6 +63,7 @@ describeSuite({
                     address: contractInstanceAddress,
                     abi: erc20Abi,
                     functionName: "name",
+                    authorizationList: [],
                 });
 
                 expect(name).equals("DOT");
@@ -76,6 +78,7 @@ describeSuite({
                     address: ADDRESS_ERC20,
                     abi: erc20Abi,
                     functionName: "symbol",
+                    authorizationList: [],
                 });
                 expect(symbol).equals("DOT");
             },
@@ -89,6 +92,7 @@ describeSuite({
                     address: contractInstanceAddress,
                     abi: erc20Abi,
                     functionName: "symbol",
+                    authorizationList: [],
                 });
                 expect(symbol).equals("DOT");
             },
@@ -102,6 +106,7 @@ describeSuite({
                     address: ADDRESS_ERC20,
                     abi: erc20Abi,
                     functionName: "decimals",
+                    authorizationList: [],
                 });
                 expect(decimals).equals(12);
             },
@@ -115,6 +120,7 @@ describeSuite({
                     address: contractInstanceAddress,
                     abi: erc20Abi,
                     functionName: "decimals",
+                    authorizationList: [],
                 });
                 expect(decimals).equals(12);
             },
@@ -129,6 +135,7 @@ describeSuite({
                     abi: erc20Abi,
                     functionName: "balanceOf",
                     args: [ALITH_ADDRESS],
+                    authorizationList: [],
                 });
                 expect(data).equals(2000000000000000000000n);
             },
@@ -143,6 +150,7 @@ describeSuite({
                     abi: erc20Abi,
                     functionName: "balanceOf",
                     args: [ALITH_ADDRESS],
+                    authorizationList: [],
                 });
                 expect(data).equals(2000000000000000000000n);
             },
@@ -156,6 +164,7 @@ describeSuite({
                     address: ADDRESS_ERC20,
                     abi: erc20Abi,
                     functionName: "totalSupply",
+                    authorizationList: [],
                 });
                 expect(data).equals(2000000000000000000000n);
             },
@@ -169,6 +178,7 @@ describeSuite({
                     address: contractInstanceAddress,
                     abi: erc20Abi,
                     functionName: "totalSupply",
+                    authorizationList: [],
                 });
                 expect(data).equals(2000000000000000000000n);
             },
