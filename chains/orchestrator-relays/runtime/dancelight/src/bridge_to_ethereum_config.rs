@@ -18,11 +18,20 @@
 
 #[cfg(all(not(test), not(feature = "testing-helpers")))]
 use crate::EthereumBeaconClient;
+use crate::EthereumInboundQueueV2;
+use cumulus_primitives_core::Location;
+use frame_support::dispatch::DispatchResult;
 use frame_support::pallet_prelude::{DecodeWithMemTracking, Encode, TypeInfo};
-use frame_support::traits::EnqueueMessage;
+use frame_support::traits::{fungible::Mutate, tokens::Preservation, EnqueueMessage, EnsureOrigin};
 use frame_support::BoundedSlice;
+use frame_system::EnsureRoot;
 use frame_system::EnsureRootWithSuccess;
+use pallet_ethereum_token_transfers::{
+    origins::{ConvertAccountIdTo, ConvertUnitTo, EnsureEthereumTokenTransfersOrigin},
+    pallet::TipHandler,
+};
 use parity_scale_codec::{Decode, MaxEncodedLen};
+use snowbridge_core::reward::{AddTip, AddTipError, MessageId};
 use snowbridge_outbound_queue_primitives::v2::{Message, SendMessage};
 use snowbridge_outbound_queue_primitives::SendError;
 
@@ -48,14 +57,13 @@ use {
         OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, SnowbridgeFeesAccount,
         TokenLocationReanchored, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
-    frame_support::{traits::PalletInfoAccess, weights::ConstantMultiplier},
+    frame_support::{
+        traits::{EitherOf, MapSuccess, PalletInfoAccess},
+        weights::ConstantMultiplier,
+    },
     pallet_xcm::EnsureXcm,
     snowbridge_beacon_primitives::ForkVersions,
-    snowbridge_core::{
-        gwei, meth,
-        reward::{AddTip, AddTipError},
-        PricingParameters, Rewards,
-    },
+    snowbridge_core::{gwei, meth, PricingParameters, Rewards},
     snowbridge_pallet_outbound_queue::OnNewCommitment,
     sp_core::{ConstU32, ConstU8, H160, H256},
     tanssi_runtime_common::relay::{EthTokensLocalProcessor, RewardThroughFeesAccount},
@@ -273,12 +281,39 @@ impl AddTip for DoNothingQueue {
 impl snowbridge_pallet_system_v2::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type OutboundQueue = DoNothingQueue;
-    type InboundQueue = DoNothingQueue;
-    type FrontendOrigin = EnsureRootWithSuccess<AccountId, EthereumLocation>;
+    type InboundQueue = EthereumInboundQueueV2;
+    type FrontendOrigin = EitherOf<
+        MapSuccess<EnsureRoot<AccountId>, ConvertUnitTo<Location>>,
+        MapSuccess<
+            EnsureEthereumTokenTransfersOrigin<Runtime>,
+            ConvertAccountIdTo<AccountId, Location, xcm_config::RelayNetwork>,
+        >,
+    >;
     type GovernanceOrigin = EnsureRootWithSuccess<AccountId, EthereumLocation>;
     type WeightInfo = ();
 }
 
+pub struct EthereumTipForwarder<T>(core::marker::PhantomData<T>);
+impl TipHandler<crate::RuntimeOrigin> for EthereumTipForwarder<Runtime> {
+    fn add_tip(
+        origin: crate::RuntimeOrigin,
+        message_id: MessageId,
+        amount: u128,
+    ) -> DispatchResult {
+        let sender = pallet_ethereum_token_transfers::origins::EnsureEthereumTokenTransfersOrigin::<
+            Runtime,
+        >::ensure_origin(origin.clone())?;
+
+        Balances::transfer(
+            &sender,
+            &<Runtime as pallet_ethereum_token_transfers::Config>::FeesAccount::get(),
+            amount.into(),
+            Preservation::Preserve,
+        )?;
+
+        snowbridge_pallet_system_v2::Pallet::<Runtime>::add_tip(origin, sender, message_id, amount)
+    }
+}
 impl pallet_ethereum_token_transfers::Config for Runtime {
     type Currency = Balances;
     type OutboundQueue = EthereumOutboundQueue;
@@ -290,6 +325,8 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = tp_bridge::EthereumTokenTransfersBenchHelper<Runtime>;
     type WeightInfo = crate::weights::pallet_ethereum_token_transfers::SubstrateWeight<Runtime>;
+    type TipHandler = EthereumTipForwarder<Runtime>;
+    type PalletOrigin = Self::RuntimeOrigin;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
