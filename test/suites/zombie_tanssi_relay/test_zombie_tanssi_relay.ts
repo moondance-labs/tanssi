@@ -239,7 +239,7 @@ describeSuite({
                     nodeType: "Substrate",
                     directRpcUrls: [],
                     proxyRpcUrls: [],
-                    additionalInfo: "0x",
+                    additionalInfo: "",
                     assignmentRequest: "Free",
                 });
 
