@@ -138,7 +138,6 @@ parameter_types! {
     pub const DataDepositPerByte: Balance = 1;
 }
 impl pallet_registrar::Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin = frame_system::EnsureRoot<u64>;
     type MarkValidForCollatingOrigin = frame_system::EnsureRoot<u64>;
     type MaxLengthParaIds = ConstU32<1000>;

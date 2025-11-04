@@ -137,9 +137,6 @@ pub mod pallet {
     /// Configure the pallet by specifying the parameters and types on which it depends.
     #[pallet::config]
     pub trait Config: frame_system::Config {
-        /// Because this pallet emits events, it depends on the runtime's definition of an event.
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-
         /// Origin that is allowed to call maintenance extrinsics for container owner
         type RegistrarOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
 
@@ -293,21 +290,37 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// A new para id has been registered. [para_id]
-        ParaIdRegistered { para_id: ParaId },
+        ParaIdRegistered {
+            para_id: ParaId,
+        },
         /// A para id has been deregistered. [para_id]
-        ParaIdDeregistered { para_id: ParaId },
+        ParaIdDeregistered {
+            para_id: ParaId,
+        },
         /// A new para id is now valid for collating. [para_id]
-        ParaIdValidForCollating { para_id: ParaId },
+        ParaIdValidForCollating {
+            para_id: ParaId,
+        },
         /// A para id has been paused from collating.
-        ParaIdPaused { para_id: ParaId },
+        ParaIdPaused {
+            para_id: ParaId,
+        },
         /// A para id has been unpaused.
-        ParaIdUnpaused { para_id: ParaId },
+        ParaIdUnpaused {
+            para_id: ParaId,
+        },
         /// Parathread params changed
-        ParathreadParamsChanged { para_id: ParaId },
+        ParathreadParamsChanged {
+            para_id: ParaId,
+        },
         /// Para manager has changed
         ParaManagerChanged {
             para_id: ParaId,
             manager_address: T::AccountId,
+        },
+        // Deposit has updated
+        DepositUpdated {
+            para_id: ParaId,
         },
     }
 
@@ -752,6 +765,64 @@ pub mod pallet {
             Self::do_deregister(para_id)?;
 
             Ok(())
+        }
+
+        /// Recalculate and reconcile the reserved deposit for `para_id`.
+        ///
+        /// If the required amount differs from the currently held deposit,
+        /// this extrinsic increases or releases the difference on the creator's account.
+        #[pallet::call_index(11)]
+        #[pallet::weight(T::WeightInfo::poke_deposit())]
+        pub fn poke_deposit(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
+            let who = ensure_signed(origin)?;
+
+            // Mutate the deposit entry in-place
+            RegistrarDeposit::<T>::try_mutate_exists(para_id, |maybe_info| -> DispatchResult {
+                let info = maybe_info.as_mut().ok_or(Error::<T>::ParaIdNotRegistered)?;
+
+                // Only the original creator of the para can poke their deposit.
+                ensure!(info.creator == who, Error::<T>::NotParaCreator);
+
+                // Retrieve the genesis data and calculate the cost based on its encoded size.
+                let genesis =
+                    ParaGenesisData::<T>::get(para_id).ok_or(Error::<T>::ParaIdNotRegistered)?;
+                let required = Self::get_genesis_cost(genesis.encoded_size());
+
+                let current = info.deposit;
+
+                // If the current deposit already matches the required one, do nothing.
+                if required == current {
+                    return Ok(());
+                }
+
+                // Adjust the held amount depending on whether we need to increase or decrease
+                if required > current {
+                    // The deposit must increase
+                    let delta = required.saturating_sub(current);
+
+                    // Attempt to hold the additional amount from the creator's balance.
+                    T::Currency::hold(&HoldReason::RegistrarDeposit.into(), &info.creator, delta)
+                        .map_err(|_| Error::<T>::NotSufficientDeposit)?;
+                } else {
+                    // The deposit must decrease
+                    let delta = current.saturating_sub(required);
+
+                    // Release the exact delta from the hold.
+                    T::Currency::release(
+                        &HoldReason::RegistrarDeposit.into(),
+                        &info.creator,
+                        delta,
+                        Precision::Exact,
+                    )?;
+                }
+
+                // Update the stored deposit value
+                info.deposit = required;
+
+                Self::deposit_event(Event::DepositUpdated { para_id });
+
+                Ok(())
+            })
         }
     }
 
