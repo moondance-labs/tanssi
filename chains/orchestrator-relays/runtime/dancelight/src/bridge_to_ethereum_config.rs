@@ -22,9 +22,7 @@ use crate::EthereumInboundQueueV2;
 use cumulus_primitives_core::Location;
 use frame_support::dispatch::DispatchResult;
 use frame_support::pallet_prelude::{DecodeWithMemTracking, Encode, TypeInfo};
-use frame_support::traits::{
-    fungible::Mutate, tokens::Preservation, EnqueueMessage, EnsureOrigin, QueueFootprint,
-};
+use frame_support::traits::{fungible::Mutate, tokens::Preservation, EnqueueMessage, EnsureOrigin};
 use frame_support::BoundedSlice;
 use frame_system::EnsureRoot;
 use frame_system::EnsureRootWithSuccess;
@@ -65,11 +63,7 @@ use {
     },
     pallet_xcm::EnsureXcm,
     snowbridge_beacon_primitives::ForkVersions,
-    snowbridge_core::{
-        gwei, meth,
-        reward::{AddTip, AddTipError},
-        PricingParameters, Rewards,
-    },
+    snowbridge_core::{gwei, meth, PricingParameters, Rewards},
     snowbridge_pallet_outbound_queue::OnNewCommitment,
     sp_core::{ConstU32, ConstU8, H160, H256},
     tanssi_runtime_common::relay::{EthTokensLocalProcessor, RewardThroughFeesAccount},
