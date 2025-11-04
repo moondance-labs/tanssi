@@ -87,7 +87,7 @@ pub struct ContainerChainRunCmd {
     /// Disable RPC service for this node. Useful for bootnode-only nodes that only provide network services.
     #[arg(long)]
     pub disable_rpc: bool,
-    
+
     /// Disable embedded DHT bootnode.
     ///
     /// Do not advertise the node as a parachain bootnode on the relay chain DHT.
