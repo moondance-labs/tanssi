@@ -194,6 +194,7 @@ std = [
 	"polkadot-runtime-parachains/std",
 	"scale-info/std",
 	"serde/std",
+	"serde_json/std",
 	"sp-api/std",
 	"sp-application-crypto/std",
 	"sp-application-crypto/std",

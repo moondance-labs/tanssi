@@ -213,6 +213,7 @@ std = [
 	"precompile-utils/std",
 	"scale-info/std",
 	"serde/std",
+	"serde_json/std",
 	"sp-api/std",
 	"sp-block-builder/std",
 	"sp-consensus-aura/std",
