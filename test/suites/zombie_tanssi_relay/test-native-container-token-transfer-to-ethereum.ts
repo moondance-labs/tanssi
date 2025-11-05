@@ -83,7 +83,9 @@ describeSuite({
                 const initialBalance = 100_000_000_000_000n;
                 const txHash = await relayChainPolkadotJs.tx.utility
                     .batch([
-                        relayChainPolkadotJs.tx.balances.transferKeepAlive(convertedAddress, initialBalance),
+                        relayChainPolkadotJs.tx.sudo.sudo(
+                            relayChainPolkadotJs.tx.balances.forceSetBalance(convertedAddress, initialBalance)
+                        ),
                         relayChainPolkadotJs.tx.sudo.sudo(
                             relayChainPolkadotJs.tx.ethereumTokenTransfers.setTokenTransferChannel(
                                 newChannelId,
@@ -153,12 +155,12 @@ describeSuite({
 
                 const channelNonceBefore = await relayChainPolkadotJs.query.ethereumOutboundQueue.nonce(newChannelId);
 
-                // Fees account (on Tanssi) only has the existential deposit
-                const existentialDeposit = relayChainPolkadotJs.consts.balances.existentialDeposit.toBigInt();
+                // Since zombienet does not restart nodes, the fees account already has balance
+                // from previous tests, so no need to check for existential deposit.
+                // Thus, it's enough to check that the balance has increased later on.
                 const feesAccountBalanceBefore = (
                     await relayChainPolkadotJs.query.system.account(SNOWBRIDGE_FEES_ACCOUNT)
                 ).data.free.toBigInt();
-                expect(feesAccountBalanceBefore).to.be.eq(existentialDeposit);
 
                 await containerChainPolkadotJs.tx.polkadotXcm
                     .transferAssets(dest, versionedBeneficiary, versionedAssets, 0, "Unlimited")

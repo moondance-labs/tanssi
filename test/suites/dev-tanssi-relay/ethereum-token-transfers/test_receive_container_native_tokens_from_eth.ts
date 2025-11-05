@@ -1,8 +1,8 @@
 import "@tanssi/api-augment";
 
-import { beforeAll, describeSuite } from "@moonwall/cli";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { generateEventLog, generateUpdate, mockAndInsertHeadData } from "utils";
+import { generateEventLog, generateUpdate, mockAndInsertHeadData, SNOWBRIDGE_FEES_ACCOUNT } from "utils";
 import { expectEventCount, STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_TRANSFERS } from "helpers";
 import type { KeyringPair } from "@moonwall/util";
 
@@ -128,10 +128,23 @@ describeSuite({
                 const paraId = polkadotJs.createType("ParaId", 2001);
                 await mockAndInsertHeadData(context, paraId, 2, 2, alice);
 
+                // Add funds to snowbridge fees account
+                const transferFeesAccountTx = polkadotJs.tx.sudo
+                    .sudo(polkadotJs.tx.balances.forceSetBalance(SNOWBRIDGE_FEES_ACCOUNT, 500_000_000_000_000_000n))
+                    .signAsync(alice);
+                await context.createBlock([transferFeesAccountTx], { allowFailures: false });
+
+                const nonceBefore = await polkadotJs.query.ethereumInboundQueue.nonce(newChannelId);
+
                 // Submit the message
                 const tx3 = await polkadotJs.tx.ethereumInboundQueue.submit(messageExtrinsics[0]).signAsync(alice);
 
                 await context.createBlock([tx3], { allowFailures: false });
+
+                const nonceAfter = await polkadotJs.query.ethereumInboundQueue.nonce(newChannelId);
+
+                // Nonce should increase
+                expect(nonceAfter.toNumber()).to.be.equal(nonceBefore.toNumber() + 1);
 
                 // Check for the XCM Sent event
                 await expectEventCount(polkadotJs, {

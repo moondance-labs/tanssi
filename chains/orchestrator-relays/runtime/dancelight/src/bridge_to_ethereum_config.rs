@@ -266,6 +266,7 @@ pub type NativeTokensProcessor = NativeTokenTransferMessageProcessor<Runtime>;
 #[cfg(not(feature = "runtime-benchmarks"))]
 pub type NativeContainerProcessor = NativeContainerTokensProcessor<
     Runtime,
+    AssetTransactor,
     dancelight_runtime_constants::snowbridge::EthereumLocation,
     dancelight_runtime_constants::snowbridge::EthereumNetwork,
     InboundQueuePalletInstance,
