@@ -318,6 +318,7 @@ std = [
 	"snowbridge-pallet-outbound-queue/std",
 	"snowbridge-pallet-outbound-queue-v2/std",
 	"snowbridge-pallet-system/std",
+	"snowbridge-pallet-system-v2/std",
 	"snowbridge-verification-primitives/std",
 	"sp-api/std",
 	"sp-application-crypto/std",

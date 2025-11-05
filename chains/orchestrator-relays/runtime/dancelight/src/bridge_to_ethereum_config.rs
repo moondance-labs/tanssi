@@ -342,7 +342,6 @@ impl TipHandler<crate::RuntimeOrigin> for EthereumTipForwarder<Runtime> {
 }
 impl pallet_ethereum_token_transfers::Config for Runtime {
     type Currency = Balances;
-    // todo: add v2
     type OutboundQueue = EthereumOutboundQueue;
     type OutboundQueueV2 = EthereumOutboundQueueV2;
     type ShouldUseV2 = ConstBool<true>;
@@ -572,7 +571,7 @@ impl snowbridge_pallet_outbound_queue_v2::Config for Runtime {
     type WeightInfo = ();
     type EthereumNetwork = dancelight_runtime_constants::snowbridge::EthereumNetwork;
     type RewardKind = BridgeReward;
-    type DefaultRewardKind = SnowbridgeReward;
+    type DefaultRewardKind = SnowbridgeRewardOutbound;
     type RewardPayment = BridgeRelayers;
     // Enable once we cherry-pick
     type OnNewCommitment = CommitmentRecorder;
