@@ -1818,6 +1818,11 @@ fn send_eth_native_does_not_work_if_min_reward_not_covered() {
             ]));
 
             // TODO: REVISIT THE ERROR
+            // the error is that because it then tries to export through the other exporter and
+            // the last error is toomany asserts
+            // however one can check that if fee_amount is MinV2Reward::get().saturating_add(1),
+            // everything works
+            // Not sure how to make the test more expresive
             assert_err_ignore_postinfo!(
                 XcmPallet::execute(
                     RuntimeOrigin::signed(AccountId::from(BOB)),
