@@ -33,7 +33,7 @@ use {
     hex_literal::hex,
     pallet_xcm::ExecutionError,
     parity_scale_codec::Encode,
-    snowbridge_core::TokenIdOf,
+    snowbridge_core::{reward::MessageId, TokenIdOf},
     snowbridge_core::{AgentId, Channel, ChannelId, ParaId},
     snowbridge_inbound_queue_primitives::v1::{
         Command, Destination, Envelope, MessageProcessor, MessageV1, OutboundMessageAccepted,
@@ -3189,6 +3189,42 @@ fn receive_erc20_tokens_does_not_fail_if_not_sufficient_and_random_address() {
             assert_eq!(
                 assets_trapped_event, 1,
                 "AssetsTrapped event should be emitted!"
+            );
+        });
+}
+
+#[test]
+fn test_add_tip_for_ethereum_token_transfers_succeeded() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let message_id = MessageId::Inbound(1);
+            let amount = 100000000;
+
+            let origin =
+                <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(BOB));
+
+            assert_ok!(EthereumTokenTransfers::add_tip(
+                origin,
+                message_id.clone(),
+                amount.clone(),
+            ));
+
+            assert_eq!(
+                filter_events!(RuntimeEvent::EthereumSystemV2(
+                    snowbridge_pallet_system_v2::Event::TipProcessed { .. },
+                ))
+                .count(),
+                1,
+                "TipProcessed event should be emitted!"
             );
         });
 }

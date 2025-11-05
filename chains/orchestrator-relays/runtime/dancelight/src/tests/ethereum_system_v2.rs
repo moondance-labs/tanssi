@@ -21,6 +21,7 @@ use {
     alloc::vec,
     dancelight_runtime_constants::DANCELIGHT_GENESIS_HASH,
     frame_support::{assert_noop, assert_ok, error::BadOrigin},
+    snowbridge_core::reward::MessageId,
     xcm::{
         latest::{prelude::*, Junctions::*, Location},
         VersionedLocation,
@@ -59,7 +60,8 @@ fn test_sudo_can_register_ethereum_system_v2() {
                     name: "dance".as_bytes().to_vec().try_into().unwrap(),
                     symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
                     decimals: 12,
-                }
+                },
+                1
             ));
 
             let received_token_id =
@@ -99,9 +101,95 @@ fn nobody_else_can_register_ethereum_v2() {
                         name: "dance".as_bytes().to_vec().try_into().unwrap(),
                         symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
                         decimals: 12,
-                    }
+                    },
+                    1
                 ),
                 BadOrigin
             );
+        });
+}
+
+#[test]
+fn test_add_tip_for_ethereum_system_v2_bad_origin() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let sender: AccountId = AccountId::from(BOB);
+            let message_id = MessageId::Inbound(1);
+            let amount = 100;
+
+            assert_noop!(
+                EthereumSystemV2::add_tip(
+                    origin_of(BOB.into()),
+                    sender,
+                    message_id.clone(),
+                    amount.clone()
+                ),
+                BadOrigin
+            );
+        });
+}
+
+#[test]
+fn test_add_tip_for_ethereum_system_v2_succeeded_with_root() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let sender: AccountId = AccountId::from(BOB);
+            let message_id = MessageId::Inbound(1);
+            let amount = 100;
+
+            assert_ok!(EthereumSystemV2::add_tip(
+                root_origin(),
+                sender,
+                message_id.clone(),
+                amount.clone()
+            ));
+        });
+}
+
+#[test]
+fn test_add_tip_for_ethereum_system_v2_succeeded_with_correct_pallet_origin() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let sender: AccountId = AccountId::from(BOB);
+            let message_id = MessageId::Inbound(1);
+            let amount = 100;
+
+            let origin: RuntimeOrigin =
+                pallet_ethereum_token_transfers::Origin::EthereumTokenTransfers(sender.clone())
+                    .into();
+
+            assert_ok!(EthereumSystemV2::add_tip(
+                origin,
+                sender,
+                message_id.clone(),
+                amount.clone(),
+            ));
         });
 }

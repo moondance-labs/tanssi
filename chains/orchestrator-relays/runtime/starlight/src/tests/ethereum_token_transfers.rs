@@ -32,14 +32,16 @@ use {
     hex_literal::hex,
     pallet_xcm::ExecutionError,
     parity_scale_codec::Encode,
-    snowbridge_core::{AgentId, Channel, ChannelId, ParaId},
+    snowbridge_core::{reward::MessageId, AgentId, Channel, ChannelId, ParaId},
     snowbridge_inbound_queue_primitives::v1::{
         Command, Destination, Envelope, MessageProcessor, MessageV1, OutboundMessageAccepted,
         VersionedXcmMessage,
     },
     snowbridge_verification_primitives::{EventProof, Log},
     sp_core::{H160, H256},
-    sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
+    sp_runtime::{
+        traits::MaybeEquivalence, DispatchError::Module, FixedU128, ModuleError, TokenError,
+    },
     starlight_runtime_constants::snowbridge::EthereumNetwork,
     tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
     xcm::{
@@ -1360,6 +1362,37 @@ fn test_pricing_parameters() {
             assert_eq!(
                 Balances::free_balance(SnowbridgeFeesAccount::get()),
                 first_fee_found + second_fee_found
+            );
+        });
+}
+
+#[test]
+fn test_add_tip_should_fail() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 200_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let message_id = MessageId::Inbound(1);
+            let amount = 1000000000;
+
+            assert_noop!(
+                EthereumTokenTransfers::add_tip(
+                    origin_of(AccountId::from(ALICE)),
+                    message_id.clone(),
+                    amount.clone()
+                ),
+                Module(ModuleError {
+                    index: 27,
+                    error: [4, 0, 0, 0],
+                    message: Some("TipFailed")
+                })
             );
         });
 }
