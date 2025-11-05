@@ -73,7 +73,8 @@ if [ "$FORCE_COPY" = "1" ] || [ -f "chains/orchestrator-paras/runtime/dancebox/s
 	echo "------------------------------------------------------------"
 	echo "Dancebox weights"
 	echo "------------------------------------------------------------"
-	TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
+	RUNTIME=target/release/wbuild/dancebox-runtime/dancebox_runtime.wasm \
+	    TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
 	    OUTPUT_PATH=tmp/dancebox_weights \
 	    tools/benchmarking.sh "$PALLET" "*" --check
 	cp -v tmp/dancebox_weights/$PALLET.rs chains/orchestrator-paras/runtime/dancebox/src/weights/$PALLET.rs
@@ -83,8 +84,8 @@ if [ "$FORCE_COPY" = "1" ] || [ -f "chains/orchestrator-paras/runtime/flashbox/s
 	echo "------------------------------------------------------------"
 	echo "Flashbox weights"
 	echo "------------------------------------------------------------"
-	TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
-	    CHAIN=flashbox_dev \
+	RUNTIME=target/release/wbuild/flashbox-runtime/flashbox_runtime.wasm \
+	    TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
 	    OUTPUT_PATH=tmp/flashbox_weights \
 	    tools/benchmarking.sh "$PALLET" "*" --check
 	cp -v tmp/flashbox_weights/$PALLET.rs chains/orchestrator-paras/runtime/flashbox/src/weights/$PALLET.rs
@@ -94,7 +95,7 @@ if [ "$FORCE_COPY" = "1" ] || [ -f "chains/container-chains/runtime-templates/si
 	echo "------------------------------------------------------------"
 	echo "Simple template weights"
 	echo "------------------------------------------------------------"
-	BINARY=target/release/container-chain-simple-node \
+	RUNTIME=target/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.wasm \
 	    TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
 	    OUTPUT_PATH=tmp/simple_template_weights \
 	    tools/benchmarking.sh "$PALLET" "*" --check
@@ -105,7 +106,7 @@ if [ "$FORCE_COPY" = "1" ] || [ -f "chains/container-chains/runtime-templates/fr
 	echo "------------------------------------------------------------"
 	echo "Frontier template weights"
 	echo "------------------------------------------------------------"
-	BINARY=target/release/container-chain-frontier-node \
+	RUNTIME=target/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.wasm \
 	    TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
 	    OUTPUT_PATH=tmp/frontier_template_weights \
 	    tools/benchmarking.sh "$PALLET" "*" --check
@@ -116,9 +117,8 @@ if [ "$FORCE_COPY" = "1" ] || [ -f "chains/orchestrator-relays/runtime/danceligh
 	echo "------------------------------------------------------------"
 	echo "Dancelight weights"
 	echo "------------------------------------------------------------"
-	BINARY=target/release/tanssi-relay \
+	RUNTIME=target/release/wbuild/dancelight-runtime/dancelight_runtime.wasm \
 	    TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
-	    CHAIN=dancelight-dev \
 	    OUTPUT_PATH=tmp/dancelight_weights \
 	    tools/benchmarking.sh "$PALLET" "*" --check
 	cp -v tmp/dancelight_weights/$PALLET.rs chains/orchestrator-relays/runtime/dancelight/src/weights/$PALLET.rs
@@ -128,9 +128,8 @@ if [ "$FORCE_COPY" = "1" ] || [ -f "chains/orchestrator-relays/runtime/starlight
 	echo "------------------------------------------------------------"
 	echo "Starlight weights"
 	echo "------------------------------------------------------------"
-	BINARY=target/release/tanssi-relay \
+	RUNTIME=target/release/wbuild/starlight-runtime/starlight_runtime.wasm \
 	    TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
-	    CHAIN=starlight-dev \
 	    OUTPUT_PATH=tmp/starlight_weights \
 	    tools/benchmarking.sh "$PALLET" "*" --check
 	cp -v tmp/starlight_weights/$PALLET.rs chains/orchestrator-relays/runtime/starlight/src/weights/$PALLET.rs
