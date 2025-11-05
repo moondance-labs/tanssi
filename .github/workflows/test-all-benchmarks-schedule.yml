@@ -42,7 +42,7 @@ jobs:
         id: install-frame-omni-bencher
         shell: bash
         run: |
-          cargo install frame-omni-bencher --profile=production --locked
+          cargo install frame-omni-bencher --locked
 
       - name: Cargo build
         uses: ./.github/workflow-templates/cargo-build
