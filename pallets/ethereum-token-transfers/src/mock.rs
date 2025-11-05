@@ -20,25 +20,24 @@ use {
     frame_support::{
         pallet_prelude::OriginTrait,
         parameter_types,
-        traits::{ConstU32, ConstU64},
+        traits::{fungible::Mutate, tokens::Preservation, ConstU32, ConstU64, EnsureOrigin},
     },
     pallet_balances::AccountData,
     parity_scale_codec::{Decode, Encode},
     snowbridge_core::{
-        location::{DescribeGlobalPrefix, DescribeTokenTerminal},
-        AgentId, ChannelId, ParaId, TokenId,
+        location::DescribeGlobalPrefix, reward::MessageId, AgentId, ChannelId, ParaId, TokenId,
     },
     snowbridge_outbound_queue_primitives::v1::{Fee, Message},
     snowbridge_outbound_queue_primitives::{SendError, SendMessageFeeProvider},
     sp_core::H256,
     sp_runtime::{
         traits::{BlakeTwo256, IdentityLookup, MaybeEquivalence, TryConvert},
-        BuildStorage,
+        BuildStorage, DispatchResult,
     },
     std::marker::PhantomData,
     tp_bridge::{ChannelInfo, EthereumSystemChannelManager, TicketInfo},
     xcm::prelude::*,
-    xcm_builder::{DescribeFamily, DescribeLocation, HashedDescription},
+    xcm_builder::{DescribeLocation, HashedDescription},
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -265,15 +264,15 @@ where
     }
 }
 
-pub struct DescribeAccountAccountIndex64Terminal;
-impl DescribeLocation for DescribeAccountAccountIndex64Terminal {
+pub struct DescribeAccountIndex64Terminal;
+impl DescribeLocation for DescribeAccountIndex64Terminal {
     fn describe_location(l: &Location) -> Option<Vec<u8>> {
         match l.unpack() {
             (0, [AccountIndex64 { index, .. }]) => {
                 if index == &PROHIBITED_ACCOUNT {
                     None
                 } else {
-                    println!("index g{:?}", index);
+                    Some((b"AccountIdx64", index).encode())
                 }
             }
             _ => return None,
@@ -284,7 +283,7 @@ impl DescribeLocation for DescribeAccountAccountIndex64Terminal {
 pub type LocalOriginToLocation = MockSignedToAccountIndex64<RuntimeOrigin, u64>;
 
 pub type MockAgentIdOf =
-    HashedDescription<H256, DescribeGlobalPrefix<DescribeAccountAccountIndex64Terminal>>;
+    HashedDescription<H256, DescribeGlobalPrefix<DescribeAccountIndex64Terminal>>;
 impl pallet_ethereum_token_transfers::Config for Test {
     type Currency = Balances;
     type OutboundQueue = MockOkOutboundQueue;
@@ -303,6 +302,8 @@ impl pallet_ethereum_token_transfers::Config for Test {
     type WeightInfo = ();
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = ();
+    type TipHandler = MockTipHandler;
+    type PalletOrigin = pallet_ethereum_token_transfers::Origin<Test>;
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
@@ -325,7 +326,29 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 
 pub const ALICE: u64 = 1;
 pub const PROHIBITED_ACCOUNT: u64 = 5;
+pub const BOB: u64 = 2;
 
 pub fn run_to_block(n: u64) {
     System::run_to_block_with::<AllPalletsWithSystem>(n, frame_system::RunToBlockHooks::default());
+}
+
+pub struct MockTipHandler;
+
+impl pallet_ethereum_token_transfers::TipHandler<pallet_ethereum_token_transfers::Origin<Test>>
+    for MockTipHandler
+{
+    fn add_tip(
+        origin: pallet_ethereum_token_transfers::Origin<Test>,
+        _message_id: MessageId,
+        amount: u128,
+    ) -> DispatchResult {
+        let origin = RuntimeOrigin::from(origin);
+        let sender = pallet_ethereum_token_transfers::origins::EnsureEthereumTokenTransfersOrigin::<
+            Test,
+        >::ensure_origin(origin)?;
+
+        Balances::transfer(&sender, &BOB, amount.into(), Preservation::Preserve)?;
+
+        Ok(())
+    }
 }

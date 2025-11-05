@@ -33,6 +33,7 @@ use {
         BoundedVec,
     },
     hex_literal::hex,
+    pallet_xcm::ExecutionError,
     parity_scale_codec::Encode,
     snowbridge_core::{AgentId, Channel, ChannelId, ParaId},
     snowbridge_inbound_queue_primitives::v1::{
@@ -1816,13 +1817,22 @@ fn send_eth_native_does_not_work_if_min_reward_not_covered() {
                 },
             ]));
 
+            // TODO: REVISIT THE ERROR
+            // the error is that because it then tries to export through the other exporter and
+            // the last error is toomany asserts
+            // however one can check that if fee_amount is MinV2Reward::get().saturating_add(1),
+            // everything works
+            // Not sure how to make the test more expresive
             assert_err_ignore_postinfo!(
                 XcmPallet::execute(
                     RuntimeOrigin::signed(AccountId::from(BOB)),
                     Box::new(xcm),
                     Weight::from(16_000_000_000),
                 ),
-                pallet_xcm::Error::<Runtime>::LocalExecutionIncomplete
+                pallet_xcm::Error::<Runtime>::LocalExecutionIncompleteWithError {
+                    index: 1,
+                    error: ExecutionError::TooManyAssets
+                }
             );
         })
 }
@@ -1940,7 +1950,10 @@ fn send_eth_native_does_not_work_if_reward_diff_asset() {
                     Box::new(xcm),
                     Weight::from(16_000_000_000),
                 ),
-                pallet_xcm::Error::<Runtime>::LocalExecutionIncomplete
+                pallet_xcm::Error::<Runtime>::LocalExecutionIncompleteWithError {
+                    index: 1,
+                    error: ExecutionError::NotHoldingFees
+                }
             );
         })
 }
@@ -2209,7 +2222,10 @@ fn sending_eth_native_withdrawing_non_sufficient_amount_fee_does_not_work() {
                     Box::new(xcm),
                     Weight::from(16_000_000_000),
                 ),
-                pallet_xcm::Error::<Runtime>::LocalExecutionIncomplete
+                pallet_xcm::Error::<Runtime>::LocalExecutionIncompleteWithError {
+                    index: 1,
+                    error: ExecutionError::NotHoldingFees
+                }
             );
         })
 }
@@ -2282,7 +2298,10 @@ fn cant_send_eth_unknown_token() {
                     0u32,
                     Unlimited,
                 ),
-                pallet_xcm::Error::<Runtime>::LocalExecutionIncomplete
+                pallet_xcm::Error::<Runtime>::LocalExecutionIncompleteWithError {
+                    index: 0,
+                    error: ExecutionError::AssetNotFound
+                }
             );
 
             assert_eq!(
@@ -2378,7 +2397,10 @@ fn cant_send_eth_native_token_more_than_owned() {
                     0u32,
                     Unlimited,
                 ),
-                pallet_xcm::Error::<Runtime>::LocalExecutionIncomplete
+                pallet_xcm::Error::<Runtime>::LocalExecutionIncompleteWithError {
+                    index: 0,
+                    error: ExecutionError::FailedToTransactAsset
+                }
             );
 
             assert_eq!(
