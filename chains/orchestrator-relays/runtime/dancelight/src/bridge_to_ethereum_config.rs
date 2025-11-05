@@ -193,7 +193,7 @@ impl bp_relayers::PaymentProcedure<AccountId, BridgeReward, u128> for BridgeRewa
     fn pay_reward(
         _relayer: &AccountId,
         reward_kind: BridgeReward,
-        _reward: u128,
+        reward: u128,
         beneficiary: BridgeRewardBeneficiaries,
     ) -> Result<(), Self::Error> {
         match reward_kind {
@@ -208,9 +208,14 @@ impl bp_relayers::PaymentProcedure<AccountId, BridgeReward, u128> for BridgeRewa
             }
             BridgeReward::SnowbridgeRewardOutbound => {
                 match beneficiary {
-                    BridgeRewardBeneficiaries::LocalAccount(_account_id) => {
-                        // TODO: Pay relayer from reward account in tanssi.
-                        // Take from ethereum fees account
+                    // Fees are collected by the snowbridge fees account and thus payed from it too
+                    BridgeRewardBeneficiaries::LocalAccount(account_id) => {
+                        Balances::transfer(
+                            &SnowbridgeFeesAccount::get(),
+                            &account_id,
+                            reward.into(),
+                            Preservation::Preserve,
+                        )?;
                         Ok(())
                     }
                 }
