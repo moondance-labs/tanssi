@@ -1656,11 +1656,21 @@ impl_runtime_apis! {
             build_state::<RuntimeGenesisConfig>(config)
         }
 
-        fn get_preset(id: &Option<sp_genesis_builder::PresetId>) -> Option<Vec<u8>> {
-            get_preset::<RuntimeGenesisConfig>(id, |_| None)
+       fn get_preset(id: &Option<sp_genesis_builder::PresetId>) -> Option<Vec<u8>> {
+            get_preset::<RuntimeGenesisConfig>(id, |id: &sp_genesis_builder::PresetId| {
+                let patch = match id.as_ref() {
+                    "development" => serde_json::json!(&RuntimeGenesisConfig::default()),
+                    _ => return None,
+                };
+                Some(
+                    serde_json::to_string(&patch)
+                        .expect("serialization to json is expected to work. qed.")
+                        .into_bytes(),
+                )
+            })
         }
         fn preset_names() -> Vec<sp_genesis_builder::PresetId> {
-            vec![]
+            vec!["development".into()]
         }
     }
 

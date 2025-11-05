@@ -86,14 +86,14 @@ function bench {
             fi
             touch "$OUTPUT"
             WASMTIME_BACKTRACE_DETAILS=1 frame-omni-bencher v1 benchmark pallet \
-            --runtime="${RUNTIME}"
+            --runtime="${RUNTIME}" \
             --pallet="$PALLET" \
             --extrinsic="*" \
             --wasm-execution=compiled \
             --steps="${STEPS}" \
             --repeat="${REPEAT}" \
             --template="${TEMPLATE_TO_USE}" \
-            --output="${OUTPUT}"
+            --output="${OUTPUT}" \
             --heap-pages=4096 \
             --no-storage-info --no-min-squares --no-median-slopes
         done
@@ -110,14 +110,14 @@ function bench {
         fi
         touch "$OUTPUT"
         WASMTIME_BACKTRACE_DETAILS=1 frame-omni-bencher v1 benchmark pallet \
-            --runtime="${RUNTIME}"
+            --runtime="${RUNTIME}" \
             --pallet="${1}" \
             --extrinsic="${2}" \
             --wasm-execution=compiled \
             --steps="${STEPS}" \
             --repeat="${REPEAT}" \
             --template="${TEMPLATE_TO_USE}" \
-            --output="${OUTPUT}"
+            --output="${OUTPUT}" \
             --heap-pages=4096 \
             --no-storage-info --no-min-squares --no-median-slopes
     fi
