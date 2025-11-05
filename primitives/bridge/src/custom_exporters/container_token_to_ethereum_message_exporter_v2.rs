@@ -16,16 +16,21 @@
 
 use {
     alloc::vec::Vec,
-    core::{iter::Peekable, marker::PhantomData, slice::Iter},
-    frame_support::{ensure, traits::Get},
+    core::{iter::Peekable, marker::PhantomData, ops::ControlFlow, slice::Iter},
+    frame_support::{
+        ensure,
+        traits::{Get, ProcessMessageError},
+        BoundedVec,
+    },
     parity_scale_codec::{Decode, Encode},
     snowbridge_core::{AgentId, ChannelId, TokenId},
-    snowbridge_outbound_queue_primitives::v1::message::{Command, Message, SendMessage},
+    snowbridge_outbound_queue_primitives::v2::message::{Command, Message, SendMessage},
     sp_core::H160,
     sp_runtime::traits::MaybeEquivalence,
     xcm::latest::SendError::{MissingArgument, NotApplicable, Unroutable},
     xcm::prelude::*,
-    xcm_executor::traits::ExportXcm,
+    xcm_builder::{CreateMatcher, MatchXcm},
+    xcm_executor::traits::{ConvertLocation, ExportXcm},
 };
 
 pub struct ContainerEthereumBlobExporterV2<
@@ -35,6 +40,7 @@ pub struct ContainerEthereumBlobExporterV2<
     OutboundQueue,
     ConvertAssetId,
     BridgeChannelInfo,
+    MinReward,
 >(
     PhantomData<(
         UniversalLocation,
@@ -43,6 +49,7 @@ pub struct ContainerEthereumBlobExporterV2<
         OutboundQueue,
         ConvertAssetId,
         BridgeChannelInfo,
+        MinReward,
     )>,
 );
 
@@ -53,6 +60,7 @@ impl<
         OutboundQueue,
         ConvertAssetId,
         BridgeChannelInfo,
+        MinReward,
     > ExportXcm
     for ContainerEthereumBlobExporterV2<
         UniversalLocation,
@@ -61,14 +69,16 @@ impl<
         OutboundQueue,
         ConvertAssetId,
         BridgeChannelInfo,
+        MinReward,
     >
 where
     UniversalLocation: Get<InteriorLocation>,
     EthereumNetwork: Get<NetworkId>,
     EthereumLocation: Get<Location>,
-    OutboundQueue: SendMessage<Balance = u128>,
+    OutboundQueue: SendMessage,
     ConvertAssetId: MaybeEquivalence<TokenId, Location>,
     BridgeChannelInfo: Get<Option<(ChannelId, AgentId)>>,
+    MinReward: Get<Asset>,
 {
     type Ticket = (Vec<u8>, XcmHash);
 
@@ -127,38 +137,53 @@ where
             MissingArgument
         })?;
 
+        // Inspect `AliasOrigin` as V2 message. This exporter should only process Snowbridge V2
+        // messages. We use the presence of an `AliasOrigin` instruction to distinguish between
+        // Snowbridge V2 and Snowbridge V1 messages, since XCM V5 came after Snowbridge V1 and
+        // so it's not supported in Snowbridge V1. Snowbridge V1 messages are processed by the
+        // snowbridge-outbound-queue-primitives v1 exporter.
+        let mut instructions = message.clone().0;
+        let result = instructions.matcher().match_next_inst_while(
+            |_| true,
+            |inst| {
+                return match inst {
+                    AliasOrigin(..) => Err(ProcessMessageError::Yield),
+                    _ => Ok(ControlFlow::Continue(())),
+                };
+            },
+        );
+        ensure!(result.is_err(), SendError::NotApplicable);
+
+        let dest_junction: Junction = expected_network.into();
+        let dest_location = dest_junction.into_exterior(1);
+        let min_reward_destination_view = MinReward::get().reanchored(&dest_location, &UniversalLocation::get()).map_err(|err| {
+            log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue validation of message failed. {err:?}");
+            SendError::Unroutable
+        })?;
+
         let mut converter =
             XcmConverterV2::<ConvertAssetId, UniversalLocation, EthereumLocation, ()>::new(
                 &message,
                 expected_network,
                 para_id,
+                min_reward_destination_view,
             );
-        let (command, message_id) = converter.convert().map_err(|err|{
+
+        let outbound_message = converter.convert().map_err(|err|{
             log::error!(target: "xcm::ethereum_blob_exporter", "unroutable due to pattern matching error '{err:?}'.");
             Unroutable
         })?;
 
-        let (channel_id, _) = BridgeChannelInfo::get().ok_or_else(|| {
-            log::error!(target: "xcm::ethereum_blob_exporter", "channel id and agent id cannot be fetched");
-            Unroutable
-        })?;
-
-        let outbound_message = Message {
-            id: Some(message_id.into()),
-            channel_id,
-            command,
-        };
-
         // validate the message
-        let (ticket, fee) = OutboundQueue::validate(&outbound_message).map_err(|err| {
+        let ticket = OutboundQueue::validate(&outbound_message).map_err(|err| {
             log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue validation of message failed. {err:?}");
             Unroutable
         })?;
 
-        // convert fee to Asset (specify native tokens)
-        let fee = Asset::from((Location::new(0, []), fee.total())).into();
+        // convert fee to Asset
+        let fee = Asset::from((MinReward::get().id, outbound_message.fee)).into();
 
-        Ok(((ticket.encode(), message_id), fee))
+        Ok(((ticket.encode(), XcmHash::from(outbound_message.id)), fee))
     }
 
     fn deliver(blob: (Vec<u8>, XcmHash)) -> Result<XcmHash, SendError> {
@@ -181,7 +206,10 @@ where
 #[cfg(not(feature = "runtime-benchmarks"))]
 /// Errors that can be thrown to the pattern matching step.
 #[derive(PartialEq, Debug)]
-enum XcmConverterError {
+enum XcmConverterErrorV2 {
+    AliasOriginExpected,
+    InvalidOrigin,
+    WithdrawAssetExpected,
     UnexpectedEndOfXcm,
     EndOfXcmMessageExpected,
     DepositAssetExpected,
@@ -190,6 +218,7 @@ enum XcmConverterError {
     NoReserveAssets,
     FilterDoesNotConsumeAllAssets,
     TooManyAssets,
+    TooManyCommands,
     ZeroAssetTransfer,
     BeneficiaryResolutionFailed,
     AssetResolutionFailed,
@@ -216,6 +245,7 @@ struct XcmConverterV2<'a, ConvertAssetId, UniversalLocation, EthereumLocation, C
     iter: Peekable<Iter<'a, Instruction<Call>>>,
     _ethereum_network: NetworkId,
     _para_id: u32,
+    _min_reward: Asset,
     _marker: PhantomData<(ConvertAssetId, UniversalLocation, EthereumLocation)>,
 }
 #[cfg(feature = "runtime-benchmarks")]
@@ -226,26 +256,25 @@ where
     UniversalLocation: Get<InteriorLocation>,
     EthereumLocation: Get<Location>,
 {
-    fn new(message: &'a Xcm<Call>, _ethereum_network: NetworkId, _para_id: u32) -> Self {
+    fn new(message: &'a Xcm<Call>, _ethereum_network: NetworkId, _para_id: u32, _min_reward: Asset) -> Self {
         Self {
             iter: message.inner().iter().peekable(),
             _ethereum_network,
             _para_id,
+            _min_reward,
             _marker: Default::default(),
         }
     }
 
-    fn convert(&mut self) -> Result<(Command, [u8; 32]), sp_runtime::DispatchError> {
+    fn convert(&mut self) -> Result<Message, XcmConverterErrorV2> {
         ensure!(self.iter.len() > 0, "Should have at least one instruction");
 
-        return Ok((
-            Command::MintForeignToken {
-                token_id: Default::default(),
-                recipient: H160::repeat_byte(0),
-                amount: 0,
-            },
-            [0u8; 32],
-        ));
+        return Ok(Message {
+            id: H256::zero(),
+            origin: H160::zero(),
+            fee: 0,
+            commands: BoundedVec::new(),
+        });
     }
 }
 
@@ -254,6 +283,7 @@ struct XcmConverterV2<'a, ConvertAssetId, UniversalLocation, EthereumLocation, C
     iter: Peekable<Iter<'a, Instruction<Call>>>,
     ethereum_network: NetworkId,
     para_id: u32,
+    min_reward: Asset,
     _marker: PhantomData<(ConvertAssetId, UniversalLocation, EthereumLocation)>,
 }
 #[cfg(not(feature = "runtime-benchmarks"))]
@@ -264,44 +294,51 @@ where
     UniversalLocation: Get<InteriorLocation>,
     EthereumLocation: Get<Location>,
 {
-    fn new(message: &'a Xcm<Call>, ethereum_network: NetworkId, para_id: u32) -> Self {
+    fn new(
+        message: &'a Xcm<Call>,
+        ethereum_network: NetworkId,
+        para_id: u32,
+        min_reward: Asset,
+    ) -> Self {
         Self {
             iter: message.inner().iter().peekable(),
             ethereum_network,
             para_id,
+            min_reward,
             _marker: Default::default(),
         }
     }
 
-    fn convert(&mut self) -> Result<(Command, [u8; 32]), XcmConverterError> {
+    fn convert(&mut self) -> Result<Message, XcmConverterErrorV2> {
+        let fee = self.try_extract_fee()?;
         let result = match self.peek() {
             // Prepare the command to mint the foreign token.
-            Ok(ReserveAssetDeposited { .. }) => self.make_mint_foreign_token_command(),
+            Ok(ReserveAssetDeposited { .. }) => self.make_mint_foreign_token_command(fee),
             Err(e) => {
                 log::trace!(target: "xcm::convert", "peak error: {:?}", e);
                 Err(e)
             }
-            _ => return Err(XcmConverterError::UnexpectedInstruction),
+            _ => return Err(XcmConverterErrorV2::UnexpectedInstruction),
         }?;
 
         // All xcm instructions must be consumed before exit.
         if self.next().is_ok() {
-            return Err(XcmConverterError::EndOfXcmMessageExpected);
+            return Err(XcmConverterErrorV2::EndOfXcmMessageExpected);
         }
 
         Ok(result)
     }
 
-    fn next(&mut self) -> Result<&'a Instruction<Call>, XcmConverterError> {
+    fn next(&mut self) -> Result<&'a Instruction<Call>, XcmConverterErrorV2> {
         self.iter
             .next()
-            .ok_or(XcmConverterError::UnexpectedEndOfXcm)
+            .ok_or(XcmConverterErrorV2::UnexpectedEndOfXcm)
     }
 
-    fn peek(&mut self) -> Result<&&'a Instruction<Call>, XcmConverterError> {
+    fn peek(&mut self) -> Result<&&'a Instruction<Call>, XcmConverterErrorV2> {
         self.iter
             .peek()
-            .ok_or(XcmConverterError::UnexpectedEndOfXcm)
+            .ok_or(XcmConverterErrorV2::UnexpectedEndOfXcm)
     }
 
     fn network_matches(&self, network: &Option<NetworkId>) -> bool {
@@ -333,17 +370,67 @@ where
         }
     }
 
-    /// Convert the xcm for Polkadot-native token from AH into the Command
-    /// To match transfers of Polkadot-native tokens, we expect an input of the form:
+    /// Extract the fee asset item from PayFees(V5)
+    fn try_extract_fee(&mut self) -> Result<u128, XcmConverterErrorV2> {
+        use XcmConverterErrorV2::*;
+        let reserved_fee_assets = match_expression!(self.next()?, WithdrawAsset(fee), fee)
+            .ok_or(WithdrawAssetExpected)?;
+        ensure!(reserved_fee_assets.len() == 1, AssetResolutionFailed);
+        let reserved_fee_asset = reserved_fee_assets
+            .inner()
+            .first()
+            .cloned()
+            .ok_or(AssetResolutionFailed)?;
+        let (reserved_fee_asset_id, reserved_fee_amount) = match reserved_fee_asset {
+            Asset {
+                id: asset_id,
+                fun: Fungible(amount),
+            } => Ok((asset_id, amount)),
+            _ => Err(AssetResolutionFailed),
+        }?;
+        let fee_asset =
+            match_expression!(self.next()?, PayFees { asset: fee }, fee).ok_or(InvalidFeeAsset)?;
+        let (fee_asset_id, fee_amount) = match fee_asset {
+            Asset {
+                id: asset_id,
+                fun: Fungible(amount),
+            } => Ok((asset_id, *amount)),
+            _ => Err(AssetResolutionFailed),
+        }?;
+        let (min_reward_asset_id, min_reward_amount) = match &self.min_reward {
+            Asset {
+                id: asset_id,
+                fun: Fungible(amount),
+            } => Ok((asset_id, amount)),
+            _ => Err(XcmConverterErrorV2::AssetResolutionFailed),
+        }?;
+
+        ensure!(fee_asset_id.0 == min_reward_asset_id.0, InvalidFeeAsset);
+
+        ensure!(
+            reserved_fee_asset_id.0 == min_reward_asset_id.0,
+            InvalidFeeAsset
+        );
+
+        ensure!(reserved_fee_amount >= fee_amount, InvalidFeeAsset);
+
+        ensure!(fee_amount >= *min_reward_amount, InvalidFeeAsset);
+
+        Ok(fee_amount)
+    }
+
+    /// Convert the xcm for container-native token into the Message
+    /// We expect an input of the form:
     /// # ReserveAssetDeposited
-    /// # ClearOrigin
-    /// # BuyExecution
+    /// # AliasOrigin
     /// # DepositAsset
+    /// TODO: support Transact
     /// # SetTopic
     fn make_mint_foreign_token_command(
         &mut self,
-    ) -> Result<(Command, [u8; 32]), XcmConverterError> {
-        use XcmConverterError::*;
+        fee: u128,
+    ) -> Result<Message, XcmConverterErrorV2> {
+        use XcmConverterErrorV2::*;
 
         // Get the reserve assets.
         let reserve_assets = match_expression!(
@@ -353,35 +440,42 @@ where
         )
         .ok_or(ReserveAssetDepositedExpected)?;
 
-        // Check if clear origin exists
-        match_expression!(self.next(), Ok(ClearOrigin), ()).ok_or(ClearOriginExpected)?;
-
-        // Get the fee asset item from BuyExecution
-        let fee_asset = match_expression!(self.next(), Ok(BuyExecution { fees, .. }), fees)
-            .ok_or(BuyExecutionExpected)?;
-
-        let (deposit_assets, beneficiary) = match self.next()? {
-            Instruction::DepositAsset {
-                assets,
-                beneficiary,
-            } => (assets, beneficiary),
-            _ => return Err(DepositAssetExpected),
-        };
-
-        // assert that the beneficiary is AccountKey20.
-        let (parents, interior) = beneficiary.unpack();
-
-        let recipient = match (parents, interior) {
-            (0, [AccountKey20 { network, key }]) if self.network_matches(network) => H160(*key),
-            _ => return Err(BeneficiaryResolutionFailed),
-        };
-
         // Make sure there are reserved assets.
         if reserve_assets.len() == 0 {
             return Err(NoReserveAssets);
         }
 
-        // Check the the deposit asset filter matches what was reserved.
+        // Check if clear origin exists and skip over it.
+        if match_expression!(self.peek(), Ok(ClearOrigin), ()).is_some() {
+            let _ = self.next();
+        }
+
+        // Check AliasOrigin.
+        let origin_location = match_expression!(self.next()?, AliasOrigin(origin), origin)
+            .ok_or(AliasOriginExpected)?;
+
+        let origin = crate::AgentIdOf::convert_location(origin_location).ok_or(InvalidOrigin)?;
+
+        let (deposit_assets, beneficiary) = match_expression!(
+            self.next()?,
+            DepositAsset {
+                assets,
+                beneficiary
+            },
+            (assets, beneficiary)
+        )
+        .ok_or(DepositAssetExpected)?;
+
+        // assert that the beneficiary is AccountKey20.
+        let recipient = match_expression!(
+            beneficiary.unpack(),
+            (0, [AccountKey20 { network, key }])
+                if self.network_matches(network),
+            H160(*key)
+        )
+        .ok_or(BeneficiaryResolutionFailed)?;
+
+        // Check the deposit asset filter matches what was reserved.
         if reserve_assets
             .inner()
             .iter()
@@ -393,16 +487,6 @@ where
         // We only support a single asset at a time.
         ensure!(reserve_assets.len() == 1, TooManyAssets);
         let reserve_asset = reserve_assets.get(0).ok_or(AssetResolutionFailed)?;
-
-        // Fees are collected on AH, up front and directly from the user, to cover the
-        // complete cost of the transfer. Any additional fees provided in the XCM program are
-        // refunded to the beneficiary. We only validate the fee here if its provided to make sure
-        // the XCM program is well formed. Another way to think about this from an XCM perspective
-        // would be that the user offered to pay X amount in fees, but we charge 0 of that X amount
-        // (no fee) and refund X to the user.
-        if fee_asset.id != reserve_asset.id || fee_asset.fun > reserve_asset.fun {
-            return Err(InvalidFeeAsset);
-        }
 
         let (asset_id, amount) = match reserve_asset {
             Asset {
@@ -419,7 +503,7 @@ where
         // transfer amount must be greater than 0.
         ensure!(amount > 0, ZeroAssetTransfer);
 
-        log::trace!(target: "xcm::make_mint_foreign_token_command", "asset_id={asset_id:?}");
+        log::trace!(target: "xcm::snowbridge_v2::make_mint_foreign_token_command", "asset_id={asset_id:?}");
 
         // NOTE: For now we have hardcoded RelayNetwork to the DANCELIGHT_GENESIS_HASH,
         // so asset_id won't work with Starlight runtime, but after we add pallet parameters and make the
@@ -429,14 +513,21 @@ where
         // Check if there is a SetTopic and skip over it if found.
         let topic_id = match_expression!(self.next()?, SetTopic(id), id).ok_or(SetTopicExpected)?;
 
-        Ok((
-            Command::MintForeignToken {
-                token_id,
-                recipient,
-                amount,
-            },
-            *topic_id,
-        ))
+        let mut commands: Vec<Command> = Vec::new();
+        commands.push(Command::MintForeignToken {
+            token_id,
+            recipient,
+            amount,
+        });
+
+        let message = Message {
+            id: (*topic_id).into(),
+            origin,
+            fee,
+            commands: BoundedVec::try_from(commands).map_err(|_| TooManyCommands)?,
+        };
+
+        Ok(message)
     }
 }
 
@@ -506,7 +597,7 @@ mod tests {
         super::*,
         frame_support::parameter_types,
         hex_literal::hex,
-        snowbridge_outbound_queue_primitives::{v1::Fee, SendError, SendMessageFeeProvider},
+        snowbridge_outbound_queue_primitives::{SendError, SendMessageFeeProvider},
         sp_core::H256,
     };
 
@@ -515,6 +606,8 @@ mod tests {
         const EthereumNetwork: NetworkId = Ethereum { chain_id: 11155111 };
         UniversalLocation: InteriorLocation = [GlobalConsensus(ByGenesis([ 152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43, 81, 39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10 ]))].into();
         const BridgeChannelInfo: Option<(ChannelId, AgentId)> = Some((ChannelId::new([1u8; 32]), H256([2u8; 32])));
+        pub const MinV2Reward: u128 = 1u128;
+        pub MinReward: Asset = (Location::here(), MinV2Reward::get()).into();
     }
 
     pub struct MockTokenIdConvert;
@@ -531,14 +624,8 @@ mod tests {
     impl SendMessage for MockOkOutboundQueue {
         type Ticket = ();
 
-        fn validate(_: &Message) -> Result<(Self::Ticket, Fee<Self::Balance>), SendError> {
-            Ok((
-                (),
-                Fee {
-                    local: 1,
-                    remote: 1,
-                },
-            ))
+        fn validate(_: &Message) -> Result<Self::Ticket, SendError> {
+            Ok(())
         }
 
         fn deliver(_: Self::Ticket) -> Result<H256, SendError> {
@@ -557,7 +644,7 @@ mod tests {
     impl SendMessage for MockErrOutboundQueue {
         type Ticket = ();
 
-        fn validate(_: &Message) -> Result<(Self::Ticket, Fee<Self::Balance>), SendError> {
+        fn validate(_: &Message) -> Result<Self::Ticket, SendError> {
             Err(SendError::MessageTooLarge)
         }
 
@@ -589,6 +676,7 @@ mod tests {
             MockOkOutboundQueue,
             MockTokenIdConvert,
             BridgeChannelInfo,
+            MinReward,
         >::validate(
             network,
             channel,
@@ -614,6 +702,7 @@ mod tests {
             MockOkOutboundQueue,
             MockTokenIdConvert,
             BridgeChannelInfo,
+            MinReward,
         >::validate(
             network,
             channel,
@@ -645,6 +734,7 @@ mod tests {
             MockOkOutboundQueue,
             MockTokenIdConvert,
             BridgeChannelInfo,
+            MinReward,
         >::validate(
             network,
             channel,
@@ -670,6 +760,7 @@ mod tests {
             MockOkOutboundQueue,
             MockTokenIdConvert,
             BridgeChannelInfo,
+            MinReward,
         >::validate(
             network,
             channel,
@@ -687,6 +778,7 @@ mod tests {
             MockOkOutboundQueue,
             MockTokenIdConvert,
             BridgeChannelInfo,
+            MinReward,
         >::validate(
             network,
             channel,
@@ -718,6 +810,7 @@ mod tests {
             MockOkOutboundQueue,
             MockTokenIdConvert,
             BridgeChannelInfo,
+            MinReward,
         >::validate(
             network,
             channel,
@@ -752,6 +845,7 @@ mod tests {
             MockOkOutboundQueue,
             MockTokenIdConvert,
             BridgeChannelInfo,
+            MinReward,
         >::validate(
             network,
             channel,
@@ -786,6 +880,7 @@ mod tests {
             MockOkOutboundQueue,
             MockTokenIdConvert,
             BridgeChannelInfo,
+            MinReward,
         >::validate(
             network,
             channel,
@@ -842,6 +937,7 @@ mod tests {
             MockOkOutboundQueue,
             MockTokenIdConvert,
             BridgeChannelInfo,
+            MinReward,
         >::validate(
             network,
             channel,
@@ -896,6 +992,7 @@ mod tests {
             MockOkOutboundQueue,
             MockTokenIdConvert,
             BridgeChannelInfo,
+            MinReward,
         >::validate(
             network,
             channel,
@@ -953,6 +1050,7 @@ mod tests {
             MockOkOutboundQueue,
             MockTokenIdConvert,
             BridgeChannelInfo,
+            MinReward,
         >::validate(
             network,
             channel,
@@ -1020,6 +1118,7 @@ mod tests {
             MockOkOutboundQueue,
             MockTokenIdConvert,
             BridgeChannelInfo,
+            MinReward,
         >::validate(
             network,
             channel,
@@ -1087,6 +1186,7 @@ mod tests {
             MockOkOutboundQueue,
             MockTokenIdConvert,
             BridgeChannelInfo,
+            MinReward,
         >::validate(
             network,
             channel,
@@ -1159,6 +1259,7 @@ mod tests {
             MockOkOutboundQueue,
             MockTokenIdConvert,
             BridgeChannelInfo,
+            MinReward,
         >::validate(
             network,
             channel,
@@ -1234,6 +1335,7 @@ mod tests {
             MockOkOutboundQueue,
             MockTokenIdConvert,
             BridgeChannelInfo,
+            MinReward,
         >::validate(
             network,
             channel,
@@ -1316,6 +1418,7 @@ mod tests {
             MockOkOutboundQueue,
             MockTokenIdConvert,
             BridgeChannelInfo,
+            MinReward,
         >::validate(
             network,
             channel,
@@ -1398,6 +1501,7 @@ mod tests {
             MockOkOutboundQueue,
             MockTokenIdConvert,
             BridgeChannelInfo,
+            MinReward,
         >::validate(
             network,
             channel,
@@ -1467,6 +1571,7 @@ mod tests {
             MockOkOutboundQueue,
             MockTokenIdConvert,
             BridgeChannelInfo,
+            MinReward,
         >::validate(
             network,
             channel,
@@ -1549,6 +1654,7 @@ mod tests {
             MockOkOutboundQueue,
             MockTokenIdConvert,
             BridgeChannelInfo,
+            MinReward,
         >::validate(
             network,
             channel,
@@ -1618,6 +1724,7 @@ mod tests {
             MockOkOutboundQueue,
             MockTokenIdConvert,
             BridgeChannelInfo,
+            MinReward,
         >::validate(
             network,
             channel,
@@ -1687,6 +1794,7 @@ mod tests {
             MockOkOutboundQueue,
             MockTokenIdConvert,
             BridgeChannelInfo,
+            MinReward,
         >::validate(
             network,
             channel,
@@ -1761,6 +1869,7 @@ mod tests {
             MockOkOutboundQueue,
             MockTokenIdConvert,
             BridgeChannelInfo,
+            MinReward,
         >::validate(
             network,
             channel,
@@ -1834,6 +1943,7 @@ mod tests {
             MockOkOutboundQueue,
             MockTokenIdConvert,
             BridgeChannelInfo,
+            MinReward,
         >::validate(
             network,
             channel,
