@@ -115,6 +115,10 @@ impl snowbridge_pallet_outbound_queue::Config for Runtime {
     type OnNewCommitment = CommitmentRecorder;
 }
 
+/// Rewards for Snowbridge.Outbound in tanssi. Inbound in ETH
+/// I wish we could have a single variant with location inside,
+/// but the pallets require the copy trait, and ML does not
+/// derive copy
 #[derive(
     Clone,
     Copy,
@@ -128,12 +132,13 @@ impl snowbridge_pallet_outbound_queue::Config for Runtime {
     TypeInfo,
 )]
 pub enum BridgeReward {
-    /// Rewards for Snowbridge.
-    Snowbridge,
+    SnowbridgeRewardOutbound,
+    SnowbridgeRewardInbound,
 }
 
 parameter_types! {
-    pub const SnowbridgeReward: BridgeReward = BridgeReward::Snowbridge;
+    pub SnowbridgeRewardOutbound: BridgeReward = BridgeReward::SnowbridgeRewardOutbound;
+    pub SnowbridgeRewardInbound: BridgeReward = BridgeReward::SnowbridgeRewardInbound;
 }
 
 pub struct DoNothingMessageQueue;
@@ -181,10 +186,20 @@ impl bp_relayers::PaymentProcedure<AccountId, BridgeReward, u128> for BridgeRewa
         beneficiary: BridgeRewardBeneficiaries,
     ) -> Result<(), Self::Error> {
         match reward_kind {
-            BridgeReward::Snowbridge => {
+            BridgeReward::SnowbridgeRewardInbound => {
                 match beneficiary {
                     BridgeRewardBeneficiaries::LocalAccount(_account_id) => {
-                        // TODO: Pay relayer from reward account
+                        // TODO: Pay relayer from reward account in ETH.
+                        // Mint reward directly with transactor
+                        Ok(())
+                    }
+                }
+            }
+            BridgeReward::SnowbridgeRewardOutbound => {
+                match beneficiary {
+                    BridgeRewardBeneficiaries::LocalAccount(_account_id) => {
+                        // TODO: Pay relayer from reward account in tanssi.
+                        // Take from ethereum fees account
                         Ok(())
                     }
                 }
@@ -503,7 +518,7 @@ impl snowbridge_pallet_inbound_queue_v2::Config for Runtime {
     type GatewayAddress = EthereumGatewayAddress;
     type MessageProcessor = (SymbioticMessageProcessor<Self>,);
     type RewardKind = BridgeReward;
-    type DefaultRewardKind = SnowbridgeReward;
+    type DefaultRewardKind = SnowbridgeRewardInbound;
     type RewardPayment = BridgeRelayers;
     type WeightInfo = ();
 }
