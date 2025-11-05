@@ -7,23 +7,6 @@
 
 set -euo pipefail
 
-# By default we use the tanssi-node release binary
-# However we can use any binary by running the benchmark tool with
-# BINARY=./target/release/container-chain-simple-node ./tools/benchmarking.sh
-: "${BINARY:=}"
-if [[ -z "${BINARY}" ]]; then
-    BINARY="./target/release/tanssi-node"
-else
-    BINARY="${BINARY}"
-fi
-
-: "${CHAIN:=}"
-if [[ -z "${CHAIN}" ]]; then
-    CHAIN="dev"
-else
-    CHAIN="${CHAIN}"
-fi
-
 : "${OUTPUT_PATH:=}"
 if [[ -z "${OUTPUT_PATH}" ]]; then
     mkdir -p tmp
@@ -42,12 +25,6 @@ fi
 STEPS=50
 REPEAT=20
 
-if [[ ! -f "${BINARY}" ]]; then
-    echo "binary '${BINARY}' does not exist."
-    echo "ensure that the tanssi binary is compiled with '--features=runtime-benchmarks' and in production mode."
-    exit 1
-fi
-
 function help {
     echo "USAGE:"
     echo "  ${0} [<pallet> <benchmark>] [--check]"
@@ -63,7 +40,7 @@ function help {
 }
 
 function choose_and_bench {
-    readarray -t options < <(${BINARY} benchmark pallet  --chain=${CHAIN} --list | sed 1d)
+    readarray -t options < <(frame-omni-bencher v1 benchmark pallet --no-csv-header --no-storage-info --no-min-squares --no-median-slopes --list --all --runtime="${RUNTIME}" | sed 1d)
     options+=('EXIT')
 
     select opt in "${options[@]}"; do
@@ -87,7 +64,7 @@ function bench {
     if [[ ${1} == "*" ]] ; then
         # Load all pallet names in an array.
         ALL_PALLETS=($(
-        $BINARY benchmark pallet --list --chain="${CHAIN}" |\
+        frame-omni-bencher v1 benchmark pallet --no-csv-header --no-storage-info --no-min-squares --no-median-slopes --list --all --runtime="${RUNTIME}" |\
             tail -n+2 |\
             cut -d',' -f1 |\
             sort |\
@@ -108,16 +85,17 @@ function bench {
                 OUTPUT="${OUTPUT_PATH}/$MODIFIED_PALLET_FILE.rs"
             fi
             touch "$OUTPUT"
-            WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
+            WASMTIME_BACKTRACE_DETAILS=1 frame-omni-bencher v1 benchmark pallet \
+            --runtime="${RUNTIME}"
+            --pallet="$PALLET" \
+            --extrinsic="*" \
             --wasm-execution=compiled \
-            --pallet "$PALLET" \
-            --extrinsic "*" \
-            --chain="${CHAIN}" \
-            --steps "${STEPS}" \
-            --repeat "${REPEAT}" \
+            --steps="${STEPS}" \
+            --repeat="${REPEAT}" \
             --template="${TEMPLATE_TO_USE}" \
-            --json-file raw.json \
-            --output "${OUTPUT}"
+            --output="${OUTPUT}"
+            --heap-pages=4096 \
+            --no-storage-info --no-min-squares --no-median-slopes
         done
     else
         TEMPLATE_TO_USE=$TEMPLATE_PATH
@@ -131,16 +109,17 @@ function bench {
             OUTPUT="${OUTPUT_PATH}/$MODIFIED_PALLET_FILE.rs"
         fi
         touch "$OUTPUT"
-        WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
+        WASMTIME_BACKTRACE_DETAILS=1 frame-omni-bencher v1 benchmark pallet \
+            --runtime="${RUNTIME}"
+            --pallet="${1}" \
+            --extrinsic="${2}" \
             --wasm-execution=compiled \
-            --pallet "${1}" \
-            --extrinsic "${2}" \
-            --chain="${CHAIN}" \
-            --steps "${STEPS}" \
-            --repeat "${REPEAT}" \
+            --steps="${STEPS}" \
+            --repeat="${REPEAT}" \
             --template="${TEMPLATE_TO_USE}" \
-            --json-file raw.json \
-            --output "${OUTPUT}"
+            --output="${OUTPUT}"
+            --heap-pages=4096 \
+            --no-storage-info --no-min-squares --no-median-slopes
     fi
 }
 
