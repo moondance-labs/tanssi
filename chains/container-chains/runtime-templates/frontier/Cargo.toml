@@ -28,6 +28,7 @@ ccp-xcm = { workspace = true }
 dp-consensus = { workspace = true }
 dp-impl-tanssi-pallets-config = { workspace = true }
 dp-slot-duration-runtime-api = { workspace = true }
+dp-container-chain-genesis-data = { workspace = true, features = ["json"] }
 pallet-cc-authorities-noting = { workspace = true }
 tanssi-runtime-common = { workspace = true }
 tp-xcm-commons = { workspace = true }
@@ -160,6 +161,7 @@ std = [
 	"frame-support/std",
 	"frame-system-benchmarking?/std",
 	"frame-system-rpc-runtime-api/std",
+	"dp-container-chain-genesis-data/std",
 	"frame-system/std",
 	"frame-try-runtime/std",
 	"log/std",

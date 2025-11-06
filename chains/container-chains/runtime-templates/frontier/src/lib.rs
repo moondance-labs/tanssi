@@ -31,6 +31,7 @@ use sp_version::NativeVersion;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
+pub mod genesis_config_presets;
 pub mod migrations;
 mod precompiles;
 pub mod weights;
@@ -40,6 +41,7 @@ use {
     crate::precompiles::TemplatePrecompiles,
     alloc::{vec, vec::Vec},
     cumulus_primitives_core::AggregateMessageOrigin,
+    cumulus_primitives_core::ParaId,
     dp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
     ethereum::AuthorizationList,
     fp_account::EthereumSignature,
@@ -70,6 +72,7 @@ use {
         limits::{BlockLength, BlockWeights},
         EnsureRoot,
     },
+    hex_literal::hex,
     nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_ethereum::{Call::transact, PostLogContent, Transaction as EthereumTransaction},
     pallet_evm::{
@@ -1269,8 +1272,17 @@ impl_runtime_apis! {
 
         fn get_preset(id: &Option<sp_genesis_builder::PresetId>) -> Option<Vec<u8>> {
             get_preset::<RuntimeGenesisConfig>(id, |id: &sp_genesis_builder::PresetId| {
+                let mut default_funded_accounts = genesis_config_presets::pre_funded_accounts();
+                default_funded_accounts.sort();
+                default_funded_accounts.dedup();
+                let para_id: ParaId = 2000.into();
+
                 let patch = match id.as_ref() {
-                    "development" => serde_json::json!(&RuntimeGenesisConfig::default()),
+                    "development" => genesis_config_presets::development(
+                        default_funded_accounts.clone(),
+                        para_id,
+                        AccountId::from(hex!("f24FF3a9CF04c71Dbc94D0b566f7A27B94566cac")),
+                    ),
                     _ => return None,
                 };
                 Some(

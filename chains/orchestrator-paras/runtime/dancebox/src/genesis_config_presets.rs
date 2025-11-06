@@ -36,7 +36,7 @@ use {
 
 pub fn local(
     para_id: ParaId,
-    container_chains: Vec<String>,
+    container_chains_spec_contents: Vec<String>,
     mock_container_chains: Vec<ParaId>,
     invulnerables: Vec<String>,
 ) -> serde_json::Value {
@@ -59,7 +59,7 @@ pub fn local(
         ]),
         para_id,
         Sr25519Keyring::Alice.to_account_id(),
-        &container_chains,
+        &container_chains_spec_contents,
         &mock_container_chains,
         pallet_configuration::GenesisConfig {
             config: HostConfiguration {
@@ -81,20 +81,10 @@ pub fn local(
 
 pub fn development(
     para_id: ParaId,
-    container_chains: Vec<String>,
+    container_chains_spec_contents: Vec<String>,
     mock_container_chains: Vec<ParaId>,
     invulnerables: Vec<String>,
 ) -> serde_json::Value {
-    // let para_id: ParaId = para_id.unwrap_or(1000).into();
-    // let mock_container_chains: Vec<ParaId> =
-    //     mock_container_chains.iter().map(|&x| x.into()).collect();
-    // let invulnerables = invulnerables.unwrap_or(vec![
-    //     "Alice".to_string(),
-    //     "Bob".to_string(),
-    //     "Charlie".to_string(),
-    //     "Dave".to_string(),
-    // ]);
-
     testnet_genesis(
         // initial collators.
         invulnerables_from_seeds(invulnerables.iter()),
@@ -114,7 +104,7 @@ pub fn development(
         ]),
         para_id,
         Sr25519Keyring::Alice.to_account_id(),
-        &container_chains,
+        &container_chains_spec_contents,
         &mock_container_chains,
         pallet_configuration::GenesisConfig {
             config: HostConfiguration {
@@ -139,18 +129,17 @@ fn testnet_genesis(
     endowed_accounts: Vec<AccountId>,
     id: ParaId,
     root_key: AccountId,
-    container_chains: &[String],
+    container_chains_spec_contents: &[String],
     mock_container_chains: &[ParaId],
     configuration: pallet_configuration::GenesisConfig<dancebox_runtime::Runtime>,
 ) -> serde_json::Value {
-    let para_ids: Vec<_> = container_chains
+    let para_ids: Vec<_> = container_chains_spec_contents
         .iter()
-        .map(|x| {
-            // TODO: convert from file to string
-            container_chain_genesis_data_from_str(x).unwrap_or_else(|e| {
+        .map(|content_str| {
+            container_chain_genesis_data_from_str(content_str).unwrap_or_else(|e| {
                 panic!(
                     "Failed to build genesis data for container chain {:?}: {}",
-                    x, e
+                    content_str, e
                 )
             })
         })

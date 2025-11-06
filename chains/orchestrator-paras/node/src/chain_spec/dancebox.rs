@@ -36,6 +36,17 @@ pub fn development_config(
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), false.into());
 
+    // we do conversion from chain_spec file to the string content here because
+    // local accepts contents vector
+    let container_chains_spec_contents: Vec<_> = container_chains
+        .iter()
+        .map(|path| {
+            std::fs::read_to_string(path)
+                .map_err(|_e| format!("ChainSpec for container chain not found at {:?}", path))
+                .unwrap()
+        })
+        .collect();
+
     ChainSpec::builder(
         dancebox_runtime::WASM_BINARY.expect("WASM binary was not built, please build it!"),
         Extensions {
@@ -48,7 +59,7 @@ pub fn development_config(
     .with_chain_type(ChainType::Development)
     .with_genesis_config(development(
         para_id,
-        container_chains,
+        container_chains_spec_contents,
         mock_container_chains,
         invulnerables,
     ))
@@ -69,6 +80,17 @@ pub fn local_dancebox_config(
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), false.into());
 
+    // we do conversion from chain_spec file to the string content here because
+    // local accepts contents vector
+    let container_chains_spec_contents: Vec<_> = container_chains
+        .iter()
+        .map(|path| {
+            std::fs::read_to_string(path)
+                .map_err(|_e| format!("ChainSpec for container chain not found at {:?}", path))
+                .unwrap()
+        })
+        .collect();
+
     ChainSpec::builder(
         dancebox_runtime::WASM_BINARY.expect("WASM binary was not built, please build it!"),
         Extensions {
@@ -81,7 +103,7 @@ pub fn local_dancebox_config(
     .with_chain_type(ChainType::Local)
     .with_genesis_config(local(
         para_id,
-        container_chains,
+        container_chains_spec_contents,
         mock_container_chains,
         invulnerables,
     ))

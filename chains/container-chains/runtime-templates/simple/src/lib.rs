@@ -31,6 +31,7 @@ use sp_version::NativeVersion;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
+pub mod genesis_config_presets;
 pub mod migrations;
 pub mod weights;
 
@@ -39,6 +40,7 @@ use {
     alloc::vec,
     alloc::vec::Vec,
     cumulus_primitives_core::AggregateMessageOrigin,
+    cumulus_primitives_core::ParaId,
     dp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
     frame_support::{
         construct_runtime,
@@ -75,6 +77,7 @@ use {
     sp_api::impl_runtime_apis,
     sp_consensus_slots::{Slot, SlotDuration},
     sp_core::{MaxEncodedLen, OpaqueMetadata},
+    sp_keyring::Sr25519Keyring,
     sp_runtime::{
         generic,
         generic::SignedPayload,
@@ -1017,8 +1020,17 @@ impl_runtime_apis! {
 
        fn get_preset(id: &Option<sp_genesis_builder::PresetId>) -> Option<Vec<u8>> {
             get_preset::<RuntimeGenesisConfig>(id, |id: &sp_genesis_builder::PresetId| {
+                let mut default_funded_accounts = genesis_config_presets::pre_funded_accounts();
+                default_funded_accounts.sort();
+                default_funded_accounts.dedup();
+                let para_id: ParaId = 2000.into();
+
                 let patch = match id.as_ref() {
-                    "development" => serde_json::json!(&RuntimeGenesisConfig::default()),
+                    "development" => genesis_config_presets::development(
+                        default_funded_accounts.clone(),
+                        para_id,
+                        Sr25519Keyring::Alice.to_account_id(),
+                    ),
                     _ => return None,
                 };
                 Some(

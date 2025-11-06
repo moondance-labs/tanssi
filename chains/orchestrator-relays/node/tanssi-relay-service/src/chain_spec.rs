@@ -186,12 +186,14 @@ pub fn dancelight_development_config(
 
     let container_chains: Vec<_> = container_chains
         .iter()
-        .map(|x| {
-            // TODO: convert from file to string
-            container_chain_genesis_data_from_str(x).unwrap_or_else(|e| {
+        .map(|path| {
+            let raw_chainspec_str = std::fs::read_to_string(path)
+                .map_err(|_e| format!("ChainSpec for container chain not found at {:?}", path))
+                .unwrap();
+            container_chain_genesis_data_from_str(&raw_chainspec_str).unwrap_or_else(|e| {
                 panic!(
                     "Failed to build genesis data for container chain {:?}: {}",
-                    x, e
+                    path, e
                 )
             })
         })
@@ -234,12 +236,14 @@ pub fn starlight_development_config(
 
     let container_chains: Vec<_> = container_chains
         .iter()
-        .map(|x| {
-            // TODO: convert from file to string
-            container_chain_genesis_data_from_str(x).unwrap_or_else(|e| {
+        .map(|path| {
+            let raw_chainspec_str = std::fs::read_to_string(path)
+                .map_err(|_e| format!("ChainSpec for container chain not found at {:?}", path))
+                .unwrap();
+            container_chain_genesis_data_from_str(&raw_chainspec_str).unwrap_or_else(|e| {
                 panic!(
                     "Failed to build genesis data for container chain {:?}: {}",
-                    x, e
+                    path, e
                 )
             })
         })
@@ -275,12 +279,14 @@ pub fn dancelight_local_testnet_config(
 ) -> Result<DancelightChainSpec, String> {
     let container_chains: Vec<_> = container_chains
         .iter()
-        .map(|x| {
-            // TODO: convert from file to string
-            container_chain_genesis_data_from_str(x).unwrap_or_else(|e| {
+        .map(|path| {
+            let raw_chainspec_str = std::fs::read_to_string(path)
+                .map_err(|_e| format!("ChainSpec for container chain not found at {:?}", path))
+                .unwrap();
+            container_chain_genesis_data_from_str(&raw_chainspec_str).unwrap_or_else(|e| {
                 panic!(
                     "Failed to build genesis data for container chain {:?}: {}",
-                    x, e
+                    path, e
                 )
             })
         })
@@ -315,12 +321,14 @@ pub fn starlight_local_testnet_config(
 ) -> Result<StarlightChainSpec, String> {
     let container_chains: Vec<_> = container_chains
         .iter()
-        .map(|x| {
-            // TODO: convert from file to string
-            container_chain_genesis_data_from_str(x).unwrap_or_else(|e| {
+        .map(|path| {
+            let raw_chainspec_str = std::fs::read_to_string(path)
+                .map_err(|_e| format!("ChainSpec for container chain not found at {:?}", path))
+                .unwrap();
+            container_chain_genesis_data_from_str(&raw_chainspec_str).unwrap_or_else(|e| {
                 panic!(
                     "Failed to build genesis data for container chain {:?}: {}",
-                    x, e
+                    path, e
                 )
             })
         })
