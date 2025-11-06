@@ -33,11 +33,8 @@ use pallet_ethereum_token_transfers::{
     pallet::TipHandler,
 };
 use parity_scale_codec::{Decode, MaxEncodedLen};
-use snowbridge_core::reward::{AddTip, AddTipError, MessageId};
-use snowbridge_outbound_queue_primitives::v2::{
-    ConstantGasMeter as ConstantGasMeterV2, Message, SendMessage,
-};
-use snowbridge_outbound_queue_primitives::SendError;
+use snowbridge_core::reward::MessageId;
+use snowbridge_outbound_queue_primitives::v2::ConstantGasMeter as ConstantGasMeterV2;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
 use {
@@ -289,29 +286,9 @@ impl snowbridge_pallet_system::Config for Runtime {
     type WeightInfo = crate::weights::snowbridge_pallet_system::SubstrateWeight<Runtime>;
 }
 
-// Added this since we do not have outbound queue integrated yet
-pub struct DoNothingQueue;
-impl SendMessage for DoNothingQueue {
-    type Ticket = ();
-
-    fn validate(_: &Message) -> Result<Self::Ticket, SendError> {
-        Ok(())
-    }
-
-    fn deliver(_: Self::Ticket) -> Result<H256, SendError> {
-        Ok(H256::zero())
-    }
-}
-
-impl AddTip for DoNothingQueue {
-    fn add_tip(_nonce: u64, _amount: u128) -> Result<(), AddTipError> {
-        Ok(())
-    }
-}
-
 impl snowbridge_pallet_system_v2::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type OutboundQueue = DoNothingQueue;
+    type OutboundQueue = EthereumOutboundQueueV2;
     type InboundQueue = EthereumInboundQueueV2;
     type FrontendOrigin = EitherOf<
         MapSuccess<EnsureRoot<AccountId>, ConvertUnitTo<Location>>,
