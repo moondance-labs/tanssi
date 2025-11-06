@@ -42,7 +42,6 @@ use sp_runtime::{DispatchError, TransactionOutcome};
 
 pub mod weights;
 
-#[cfg(feature = "runtime-benchmarks")]
 pub mod genesis_config_presets;
 
 #[cfg(test)]
