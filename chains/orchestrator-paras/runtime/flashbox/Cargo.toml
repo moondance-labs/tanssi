@@ -109,10 +109,10 @@ pallet-invulnerables = { workspace = true }
 parachain-info = { workspace = true }
 
 # Benchmarking
+dp-container-chain-genesis-data = { workspace = true, features = [ "json" ] }
 frame-benchmarking = { workspace = true, optional = true }
 frame-system-benchmarking = { workspace = true, optional = true }
 frame-try-runtime = { workspace = true, optional = true }
-dp-container-chain-genesis-data = { workspace = true, features = ["json"] }
 
 [dev-dependencies]
 cumulus-primitives-parachain-inherent = { workspace = true }
@@ -140,6 +140,8 @@ std = [
 	"cumulus-primitives-timestamp/std",
 	"cumulus-test-relay-sproof-builder/std",
 	"dp-consensus/std",
+	"dp-container-chain-genesis-data/std",
+	"sp-keyring/std",
 	"dp-core/std",
 	"dp-slot-duration-runtime-api/std",
 	"frame-benchmarking?/std",
@@ -200,7 +202,6 @@ std = [
 	"sp-api/std",
 	"sp-application-crypto/std",
 	"sp-application-crypto/std",
-	"dp-container-chain-genesis-data/std",
 	"sp-block-builder/std",
 	"sp-consensus-aura/std",
 	"sp-consensus-babe/std",

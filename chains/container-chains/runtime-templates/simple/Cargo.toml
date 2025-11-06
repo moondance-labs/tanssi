@@ -23,9 +23,9 @@ smallvec = { workspace = true }
 
 # Local
 dp-consensus = { workspace = true }
+dp-container-chain-genesis-data = { workspace = true, features = [ "json" ] }
 dp-impl-tanssi-pallets-config = { workspace = true }
 dp-slot-duration-runtime-api = { workspace = true }
-dp-container-chain-genesis-data = { workspace = true, features = ["json"] }
 pallet-cc-authorities-noting = { workspace = true }
 tanssi-runtime-common = { workspace = true }
 tp-xcm-commons = { workspace = true }
@@ -75,12 +75,12 @@ sp-core = { workspace = true }
 sp-debug-derive = { workspace = true }
 sp-genesis-builder = { workspace = true }
 sp-inherents = { workspace = true }
+sp-keyring = { workspace = true }
 sp-offchain = { workspace = true }
 sp-runtime = { workspace = true }
 sp-session = { workspace = true }
 sp-transaction-pool = { workspace = true }
 sp-trie = { workspace = true }
-sp-keyring = { workspace = true }
 
 sp-version = { workspace = true }
 
@@ -128,6 +128,7 @@ std = [
 	"cumulus-primitives-timestamp/std",
 	"cumulus-primitives-utility/std",
 	"dp-consensus/std",
+	"dp-container-chain-genesis-data/std",
 	"dp-impl-tanssi-pallets-config/std",
 	"dp-slot-duration-runtime-api/std",
 	"frame-benchmarking?/std",
@@ -138,7 +139,6 @@ std = [
 	"frame-system/std",
 	"frame-try-runtime/std",
 	"log/std",
-	"sp-keyring/std",
 	"nimbus-primitives/std",
 	"pallet-asset-rate/std",
 	"pallet-assets/std",
@@ -154,7 +154,6 @@ std = [
 	"pallet-multisig/std",
 	"pallet-ocw-testing/std",
 	"pallet-parameters/std",
-	"dp-container-chain-genesis-data/std",
 	"pallet-proxy/std",
 	"pallet-root-testing/std",
 	"pallet-session/std",
@@ -183,6 +182,7 @@ std = [
 	"sp-debug-derive/std",
 	"sp-genesis-builder/std",
 	"sp-inherents/std",
+	"sp-keyring/std",
 	"sp-offchain/std",
 	"sp-runtime/std",
 	"sp-session/std",

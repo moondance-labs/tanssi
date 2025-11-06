@@ -133,10 +133,10 @@ parachain-info = { workspace = true }
 parachains-common = { workspace = true }
 
 # Benchmarking
+dp-container-chain-genesis-data = { workspace = true, features = [ "json" ] }
 frame-benchmarking = { workspace = true, optional = true }
 frame-system-benchmarking = { workspace = true, optional = true }
 frame-try-runtime = { workspace = true, optional = true }
-dp-container-chain-genesis-data = { workspace = true, features = ["json"] }
 
 [dev-dependencies]
 cumulus-primitives-parachain-inherent = { workspace = true }
@@ -169,6 +169,7 @@ std = [
 	"cumulus-primitives-timestamp/std",
 	"cumulus-primitives-utility/std",
 	"dp-consensus/std",
+	"dp-container-chain-genesis-data/std",
 	"dp-core/std",
 	"dp-slot-duration-runtime-api/std",
 	"frame-benchmarking?/std",
@@ -208,7 +209,6 @@ std = [
 	"pallet-multisig/std",
 	"pallet-pooled-staking/std",
 	"pallet-proxy/std",
-	"dp-container-chain-genesis-data/std",
 	"pallet-registrar-runtime-api/std",
 	"pallet-registrar/std",
 	"pallet-relay-storage-roots/std",
