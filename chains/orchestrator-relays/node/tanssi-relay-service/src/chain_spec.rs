@@ -23,7 +23,7 @@ use {
         dancelight_development_config_genesis, dancelight_local_testnet_genesis,
     },
     dp_container_chain_genesis_data::{
-        json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
+        json::container_chain_genesis_data_from_str, ContainerChainGenesisData,
     },
     frame_support::BoundedVec,
     grandpa::AuthorityId as GrandpaId,
@@ -187,7 +187,8 @@ pub fn dancelight_development_config(
     let container_chains: Vec<_> = container_chains
         .iter()
         .map(|x| {
-            container_chain_genesis_data_from_path(x).unwrap_or_else(|e| {
+            // TODO: convert from file to string
+            container_chain_genesis_data_from_str(x).unwrap_or_else(|e| {
                 panic!(
                     "Failed to build genesis data for container chain {:?}: {}",
                     x, e
@@ -234,7 +235,8 @@ pub fn starlight_development_config(
     let container_chains: Vec<_> = container_chains
         .iter()
         .map(|x| {
-            container_chain_genesis_data_from_path(x).unwrap_or_else(|e| {
+            // TODO: convert from file to string
+            container_chain_genesis_data_from_str(x).unwrap_or_else(|e| {
                 panic!(
                     "Failed to build genesis data for container chain {:?}: {}",
                     x, e
@@ -274,7 +276,8 @@ pub fn dancelight_local_testnet_config(
     let container_chains: Vec<_> = container_chains
         .iter()
         .map(|x| {
-            container_chain_genesis_data_from_path(x).unwrap_or_else(|e| {
+            // TODO: convert from file to string
+            container_chain_genesis_data_from_str(x).unwrap_or_else(|e| {
                 panic!(
                     "Failed to build genesis data for container chain {:?}: {}",
                     x, e
@@ -313,7 +316,8 @@ pub fn starlight_local_testnet_config(
     let container_chains: Vec<_> = container_chains
         .iter()
         .map(|x| {
-            container_chain_genesis_data_from_path(x).unwrap_or_else(|e| {
+            // TODO: convert from file to string
+            container_chain_genesis_data_from_str(x).unwrap_or_else(|e| {
                 panic!(
                     "Failed to build genesis data for container chain {:?}: {}",
                     x, e

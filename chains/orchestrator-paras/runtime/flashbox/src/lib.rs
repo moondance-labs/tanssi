@@ -42,10 +42,14 @@ use sp_runtime::{DispatchError, TransactionOutcome};
 
 pub mod weights;
 
+#[cfg(feature = "runtime-benchmarks")]
+pub mod genesis_config_presets;
+
 #[cfg(test)]
 mod tests;
 
 use {
+    alloc::string::ToString,
     alloc::{
         collections::{btree_map::BTreeMap, btree_set::BTreeSet},
         vec,
@@ -1658,8 +1662,18 @@ impl_runtime_apis! {
 
        fn get_preset(id: &Option<sp_genesis_builder::PresetId>) -> Option<Vec<u8>> {
             get_preset::<RuntimeGenesisConfig>(id, |id: &sp_genesis_builder::PresetId| {
+                let para_id: ParaId = 1000.into();
+                let mock_container_chains: Vec<ParaId> =
+                    vec![2000, 2001].iter().map(|&x| x.into()).collect();
+                let invulnerables = vec![
+                    "Alice".to_string(),
+                    "Bob".to_string(),
+                    "Charlie".to_string(),
+                    "Dave".to_string(),
+                ];
+
                 let patch = match id.as_ref() {
-                    "development" => serde_json::json!(&RuntimeGenesisConfig::default()),
+                    "development" => genesis_config_presets::development(para_id, vec![], mock_container_chains, invulnerables),
                     _ => return None,
                 };
                 Some(

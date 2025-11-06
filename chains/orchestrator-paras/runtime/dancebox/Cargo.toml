@@ -136,6 +136,7 @@ parachains-common = { workspace = true }
 frame-benchmarking = { workspace = true, optional = true }
 frame-system-benchmarking = { workspace = true, optional = true }
 frame-try-runtime = { workspace = true, optional = true }
+dp-container-chain-genesis-data = { workspace = true, features = ["json"] }
 
 [dev-dependencies]
 cumulus-primitives-parachain-inherent = { workspace = true }
@@ -207,6 +208,7 @@ std = [
 	"pallet-multisig/std",
 	"pallet-pooled-staking/std",
 	"pallet-proxy/std",
+	"dp-container-chain-genesis-data/std",
 	"pallet-registrar-runtime-api/std",
 	"pallet-registrar/std",
 	"pallet-relay-storage-roots/std",
