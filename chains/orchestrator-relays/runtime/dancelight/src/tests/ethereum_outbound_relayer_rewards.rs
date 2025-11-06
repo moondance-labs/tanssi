@@ -18,8 +18,9 @@
 
 use {
     crate::{
-        bridge_to_ethereum_config::BridgeReward, tests::common::*, BridgeRelayers,
-        EthereumOutboundQueueV2, EthereumTokenTransfers, SnowbridgeFeesAccount,
+        bridge_to_ethereum_config::BridgeReward, filter_events, tests::common::*, BridgeRelayers,
+        EthereumOutboundQueueV2, EthereumSystemV2, EthereumTokenTransfers, RuntimeEvent,
+        SnowbridgeFeesAccount,
     },
     alloc::vec,
     alloy_core::sol_types::SolEvent,
@@ -29,6 +30,7 @@ use {
     snowbridge_pallet_outbound_queue_v2::PendingOrder,
     sp_core::H256,
     sp_runtime::traits::BlockNumberProvider,
+    xcm::{latest::Location, VersionedLocation},
 };
 
 #[test]
@@ -400,5 +402,165 @@ fn test_rewards_are_not_payable_if_account_does_not_have_enough_funds() {
                 ),
                 pallet_bridge_relayers::Error::<Runtime>::FailedToPayReward
             );
+        });
+}
+
+#[test]
+fn test_rewards_are_not_payable_if_it_means_killing_fees_account() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+            (SnowbridgeFeesAccount::get(), 1 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            // First we insert a reward
+            // the snowbridge fees account is initialized with 1 unit
+            // let's put 1, so that claiming would kill the fees account
+            let order = PendingOrder {
+                nonce: 0,
+                fee: 1 * UNIT,
+                block_number: frame_system::Pallet::<Runtime>::current_block_number(),
+            };
+            snowbridge_pallet_outbound_queue_v2::PendingOrders::<Runtime>::insert(0, order);
+
+            // The topic does not matter, it does not play a role.
+            // The reward address does though
+            let event = InboundMessageDispatched {
+                topic: BOB.into(),
+                nonce: 0,
+                success: true,
+                reward_address: BOB.into(),
+            };
+
+            // Then we claim
+            // this generates the snowbridge event faked to be believed
+            let message = EventProof {
+                event_log: Log {
+                    address:
+                        <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
+                    topics: event
+                        .encode_topics()
+                        .into_iter()
+                        .map(|word| H256::from(word.0 .0))
+                        .collect(),
+                    data: event.encode_data(),
+                },
+                proof: mock_snowbridge_message_proof(),
+            };
+
+            assert_ok!(EthereumOutboundQueueV2::submit_delivery_receipt(
+                RuntimeOrigin::signed(AccountId::from(ALICE)),
+                Box::new(message)
+            ));
+
+            assert_noop!(
+                BridgeRelayers::claim_rewards(
+                    RuntimeOrigin::signed(AccountId::from(BOB)),
+                    BridgeReward::SnowbridgeRewardOutbound
+                ),
+                pallet_bridge_relayers::Error::<Runtime>::FailedToPayReward
+            );
+        });
+}
+
+#[test]
+fn test_regular_message_triggers_reward() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+            (SnowbridgeFeesAccount::get(), 100 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            let token_location: VersionedLocation = Location::here().into();
+
+            // "System" messages ideally would not have to put any tip, as there would be a relayer that always relays
+            // if an amount is put, it is because we know there is an "excess" on the snowbridge fees account
+            assert_ok!(EthereumSystemV2::register_token(
+                root_origin(),
+                Box::new(token_location.clone()),
+                Box::new(token_location),
+                snowbridge_core::AssetMetadata {
+                    name: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    decimals: 12,
+                },
+                1 * UNIT
+            ));
+
+            assert_eq!(
+                filter_events!(RuntimeEvent::EthereumOutboundQueueV2(
+                    snowbridge_pallet_outbound_queue_v2::Event::MessageQueued { .. },
+                ))
+                .count(),
+                1,
+                "MessageQueued event should be emitted!"
+            );
+
+            // We need one more block for the entire process to finish (or call OnIdle)
+            run_to_block(3);
+
+            // The initial nonce will be 1, since it starts from 0
+            assert!(
+                snowbridge_pallet_outbound_queue_v2::PendingOrders::<Runtime>::get(1).is_some()
+            );
+
+            // Let's generate the event
+            let event = InboundMessageDispatched {
+                topic: BOB.into(),
+                nonce: 1,
+                success: true,
+                reward_address: BOB.into(),
+            };
+
+            // Then we claim
+            // this generates the snowbridge event faked to be believed
+            let message = EventProof {
+                event_log: Log {
+                    address:
+                        <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
+                    topics: event
+                        .encode_topics()
+                        .into_iter()
+                        .map(|word| H256::from(word.0 .0))
+                        .collect(),
+                    data: event.encode_data(),
+                },
+                proof: mock_snowbridge_message_proof(),
+            };
+
+            let fees_account_balance_before = Balances::free_balance(SnowbridgeFeesAccount::get());
+            let bob_balance_before = Balances::free_balance(AccountId::from(BOB));
+
+            assert_ok!(EthereumOutboundQueueV2::submit_delivery_receipt(
+                RuntimeOrigin::signed(AccountId::from(ALICE)),
+                Box::new(message)
+            ));
+
+            assert_ok!(BridgeRelayers::claim_rewards(
+                RuntimeOrigin::signed(AccountId::from(BOB)),
+                BridgeReward::SnowbridgeRewardOutbound
+            ));
+
+            let fees_account_balance_after = Balances::free_balance(SnowbridgeFeesAccount::get());
+            let bob_balance_after = Balances::free_balance(AccountId::from(BOB));
+
+            // The reward is 1 UNIT for delivering the message
+            assert_eq!(
+                fees_account_balance_after,
+                fees_account_balance_before - 1 * UNIT
+            );
+            assert_eq!(bob_balance_after, bob_balance_before + 1 * UNIT);
         });
 }
