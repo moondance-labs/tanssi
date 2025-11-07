@@ -39,10 +39,7 @@ jobs:
         uses: ./.github/workflow-templates/gh-cli
 
       - name: Install frame-omni-bencher
-        id: install-frame-omni-bencher
-        shell: bash
-        run: |
-          cargo install frame-omni-bencher --locked
+        uses: ./.github/workflow-templates/install-frame-omni-bencher
 
       - name: Cargo build
         uses: ./.github/workflow-templates/cargo-build
