@@ -1,0 +1,143 @@
+# demo of using zombienet with kubernetes
+# this cannot be run using moonwall because moonwall does not support kubernetes provider
+# install zombienet binary and run:
+#
+# zombienet-linux-x64 spawn configs/zombie_tanssi_relay_k8s_delay.toml --provider kubernetes --monitor
+#
+# need to install microk8s to be able to run this on ubuntu
+#
+# sudo snap install microk8s --classic
+# sudo usermod -aG microk8s $USER
+# newgrp microk8s
+# microk8s status --wait-ready
+# microk8s enable dns storage
+# mkdir -p ~/.kube
+# microk8s config > ~/.kube/config
+# sudo snap alias microk8s.kubectl kubectl
+# kubectl get nodes
+#
+# and also install chaos-mesh to be able to test network delay
+#
+# curl -sSL https://mirrors.chaos-mesh.org/v2.8.0/install.sh | bash -s -- --microk8s
+#
+
+[settings]
+timeout = 666
+
+[relaychain]
+# for local testing, create a local registry running this (once)
+#
+# microk8s enable registry
+# kubectl -n container-registry get svc registry -o wide
+#
+# and then every time you want to test the recently compiled binary:
+#
+# docker build -f docker/starlight.Dockerfile -t localhost:32000/tanssi-relay:dev .
+# docker push localhost:32000/tanssi-relay:dev
+#
+# but this doesn't work because the docker image uses an older debian version and gives the glibc error
+# TODO: create a different dockerfile for local testing using a newer debian version
+# or update the old one to the same that is used by polkadot
+#default_image = "localhost:32000/tanssi-relay:dev"
+
+# this also doesn't work for the same reason, these binaries are compiled using a newer ubuntu version
+#default_image = "moondancelabs/starlight:sha-fd3014ce-fast-runtime"
+
+# only the official releases work
+default_image = "moondancelabs/starlight:latest"
+
+# command cannot be "tanssi-relay" because it is not in PATH
+# TODO: make docker image put tanssi-relay in /usr/local/bin/
+default_command = "/tanssi-relay/tanssi-relay"
+
+default_args = [
+    "--no-hardware-benchmarks",
+    "-lparachain=debug",
+    "--database=paritydb",
+    "--no-beefy",
+    # this is disabled because wasm folder doesn't exist, and also the precompile-wasm script is not being run
+    #"--wasmtime-precompiled=wasm"
+]
+
+# chain spec needs to be manually generated using the scripts
+# TODO: with this chain-spec, collators cannot connect to the full node
+# relay chain validators find each other not sure how, maybe using the DHT magic
+# we can fix collators by modifying the bootnode url in the chain spec, or maybe trying again when our full nodes
+# support advertising through DHT. Because the full nodes are able to connect to the relay chain.
+chain_spec_path = "specs/tanssi-relay.json"
+#chain = "dancelight-local"
+[relaychain.default_delay_network_settings]
+latency =  "200ms"
+
+[[relaychain.nodes]]
+name = "alice"
+[relaychain.nodes.delay_network_settings]
+latency =  "1000ms"
+
+
+[[relaychain.nodes]]
+name = "bob"
+[[relaychain.nodes]]
+name = "charlie"
+[[relaychain.nodes]]
+name = "dave"
+
+
+[[parachains]]
+id = 2000
+chain_spec_path = "specs/single-container-template-container-2000.json"
+
+[[parachains.collators]]
+name = "fullnode-2000"
+validator = false
+image = "moondancelabs/container-chain-simple-template:latest"
+command = "/container-chain-template-simple/container-chain-simple-node"
+args = [
+    "--no-hardware-benchmarks",
+    "--database=paritydb",
+    #"--wasmtime-precompiled=wasm",
+    "--pool-type=fork-aware"
+]
+rpc_port = 9949
+p2p_port = 33049
+prometheus_port = 33102
+
+[parachains.collators.delay_network_settings]
+latency =  "4000ms"
+jitter = "4000ms"
+correlation = "100"
+
+[[parachains.collators]]
+name = "collator-01"
+image = "moondancelabs/tanssi:latest"
+command = "/tanssi/tanssi-node solo-chain"
+args = [
+    "--no-hardware-benchmarks",
+    "--database=paritydb",
+    #"--wasmtime-precompiled=wasm",
+    "--pool-type=fork-aware"
+]
+prometheus_port = 33102
+
+[[parachains]]
+id = 2001
+chain_spec_path = "specs/single-container-template-container-2001.json"
+
+[[parachains.collators]]
+name = "fullnode-2001"
+validator = false
+image = "moondancelabs/container-chain-evm-template:latest"
+command = "/container-chain-template-evm/container-chain-frontier-node"
+args = [
+    "--no-hardware-benchmarks",
+    "--database=paritydb",
+    #"--wasmtime-precompiled=wasm",
+    "--pool-type=fork-aware"
+]
+rpc_port = 9950
+p2p_port = 33050
+
+[parachains.collators.delay_network_settings]
+latency =  "4000ms"
+jitter = "4000ms"
+correlation = "100"
