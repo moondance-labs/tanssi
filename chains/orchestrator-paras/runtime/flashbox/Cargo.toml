@@ -18,6 +18,7 @@ log = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive" ] }
 scale-info = { workspace = true, features = [ "derive" ] }
 serde = { workspace = true, features = [ "derive" ] }
+serde_json = { workspace = true }
 smallvec = { workspace = true }
 
 # Own
@@ -80,6 +81,7 @@ sp-core = { workspace = true }
 sp-debug-derive = { workspace = true }
 sp-genesis-builder = { workspace = true }
 sp-inherents = { workspace = true }
+sp-keyring = { workspace = true }
 sp-offchain = { workspace = true }
 sp-runtime = { workspace = true }
 sp-session = { workspace = true }
@@ -107,6 +109,7 @@ pallet-invulnerables = { workspace = true }
 parachain-info = { workspace = true }
 
 # Benchmarking
+dp-container-chain-genesis-data = { workspace = true, features = [ "json" ] }
 frame-benchmarking = { workspace = true, optional = true }
 frame-system-benchmarking = { workspace = true, optional = true }
 frame-try-runtime = { workspace = true, optional = true }
@@ -137,6 +140,7 @@ std = [
 	"cumulus-primitives-timestamp/std",
 	"cumulus-test-relay-sproof-builder/std",
 	"dp-consensus/std",
+	"dp-container-chain-genesis-data/std",
 	"dp-core/std",
 	"dp-slot-duration-runtime-api/std",
 	"frame-benchmarking?/std",
@@ -193,6 +197,7 @@ std = [
 	"polkadot-runtime-parachains/std",
 	"scale-info/std",
 	"serde/std",
+	"serde_json/std",
 	"sp-api/std",
 	"sp-application-crypto/std",
 	"sp-application-crypto/std",
@@ -206,6 +211,7 @@ std = [
 	"sp-genesis-builder/std",
 	"sp-inherents/std",
 	"sp-io/std",
+	"sp-keyring/std",
 	"sp-offchain/std",
 	"sp-runtime/std",
 	"sp-session/std",

@@ -1,0 +1,11 @@
+name: Install frame-omni-bencher
+description: |
+  Install frame-omni-bencher
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install frame-omni-bencher
+      shell: bash
+      run: |
+        cargo install frame-omni-bencher --locked
