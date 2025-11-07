@@ -146,17 +146,17 @@ jobs:
             matrix:
                 chains:
                     - binary: tanssi-relay
-                      chain: dancelight-dev
+                      runtime: dancelight
                     - binary: tanssi-relay
-                      chain: starlight-dev
+                      runtime: starlight
                     - binary: tanssi-node
-                      chain: flashbox-dev
+                      runtime: flashbox
                     - binary: tanssi-node
-                      chain: dancebox-dev
+                      runtime: dancebox
                     - binary: container-chain-simple-node
-                      chain: dev
+                      runtime: container-chain-template-simple
                     - binary: container-chain-frontier-node
-                      chain: dev
+                      runtime: container-chain-template-frontier
         steps:
             - name: Checkout
               uses: actions/checkout@v5
@@ -172,7 +172,10 @@ jobs:
             - name: "Benchmark test ${{ matrix.binary }}"
               shell: bash
               run: |
-                BINARY=./target/release/${{ matrix.chains.binary }} CHAIN=${{ matrix.chains.chain }} TEMPLATE_PATH=./benchmarking/frame-weight-runtime-template.hbs tools/benchmarking.sh "*" "*" --check
+                RUNTIME_NAME=${{ matrix.chains.runtime }} \
+                  RUNTIME=target/release/wbuild/$RUNTIME_NAME-runtime/$(echo $RUNTIME_NAME | tr '-' '_')_runtime.wasm \
+                  TEMPLATE_PATH=./benchmarking/frame-weight-runtime-template.hbs \
+                  tools/benchmarking.sh "*" "*" --check
 
     # Check that the smoke test suite works.
     # This is not to test that our networks are good, but that the test suite itself is working.
