@@ -355,11 +355,9 @@ describeSuite({
                 expect(registrar_info.toJSON()).toBeNull();
 
                 // registering a profile
-
                 const profile = {
-                    url: "The URL",
+                    bootnodeUrl: "The URL",
                     paraIds: { whitelist: [PARA_ID] },
-                    mode: "Bootnode",
                 };
 
                 const profileId = await polkadotJs.query.dataPreservers.nextProfileId();
