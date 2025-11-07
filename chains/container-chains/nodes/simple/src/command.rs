@@ -283,7 +283,7 @@ pub fn run() -> Result<()> {
             let runner = cli.create_runner(&cli.run.normalize())?;
             let collator_options = cli.run.collator_options();
 
-            runner.run_node_until_exit(|mut config| async move {
+            runner.run_node_until_exit(|config| async move {
                 let hwbench = (!cli.no_hardware_benchmarks).then(||
                     config.database.path().map(|database_path| {
                         let _ = std::fs::create_dir_all(database_path);
@@ -343,11 +343,6 @@ pub fn run() -> Result<()> {
                     }
                 }
 
-                // Disable RPC if the flag is set
-                if cli.run.disable_rpc {
-                    log::info!("RPC service disabled for bootnode-only node");
-                    config.rpc.addr = None;
-                }
 
                 match config.network.network_backend {
                     sc_network::config::NetworkBackendType::Libp2p => {

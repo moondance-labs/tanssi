@@ -60,10 +60,6 @@ pub struct RunCmd {
     /// Options are "instant", "manual", or timer interval in milliseconds
     #[arg(long, default_value = "instant")]
     pub sealing: Sealing,
-
-    /// Disable RPC service for this node. Useful for bootnode-only nodes that only provide network services.
-    #[arg(long)]
-    pub disable_rpc: bool,
 }
 
 impl std::ops::Deref for RunCmd {

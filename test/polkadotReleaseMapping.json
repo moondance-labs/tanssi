@@ -15,8 +15,8 @@
     "polkadot-prepare-worker": "af7354c9382b27f63a51a8e5185b0bfc765b9e0c662ce184393e916a2417a067"
   },
   "stable2506": {
-    "polkadot": "6ffc9c3e491515c9803f03c89e4d681664763bdc6c47042bc72c305ee208e2c8",
-    "polkadot-execute-worker": "a840a8bc972d45501bdd3d0940bf78f6713b583a822b52ca074a73f3de465e91",
-    "polkadot-prepare-worker": "6230051a0779cc8d17ed83bad25bffd1f0d5d3ab58d11fec5dc57c42c35f2734"
+    "polkadot": "1a847c4ffabdea886908c623c899ae5ce5b7801eb9acf6918e720ff025cf3059",
+    "polkadot-execute-worker": "ad12dd8d504b62ffd32c857bd4ef07fb2a3bb688ba2d419e2ba24f4ec4213139",
+    "polkadot-prepare-worker": "a447f08f3f3efd7b0aba7bc62663ccdc05bf31544ae79bf30aee005763a6fbda"
   }
 }

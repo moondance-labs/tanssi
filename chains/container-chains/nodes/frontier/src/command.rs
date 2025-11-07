@@ -299,7 +299,7 @@ pub fn run() -> Result<()> {
             let runner = cli.create_runner(&cli.run.normalize())?;
             let collator_options = cli.run.collator_options();
 
-            runner.run_node_until_exit(|mut config| async move {
+            runner.run_node_until_exit(|config| async move {
                 let relaychain_args = cli.relay_chain_args;
                 let hwbench = (!cli.no_hardware_benchmarks).then(||
                     config.database.path().map(|database_path| {
@@ -338,7 +338,6 @@ pub fn run() -> Result<()> {
                         .map_err(Into::into);
                 }
 
-
                 let parachain_account =
                     AccountIdConversion::<polkadot_primitives::AccountId>::into_account_truncating(&id);
 
@@ -368,12 +367,6 @@ pub fn run() -> Result<()> {
                     if !rpc_target_urls.is_empty() && !relaychain_args.is_empty() {
                         warn!("Detected relay chain node arguments together with --relay-chain-rpc-url. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
                     }
-                }
-
-                // Disable RPC if the flag is set
-                if cli.run.disable_rpc {
-                    log::info!("RPC service disabled for bootnode-only node");
-                    config.rpc.addr = None;
                 }
 
                 match config.network.network_backend {
