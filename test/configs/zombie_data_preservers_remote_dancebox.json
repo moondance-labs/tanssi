@@ -159,7 +159,7 @@
                     "prometheus_port": 33102
                 },
                 {
-                    "name": "DataPreserver-2001",
+                    "name": "Bootnode-2001",
                     "validator": false,
                     "command": "./scripts/data-preservers-run-hack.sh ../target/release/container-chain-frontier-node data-preserver --",
                     "args": [
