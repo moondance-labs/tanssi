@@ -54,7 +54,7 @@ describeSuite({
                     },
                 };
 
-                const registrarLocaiton = {
+                const registrarLocation = {
                     V3: {
                         parents: 0,
                         interior: "Here",
@@ -74,7 +74,7 @@ describeSuite({
                 // Register token on EthereumSystem.
                 const tx = await polkadotJs.tx.sudo
                     .sudo(
-                        polkadotJs.tx.ethereumSystemV2.registerToken(registrarLocaiton, versionedLocation, metadata, 0)
+                        polkadotJs.tx.ethereumSystemV2.registerToken(registrarLocation, versionedLocation, metadata, 0)
                     )
                     .signAsync(alice);
 
