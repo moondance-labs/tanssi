@@ -119,15 +119,15 @@ impl<T: frame_system::Config> runtime_parachains::inclusion::WeightInfo for Subs
 	fn enact_candidate(u: u32, h: u32, c: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `1255 + c * (15992 ±0) + h * (92 ±0) + u * (32955 ±0)`
-		//  Estimated: `26163213698918536 + c * (16000 ±370) + h * (7630 ±347) + u * (20830 ±214)`
-		// Minimum execution time: 446_984_000 picoseconds.
-		Weight::from_parts(66_013_145, 26163213698918536)
-			// Standard Error: 618_304
-			.saturating_add(Weight::from_parts(154_734_938, 0).saturating_mul(u.into()))
-			// Standard Error: 618_304
-			.saturating_add(Weight::from_parts(168_307_580, 0).saturating_mul(h.into()))
-			// Standard Error: 1_024_605
-			.saturating_add(Weight::from_parts(85_080_559, 0).saturating_mul(c.into()))
+		//  Estimated: `36310 + c * (16000 ±271) + h * (7594 ±341) + u * (20798 ±341)`
+		// Minimum execution time: 434_163_000 picoseconds.
+		Weight::from_parts(47_228_088, 36310)
+			// Standard Error: 627_601
+			.saturating_add(Weight::from_parts(153_113_918, 0).saturating_mul(u.into()))
+			// Standard Error: 627_601
+			.saturating_add(Weight::from_parts(169_752_624, 0).saturating_mul(h.into()))
+			// Standard Error: 1_040_010
+			.saturating_add(Weight::from_parts(93_796_439, 0).saturating_mul(c.into()))
 			.saturating_add(T::DbWeight::get().reads(10_u64))
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(u.into())))
 			.saturating_add(T::DbWeight::get().reads((3_u64).saturating_mul(h.into())))
@@ -137,7 +137,7 @@ impl<T: frame_system::Config> runtime_parachains::inclusion::WeightInfo for Subs
 			.saturating_add(T::DbWeight::get().writes((4_u64).saturating_mul(h.into())))
 			.saturating_add(T::DbWeight::get().writes((9_u64).saturating_mul(c.into())))
 			.saturating_add(Weight::from_parts(0, 16000).saturating_mul(c.into()))
-			.saturating_add(Weight::from_parts(0, 7630).saturating_mul(h.into()))
-			.saturating_add(Weight::from_parts(0, 20830).saturating_mul(u.into()))
+			.saturating_add(Weight::from_parts(0, 7594).saturating_mul(h.into()))
+			.saturating_add(Weight::from_parts(0, 20798).saturating_mul(u.into()))
 	}
 }
