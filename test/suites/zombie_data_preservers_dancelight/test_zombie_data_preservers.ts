@@ -451,7 +451,7 @@ describeSuite({
 
                 await expectLogs(logFilePath, 300, ["NotAssigned => Active(Id(2001))"]);
                 await expectLogs(logFilePath, 300, ["RPC service disabled for bootnode-only node"]);
-                
+
                 const url = "ws://127.0.0.1:9954";
                 try {
                     const customHttpProvider = new WebSocketProvider(url);

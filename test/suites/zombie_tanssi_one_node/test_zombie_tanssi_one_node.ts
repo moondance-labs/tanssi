@@ -172,7 +172,7 @@ async function registerEmptyParathread(api: ApiPromise, manager: any, paraIdStri
                 bootnodeUrl: "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
                 paraIds: "AnyParaId",
                 assignmentRequest: "Free",
-            }
+            },
             manager
         )
     );
