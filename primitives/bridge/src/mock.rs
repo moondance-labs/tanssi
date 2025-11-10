@@ -20,7 +20,7 @@ use {
     core::cell::RefCell,
     frame_support::{
         derive_impl, parameter_types,
-        traits::{ConstU128, ConstU32, ConstU64, ConstU8, Equals, QueueFootprint},
+        traits::{ConstU128, ConstU32, ConstU64, ConstU8, Equals},
         weights::IdentityFee,
     },
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
