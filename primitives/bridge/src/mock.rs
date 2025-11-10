@@ -144,9 +144,6 @@ impl<Origin: MaxEncodedLen> frame_support::traits::EnqueueMessage<Origin> for Mo
     ) {
     }
     fn sweep_queue(_: Origin) {}
-    fn footprint(_: Origin) -> QueueFootprint {
-        QueueFootprint::default()
-    }
 }
 
 parameter_types! {
