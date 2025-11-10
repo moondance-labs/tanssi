@@ -132,9 +132,6 @@ describeSuite({
                     paraIds: "AnyParaId",
                     nodeType: "Substrate",
                     assignmentRequest: "Free",
-                    directRpcUrls: [],
-                    proxyRpcUrls: [],
-                    additionalInfo: "0x",
                 });
 
                 const tx3 = polkadotJs.tx.dataPreservers.startAssignment(profileId, 2002, "Free");

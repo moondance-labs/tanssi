@@ -71,9 +71,6 @@ describeSuite({
                     bootnodeUrl: "dummy",
                     paraIds: "AnyParaId",
                     nodeType: "Substrate",
-                    directRpcUrls: [],
-                    proxyRpcUrls: [],
-                    additionalInfo: "0x",
                     assignmentRequest: "Free",
                 });
 

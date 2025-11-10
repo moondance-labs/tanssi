@@ -201,9 +201,6 @@ describeSuite({
                     paraIds: { whitelist: [reservedParaId] },
                     nodeType: "Substrate",
                     assignmentRequest: "Free",
-                    directRpcUrls: [],
-                    proxyRpcUrls: [],
-                    additionalInfo: "0x",
                 };
 
                 const profileId = await polkadotJs.query.dataPreservers.nextProfileId();
@@ -225,9 +222,6 @@ describeSuite({
                         paraIds: { whitelist: [reservedParaId] },
                         nodeType: "Substrate",
                         assignmentRequest: { free: null },
-                        directRpcUrls: [],
-                        proxyRpcUrls: [],
-                        additionalInfo: "0x",
                     },
                     assignment: null,
                 });

@@ -210,9 +210,6 @@ async function registerParathreads(context: DevModeContext) {
             bootnodeUrl: "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
             paraIds: "AnyParaId",
             nodeType: "Substrate",
-            directRpcUrls: [],
-            proxyRpcUrls: [],
-            additionalInfo: "0x",
             assignmentRequest: "Free",
         });
 

@@ -102,8 +102,6 @@ describeSuite({
                 const profile = {
                     paraIds: "AnyParaId",
                     assignmentRequest: "Free",
-                    directRpcUrls: [],
-                    proxyRpcUrls: [],
                     nodeType: "Substrate",
                     additionalInfo: "",
                 };
@@ -167,8 +165,6 @@ describeSuite({
                 const profile = {
                     paraIds: "AnyParaId",
                     assignmentRequest: "Free",
-                    directRpcUrls: [],
-                    proxyRpcUrls: [],
                     nodeType: "Frontier",
                     additionalInfo: "",
                 };
@@ -294,8 +290,6 @@ describeSuite({
                             },
                         },
                     },
-                    directRpcUrls: [],
-                    proxyRpcUrls: [],
                     nodeType: "Frontier",
                     additionalInfo: "",
                 };
@@ -425,8 +419,6 @@ describeSuite({
                 const profile = {
                     paraIds: "AnyParaId",
                     assignmentRequest: "Free",
-                    directRpcUrls: [],
-                    proxyRpcUrls: [],
                     bootnodeUrl: "dummy",
                     nodeType: "Frontier",
                     additionalInfo: "",

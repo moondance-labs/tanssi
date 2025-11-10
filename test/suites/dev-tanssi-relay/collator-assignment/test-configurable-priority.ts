@@ -380,9 +380,6 @@ async function createTxBatchForCreatingPara(
             bootnodeUrl: "0x02",
             paraIds: "AnyParaId",
             nodeType: "Substrate",
-            directRpcUrls: [],
-            proxyRpcUrls: [],
-            additionalInfo: "0x",
             assignmentRequest: "Free",
         },
         manager

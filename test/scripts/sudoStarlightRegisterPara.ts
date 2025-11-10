@@ -82,9 +82,6 @@ yargs(hideBin(process.argv))
                             bootnodeUrl: bootnode,
                             paraIds: "AnyParaId",
                             nodeType: "Substrate",
-                            directRpcUrls: [],
-                            proxyRpcUrls: [],
-                            additionalInfo: "0x",
                             assignmentRequest: "Free",
                         });
                         txs.push(profileTx);
@@ -206,9 +203,6 @@ yargs(hideBin(process.argv))
                         bootnodeUrl: bootnode,
                         paraIds: "AnyParaId",
                         nodeType: "Substrate",
-                        directRpcUrls: [],
-                        proxyRpcUrls: [],
-                        additionalInfo: "0x",
                         assignmentRequest: "Free",
                     });
                     txs.push(profileTx);
