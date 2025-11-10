@@ -11,12 +11,14 @@ describeSuite({
     testCases: ({ context, it, log }) => {
         let paraApi: ApiPromise;
         let registeredProfiles: PalletDataPreserversRegisteredProfile[];
+        let runtimeVersion: number;
 
         beforeAll(async () => {
             paraApi = context.polkadotJs("para");
             registeredProfiles = (await paraApi.query.dataPreservers.profiles.entries())
                 .filter(([, entry]) => entry.isSome)
                 .map(([, entry]) => entry.unwrap());
+            runtimeVersion = paraApi.runtimeVersion.specVersion.toNumber();
         });
 
         it({
@@ -77,11 +79,19 @@ describeSuite({
             id: "C03",
             title: "all profiles should have valid url",
             test: async () => {
+                let nodePropertyName: string;
+                // the property has been renamed here: https://github.com/moondance-labs/tanssi/pull/1304
+                if (runtimeVersion < 1600) {
+                    nodePropertyName = "url";
+                } else {
+                    nodePropertyName = "bootnodeUrl";
+                }
+
                 const failures = registeredProfiles.filter(
-                    ({ profile }) => !isValidEndpointUrl(profile.bootnodeUrl.toHuman().toString())
+                    ({ profile }) => !isValidEndpointUrl(profile[nodePropertyName].toHuman().toString())
                 );
                 for (const { profile } of failures) {
-                    log(`Invalid URL ${profile.bootnodeUrl.toHuman()}`);
+                    log(`Invalid URL ${profile[nodePropertyName].toHuman()}`);
                 }
                 expect(failures.length, `${failures.length} invalid endpoint urls registered`).toBe(0);
             },
