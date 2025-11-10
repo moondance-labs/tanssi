@@ -13,6 +13,7 @@ targets = [ "x86_64-unknown-linux-gnu" ]
 workspace = true
 
 [dependencies]
+ethereum = { workspace = true }
 hex-literal = { workspace = true }
 log = { workspace = true }
 num_enum = { workspace = true }
@@ -39,6 +40,7 @@ pallet-evm-precompile-balances-erc20 = { workspace = true }
 pallet-evm-precompile-batch = { workspace = true }
 pallet-evm-precompile-call-permit = { workspace = true }
 pallet-evm-precompile-proxy = { workspace = true }
+pallet-evm-precompile-sha3fips-benchmarking = { workspace = true }
 pallet-evm-precompile-xcm = { workspace = true }
 pallet-evm-precompile-xcm-utils = { workspace = true }
 pallet-evm-precompileset-assets-erc20 = { workspace = true }
@@ -147,6 +149,7 @@ std = [
 	"dp-consensus/std",
 	"dp-impl-tanssi-pallets-config/std",
 	"dp-slot-duration-runtime-api/std",
+	"ethereum/std",
 	"fp-account/std",
 	"fp-evm/std",
 	"fp-rpc/std",
@@ -176,6 +179,7 @@ std = [
 	"pallet-evm-precompile-call-permit/std",
 	"pallet-evm-precompile-modexp/std",
 	"pallet-evm-precompile-proxy/std",
+	"pallet-evm-precompile-sha3fips-benchmarking/std",
 	"pallet-evm-precompile-sha3fips/std",
 	"pallet-evm-precompile-simple/std",
 	"pallet-evm-precompile-xcm-utils/std",
@@ -253,6 +257,7 @@ runtime-benchmarks = [
 	"pallet-balances/runtime-benchmarks",
 	"pallet-cc-authorities-noting/runtime-benchmarks",
 	"pallet-ethereum/runtime-benchmarks",
+	"pallet-evm-precompile-sha3fips-benchmarking/runtime-benchmarks",
 	"pallet-evm-precompile-xcm-utils/runtime-benchmarks",
 	"pallet-evm-precompile-xcm/runtime-benchmarks",
 	"pallet-evm/runtime-benchmarks",
@@ -322,6 +327,7 @@ try-runtime = [
 	"pallet-xcm-executor-utils/try-runtime",
 	"pallet-xcm/try-runtime",
 	"parachain-info/try-runtime",
+	"parachains-common/try-runtime",
 	"polkadot-runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",

@@ -18,6 +18,7 @@ import type {
     SpVersionRuntimeVersion,
     SpWeightsRuntimeDbWeight,
     SpWeightsWeightV2Weight,
+    StagingXcmV5Junctions,
 } from "@polkadot/types/lookup";
 
 export type __AugmentedConst<ApiType extends ApiTypes> = AugmentedConst<ApiType>;
@@ -164,8 +165,9 @@ declare module "@polkadot/api-base/types/consts" {
         };
         dataPreservers: {
             maxAssignmentsPerParaId: u32 & AugmentedConst<ApiType>;
-            maxNodeUrlLen: u32 & AugmentedConst<ApiType>;
+            maxNodeUrlCount: u32 & AugmentedConst<ApiType>;
             maxParaIdsVecLen: u32 & AugmentedConst<ApiType>;
+            maxStringLen: u32 & AugmentedConst<ApiType>;
             /**
              * Generic const
              **/
@@ -909,6 +911,18 @@ declare module "@polkadot/api-base/types/consts" {
              * `pallet_xcm::CurrentXcmVersion`.
              **/
             advertisedXcmVersion: u32 & AugmentedConst<ApiType>;
+            /**
+             * The maximum number of local XCM locks that a single account may have.
+             **/
+            maxLockers: u32 & AugmentedConst<ApiType>;
+            /**
+             * The maximum number of consumers a single remote lock may have.
+             **/
+            maxRemoteLockConsumers: u32 & AugmentedConst<ApiType>;
+            /**
+             * This chain's Universal Location.
+             **/
+            universalLocation: StagingXcmV5Junctions & AugmentedConst<ApiType>;
             /**
              * Generic const
              **/

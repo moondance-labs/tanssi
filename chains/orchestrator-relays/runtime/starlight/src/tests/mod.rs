@@ -46,6 +46,16 @@ mod staking;
 mod sudo;
 mod test_disabled_extrinsics;
 
+#[macro_export]
+macro_rules! filter_events {
+    ($pat:pat) => {
+        System::events().iter().filter(|r| match r.event {
+            $pat => true,
+            _ => false,
+        })
+    };
+}
+
 #[test]
 fn check_whitelist() {
     let whitelist: HashSet<String> = AllPalletsWithSystem::whitelisted_storage_keys()

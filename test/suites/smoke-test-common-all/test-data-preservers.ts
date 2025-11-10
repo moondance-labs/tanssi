@@ -78,10 +78,10 @@ describeSuite({
             title: "all profiles should have valid url",
             test: async () => {
                 const failures = registeredProfiles.filter(
-                    ({ profile }) => !isValidEndpointUrl(profile.url.toHuman().toString())
+                    ({ profile }) => !isValidEndpointUrl(profile.bootnodeUrl.toHuman().toString())
                 );
                 for (const { profile } of failures) {
-                    log(`Invalid URL ${profile.url.toHuman()}`);
+                    log(`Invalid URL ${profile.bootnodeUrl.toHuman()}`);
                 }
                 expect(failures.length, `${failures.length} invalid endpoint urls registered`).toBe(0);
             },

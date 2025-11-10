@@ -1,5 +1,5 @@
 [package]
-name = "tc-service-container-chain-rpc-provider"
+name = "tc-service-container-chain-data-preserver"
 authors = { workspace = true }
 build = "build.rs"
 edition = "2021"

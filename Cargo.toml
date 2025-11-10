@@ -54,6 +54,7 @@ cast_precision_loss = { level = "warn", priority = 2 }
 cast_sign_loss = { level = "warn", priority = 2 }
 debug_assert_with_mut_call = { level = "warn", priority = 2 }
 disallowed_methods = { level = "deny", priority = 2 }
+disallowed_types = { level = "deny", priority = 2 }
 fn_to_numeric_cast_any = { level = "warn", priority = 2 }
 invalid_upcast_comparisons = { level = "warn", priority = 2 }
 
@@ -63,6 +64,9 @@ identity_op = { level = "allow", priority = 3 }
 manual_inspect = { level = "allow", priority = 3 }
 too-many-arguments = { level = "allow", priority = 3 }
 type_complexity = { level = "allow", priority = 3 }
+# This lint is disabled in future rust versions, so we don't need to see warnings now
+# https://rust-lang.github.io/rust-clippy/master/#uninlined_format_args
+uninlined_format_args = { level = "allow", priority = 3 }
 
 [workspace.lints.rust]
 unsafe-code = { level = "deny", priority = 1 }
@@ -127,7 +131,7 @@ services-payment-rpc = { path = "client/services-payment" }
 stream-payment-rpc = { path = "client/stream-payment" }
 tc-consensus = { path = "client/consensus" }
 tc-orchestrator-chain-interface-through-rpc = { path = "client/orchestrator-chain-interface-through-rpc" }
-tc-service-container-chain-rpc-provider = { path = "client/service-container-chain-rpc-provider" }
+tc-service-container-chain-data-preserver = { path = "client/service-container-chain-data-preserver" }
 tc-service-container-chain-spawner = { path = "client/service-container-chain-spawner" }
 tc-service-orchestrator-chain = { path = "client/service-orchestrator-chain" }
 
@@ -309,7 +313,7 @@ xcm-runtime-apis = { git = "https://github.com/moondance-labs/polkadot-sdk", bra
 
 
 # Bridges (wasm)
-alloy-core = { version = "0.8.15", default-features = false }
+alloy-core = { version = "1.1.0", default-features = false }
 alloy-sol-types = { version = "0.4.2", default-features = false }
 bp-relayers = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "girazoki-bring-agg-message-origin-outbound-queue", default-features = false }
 milagro-bls = { package = "snowbridge-milagro-bls", version = "1.5.4", default-features = false }
@@ -347,6 +351,7 @@ parachains-common = { git = "https://github.com/moondance-labs/polkadot-sdk", br
 
 # Cumulus (client)
 assets-common = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "girazoki-bring-agg-message-origin-outbound-queue" }
+cumulus-client-bootnodes = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "girazoki-bring-agg-message-origin-outbound-queue", default-features = false }
 cumulus-client-cli = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "girazoki-bring-agg-message-origin-outbound-queue", default-features = false }
 cumulus-client-collator = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "girazoki-bring-agg-message-origin-outbound-queue", default-features = false }
 cumulus-client-consensus-aura = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "girazoki-bring-agg-message-origin-outbound-queue", default-features = false }
@@ -374,6 +379,7 @@ pallet-evm = { git = "https://github.com/moondance-labs/frontier", branch = "gir
 pallet-evm-chain-id = { git = "https://github.com/moondance-labs/frontier", branch = "girazoki-bring-agg-message-origin-outbound-queue", default-features = false }
 pallet-evm-precompile-modexp = { git = "https://github.com/moondance-labs/frontier", branch = "girazoki-bring-agg-message-origin-outbound-queue", default-features = false }
 pallet-evm-precompile-sha3fips = { git = "https://github.com/moondance-labs/frontier", branch = "girazoki-bring-agg-message-origin-outbound-queue", default-features = false }
+pallet-evm-precompile-sha3fips-benchmarking = { git = "https://github.com/moondance-labs/frontier", branch = "girazoki-bring-agg-message-origin-outbound-queue", default-features = false }
 pallet-evm-precompile-simple = { git = "https://github.com/moondance-labs/frontier", branch = "girazoki-bring-agg-message-origin-outbound-queue", default-features = false }
 precompile-utils = { git = "https://github.com/moondance-labs/frontier", branch = "girazoki-bring-agg-message-origin-outbound-queue", default-features = false }
 
@@ -393,7 +399,7 @@ fc-storage = { git = "https://github.com/moondance-labs/frontier", branch = "gir
 bounded-collections = { version = "0.3.2", default-features = false }
 ethabi = { package = "ethabi-decode", version = "2.0.0", default-features = false }
 finality-grandpa = { version = "0.16.2", default-features = false }
-hex-literal = { version = "0.3.4" }
+hex-literal = { version = "0.4.1" }
 impl-trait-for-tuples = "0.2.2"
 log = { version = "0.4.22", default-features = false }
 macro_rules_attribute = { version = "0.2.0" }
@@ -405,11 +411,13 @@ tap = "1.0.1"
 
 
 # General (client)
+async-channel = "1.8.0"
 async-io = "1.3"
 async-trait = "0.1"
 chrono = "0.4.31"
 clap = { version = "4.5.3", default-features = false, features = [ "derive" ] }
 core_extensions = "1.5.3"
+ethereum = { version = "0.18.2", default-features = false }
 exit-future = { version = "0.2.0" }
 fdlimit = "0.3.0"
 flume = "0.10.9"

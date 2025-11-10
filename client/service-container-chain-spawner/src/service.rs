@@ -227,18 +227,24 @@ pub fn start_node_impl_container<
 
         let prometheus_registry = parachain_config.prometheus_registry().cloned();
 
-        let rpc_builder = generate_rpc_builder.generate(GenerateRpcBuilderParams {
-            task_manager: &node_builder.task_manager,
-            container_chain_config: &parachain_config,
-            client: node_builder.client.clone(),
-            backend: node_builder.backend.clone(),
-            sync_service: node_builder.network.sync_service.clone(),
-            transaction_pool: node_builder.transaction_pool.clone(),
-            prometheus_registry: node_builder.prometheus_registry.clone(),
-            command_sink: None,
-            xcm_senders: None,
-            network: node_builder.network.network.clone(),
-        })?;
+        // Disable RPC if the flag is set
+        let rpc_builder = if !container_chain_cli.base.disable_rpc {
+            generate_rpc_builder.generate(GenerateRpcBuilderParams {
+                task_manager: &node_builder.task_manager,
+                container_chain_config: &parachain_config,
+                client: node_builder.client.clone(),
+                backend: node_builder.backend.clone(),
+                sync_service: node_builder.network.sync_service.clone(),
+                transaction_pool: node_builder.transaction_pool.clone(),
+                prometheus_registry: node_builder.prometheus_registry.clone(),
+                command_sink: None,
+                xcm_senders: None,
+                network: node_builder.network.network.clone(),
+            })?
+        } else {
+            log::info!("RPC service disabled for bootnode-only node");
+            crate::rpc::dummy_rpc_builder()
+        };
 
         let node_builder = node_builder.spawn_common_tasks(parachain_config, rpc_builder)?;
 
@@ -269,6 +275,7 @@ pub fn start_node_impl_container<
             relay_chain_slot_duration,
             recovery_handle: Box::new(overseer_handle.clone()),
             sync_service: node_builder.network.sync_service.clone(),
+            prometheus_registry: prometheus_registry.as_ref(),
         })?;
 
         if let Some(collation_params) = collation_params {
