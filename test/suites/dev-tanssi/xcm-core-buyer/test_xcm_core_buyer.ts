@@ -8,9 +8,9 @@ import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { u64 } from "@polkadot/types-codec";
 import type { ITuple } from "@polkadot/types-codec/types";
 import type { ParaId } from "@polkadot/types/interfaces";
+import type { TpTraitsSlotFrequency } from "@polkadot/types/lookup";
 import { u8aToHex } from "@polkadot/util";
 import { generateEmptyGenesisData, jumpSessions } from "utils";
-import type { TpTraitsSlotFrequency } from "@polkadot/types/lookup";
 
 describeSuite({
     id: "DEV0501",
@@ -81,10 +81,13 @@ describeSuite({
 
                 const profileId = await polkadotJs.query.dataPreservers.nextProfileId();
                 const profileTx = polkadotJs.tx.dataPreservers.createProfile({
-                    url: "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
+                    bootnodeUrl: "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
                     paraIds: "AnyParaId",
-                    mode: "Bootnode",
+                    nodeType: "Substrate",
                     assignmentRequest: "Free",
+                    additionalInfo: "0x",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
                 });
 
                 const tx2 = polkadotJs.tx.dataPreservers.startAssignment(profileId, 2002, "Free");

@@ -36,7 +36,7 @@ container-chain-template-frontier-runtime = { workspace = true, features = [ "st
 manual-xcm-rpc = { workspace = true }
 node-common = { workspace = true }
 tc-consensus = { workspace = true }
-tc-service-container-chain-rpc-provider = { workspace = true }
+tc-service-container-chain-data-preserver = { workspace = true }
 tc-service-container-chain-spawner = { workspace = true }
 tp-traits = { workspace = true }
 
