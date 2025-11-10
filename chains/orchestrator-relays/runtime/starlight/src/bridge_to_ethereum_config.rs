@@ -22,7 +22,7 @@ use crate::EthereumBeaconClient;
 use pallet_ethereum_token_transfers::DenyTipHandler;
 #[cfg(not(feature = "runtime-benchmarks"))]
 use {
-    tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
+    tanssi_runtime_common::relay::v1::NativeTokenTransferMessageProcessor,
     tp_bridge::{
         symbiotic_message_processor::SymbioticMessageProcessor, GenericTokenInboundMessageProcessor,
     },
@@ -42,7 +42,7 @@ use {
     snowbridge_core::{gwei, meth, PricingParameters, Rewards},
     snowbridge_pallet_outbound_queue::OnNewCommitment,
     sp_core::{ConstU32, ConstU8, H160, H256},
-    tanssi_runtime_common::relay::{EthTokensLocalProcessor, RewardThroughFeesAccount},
+    tanssi_runtime_common::relay::v1::{EthTokensLocalProcessor, RewardThroughFeesAccount},
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
 };
 

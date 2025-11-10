@@ -128,32 +128,6 @@ where
     }
 }
 
-impl<T> v2::MessageProcessor<AccountId> for SymbioticMessageProcessor<T>
-where
-    T: pallet_external_validators::Config,
-{
-    fn can_process_message(_who: &AccountId, message: &v2::Message) -> bool {
-        match &message.payload {
-            v2::message::Payload::Raw(data) => Self::can_process_message(&data),
-            v2::message::Payload::CreateAsset { .. } => false,
-        }
-    }
-
-    fn process_message(
-        _who: AccountId,
-        message: v2::Message,
-    ) -> Result<[u8; 32], MessageProcessorError> {
-        match &message.payload {
-            v2::message::Payload::Raw(data) => Self::process_message(None, &data)
-                .map(|_| [0; 32])
-                .map_err(|e| MessageProcessorError::ProcessMessage(e)),
-            v2::message::Payload::CreateAsset { .. } => Err(MessageProcessorError::ProcessMessage(
-                DispatchError::Other("Create asset is not supported"),
-            )),
-        }
-    }
-}
-
 impl<T> MessageProcessor for SymbioticMessageProcessor<T>
 where
     T: pallet_external_validators::Config,

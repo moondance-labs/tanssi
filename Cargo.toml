@@ -1,35 +1,35 @@
 [workspace]
 default-members = [
-	"chains/container-chains/nodes/*",
-	"chains/orchestrator-paras/node",
-	"chains/orchestrator-relays/node/*",
+    "chains/container-chains/nodes/*",
+    "chains/orchestrator-paras/node",
+    "chains/orchestrator-relays/node/*",
 ]
 members = [
-	"bin/utils/tanssi-utils",
-	"chains/container-chains/nodes/*",
-	"chains/container-chains/runtime-templates/*",
-	"chains/integration-tests/dancebox-runtime-test-utils",
-	"chains/integration-tests/dancebox-runtime-tests",
-	"chains/integration-tests/xcm/emulated/chains/orchestrator-paras/*",
-	"chains/integration-tests/xcm/emulated/chains/relays/*",
-	"chains/integration-tests/xcm/emulated/chains/templates/*",
-	"chains/integration-tests/xcm/emulated/common",
-	"chains/integration-tests/xcm/emulated/networks/*",
-	"chains/integration-tests/xcm/emulated/tests/assets/*",
-	"chains/integration-tests/xcm/emulated/tests/bridges/*",
-	"chains/orchestrator-paras/node",
-	"chains/orchestrator-paras/runtime/*",
-	"chains/orchestrator-relays/client/*",
-	"chains/orchestrator-relays/node/*",
-	"chains/orchestrator-relays/runtime/dancelight",
-	"chains/orchestrator-relays/runtime/dancelight/constants",
-	"chains/orchestrator-relays/runtime/starlight",
-	"chains/orchestrator-relays/runtime/starlight/constants",
-	"client/*",
-	"pallets/*",
-	"pallets/collator-assignment/runtime-api",
-	"pallets/registrar/runtime-api",
-	"primitives/*",
+    "bin/utils/tanssi-utils",
+    "chains/container-chains/nodes/*",
+    "chains/container-chains/runtime-templates/*",
+    "chains/integration-tests/dancebox-runtime-test-utils",
+    "chains/integration-tests/dancebox-runtime-tests",
+    "chains/integration-tests/xcm/emulated/chains/orchestrator-paras/*",
+    "chains/integration-tests/xcm/emulated/chains/relays/*",
+    "chains/integration-tests/xcm/emulated/chains/templates/*",
+    "chains/integration-tests/xcm/emulated/common",
+    "chains/integration-tests/xcm/emulated/networks/*",
+    "chains/integration-tests/xcm/emulated/tests/assets/*",
+    "chains/integration-tests/xcm/emulated/tests/bridges/*",
+    "chains/orchestrator-paras/node",
+    "chains/orchestrator-paras/runtime/*",
+    "chains/orchestrator-relays/client/*",
+    "chains/orchestrator-relays/node/*",
+    "chains/orchestrator-relays/runtime/dancelight",
+    "chains/orchestrator-relays/runtime/dancelight/constants",
+    "chains/orchestrator-relays/runtime/starlight",
+    "chains/orchestrator-relays/runtime/starlight/constants",
+    "client/*",
+    "pallets/*",
+    "pallets/collator-assignment/runtime-api",
+    "pallets/registrar/runtime-api",
+    "primitives/*",
 ]
 # default-members is the subset of members that is compiled when running cargo build.
 # some binaries are intentionally left out of this list because we don't want to compile them every time.
@@ -37,7 +37,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-authors = [ "Moondance Labs" ]
+authors = ["Moondance Labs"]
 repository = "https://github.com/moondance-labs/tanssi"
 
 [workspace.lints.clippy]
@@ -227,7 +227,7 @@ pallet-transaction-payment = { git = "https://github.com/moondance-labs/polkadot
 pallet-treasury = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 pallet-tx-pause = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 pallet-utility = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
-parity-scale-codec = { version = "3.0.0", default-features = false, features = [ "derive", "max-encoded-len" ] }
+parity-scale-codec = { version = "3.0.0", default-features = false, features = ["derive", "max-encoded-len"] }
 sc-rpc-spec-v2 = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 scale-info = { version = "2.10.0", default-features = false }
 sp-api = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
@@ -396,7 +396,7 @@ fc-consensus = { git = "https://github.com/moondance-labs/frontier", branch = "t
 fc-db = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 fc-mapping-sync = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 fc-rpc = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", features = [
-	"rpc-binary-search-estimate",
+    "rpc-binary-search-estimate",
 ] }
 fc-rpc-core = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 fc-storage = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
@@ -421,7 +421,7 @@ async-channel = "1.8.0"
 async-io = "1.3"
 async-trait = "0.1"
 chrono = "0.4.31"
-clap = { version = "4.5.3", default-features = false, features = [ "derive" ] }
+clap = { version = "4.5.3", default-features = false, features = ["derive"] }
 core_extensions = "1.5.3"
 ethereum = { version = "0.18.2", default-features = false }
 exit-future = { version = "0.2.0" }
@@ -431,16 +431,16 @@ fs2 = "0.4.3"
 futures = { version = "0.3.1" }
 futures-timer = "3.0.1"
 hex = { version = "0.4.3", default-features = false }
-jsonrpsee = { version = "0.24.3", features = [ "server" ] }
+jsonrpsee = { version = "0.24.3", features = ["server"] }
 num-traits = "0.2.8"
 orchestra = { version = "0.4.0", default-features = false }
 parking_lot = "0.12.1"
 paste = "1.0.14"
-rand = { version = "0.8.5", default-features = false, features = [ "std_rng" ] }
+rand = { version = "0.8.5", default-features = false, features = ["std_rng"] }
 serde_json = { version = "1.0.114", default-features = false }
 similar-asserts = "1.1.0"
 tempfile = "3.1.0"
-thiserror = { version = "1.0.48" }
+thiserror = { version = "2.0.17", default-features = false }
 tokio = { version = "1.32.0", default-features = false }
 tokio-stream = "0.1.15"
 tokio-util = { version = "0.7.10", default-features = false }
@@ -449,11 +449,11 @@ tracing-subscriber = { version = "0.3.18" }
 url = "2.2.2"
 
 # Dancelight runtime
-bitvec = { version = "1.0.1", default-features = false, features = [ "alloc" ] }
+bitvec = { version = "1.0.1", default-features = false, features = ["alloc"] }
 separator = "0.4.1"
 serde_derive = { version = "1.0.117" }
 static_assertions = "1.1.0"
-tiny-keccak = { version = "2.0.2", features = [ "keccak" ] }
+tiny-keccak = { version = "2.0.2", features = ["keccak"] }
 
 authority-discovery-primitives = { package = "sp-authority-discovery", git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 babe-primitives = { package = "sp-consensus-babe", git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
@@ -544,7 +544,7 @@ consensus_common = { package = "sp-consensus", git = "https://github.com/moondan
 sc-authority-discovery = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 sc-client-db = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 sc-sync-state-rpc = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
-sp-authority-discovery= { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
+sp-authority-discovery = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 
 babe = { package = "sc-consensus-babe", git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 beefy = { package = "sc-consensus-beefy", git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
@@ -565,11 +565,11 @@ sp-maybe-compressed-blob = { git = "https://github.com/moondance-labs/polkadot-s
 
 # Tanssi Relay Chain
 color-eyre = { version = "0.6.1", default-features = false }
-tikv-jemallocator = { version = "0.5.0", features = [ "unprefixed_malloc_on_supported_platforms" ] }
+tikv-jemallocator = { version = "0.5.0", features = ["unprefixed_malloc_on_supported_platforms"] }
 
 polkadot-node-core-pvf-common = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 polkadot-node-core-pvf-execute-worker = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
-polkadot-node-core-pvf-prepare-worker  = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
+polkadot-node-core-pvf-prepare-worker = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 
 substrate-rpc-client = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 
