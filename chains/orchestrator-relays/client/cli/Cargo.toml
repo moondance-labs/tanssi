@@ -44,7 +44,7 @@ sp-maybe-compressed-blob = { workspace = true }
 sp-runtime = { workspace = true }
 
 [build-dependencies]
-substrate-build-script-utils = { workspace = true, optional = true }
+substrate-build-script-utils = { workspace = true }
 
 [features]
 default = [ "cli", "db", "full-node" ]
@@ -60,7 +60,7 @@ cli = [
 db = [ "polkadot-service/db" ]
 fast-runtime = [ "polkadot-service?/fast-runtime", "tanssi-relay-service?/fast-runtime" ]
 full-node = [ "polkadot-service/full-node" ]
-include-git-hash-in-version = [ "substrate-build-script-utils" ]
+include-git-hash-in-version = ["node-common/include-git-hash-in-version"]
 pyroscope = [ "pyro", "pyroscope_pprofrs" ]
 runtime-benchmarks = [
 	"frame-benchmarking-cli?/runtime-benchmarks",
