@@ -165,5 +165,5 @@ try-runtime = [
 ]
 
 fast-runtime = [ "dancebox-runtime/fast-runtime", "flashbox-runtime/fast-runtime" ]
-include-git-hash-in-version = ["node-common/include-git-hash-in-version"]
+include-git-hash-in-version = [ "node-common/include-git-hash-in-version" ]
 metadata-hash = [ "dancebox-runtime/metadata-hash", "flashbox-runtime/metadata-hash" ]
