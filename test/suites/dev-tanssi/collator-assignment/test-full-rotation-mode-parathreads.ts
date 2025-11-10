@@ -211,6 +211,9 @@ async function registerParathreads(context: DevModeContext) {
             paraIds: "AnyParaId",
             nodeType: "Substrate",
             assignmentRequest: "Free",
+            additionalInfo: "0x",
+            directRpcUrls: [],
+            proxyRpcUrls: [],
         });
 
         const tx3 = polkadotJs.tx.dataPreservers.startAssignment(profileId, paraId, "Free");

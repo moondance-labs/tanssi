@@ -258,6 +258,9 @@ describeSuite({
                     paraIds: "AnyParaId",
                     nodeType: "Substrate",
                     assignmentRequest: "Free",
+                    additionalInfo: "0x",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
                 });
 
                 const tx3 = paraApi.tx.dataPreservers.forceStartAssignment(profileId, 2002, "Free");

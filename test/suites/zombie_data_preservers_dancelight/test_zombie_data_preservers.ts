@@ -416,7 +416,9 @@ describeSuite({
                     assignmentRequest: "Free",
                     bootnodeUrl: "dummy",
                     nodeType: "Frontier",
-                    additionalInfo: "",
+                    additionalInfo: "0x",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
                 };
 
                 profile2 = Number(await relayApi.query.dataPreservers.nextProfileId());

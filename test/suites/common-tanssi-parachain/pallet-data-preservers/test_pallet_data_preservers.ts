@@ -31,6 +31,9 @@ describeSuite({
                     paraIds: { whitelist: [42, 43] },
                     nodeType: "Substrate",
                     assignmentRequest: "Free",
+                    additionalInfo: "0x",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
                 };
 
                 const tx = polkadotJs.tx.dataPreservers.createProfile(profile);
@@ -46,6 +49,9 @@ describeSuite({
                         paraIds: { whitelist: [42, 43] },
                         nodeType: "Substrate",
                         assignmentRequest: { free: null },
+                        additionalInfo: "0x",
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
                     },
                     assignment: null,
                 });
@@ -61,6 +67,9 @@ describeSuite({
                     paraIds: { whitelist: [42, 43] },
                     nodeType: "Substrate",
                     assignmentRequest: "Free",
+                    additionalInfo: "0x",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
                 };
 
                 const tx = polkadotJs.tx.dataPreservers.createProfile(profile);
@@ -76,6 +85,9 @@ describeSuite({
                         paraIds: { whitelist: [42, 43] },
                         nodeType: "Substrate",
                         assignmentRequest: { free: null },
+                        additionalInfo: "0x",
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
                     },
                     assignment: null,
                 });
@@ -84,6 +96,9 @@ describeSuite({
                     bootnodeUrl: "exemple2",
                     paraIds: { whitelist: [42, 43] },
                     nodeType: "Substrate",
+                    additionalInfo: "0x",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
                 };
 
                 const tx2 = polkadotJs.tx.dataPreservers.updateProfile(profileId, profile2);
@@ -99,6 +114,9 @@ describeSuite({
                         paraIds: { whitelist: [42, 43] },
                         nodeType: "Substrate",
                         assignmentRequest: { free: null },
+                        additionalInfo: "0x",
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
                     },
                     assignment: null,
                 });
@@ -113,6 +131,9 @@ describeSuite({
                     bootnodeUrl: "exemple",
                     paraIds: { whitelist: [42, 43] },
                     nodeType: "Substrate",
+                    additionalInfo: "0x",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
                 };
 
                 const tx = polkadotJs.tx.dataPreservers.createProfile(profile);
@@ -128,6 +149,9 @@ describeSuite({
                         paraIds: { whitelist: [42, 43] },
                         nodeType: "Substrate",
                         assignmentRequest: { free: null },
+                        additionalInfo: "0x",
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
                     },
                     assignment: null,
                 });
@@ -149,6 +173,9 @@ describeSuite({
                     bootnodeUrl: "exemple",
                     paraIds: { whitelist: [42, 43] },
                     nodeType: "Substrate",
+                    additionalInfo: "0x",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
                 };
 
                 const tx = polkadotJs.tx.dataPreservers.forceCreateProfile(profile, general_user_bob.address);
@@ -164,6 +191,9 @@ describeSuite({
                         paraIds: { whitelist: [42, 43] },
                         nodeType: "Substrate",
                         assignmentRequest: { free: null },
+                        additionalInfo: "0x",
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
                     },
                     assignment: null,
                 });
@@ -178,6 +208,9 @@ describeSuite({
                     bootnodeUrl: "exemple",
                     paraIds: { whitelist: [42, 43] },
                     nodeType: "Substrate",
+                    additionalInfo: "0x",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
                 };
 
                 const tx = polkadotJs.tx.dataPreservers.createProfile(profile);
@@ -193,6 +226,9 @@ describeSuite({
                         paraIds: { whitelist: [42, 43] },
                         nodeType: "Substrate",
                         assignmentRequest: { free: null },
+                        additionalInfo: "0x",
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
                     },
                     assignment: null,
                 });
@@ -201,6 +237,9 @@ describeSuite({
                     bootnodeUrl: "exemple2",
                     paraIds: { whitelist: [42, 43] },
                     nodeType: "Substrate",
+                    additionalInfo: "0x",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
                 };
 
                 const tx2 = polkadotJs.tx.dataPreservers.forceUpdateProfile(profileId, profile2);
@@ -216,6 +255,9 @@ describeSuite({
                         paraIds: { whitelist: [42, 43] },
                         nodeType: "Substrate",
                         assignmentRequest: { free: null },
+                        additionalInfo: "0x",
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
                     },
                     assignment: null,
                 });
@@ -230,6 +272,9 @@ describeSuite({
                     bootnodeUrl: "exemple",
                     paraIds: { whitelist: [42, 43] },
                     nodeType: "Substrate",
+                    additionalInfo: "0x",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
                 };
 
                 const tx = polkadotJs.tx.dataPreservers.createProfile(profile);
@@ -245,6 +290,9 @@ describeSuite({
                         paraIds: { whitelist: [42, 43] },
                         nodeType: "Substrate",
                         assignmentRequest: { free: null },
+                        additionalInfo: "0x",
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
                     },
                     assignment: null,
                 });
@@ -275,6 +323,9 @@ describeSuite({
                     paraIds: { whitelist: [paraId] },
                     nodeType: "Substrate",
                     assignmentRequest: "Free",
+                    additionalInfo: "0x",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
                 };
 
                 const profileTx = polkadotJs.tx.dataPreservers.createProfile(profile);
@@ -295,6 +346,9 @@ describeSuite({
                         paraIds: { whitelist: [paraId] },
                         nodeType: "Substrate",
                         assignmentRequest: { free: null },
+                        additionalInfo: "0x",
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
                     },
                     assignment: [paraId, { free: null }],
                 });
@@ -316,6 +370,9 @@ describeSuite({
                     paraIds: { whitelist: [paraId] },
                     nodeType: "Substrate",
                     assignmentRequest: "Free",
+                    additionalInfo: "0x",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
                 };
 
                 const profileTx = polkadotJs.tx.dataPreservers.createProfile(profile);
@@ -336,6 +393,9 @@ describeSuite({
                         paraIds: { whitelist: [paraId] },
                         nodeType: "Substrate",
                         assignmentRequest: { free: null },
+                        additionalInfo: "0x",
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
                     },
                     assignment: [paraId, { free: null }],
                 });
@@ -357,6 +417,9 @@ describeSuite({
                     paraIds: { whitelist: [paraId] },
                     nodeType: "Substrate",
                     assignmentRequest: "Free",
+                    additionalInfo: "0x",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
                 };
 
                 const profileTx = polkadotJs.tx.dataPreservers.createProfile(profile);
@@ -380,6 +443,9 @@ describeSuite({
                         paraIds: { whitelist: [paraId] },
                         nodeType: "Substrate",
                         assignmentRequest: { free: null },
+                        additionalInfo: "0x",
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
                     },
                     assignment: null,
                 });
@@ -401,6 +467,9 @@ describeSuite({
                     paraIds: { whitelist: [paraId] },
                     nodeType: "Substrate",
                     assignmentRequest: "Free",
+                    additionalInfo: "0x",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
                 };
 
                 const profileTx = polkadotJs.tx.dataPreservers.createProfile(profile);
@@ -423,6 +492,9 @@ describeSuite({
                         paraIds: { whitelist: [paraId] },
                         nodeType: "Substrate",
                         assignmentRequest: { free: null },
+                        additionalInfo: "0x",
+                        directRpcUrls: [],
+                        proxyRpcUrls: [],
                     },
                     assignment: null,
                 });
@@ -444,6 +516,9 @@ describeSuite({
                     paraIds: { whitelist: [paraId] },
                     nodeType: "Substrate",
                     assignmentRequest: "Free",
+                    additionalInfo: "0x",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
                 };
 
                 const profileTx = polkadotJs.tx.dataPreservers.createProfile(profile);

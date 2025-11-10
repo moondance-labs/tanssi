@@ -494,6 +494,10 @@ async function createTxBatchForCreatingParathread(api, manager, paraId, slotFreq
                     bootnodeUrl: bootnode,
                     paraIds: "AnyParaId",
                     assignmentRequest: "Free",
+                    nodeType: "Substrate",
+                    additionalInfo: "0x",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
                 },
                 manager
             );

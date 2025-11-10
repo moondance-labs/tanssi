@@ -72,6 +72,9 @@ describeSuite({
                     paraIds: "AnyParaId",
                     nodeType: "Substrate",
                     assignmentRequest: "Free",
+                    additionalInfo: "0x",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
                 });
 
                 // assert we can inject bootnodes with proxy
