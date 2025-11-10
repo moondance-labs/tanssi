@@ -213,8 +213,6 @@ enum XcmConverterErrorV2 {
     UnexpectedEndOfXcm,
     EndOfXcmMessageExpected,
     DepositAssetExpected,
-    ClearOriginExpected,
-    BuyExecutionExpected,
     NoReserveAssets,
     FilterDoesNotConsumeAllAssets,
     TooManyAssets,

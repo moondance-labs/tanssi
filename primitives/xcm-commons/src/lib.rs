@@ -96,3 +96,22 @@ where
         return false;
     }
 }
+
+/// Filter to ensure that Ethereum can be recongnized as a reserve for Tanssi asset. 
+/// Used in containers to allow sending tokens to Ethereum and paying fees with Tanssi.
+pub struct EthereumAssetReserveForTanssi<EthereumLocation>(
+    core::marker::PhantomData<EthereumLocation>,
+);
+impl<EthereumLocation> frame_support::traits::ContainsPair<Asset, Location>
+    for EthereumAssetReserveForTanssi<EthereumLocation>
+where
+    EthereumLocation: Get<Location>,
+{
+    fn contains(asset: &Asset, origin: &Location) -> bool {
+        log::trace!(target: "xcm::contains", "EthereumAssetReserveForTanssi asset: {:?}, origin: {:?}, eth_network: {:?}", asset, origin, EthereumLocation::get());
+        if *origin == EthereumLocation::get() {
+            return matches!((asset.id.0.parents, asset.id.0.first_interior()), (1, None));
+        }
+        return false;
+    }
+}

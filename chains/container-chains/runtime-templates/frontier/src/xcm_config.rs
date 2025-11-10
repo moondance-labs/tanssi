@@ -54,7 +54,7 @@ use {
         sovereign_paid_remote_exporter_v2::SovereignPaidRemoteExporterV2,
         ContainerChainEthereumLocationConverter,
     },
-    tp_xcm_commons::EthereumAssetReserveFromParent,
+    tp_xcm_commons::{EthereumAssetReserveFromParent, EthereumAssetReserveForTanssi},
     xcm::latest::prelude::*,
     xcm_builder::{
         AccountKey20Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
@@ -234,6 +234,7 @@ impl xcm_executor::Config for XcmConfig {
     // - Ethereum assets with ethereum or relay origin
     type IsReserve = (
         IsReserveFilter<Runtime>,
+        EthereumAssetReserveForTanssi<EthereumLocation>,
         EthereumAssetReserveFromParent<EthereumLocation, EthereumNetwork>,
     );
     type IsTeleporter = IsTeleportFilter<Runtime>;

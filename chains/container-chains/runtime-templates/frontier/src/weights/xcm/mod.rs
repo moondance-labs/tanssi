@@ -202,7 +202,8 @@ where
         XcmGeneric::<Runtime>::universal_origin()
     }
     fn export_message(_: &NetworkId, _: &Junctions, _: &Xcm<()>) -> Weight {
-        Weight::MAX
+        // TODO: change for benchmarked value
+        Weight::from_parts(200_000_000, 5000)
     }
     fn lock_asset(_: &Asset, _: &Location) -> Weight {
         Weight::MAX
@@ -227,7 +228,8 @@ where
     }
     fn alias_origin(_: &Location) -> Weight {
         // XCM Executor does not currently support alias origin operations
-        Weight::MAX
+        // TODO: change for benchmarked value
+        Weight::from_parts(200_000_000, 1000)
     }
     fn unpaid_execution(_: &WeightLimit, _: &Option<Location>) -> Weight {
         XcmGeneric::<Runtime>::unpaid_execution()
@@ -244,7 +246,8 @@ where
         _assets: &BoundedVec<AssetTransferFilter, MaxAssetTransferFilters>,
         _xcm: &Xcm<()>,
     ) -> Weight {
-        Weight::MAX
+        // TODO: change for benchmarked value
+        Weight::from_parts(400_215_000, 20000)
     }
 
     fn execute_with_origin(_: &Option<InteriorLocation>, _: &Xcm<RuntimeCall>) -> Weight {

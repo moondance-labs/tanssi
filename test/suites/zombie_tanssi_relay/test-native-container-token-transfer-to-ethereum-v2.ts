@@ -1,6 +1,7 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
+import { u8aToHex } from "@polkadot/util";
 
 import {
     SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
@@ -8,6 +9,7 @@ import {
     TESTNET_ETHEREUM_NETWORK_ID,
     waitEventUntilTimeout,
     SNOWBRIDGE_FEES_ACCOUNT,
+    DANCELIGHT_GENESIS_HASH,
 } from "utils";
 
 describeSuite({
@@ -23,12 +25,8 @@ describeSuite({
 
         // Random ETH destination that we send asset to
         const destinationAddress = "0x1234567890abcdef1234567890abcdef12345678";
-        const holdingAccount = SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS;
+        const ethereumSovereignAccountAddress = SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS;
         const tokenToTransfer = 123_321_000_000_000_000n;
-
-        const newChannelId = "0x0000000000000000000000000000000000000000000000000000000000000001";
-        const newAgentId = "0x0000000000000000000000000000000000000000000000000000000000000001";
-        const newParaId = 0;
 
         beforeAll(async () => {
             containerChainPolkadotJs = context.polkadotJs("Container2001");
@@ -44,23 +42,60 @@ describeSuite({
             id: "T01",
             title: "Should allow sending asset to Ethereum",
             test: async () => {
-                const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
+                // Register relay token as foreign in container
+                const relayNativeTokenAssetId = 42;
+                const relayNativeTokenLocation = {
+                    parents: 1,
+                    interior: "Here",
+                };
 
+                const containerBatchTx = await containerChainPolkadotJs.tx.utility
+                    .batchAll([
+                        containerChainPolkadotJs.tx.sudo.sudo(
+                            containerChainPolkadotJs.tx.foreignAssetsCreator.createForeignAsset(
+                                relayNativeTokenLocation,
+                                relayNativeTokenAssetId,
+                                u8aToHex(alice.addressRaw),
+                                true,
+                                1
+                            )
+                        ),
+                        containerChainPolkadotJs.tx.foreignAssets.mint(
+                            relayNativeTokenAssetId,
+                            u8aToHex(alice.addressRaw),
+                            200000000000000000000n
+                        ),
+                        containerChainPolkadotJs.tx.sudo.sudo(
+                            containerChainPolkadotJs.tx.assetRate.create(
+                                relayNativeTokenAssetId,
+                                // this defines how much the asset costs with respect to the
+                                // new asset
+                                // in this case, asset*2=native
+                                // that means that we will charge 0.5 of the native balance
+                                2000000000000000000n
+                            )
+                        ),
+                    ])
+                    .signAndSend(alice);
+
+                expect(!!containerBatchTx.toHuman()).to.be.true;
+
+                const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
                 const convertLocation = await relayChainPolkadotJs.call.locationToAccountApi.convertLocation({
                     V3: { parents: 0, interior: { X1: { Parachain: 2001 } } },
                 });
-                const convertedAddress = convertLocation.asOk.toHuman();
+                const containerSovereignAccountAddress = convertLocation.asOk.toHuman();
 
-                console.log("Converted address:", convertedAddress);
+                console.log("Container sovereign account address:", containerSovereignAccountAddress);
 
                 const versionedLocation = {
-                    V3: {
+                    V5: {
                         parents: 1,
                         interior: {
                             X3: [
                                 {
                                     GlobalConsensus: {
-                                        ByGenesis: "0x983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a",
+                                        ByGenesis: DANCELIGHT_GENESIS_HASH,
                                     },
                                 },
                                 {
@@ -83,12 +118,10 @@ describeSuite({
                 const initialBalance = 100_000_000_000_000n;
                 const txHash = await relayChainPolkadotJs.tx.utility
                     .batch([
-                        relayChainPolkadotJs.tx.balances.transferKeepAlive(convertedAddress, initialBalance),
                         relayChainPolkadotJs.tx.sudo.sudo(
-                            relayChainPolkadotJs.tx.ethereumTokenTransfers.setTokenTransferChannel(
-                                newChannelId,
-                                newAgentId,
-                                newParaId
+                            relayChainPolkadotJs.tx.balances.forceSetBalance(
+                                containerSovereignAccountAddress,
+                                initialBalance
                             )
                         ),
                         relayChainPolkadotJs.tx.sudo.sudo(
@@ -102,21 +135,23 @@ describeSuite({
 
                 expect(!!txHash.toHuman()).to.be.true;
 
+                await sleep(24000);
+
                 // Check balance before transfer
-                const balanceBefore = (
-                    await containerChainPolkadotJs.query.system.account(holdingAccount)
+                const ethereumSovereignAccountBalanceBefore = (
+                    await containerChainPolkadotJs.query.system.account(ethereumSovereignAccountAddress)
                 ).data.free.toBigInt();
-                const versionedBeneficiary = {
-                    V3: {
-                        parents: 0,
-                        interior: {
-                            X1: {
+                const beneficiaryOnDest = {
+                    parents: 0,
+                    interior: {
+                        X1: [
+                            {
                                 AccountKey20: {
                                     network: ethereumNetwork,
                                     key: destinationAddress,
                                 },
                             },
-                        },
+                        ],
                     },
                 };
                 const metadata = await containerChainPolkadotJs.rpc.state.getMetadata();
@@ -126,56 +161,131 @@ describeSuite({
 
                 const assetToTransferNative = {
                     id: {
-                        Concrete: {
-                            parents: 0,
-                            interior: {
-                                X1: { PalletInstance: Number(balancesPalletIndex) },
-                            },
+                        parents: 0,
+                        interior: {
+                            X1: [{ PalletInstance: balancesPalletIndex }],
                         },
                     },
                     fun: { Fungible: tokenToTransfer },
                 };
-                const versionedAssets = {
-                    V3: [assetToTransferNative],
+
+                const assetToTransferNativeReanchored = {
+                    id: {
+                        parents: 1,
+                        interior: {
+                            X3: [
+                                {
+                                    GlobalConsensus: {
+                                        ByGenesis: DANCELIGHT_GENESIS_HASH,
+                                    },
+                                },
+                                {
+                                    Parachain: 2001,
+                                },
+                                { PalletInstance: balancesPalletIndex },
+                            ],
+                        },
+                    },
+                    fun: { Fungible: tokenToTransfer },
+                };
+
+                const nativeAssetToWithdraw = {
+                    id: {
+                        parents: 0,
+                        interior: {
+                            X1: [{ PalletInstance: balancesPalletIndex }],
+                        },
+                    },
+                    fun: { Fungible: tokenToTransfer * 1000n },
                 };
 
                 // Specify ethereum destination with global consensus
                 const dest = {
-                    V3: {
-                        parents: 2,
-                        interior: {
-                            X1: {
+                    parents: 2,
+                    interior: {
+                        X1: [
+                            {
                                 GlobalConsensus: ethereumNetwork,
                             },
-                        },
+                        ],
                     },
                 };
 
-                const channelNonceBefore = await relayChainPolkadotJs.query.ethereumOutboundQueue.nonce(newChannelId);
+                const v2NonceBefore = await relayChainPolkadotJs.query.ethereumOutboundQueueV2.nonce();
 
-                // Fees account (on Tanssi) only has the existential deposit
-                const existentialDeposit = relayChainPolkadotJs.consts.balances.existentialDeposit.toBigInt();
                 const feesAccountBalanceBefore = (
                     await relayChainPolkadotJs.query.system.account(SNOWBRIDGE_FEES_ACCOUNT)
                 ).data.free.toBigInt();
-                expect(feesAccountBalanceBefore).to.be.eq(existentialDeposit);
 
-                await containerChainPolkadotJs.tx.polkadotXcm
-                    .transferAssets(dest, versionedBeneficiary, versionedAssets, 0, "Unlimited")
-                    .signAndSend(alice);
+                const relayFee = 500_000_000n;
 
-                await waitEventUntilTimeout(relayChainPolkadotJs, "ethereumOutboundQueue.MessageAccepted", 90000);
+                const relayAssetFeeToWithdraw = {
+                    id: relayNativeTokenLocation,
+                    fun: { Fungible: relayFee },
+                };
 
-                // Wait 2 blocks until nonce changed
+                const xcmMessage = {
+                    V5: [
+                        {
+                            WithdrawAsset: [nativeAssetToWithdraw, relayAssetFeeToWithdraw],
+                        },
+                        {
+                            InitiateTransfer: {
+                                destination: dest,
+                                remoteFees: {
+                                    ReserveWithdraw: {
+                                        Definite: [
+                                            {
+                                                id: relayNativeTokenLocation,
+                                                fun: { Fungible: relayFee },
+                                            },
+                                        ],
+                                    },
+                                },
+                                preserveOrigin: true,
+                                assets: [
+                                    {
+                                        ReserveDeposit: {
+                                            Definite: [assetToTransferNative],
+                                        },
+                                    },
+                                ],
+                                remoteXcm: [
+                                    {
+                                        DepositAsset: {
+                                            assets: { Definite: [assetToTransferNativeReanchored] },
+                                            beneficiary: beneficiaryOnDest,
+                                        },
+                                    },
+                                ],
+                            },
+                        },
+                    ],
+                };
+
                 await sleep(24000);
 
-                const balanceAfter = (
-                    await containerChainPolkadotJs.query.system.account(holdingAccount)
+                await containerChainPolkadotJs.tx.polkadotXcm
+                    .execute(xcmMessage as any, {
+                        refTime: 100000000000,
+                        proofSize: 100000,
+                    })
+                    .signAndSend(alice);
+
+                await waitEventUntilTimeout(relayChainPolkadotJs, "ethereumOutboundQueueV2.MessageAccepted", 90000);
+
+                // Wait a few blocks until nonce has been increased
+                await sleep(24000);
+
+                const ethereumSovereignAccountBalanceAfter = (
+                    await containerChainPolkadotJs.query.system.account(ethereumSovereignAccountAddress)
                 ).data.free.toBigInt();
 
-                expect(balanceAfter - balanceBefore).toEqual(tokenToTransfer);
+                expect(ethereumSovereignAccountBalanceAfter - ethereumSovereignAccountBalanceBefore).toEqual(
+                    tokenToTransfer
+                );
 
-                const channelNonceAfter = await relayChainPolkadotJs.query.ethereumOutboundQueue.nonce(newChannelId);
+                const v2NonceAfter = await relayChainPolkadotJs.query.ethereumOutboundQueueV2.nonce();
 
                 // Wait a few blocks until fees are collected
                 await sleep(24000);
@@ -188,7 +298,7 @@ describeSuite({
 
                 // Check that the container chain sovereign account balance (in Tanssi) has been reduced
                 const containerSovereignAccountBalance = (
-                    await relayChainPolkadotJs.query.system.account(convertedAddress)
+                    await relayChainPolkadotJs.query.system.account(containerSovereignAccountAddress)
                 ).data.free.toBigInt();
                 expect(containerSovereignAccountBalance).toBeLessThan(initialBalance);
 
@@ -200,7 +310,7 @@ describeSuite({
                 );
 
                 // Check that nonce has changed
-                expect(channelNonceAfter.toNumber() - channelNonceBefore.toNumber()).toEqual(1);
+                expect(Number(v2NonceAfter.toHuman()) - Number(v2NonceBefore.toHuman())).toEqual(1);
             },
         });
     },
