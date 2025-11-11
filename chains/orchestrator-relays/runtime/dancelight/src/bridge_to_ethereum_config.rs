@@ -33,11 +33,8 @@ use pallet_ethereum_token_transfers::{
     pallet::TipHandler,
 };
 use parity_scale_codec::{Decode, MaxEncodedLen};
-use snowbridge_core::reward::{AddTip, AddTipError, MessageId};
-use snowbridge_outbound_queue_primitives::v2::{
-    ConstantGasMeter as ConstantGasMeterV2, Message, SendMessage,
-};
-use snowbridge_outbound_queue_primitives::SendError;
+use snowbridge_core::reward::MessageId;
+use snowbridge_outbound_queue_primitives::v2::ConstantGasMeter as ConstantGasMeterV2;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
 use {
@@ -193,7 +190,7 @@ impl bp_relayers::PaymentProcedure<AccountId, BridgeReward, u128> for BridgeRewa
     fn pay_reward(
         _relayer: &AccountId,
         reward_kind: BridgeReward,
-        _reward: u128,
+        reward: u128,
         beneficiary: BridgeRewardBeneficiaries,
     ) -> Result<(), Self::Error> {
         match reward_kind {
@@ -208,9 +205,14 @@ impl bp_relayers::PaymentProcedure<AccountId, BridgeReward, u128> for BridgeRewa
             }
             BridgeReward::SnowbridgeRewardOutbound => {
                 match beneficiary {
-                    BridgeRewardBeneficiaries::LocalAccount(_account_id) => {
-                        // TODO: Pay relayer from reward account in tanssi.
-                        // Take from ethereum fees account
+                    // Fees are collected by the snowbridge fees account and thus payed from it too
+                    BridgeRewardBeneficiaries::LocalAccount(account_id) => {
+                        Balances::transfer(
+                            &SnowbridgeFeesAccount::get(),
+                            &account_id,
+                            reward.into(),
+                            Preservation::Preserve,
+                        )?;
                         Ok(())
                     }
                 }
@@ -284,29 +286,9 @@ impl snowbridge_pallet_system::Config for Runtime {
     type WeightInfo = crate::weights::snowbridge_pallet_system::SubstrateWeight<Runtime>;
 }
 
-// Added this since we do not have outbound queue integrated yet
-pub struct DoNothingQueue;
-impl SendMessage for DoNothingQueue {
-    type Ticket = ();
-
-    fn validate(_: &Message) -> Result<Self::Ticket, SendError> {
-        Ok(())
-    }
-
-    fn deliver(_: Self::Ticket) -> Result<H256, SendError> {
-        Ok(H256::zero())
-    }
-}
-
-impl AddTip for DoNothingQueue {
-    fn add_tip(_nonce: u64, _amount: u128) -> Result<(), AddTipError> {
-        Ok(())
-    }
-}
-
 impl snowbridge_pallet_system_v2::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type OutboundQueue = DoNothingQueue;
+    type OutboundQueue = EthereumOutboundQueueV2;
     type InboundQueue = EthereumInboundQueueV2;
     type FrontendOrigin = EitherOf<
         MapSuccess<EnsureRoot<AccountId>, ConvertUnitTo<Location>>,
