@@ -42,12 +42,12 @@ tempfile = { workspace = true }
 tokio = { workspace = true }
 
 [build-dependencies]
-substrate-build-script-utils = { workspace = true }
+substrate-build-script-utils = { workspace = true, optional = true }
 
 [features]
 fast-runtime = [ "tanssi-relay-cli/fast-runtime" ]
 force-debug = [ "sp-debug-derive/force-debug" ]
-include-git-hash-in-version = [ "tanssi-relay-cli/include-git-hash-in-version" ]
+include-git-hash-in-version = [ "substrate-build-script-utils", "tanssi-relay-cli/include-git-hash-in-version" ]
 metadata-hash = [
 	"tanssi-relay-cli/metadata-hash",
 ]
