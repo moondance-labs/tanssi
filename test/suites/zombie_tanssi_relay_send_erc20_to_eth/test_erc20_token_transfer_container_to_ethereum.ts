@@ -5,9 +5,8 @@ import { type ApiPromise, Keyring } from "@polkadot/api";
 import {
     getTreasuryAddress,
     signAndSendAndInclude,
-    sleep,
     TESTNET_ETHEREUM_NETWORK_ID,
-    waitEventUntilTimeout,
+    waitUntilNonceForChannelChanged,
 } from "utils";
 import { hexToU8a } from "@polkadot/util";
 
@@ -111,9 +110,7 @@ describeSuite({
                     )
                     .signAndSend(alice);
 
-                await waitEventUntilTimeout(relayChainPolkadotJs, "ethereumOutboundQueue.MessageAccepted", 90000);
-
-                await sleep(24000);
+                await waitUntilNonceForChannelChanged(relayChainPolkadotJs, NEW_CHANNEL_ID, 90000);
 
                 await checkBalancesAfterExecution();
 
