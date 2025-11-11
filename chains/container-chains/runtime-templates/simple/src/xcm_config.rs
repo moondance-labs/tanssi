@@ -49,7 +49,7 @@ use {
     xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
-        IsConcrete, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
+        IsConcrete, MintLocation, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
         SiblingParachainConvertsVia, SignedAccountId32AsNative, SignedToAccountId32,
         SovereignSignedViaLocation, TakeWeightCredit, UsingComponents, WeightInfoBounds,
         WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
@@ -337,6 +337,7 @@ parameter_types! {
     pub const ForeignAssetsMetadataDepositBase: Balance = 0;
     pub const ForeignAssetsMetadataDepositPerByte: Balance = 0;
     pub CheckingAccount: AccountId = PolkadotXcm::check_account();
+    pub LocalCheckingAccount: (AccountId, MintLocation) = (CheckingAccount::get(), MintLocation::Local);
 }
 
 #[cfg(feature = "runtime-benchmarks")]

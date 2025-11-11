@@ -44,11 +44,11 @@ use {
     tanssi_runtime_common::relay::{
         NativeContainerTokensProcessor, NativeTokenTransferMessageProcessor,
     },
-    tp_bridge::{
-        symbiotic_message_processor::SymbioticInboundMessageProcessor,
-        GenericTokenInboundMessageProcessor,
-    },
+    tp_bridge::GenericTokenInboundMessageProcessor,
 };
+
+// TODO: only import in case of not benchmarks
+use tp_bridge::symbiotic_message_processor::SymbioticInboundMessageProcessor;
 
 use crate::{AccountId, BridgeRelayers};
 use dancelight_runtime_constants::snowbridge::EthereumLocation;
@@ -316,6 +316,8 @@ impl snowbridge_pallet_system_v2::Config for Runtime {
         >,
     >;
     type GovernanceOrigin = EnsureRootWithSuccess<AccountId, EthereumLocation>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type Helper = benchmark_helper::EthSystemBenchHelper;
     type WeightInfo = ();
 }
 
@@ -342,8 +344,12 @@ impl TipHandler<crate::RuntimeOrigin> for EthereumTipForwarder<Runtime> {
 }
 impl pallet_ethereum_token_transfers::Config for Runtime {
     type Currency = Balances;
+    // TODO: check this. For now only changed to compile benchmarks.
     type OutboundQueue = EthereumOutboundQueue;
+    #[cfg(not(feature = "runtime-benchmarks"))]
     type OutboundQueueV2 = EthereumOutboundQueueV2;
+    #[cfg(feature = "runtime-benchmarks")]
+    type OutboundQueueV2 = DoNothingQueue;
     type ShouldUseV2 = ConstBool<true>;
     type EthereumSystemHandler = EthereumSystemHandler<Runtime>;
     type EthereumSovereignAccount = EthereumSovereignAccount;
@@ -371,6 +377,7 @@ mod benchmark_helper {
             SnowbridgeFeesAccount, UNITS,
         },
         frame_support::traits::fungible::Mutate,
+        snowbridge_beacon_primitives::BeaconHeader,
         snowbridge_core::Channel,
         snowbridge_inbound_queue_primitives::{
             v1::{Envelope, MessageProcessor},
@@ -378,6 +385,7 @@ mod benchmark_helper {
         },
         snowbridge_pallet_inbound_queue::Nonce,
         snowbridge_pallet_system::Channels,
+        sp_core::H256,
         sp_runtime::DispatchResult,
         xcm::latest::Location,
     };
@@ -385,6 +393,12 @@ mod benchmark_helper {
     pub struct EthSystemBenchHelper;
 
     impl snowbridge_pallet_system::BenchmarkHelper<RuntimeOrigin> for EthSystemBenchHelper {
+        fn make_xcm_origin(location: Location) -> RuntimeOrigin {
+            RuntimeOrigin::from(pallet_xcm::Origin::Xcm(location))
+        }
+    }
+
+    impl snowbridge_pallet_system_v2::BenchmarkHelper<RuntimeOrigin> for EthSystemBenchHelper {
         fn make_xcm_origin(location: Location) -> RuntimeOrigin {
             RuntimeOrigin::from(pallet_xcm::Origin::Xcm(location))
         }
@@ -431,6 +445,18 @@ mod benchmark_helper {
                 .expect("minting fees_account balance");
 
             submit_message
+        }
+    }
+
+    impl snowbridge_pallet_inbound_queue_v2::BenchmarkHelper<Runtime> for EthSystemBenchHelper {
+        fn initialize_storage(_beacon_header: BeaconHeader, _block_roots_root: H256) {
+            // TODO: check what we need to add here
+        }
+    }
+
+    impl snowbridge_pallet_outbound_queue_v2::BenchmarkHelper<Runtime> for EthSystemBenchHelper {
+        fn initialize_storage(_beacon_header: BeaconHeader, _block_roots_root: H256) {
+            // TODO: check what we need to add here
         }
     }
 
@@ -539,6 +565,8 @@ impl snowbridge_pallet_inbound_queue_v2::Config for Runtime {
     type DefaultRewardKind = SnowbridgeRewardInbound;
     type RewardPayment = BridgeRelayers;
     type WeightInfo = ();
+    #[cfg(feature = "runtime-benchmarks")]
+    type Helper = benchmark_helper::EthSystemBenchHelper;
 }
 
 // Outbound queue V2
@@ -577,5 +605,5 @@ impl snowbridge_pallet_outbound_queue_v2::Config for Runtime {
     type OnNewCommitment = CommitmentRecorder;
     type AggregateMessageOrigin = AggregateMessageOrigin;
     #[cfg(feature = "runtime-benchmarks")]
-    type Helper = Runtime;
+    type Helper = benchmark_helper::EthSystemBenchHelper;
 }

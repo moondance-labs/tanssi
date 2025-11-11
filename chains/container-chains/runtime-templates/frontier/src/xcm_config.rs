@@ -54,12 +54,12 @@ use {
         sovereign_paid_remote_exporter_v2::SovereignPaidRemoteExporterV2,
         ContainerChainEthereumLocationConverter,
     },
-    tp_xcm_commons::{EthereumAssetReserveFromParent, EthereumAssetReserveForTanssi},
+    tp_xcm_commons::{EthereumAssetReserveForTanssi, EthereumAssetReserveFromParent},
     xcm::latest::prelude::*,
     xcm_builder::{
         AccountKey20Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
-        IsConcrete, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
+        IsConcrete, MintLocation, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
         SiblingParachainConvertsVia, SignedAccountKey20AsNative, SovereignSignedViaLocation,
         TakeWeightCredit, UsingComponents, WeightInfoBounds, WithComputedOrigin, WithUniqueTopic,
         XcmFeeManagerFromComponents,
@@ -360,6 +360,7 @@ parameter_types! {
     pub const ForeignAssetsMetadataDepositBase: Balance = 0;
     pub const ForeignAssetsMetadataDepositPerByte: Balance = 0;
     pub CheckingAccount: AccountId = PolkadotXcm::check_account();
+    pub LocalCheckingAccount: (AccountId, MintLocation) = (CheckingAccount::get(), MintLocation::Local);
 }
 
 #[cfg(feature = "runtime-benchmarks")]

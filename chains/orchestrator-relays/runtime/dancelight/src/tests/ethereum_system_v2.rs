@@ -63,7 +63,7 @@ fn test_sudo_can_register_ethereum_system_v2() {
                 },
                 1
             ));
-            
+
             let received_token_id =
                 snowbridge_pallet_system::NativeToForeignId::<Runtime>::get(&reanchored_location);
             assert!(received_token_id.is_some());

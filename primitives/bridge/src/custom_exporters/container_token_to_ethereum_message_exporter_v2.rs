@@ -228,6 +228,12 @@ enum XcmConverterErrorV2 {
     UnexpectedInstruction,
 }
 
+#[cfg(feature = "runtime-benchmarks")]
+#[derive(PartialEq, Debug)]
+enum XcmConverterErrorV2 {
+    UnexpectedEndOfXcm,
+}
+
 #[cfg(not(feature = "runtime-benchmarks"))]
 macro_rules! match_expression {
 	($expression:expr, $(|)? $( $pattern:pat_param )|+ $( if $guard: expr )?, $value:expr $(,)?) => {
@@ -254,7 +260,12 @@ where
     UniversalLocation: Get<InteriorLocation>,
     EthereumLocation: Get<Location>,
 {
-    fn new(message: &'a Xcm<Call>, _ethereum_network: NetworkId, _para_id: u32, _min_reward: Asset) -> Self {
+    fn new(
+        message: &'a Xcm<Call>,
+        _ethereum_network: NetworkId,
+        _para_id: u32,
+        _min_reward: Asset,
+    ) -> Self {
         Self {
             iter: message.inner().iter().peekable(),
             _ethereum_network,
@@ -265,11 +276,15 @@ where
     }
 
     fn convert(&mut self) -> Result<Message, XcmConverterErrorV2> {
-        ensure!(self.iter.len() > 0, "Should have at least one instruction");
+        use sp_core::H256;
+
+        if self.iter.len() == 0 {
+            return Err(XcmConverterErrorV2::UnexpectedEndOfXcm);
+        }
 
         return Ok(Message {
             id: H256::zero(),
-            origin: H160::zero(),
+            origin: H256::zero(),
             fee: 0,
             commands: BoundedVec::new(),
         });

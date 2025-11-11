@@ -238,7 +238,10 @@ impl xcm_executor::Config for XcmConfig {
         WaivedLocations,
         ExporterFeeHandler<Self::AssetTransactor, SnowbridgeFeesAccount, SnowbridgeFeesAccount>,
     >;
-    type MessageExporter = (ContainerToSnowbridgeMessageExporterV2, ContainerToSnowbridgeMessageExporter);
+    type MessageExporter = (
+        ContainerToSnowbridgeMessageExporterV2,
+        ContainerToSnowbridgeMessageExporter,
+    );
     type UniversalAliases = Nothing;
     type CallDispatcher = RuntimeCall;
     type SafeCallFilter = Everything;

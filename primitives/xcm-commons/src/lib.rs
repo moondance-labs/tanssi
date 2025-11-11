@@ -97,7 +97,7 @@ where
     }
 }
 
-/// Filter to ensure that Ethereum can be recongnized as a reserve for Tanssi asset. 
+/// Filter to ensure that Ethereum can be recongnized as a reserve for Tanssi asset.
 /// Used in containers to allow sending tokens to Ethereum and paying fees with Tanssi.
 pub struct EthereumAssetReserveForTanssi<EthereumLocation>(
     core::marker::PhantomData<EthereumLocation>,
