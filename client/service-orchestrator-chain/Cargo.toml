@@ -106,3 +106,5 @@ try-runtime = [
 
 fast-runtime = [ "dancebox-runtime/fast-runtime" ]
 metadata-hash = [ "dancebox-runtime/metadata-hash" ]
+
+include-git-hash-in-version = [ "node-common/include-git-hash-in-version", "tc-service-container-chain-spawner/include-git-hash-in-version" ]

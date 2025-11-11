@@ -96,7 +96,7 @@ substrate-build-script-utils = { workspace = true, optional = true }
 [features]
 default = []
 fast-runtime = [ "dancebox-runtime/fast-runtime" ]
-include-git-hash-in-version = [ "substrate-build-script-utils" ]
+include-git-hash-in-version = [ "node-common/include-git-hash-in-version", "substrate-build-script-utils" ]
 runtime-benchmarks = [
 	"cumulus-primitives-core/runtime-benchmarks",
 	"dancebox-runtime/runtime-benchmarks",
