@@ -107,7 +107,7 @@ substrate-build-script-utils = { workspace = true, optional = true }
 
 [features]
 default = []
-include-git-hash-in-version = [ "substrate-build-script-utils" ]
+include-git-hash-in-version = [ "node-common/include-git-hash-in-version", "substrate-build-script-utils", "tc-service-container-chain-data-preserver/include-git-hash-in-version", "tc-service-container-chain-spawner/include-git-hash-in-version" ]
 runtime-benchmarks = [
 	"container-chain-template-simple-runtime/runtime-benchmarks",
 	"cumulus-primitives-core/runtime-benchmarks",
