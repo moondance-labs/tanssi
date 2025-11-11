@@ -10,6 +10,12 @@ FROM debian:bookworm-slim
 LABEL maintainer="gorka@moondancelabs.com"
 LABEL description="Binary for container-chain-template-evm Collator"
 
+# Install debugging tools
+USER root
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gdb procps && \
+    rm -rf /var/lib/apt/lists/*
+
 RUN useradd -m -u 1000 -U -s /bin/sh -d /container-chain-template-evm container-chain-template-evm && \
 	mkdir -p /container-chain-template-evm/.local/share && \
 	mkdir /data && \

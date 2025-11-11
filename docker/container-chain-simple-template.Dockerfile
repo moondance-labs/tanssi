@@ -10,6 +10,12 @@ FROM debian:bookworm-slim
 LABEL maintainer="gorka@moondancelabs.com"
 LABEL description="Binary for simple container chain template node"
 
+# Install debugging tools
+USER root
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gdb procps && \
+    rm -rf /var/lib/apt/lists/*
+
 RUN useradd -m -u 1000 -U -s /bin/sh -d /container-chain-template-simple container-chain-template-simple && \
 	mkdir -p /container-chain-template-simple/.local/share && \
 	mkdir /data && \
