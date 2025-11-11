@@ -2883,7 +2883,7 @@ dependencies = [
  "parachains-common",
  "parity-scale-codec",
  "prost 0.12.6",
- "prost-build 0.13.5",
+ "prost-build",
  "sc-network",
  "sc-service",
  "sp-consensus-babe",
@@ -8318,9 +8318,9 @@ checksum = "241eaef5fd12c88705a01fc1066c48c4b36e0dd4377dcdc7ec3942cea7a69956"
 
 [[package]]
 name = "litep2p"
-version = "0.11.1"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb01eefca5df3c7166b18e97a87d9869fdfb105b8b3c6d894183489c8d6ce257"
+checksum = "766f82624163f63b3df107fcdd014acb28fc9e4990d2a70e56dc454287fd4565"
 dependencies = [
  "async-trait",
  "bs58",
@@ -8339,7 +8339,7 @@ dependencies = [
  "parking_lot 0.12.4",
  "pin-project",
  "prost 0.13.5",
- "prost-build 0.14.1",
+ "prost-build",
  "rand 0.8.5",
  "ring 0.17.14",
  "serde",
@@ -13854,16 +13854,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "prost"
-version = "0.14.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7231bd9b3d3d33c86b58adbac74b5ec0ad9f496b19d22801d773636feaa95f3d"
-dependencies = [
- "bytes",
- "prost-derive 0.14.1",
-]
-
-[[package]]
 name = "prost-build"
 version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13877,27 +13867,7 @@ dependencies = [
  "petgraph",
  "prettyplease",
  "prost 0.13.5",
- "prost-types 0.13.5",
- "regex",
- "syn 2.0.104",
- "tempfile",
-]
-
-[[package]]
-name = "prost-build"
-version = "0.14.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac6c3320f9abac597dcbc668774ef006702672474aad53c6d596b62e487b40b1"
-dependencies = [
- "heck 0.5.0",
- "itertools 0.13.0",
- "log",
- "multimap",
- "once_cell",
- "petgraph",
- "prettyplease",
- "prost 0.14.1",
- "prost-types 0.14.1",
+ "prost-types",
  "regex",
  "syn 2.0.104",
  "tempfile",
@@ -13943,34 +13913,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "prost-derive"
-version = "0.14.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9120690fafc389a67ba3803df527d0ec9cbbc9cc45e4cc20b332996dfb672425"
-dependencies = [
- "anyhow",
- "itertools 0.13.0",
- "proc-macro2",
- "quote",
- "syn 2.0.104",
-]
-
-[[package]]
 name = "prost-types"
 version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "52c2c1bf36ddb1a1c396b3601a3cec27c2462e45f07c386894ec3ccf5332bd16"
 dependencies = [
  "prost 0.13.5",
-]
-
-[[package]]
-name = "prost-types"
-version = "0.14.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9b4db3d6da204ed77bb26ba83b6122a73aeb2e87e25fbf7ad2e84c4ccbf8f72"
-dependencies = [
- "prost 0.14.1",
 ]
 
 [[package]]
@@ -15061,7 +15009,7 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "prost 0.12.6",
- "prost-build 0.13.5",
+ "prost-build",
  "rand 0.8.5",
  "sc-client-api",
  "sc-network",
@@ -15702,7 +15650,7 @@ dependencies = [
  "partial_sort",
  "pin-project",
  "prost 0.12.6",
- "prost-build 0.13.5",
+ "prost-build",
  "rand 0.8.5",
  "sc-client-api",
  "sc-network-common",
@@ -15766,7 +15714,7 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "prost 0.12.6",
- "prost-build 0.13.5",
+ "prost-build",
  "sc-client-api",
  "sc-network",
  "sc-network-types",
@@ -15790,7 +15738,7 @@ dependencies = [
  "mockall",
  "parity-scale-codec",
  "prost 0.12.6",
- "prost-build 0.13.5",
+ "prost-build",
  "sc-client-api",
  "sc-consensus",
  "sc-network",
