@@ -163,6 +163,7 @@ tempfile = { workspace = true }
 
 [features]
 default = [ "db", "full-node" ]
+include-git-hash-in-version = [ "node-common/include-git-hash-in-version" ]
 
 db = [ "service/rocksdb" ]
 
