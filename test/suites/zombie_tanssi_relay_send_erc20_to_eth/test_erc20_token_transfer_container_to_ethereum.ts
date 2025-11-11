@@ -12,7 +12,7 @@ import {
 import { hexToU8a } from "@polkadot/util";
 
 describeSuite({
-    id: "ZOMBIETANSS04",
+    id: "ZOMBIETANSSERC20TOETH01",
     title: "XCM transfer ERC20 tokens to Ethereum",
     foundationMethods: "zombie",
     testCases: ({ context, it }) => {

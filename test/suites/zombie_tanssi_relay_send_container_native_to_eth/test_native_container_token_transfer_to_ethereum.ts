@@ -11,7 +11,7 @@ import {
 } from "utils";
 
 describeSuite({
-    id: "ZOMBIETANSS02",
+    id: "ZOMBIETANSSCONTFROMETH01",
     title: "XCM transfer to Ethereum",
     foundationMethods: "zombie",
     testCases: ({ context, it }) => {
