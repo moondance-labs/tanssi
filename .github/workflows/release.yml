@@ -160,11 +160,11 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: "Setup Node"
-              uses: actions/setup-node@v5
+              uses: actions/setup-node@v6
               with:
                   node-version: 22.x
                   cache: "pnpm"
@@ -182,11 +182,11 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: "Setup Node"
-              uses: actions/setup-node@v5
+              uses: actions/setup-node@v6
               with:
                   node-version: 22.x
                   cache: "pnpm"
@@ -270,7 +270,7 @@ jobs:
                   echo "✅ Found build ID: $LATEST_TARGET_BRANCH_BUILD"
                   echo "LATEST_TARGET_BRANCH_BUILD=$LATEST_TARGET_BRANCH_BUILD" >> $GITHUB_OUTPUT
             - name: "Download runtimes from target branch"
-              uses: actions/download-artifact@v5
+              uses: actions/download-artifact@v6
               with:
                 name: runtimes
                 path: runtimes-target-branch
@@ -278,7 +278,7 @@ jobs:
                 github-token: ${{ github.token }}
                 run-id: ${{ steps.latest-target-build.outputs.LATEST_TARGET_BRANCH_BUILD }}
             - name: "Download branch built runtime"
-              uses: actions/download-artifact@v5
+              uses: actions/download-artifact@v6
               with:
                   name: runtimes
                   path: runtimes-current-branch
@@ -324,7 +324,7 @@ jobs:
                   comment-author: "github-actions[bot]"
                   body-includes: "WASM runtime size check"
             - name: Create or update comment
-              uses: peter-evans/create-or-update-comment@v4
+              uses: peter-evans/create-or-update-comment@v5
               with:
                   comment-id: ${{ steps.fc.outputs.comment-id }}
                   issue-number: ${{ github.event.pull_request.number }}
@@ -374,7 +374,7 @@ jobs:
             body-includes: "Found problematic weights in PR diff."
         - name: Post detailed report
           if: env.HAS_REPORT == 'true'
-          uses: peter-evans/create-or-update-comment@v4
+          uses: peter-evans/create-or-update-comment@v5
           with:
             comment-id:   ${{ steps.fc.outputs.comment-id }}
             issue-number: ${{ github.event.pull_request.number }}
@@ -384,7 +384,7 @@ jobs:
           if: >
             env.HAS_REPORT == 'false' &&
             steps.fc.outputs.comment-id != ''
-          uses: peter-evans/create-or-update-comment@v4
+          uses: peter-evans/create-or-update-comment@v5
           with:
             comment-id:   ${{ steps.fc.outputs.comment-id }}
             issue-number: ${{ github.event.pull_request.number }}
@@ -466,18 +466,18 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: "Download binaries"
-              uses: actions/download-artifact@v5
+              uses: actions/download-artifact@v6
               with:
                   name: binaries
                   path: target/release
             - name: Make binaries executable
               uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Setup Node"
-              uses: actions/setup-node@v5
+              uses: actions/setup-node@v6
               with:
                   node-version: 22.x
                   cache: "pnpm"
@@ -499,18 +499,18 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: "Download binaries"
-              uses: actions/download-artifact@v5
+              uses: actions/download-artifact@v6
               with:
                   name: binaries
                   path: target/release
             - name: Make binaries executable
               uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Setup Node"
-              uses: actions/setup-node@v5
+              uses: actions/setup-node@v6
               with:
                   node-version: 22.x
                   cache: "pnpm"
@@ -532,18 +532,18 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: "Download binaries"
-              uses: actions/download-artifact@v5
+              uses: actions/download-artifact@v6
               with:
                   name: binaries
                   path: target/release
             - name: Make binaries executable
               uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Setup Node"
-              uses: actions/setup-node@v5
+              uses: actions/setup-node@v6
               with:
                   node-version: 22.x
                   cache: "pnpm"
@@ -565,16 +565,16 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: Setup Node
-              uses: actions/setup-node@v5
+              uses: actions/setup-node@v6
               with:
                   node-version: 22.x
                   cache: "pnpm"
             - name: "Download binaries"
-              uses: actions/download-artifact@v5
+              uses: actions/download-artifact@v6
               with:
                   name: binaries
                   path: target/release
@@ -598,16 +598,16 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: Setup Node
-              uses: actions/setup-node@v5
+              uses: actions/setup-node@v6
               with:
                   node-version: 22.x
                   cache: "pnpm"
             - name: "Download binaries"
-              uses: actions/download-artifact@v5
+              uses: actions/download-artifact@v6
               with:
                   name: binaries
                   path: target/release
@@ -631,16 +631,16 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: Setup Node
-              uses: actions/setup-node@v5
+              uses: actions/setup-node@v6
               with:
                   node-version: 22.x
                   cache: "pnpm"
             - name: "Download binaries"
-              uses: actions/download-artifact@v5
+              uses: actions/download-artifact@v6
               with:
                   name: binaries
                   path: target/release
@@ -661,18 +661,18 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: "Download binaries"
-              uses: actions/download-artifact@v5
+              uses: actions/download-artifact@v6
               with:
                   name: binaries
                   path: target/release
             - name: Make binaries executable
               uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Setup Node"
-              uses: actions/setup-node@v5
+              uses: actions/setup-node@v6
               with:
                   node-version: 22.x
                   cache: "pnpm"
@@ -702,7 +702,7 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: "Download binaries"
-              uses: actions/download-artifact@v5
+              uses: actions/download-artifact@v6
               with:
                   name: binaries
                   path: target/release
@@ -745,10 +745,10 @@ jobs:
               uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
-            - uses: pnpm/action-setup@v4.1.0
+            - uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
-            - uses: actions/setup-node@v5
+            - uses: actions/setup-node@v6
               with:
                   node-version: 22.x
                   cache: "pnpm"
@@ -757,13 +757,13 @@ jobs:
                   mkdir -p target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
                   mkdir -p test/tmp
             - name: "Download runtime"
-              uses: actions/download-artifact@v5
+              uses: actions/download-artifact@v6
               with:
                   name: runtimes
                   path: target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
             # Binaries needed for testPalletVersions test
             - name: "Download binaries"
-              uses: actions/download-artifact@v5
+              uses: actions/download-artifact@v6
               with:
                   name: binaries
                   path: target/release
@@ -788,11 +788,11 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: Setup node
-              uses: actions/setup-node@v5
+              uses: actions/setup-node@v6
               with:
                   node-version: 22.x
                   cache: "pnpm"
@@ -801,14 +801,14 @@ jobs:
                   mkdir -p target/release/wbuild/${{ matrix.chain }}-runtime/
                   mkdir -p test/tmp
             - name: "Download binaries"
-              uses: actions/download-artifact@v5
+              uses: actions/download-artifact@v6
               with:
                   name: binaries
                   path: target/release
             - name: Make binaries executable
               uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Download branch built runtime"
-              uses: actions/download-artifact@v5
+              uses: actions/download-artifact@v6
               with:
                   name: runtimes
                   path: target/release/wbuild/${{ matrix.chain }}-runtime/
@@ -848,11 +848,11 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: Setup node
-              uses: actions/setup-node@v5
+              uses: actions/setup-node@v6
               with:
                   node-version: 22.x
                   cache: "pnpm"
@@ -861,14 +861,14 @@ jobs:
                   mkdir -p target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
                   mkdir -p test/tmp
             - name: "Download binaries"
-              uses: actions/download-artifact@v5
+              uses: actions/download-artifact@v6
               with:
                   name: binaries
                   path: target/release
             - name: Make binaries executable
               uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Download runtime"
-              uses: actions/download-artifact@v5
+              uses: actions/download-artifact@v6
               with:
                   name: runtimes
                   path: target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
@@ -895,11 +895,11 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: Setup node
-              uses: actions/setup-node@v5
+              uses: actions/setup-node@v6
               with:
                   node-version: 22.x
                   cache: "pnpm"
@@ -908,14 +908,14 @@ jobs:
                   mkdir -p target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
                   mkdir -p test/tmp
             - name: "Download binaries"
-              uses: actions/download-artifact@v5
+              uses: actions/download-artifact@v6
               with:
                   name: binaries
                   path: target/release
             - name: Make binaries executable
               uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Download runtime"
-              uses: actions/download-artifact@v5
+              uses: actions/download-artifact@v6
               with:
                   name: runtimes
                   path: target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
@@ -935,11 +935,11 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.1.0
+              uses: pnpm/action-setup@v4.2.0
               with:
                   version: 9
             - name: Setup node
-              uses: actions/setup-node@v5
+              uses: actions/setup-node@v6
               with:
                   node-version: 22.x
                   cache: "pnpm"
@@ -947,7 +947,7 @@ jobs:
               run: |
                   mkdir -p test/tmp
             - name: "Download binaries"
-              uses: actions/download-artifact@v5
+              uses: actions/download-artifact@v6
               with:
                   name: binaries
                   path: target/release
@@ -1001,7 +1001,7 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: "Download binaries"
-              uses: actions/download-artifact@v5
+              uses: actions/download-artifact@v6
               with:
                   name: binaries
                   path: build
