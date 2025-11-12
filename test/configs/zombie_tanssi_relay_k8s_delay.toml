@@ -44,7 +44,7 @@ timeout = 666
 #default_image = "moondancelabs/starlight:sha-fd3014ce-fast-runtime"
 
 # only the official releases work
-default_image = "moondancelabs/starlight:latest"
+default_image = "moondancelabs/starlight:sha-d67cddab-opt"
 
 # command cannot be "tanssi-relay" because it is not in PATH
 # TODO: make docker image put tanssi-relay in /usr/local/bin/
@@ -90,13 +90,13 @@ chain_spec_path = "specs/single-container-template-container-2000.json"
 [[parachains.collators]]
 name = "fullnode-2000"
 validator = false
-image = "moondancelabs/container-chain-simple-template:latest"
+image = "moondancelabs/container-chain-simple-template:sha-85cf7586-opt"
 command = "/container-chain-template-simple/container-chain-simple-node"
 args = [
     "--no-hardware-benchmarks",
     "--database=paritydb",
     #"--wasmtime-precompiled=wasm",
-    "--pool-type=fork-aware"
+    "--pool-type=fork-aware",
 ]
 rpc_port = 9949
 p2p_port = 33049
@@ -109,7 +109,7 @@ correlation = "100"
 
 [[parachains.collators]]
 name = "collator-01"
-image = "moondancelabs/tanssi:latest"
+image = "moondancelabs/tanssi:sha-d67cddab-opt"
 command = "/tanssi/tanssi-node solo-chain"
 args = [
     "--no-hardware-benchmarks",
@@ -126,13 +126,13 @@ chain_spec_path = "specs/single-container-template-container-2001.json"
 [[parachains.collators]]
 name = "fullnode-2001"
 validator = false
-image = "moondancelabs/container-chain-evm-template:latest"
+image = "moondancelabs/container-chain-evm-template:sha-85cf7586-opt"
 command = "/container-chain-template-evm/container-chain-frontier-node"
 args = [
     "--no-hardware-benchmarks",
     "--database=paritydb",
     #"--wasmtime-precompiled=wasm",
-    "--pool-type=fork-aware"
+    "--pool-type=fork-aware",
 ]
 rpc_port = 9950
 p2p_port = 33050
