@@ -10,6 +10,7 @@ FROM debian:bookworm-slim
 LABEL maintainer="gorka@moondancelabs.com"
 LABEL description="Binary for Dancelight"
 
+# Create runtime user and data dirs
 RUN useradd -m -u 1000 -U -s /bin/sh -d /tanssi-relay tanssi-relay && \
 	mkdir -p /tanssi-relay/.local/share && \
 	mkdir /data && \
@@ -17,15 +18,22 @@ RUN useradd -m -u 1000 -U -s /bin/sh -d /tanssi-relay tanssi-relay && \
 	ln -s /data /tanssi-relay/.local/share/tanssi-relay && \
 	rm -rf /usr/sbin
 
+# CA bundle from builder stage
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
-USER tanssi-relay
+# Install binaries to /usr/local/bin
+COPY build/tanssi-relay* /usr/local/bin/
+RUN chmod uog+x /usr/local/bin/tanssi-relay* && \
+    # For backwards compatibility: symlink all binaries into the old location
+    for f in /usr/local/bin/tanssi-relay*; do \
+        ln -sf "$f" "/tanssi-relay/$(basename "$f")"; \
+    done \
 
-COPY --chown=tanssi-relay build/tanssi-relay* /tanssi-relay
-RUN chmod uog+x /tanssi-relay/tanssi-relay*
+# Drop privileges for runtime
+USER tanssi-relay
 
 EXPOSE 30333 9933 9944 9615
 
 VOLUME ["/data"]
 
-ENTRYPOINT ["/tanssi-relay/tanssi-relay"]
+ENTRYPOINT ["/usr/local/bin/tanssi-relay"]
