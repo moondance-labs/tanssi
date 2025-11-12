@@ -17,12 +17,19 @@ RUN useradd -m -u 1000 -U -s /bin/sh -d /tanssi tanssi && \
 	ln -s /data /tanssi/.local/share/tanssi && \
 	rm -rf /usr/sbin
 
+# CA bundle from builder stage
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
-USER tanssi
+# Install binaries to /usr/local/bin
+COPY build/tanssi-node* /usr/local/bin/
+RUN chmod uog+x /usr/local/bin/tanssi-node* && \
+    # For backwards compatibility: symlink all binaries into the old location
+    for f in /usr/local/bin/tanssi-node*; do \
+        ln -sf "$f" "/tanssi/$(basename "$f")"; \
+    done
 
-COPY --chown=tanssi build/tanssi-node* /tanssi
-RUN chmod uog+x /tanssi/tanssi*
+# Drop privileges for runtime
+USER tanssi
 
 # 30333 for parachain p2p
 # 30334 for relaychain p2p
@@ -37,4 +44,4 @@ EXPOSE 30333 30334 30335 9933 9944 9615 9935 9946 9617
 
 VOLUME ["/data"]
 
-ENTRYPOINT ["/tanssi/tanssi-node"]
+ENTRYPOINT ["/usr/local/bin/tanssi-node"]
