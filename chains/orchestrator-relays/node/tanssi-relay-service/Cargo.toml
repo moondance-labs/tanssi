@@ -4,7 +4,7 @@ authors = { workspace = true }
 description = "Utils to tie different Tanssi components together and allow instantiation of a node."
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.16.0"
+version = "0.17.0"
 
 [lints]
 workspace = true
@@ -163,6 +163,7 @@ tempfile = { workspace = true }
 
 [features]
 default = [ "db", "full-node" ]
+include-git-hash-in-version = [ "node-common/include-git-hash-in-version" ]
 
 db = [ "service/rocksdb" ]
 

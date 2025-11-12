@@ -350,7 +350,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("frontier-template"),
     impl_name: Cow::Borrowed("frontier-template"),
     authoring_version: 1,
-    spec_version: 1600,
+    spec_version: 1700,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -1107,6 +1107,7 @@ mod benches {
         [pallet_asset_rate, AssetRate]
         [pallet_xcm_executor_utils, XcmExecutorUtils]
         [cumulus_pallet_weight_reclaim, WeightReclaim]
+        [pallet_evm_precompile_sha3fips, EVMPrecompileSha3FIPSBench::<Runtime>]
     );
 }
 
@@ -1285,6 +1286,7 @@ impl_runtime_apis! {
             use frame_benchmarking::{BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
             use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
+            use pallet_evm_precompile_sha3fips_benchmarking::Pallet as EVMPrecompileSha3FIPSBench;
 
             let mut list = Vec::<BenchmarkList>::new();
             list_benchmarks!(list, extra);
@@ -1301,6 +1303,9 @@ impl_runtime_apis! {
             use sp_core::storage::TrackedStorageKey;
             use xcm::latest::prelude::*;
             use alloc::boxed::Box;
+            use pallet_evm_precompile_sha3fips_benchmarking::Pallet as EVMPrecompileSha3FIPSBench;
+
+            impl pallet_evm_precompile_sha3fips_benchmarking::Config for Runtime {}
 
             impl frame_system_benchmarking::Config for Runtime {
                 fn setup_set_code_requirements(code: &alloc::vec::Vec<u8>) -> Result<(), BenchmarkError> {

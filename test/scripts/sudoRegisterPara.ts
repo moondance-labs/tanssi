@@ -1,13 +1,13 @@
 import "@tanssi/api-augment";
 
 import { Keyring } from "@polkadot/api";
-import fs from "node:fs/promises";
+import type { TpTraitsSlotFrequency } from "@polkadot/types/lookup";
 import jsonBg from "json-bigint";
+import fs from "node:fs/promises";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { chainSpecToContainerChainGenesisData } from "../util/genesis_data";
 import { NETWORK_YARGS_OPTIONS, getApiFor } from "./utils/network";
-import type { TpTraitsSlotFrequency } from "@polkadot/types/lookup";
 const JSONbig = jsonBg({ useNativeBigInt: true });
 
 yargs(hideBin(process.argv))
@@ -70,9 +70,9 @@ yargs(hideBin(process.argv))
                     let profileId = (await api.query.dataPreservers.nextProfileId()).toNumber();
                     for (const bootnode of rawSpec.bootNodes) {
                         const profileTx = api.tx.dataPreservers.createProfile({
-                            url: bootnode,
+                            bootnodeUrl: bootnode,
                             paraIds: "AnyParaId",
-                            mode: "Bootnode",
+                            nodeType: "Substrate",
                             assignmentRequest: "Free",
                         });
                         txs.push(profileTx);
@@ -188,9 +188,9 @@ yargs(hideBin(process.argv))
                 let profileId = (await api.query.dataPreservers.nextProfileId()).toNumber();
                 for (const bootnode of bootnodes) {
                     const profileTx = api.tx.dataPreservers.createProfile({
-                        url: bootnode,
+                        bootnodeUrl: bootnode,
                         paraIds: "AnyParaId",
-                        mode: "Bootnode",
+                        nodeType: "Substrate",
                         assignmentRequest: "Free",
                     });
                     txs.push(profileTx);

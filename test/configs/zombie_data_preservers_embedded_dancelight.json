@@ -132,7 +132,7 @@
                 {
                     "name": "DataPreserver-2000",
                     "validator": false,
-                    "command": "./scripts/data-preservers-run-hack.sh ../target/release/container-chain-simple-node rpc-provider --",
+                    "command": "./scripts/data-preservers-run-hack.sh ../target/release/container-chain-simple-node data-preserver --",
                     "args": [
                         "-- --profile-id=2",
                         "--solochain",
@@ -147,7 +147,7 @@
                 {
                     "name": "DataPreserver-2001",
                     "validator": false,
-                    "command": "./scripts/data-preservers-run-hack.sh ../target/release/container-chain-frontier-node rpc-provider --",
+                    "command": "./scripts/data-preservers-run-hack.sh ../target/release/container-chain-frontier-node data-preserver --",
                     "args": [
                         "-- --profile-id=3",
                         "--solochain",
@@ -158,6 +158,21 @@
                         "--rpc-port 9952"
                     ],
                     "prometheus_port": 33102
+                },
+                {
+                    "name": "Bootnode-2001",
+                    "validator": false,
+                    "command": "./scripts/data-preservers-run-hack.sh ../target/release/container-chain-frontier-node data-preserver --",
+                    "args": [
+                        "-- --profile-id=4",
+                        "--solochain",
+                        "--database=paritydb",
+                        "--wasmtime-precompiled=wasm",
+                        "--prometheus-external --prometheus-port 33102",
+                        "--rpc-port 9954 --disable-rpc"
+                    ],
+                    "prometheus_port": 33102,
+                    "COMMENT": "RPC server is still started but with no methods, so we set a port to actually test that"
                 }
             ]
         },

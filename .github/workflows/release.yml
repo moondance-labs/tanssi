@@ -695,7 +695,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                test_name: [zombie_tanssi, zombie_tanssi_relay]
+                test_name: [zombie_tanssi, zombie_tanssi_relay, zombie_tanssi_relay_receive_container_native_from_eth, zombie_tanssi_relay_send_container_native_to_eth, zombie_tanssi_relay_send_erc20_to_eth]
         steps:
             - name: Checkout
               uses: actions/checkout@v5
