@@ -3,6 +3,12 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 import type { PalletDataPreserversRegisteredProfile } from "@polkadot/types/lookup";
+import { type BlockData, getBlocksDataForPeriodMs } from "../../utils";
+import { filterAndApply } from "@moonwall/util";
+import type { EventRecord } from "@polkadot/types/interfaces";
+
+const timePeriod = process.env.TIME_PERIOD ? Number(process.env.TIME_PERIOD) : 1 * 1 * 60 * 1000; // 1 hours in ms
+const timeout = Math.max(Math.floor(timePeriod / 12), 15000);
 
 describeSuite({
     id: "S04",
@@ -12,6 +18,7 @@ describeSuite({
         let paraApi: ApiPromise;
         let registeredProfiles: PalletDataPreserversRegisteredProfile[];
         let runtimeVersion: number;
+        let blocksData: BlockData[];
 
         beforeAll(async () => {
             paraApi = context.polkadotJs("para");
@@ -19,7 +26,8 @@ describeSuite({
                 .filter(([, entry]) => entry.isSome)
                 .map(([, entry]) => entry.unwrap());
             runtimeVersion = paraApi.runtimeVersion.specVersion.toNumber();
-        });
+            blocksData = await getBlocksDataForPeriodMs(paraApi, timePeriod);
+        }, timeout);
 
         it({
             id: "C01",
@@ -33,17 +41,48 @@ describeSuite({
 
                 const calculatedFee = (encodedLength: number) => baseFee + byteFee * BigInt(encodedLength);
 
-                const failures = registeredProfiles.filter(({ deposit, profile }) => {
-                    const feeOld = calculatedFee(profile.encodedLength);
-                    const feeNew = feeOld / oldToNewRatio;
+                for (const blockToCheck of blocksData) {
+                    for (const [index, extrinsic] of blockToCheck.extrinsics.entries()) {
+                        // Skip unsigned extrinsics, since no commission is paid
+                        if (!extrinsic.isSigned) {
+                            continue;
+                        }
 
-                    return deposit.toBigInt() !== feeOld && deposit.toBigInt() !== feeNew && deposit.toBigInt() !== 0n;
-                });
+                        const events = blockToCheck.extrinsicIndexToEventsMap.get(`${index}`) || [];
 
-                for (const { deposit, account } of failures) {
-                    log(`Invalid deposit ${deposit.toNumber()} for account ${account.toHuman()} `);
+                        // Get all fee paid events for the current extrinsic
+                        const profileCreatedEvents = filterAndApply(
+                            events,
+                            "dataPreservers",
+                            ["ProfileCreated"],
+                            ({ event }: EventRecord) => event.data.toHuman() as unknown as { profileId: number }
+                        );
+
+                        if (!profileCreatedEvents.length) {
+                            continue;
+                        }
+
+                        for (const profileCreatedEvent of profileCreatedEvents) {
+                            log(`Found "ProfileCreated" event for block: ${blockToCheck.blockNum}. Checking...`);
+
+                            const apiAtBlock = await paraApi.at(blockToCheck.blockHash);
+                            const profileRecord = await apiAtBlock.query.dataPreservers.profiles(
+                                profileCreatedEvent.profileId
+                            );
+                            const { profile, deposit } = profileRecord.unwrap();
+
+                            const feeOld = calculatedFee(profile.encodedLength);
+                            const feeNew = feeOld / oldToNewRatio;
+
+                            expect(
+                                deposit.toBigInt() !== feeOld &&
+                                    deposit.toBigInt() !== feeNew &&
+                                    deposit.toBigInt() !== 0n,
+                                `Invalid deposit registered for profile: ${JSON.stringify(profile.toHuman())}`
+                            ).toEqual(false);
+                        }
+                    }
                 }
-                expect(failures.length, `${failures.length} invalid deposits registered`).toBe(0);
             },
         });
 
@@ -79,19 +118,34 @@ describeSuite({
             id: "C03",
             title: "all profiles should have valid url",
             test: async () => {
-                let nodePropertyName: string;
+                let failures = [];
                 // the property has been renamed here: https://github.com/moondance-labs/tanssi/pull/1304
                 if (runtimeVersion < 1600) {
-                    nodePropertyName = "url";
+                    failures = registeredProfiles.filter(
+                        // The type has changed for the current runtime, we ignore it
+                        // @ts-ignore
+                        ({ profile }) => !isValidEndpointUrl(profile.url.toHuman().toString())
+                    );
                 } else {
-                    nodePropertyName = "bootnodeUrl";
+                    type ProfileType = {
+                        bootnodeUrl: string | null;
+                        directRpcUrls: string[];
+                        proxyRpcUrls: string[];
+                    };
+                    failures = registeredProfiles.filter(({ profile }) => {
+                        const profileDecoded = profile.toHuman() as ProfileType;
+                        // collect any possible URL-s
+                        const urls = [
+                            profileDecoded.bootnodeUrl?.toString() || "",
+                            ...profileDecoded.directRpcUrls,
+                            ...profileDecoded.proxyRpcUrls,
+                        ].filter(Boolean);
+                        return !!urls.map((url: string) => isValidEndpointUrl(url)).includes(false);
+                    });
                 }
 
-                const failures = registeredProfiles.filter(
-                    ({ profile }) => !isValidEndpointUrl(profile[nodePropertyName].toHuman().toString())
-                );
                 for (const { profile } of failures) {
-                    log(`Invalid URL ${profile[nodePropertyName].toHuman()}`);
+                    log(`Found invalid URL for profile: ${JSON.stringify(profile.toHuman())}`);
                 }
                 expect(failures.length, `${failures.length} invalid endpoint urls registered`).toBe(0);
             },
