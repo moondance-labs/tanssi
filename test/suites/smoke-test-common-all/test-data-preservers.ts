@@ -3,12 +3,6 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 import type { PalletDataPreserversRegisteredProfile } from "@polkadot/types/lookup";
-import { type BlockData, getBlocksDataForPeriodMs } from "../../utils";
-import { filterAndApply } from "@moonwall/util";
-import type { EventRecord } from "@polkadot/types/interfaces";
-
-const timePeriod = process.env.TIME_PERIOD ? Number(process.env.TIME_PERIOD) : 1 * 1 * 60 * 1000; // 1 hours in ms
-const timeout = Math.max(Math.floor(timePeriod / 12), 15000);
 
 describeSuite({
     id: "S04",
@@ -18,7 +12,6 @@ describeSuite({
         let paraApi: ApiPromise;
         let registeredProfiles: PalletDataPreserversRegisteredProfile[];
         let runtimeVersion: number;
-        let blocksData: BlockData[];
 
         beforeAll(async () => {
             paraApi = context.polkadotJs("para");
@@ -26,8 +19,7 @@ describeSuite({
                 .filter(([, entry]) => entry.isSome)
                 .map(([, entry]) => entry.unwrap());
             runtimeVersion = paraApi.runtimeVersion.specVersion.toNumber();
-            blocksData = await getBlocksDataForPeriodMs(paraApi, timePeriod);
-        }, timeout);
+        });
 
         it({
             id: "C01",
@@ -41,48 +33,17 @@ describeSuite({
 
                 const calculatedFee = (encodedLength: number) => baseFee + byteFee * BigInt(encodedLength);
 
-                for (const blockToCheck of blocksData) {
-                    for (const [index, extrinsic] of blockToCheck.extrinsics.entries()) {
-                        // Skip unsigned extrinsics, since no commission is paid
-                        if (!extrinsic.isSigned) {
-                            continue;
-                        }
+                const failures = registeredProfiles.filter(({ deposit, profile }) => {
+                    const feeOld = calculatedFee(profile.encodedLength);
+                    const feeNew = feeOld / oldToNewRatio;
 
-                        const events = blockToCheck.extrinsicIndexToEventsMap.get(`${index}`) || [];
+                    return deposit.toBigInt() !== feeOld && deposit.toBigInt() !== feeNew && deposit.toBigInt() !== 0n;
+                });
 
-                        // Get all fee paid events for the current extrinsic
-                        const profileCreatedEvents = filterAndApply(
-                            events,
-                            "dataPreservers",
-                            ["ProfileCreated"],
-                            ({ event }: EventRecord) => event.data.toHuman() as unknown as { profileId: number }
-                        );
-
-                        if (!profileCreatedEvents.length) {
-                            continue;
-                        }
-
-                        for (const profileCreatedEvent of profileCreatedEvents) {
-                            log(`Found "ProfileCreated" event for block: ${blockToCheck.blockNum}. Checking...`);
-
-                            const apiAtBlock = await paraApi.at(blockToCheck.blockHash);
-                            const profileRecord = await apiAtBlock.query.dataPreservers.profiles(
-                                profileCreatedEvent.profileId
-                            );
-                            const { profile, deposit } = profileRecord.unwrap();
-
-                            const feeOld = calculatedFee(profile.encodedLength);
-                            const feeNew = feeOld / oldToNewRatio;
-
-                            expect(
-                                deposit.toBigInt() !== feeOld &&
-                                    deposit.toBigInt() !== feeNew &&
-                                    deposit.toBigInt() !== 0n,
-                                `Invalid deposit registered for profile: ${JSON.stringify(profile.toHuman())}`
-                            ).toEqual(false);
-                        }
-                    }
+                for (const { deposit, account } of failures) {
+                    log(`Invalid deposit ${deposit.toNumber()} for account ${account.toHuman()} `);
                 }
+                expect(failures.length, `${failures.length} invalid deposits registered`).toBe(0);
             },
         });
 
