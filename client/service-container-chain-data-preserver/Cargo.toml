@@ -4,7 +4,7 @@ authors = { workspace = true }
 build = "build.rs"
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.16.0"
+version = "0.17.0"
 
 [lints]
 workspace = true
@@ -53,3 +53,6 @@ sc-client-api = { workspace = true }
 
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }
+
+[features]
+include-git-hash-in-version = [ "node-common/include-git-hash-in-version", "tc-service-container-chain-spawner/include-git-hash-in-version", "tc-service-orchestrator-chain/include-git-hash-in-version" ]

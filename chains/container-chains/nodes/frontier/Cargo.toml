@@ -5,7 +5,7 @@ build = "build.rs"
 description = "Frontier container chain template node"
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.16.0"
+version = "0.17.0"
 
 [lints]
 workspace = true
@@ -123,7 +123,7 @@ substrate-build-script-utils = { workspace = true, optional = true }
 
 [features]
 default = []
-include-git-hash-in-version = [ "substrate-build-script-utils" ]
+include-git-hash-in-version = [ "node-common/include-git-hash-in-version", "substrate-build-script-utils", "tc-service-container-chain-data-preserver/include-git-hash-in-version", "tc-service-container-chain-spawner/include-git-hash-in-version" ]
 runtime-benchmarks = [
 	"container-chain-template-frontier-runtime/runtime-benchmarks",
 	"cumulus-primitives-core/runtime-benchmarks",

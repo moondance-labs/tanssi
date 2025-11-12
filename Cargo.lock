@@ -2168,7 +2168,7 @@ checksum = "7c74b8349d32d297c9134b8c88677813a227df8f779daa29bfc29c183fe3dca6"
 
 [[package]]
 name = "container-chain-frontier-node"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
@@ -2266,7 +2266,7 @@ dependencies = [
 
 [[package]]
 name = "container-chain-simple-node"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
@@ -9140,7 +9140,7 @@ checksum = "43794a0ace135be66a25d3ae77d41b91615fb68ae937f904090203e81f755b65"
 
 [[package]]
 name = "node-common"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "async-channel 1.9.0",
  "async-io 1.13.0",
@@ -19621,7 +19621,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-node"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
@@ -19728,7 +19728,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-relay"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "color-eyre",
  "polkadot-core-primitives",
@@ -19747,7 +19747,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-relay-cli"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "clap",
  "frame-benchmarking-cli",
@@ -19788,7 +19788,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-relay-service"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "assert_matches",
  "async-io 1.13.0",
@@ -20100,7 +20100,7 @@ dependencies = [
 
 [[package]]
 name = "tc-service-container-chain-data-preserver"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "async-trait",
  "clap",
@@ -20135,7 +20135,7 @@ dependencies = [
 
 [[package]]
 name = "tc-service-container-chain-spawner"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "async-backing-primitives",
  "async-trait",
@@ -20206,7 +20206,7 @@ dependencies = [
 
 [[package]]
 name = "tc-service-orchestrator-chain"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "async-trait",
  "chrono",
