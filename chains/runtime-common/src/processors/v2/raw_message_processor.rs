@@ -7,11 +7,13 @@ use crate::processors::v2::{
     FallbackMessageProcessor, MessageExtractionError, MessageProcessorWithFallback, RawPayload,
 };
 use alloc::boxed::Box;
+use alloc::format;
 use alloc::string::ToString;
 use core::marker::PhantomData;
 use parity_scale_codec::{Decode, DecodeLimit};
 use snowbridge_inbound_queue_primitives::v2::{message::Message, MessageProcessorError, Payload};
 use sp_core::{Get, H160};
+use sp_runtime::DispatchError;
 use thiserror::Error;
 use v2_processor_proc_macro::MessageProcessor;
 use xcm::latest::ExecuteXcm;
@@ -180,7 +182,15 @@ where
             RAW_MESSAGE_PROCESSOR_TOPIC_PREFIX,
             extracted_message,
         )
-        .map_err(|dispatch_error| MessageProcessorError::ProcessMessage(dispatch_error))?
+        .map_err(|asset_derivation_error| {
+            MessageProcessorError::ProcessMessage(DispatchError::Other(
+                format!(
+                    "Error while preparing xcm instructions: {:?}",
+                    asset_derivation_error
+                )
+                .leak(),
+            ))
+        })?
         .into();
 
         if let Err(instruction_error) = execute_xcm::<T, XcmProcessor, XcmWeigher>(

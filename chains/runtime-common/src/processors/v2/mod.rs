@@ -1,6 +1,5 @@
 extern crate alloc;
 
-//mod create_asset_message_processor;
 mod fallback_message_processor;
 mod raw_message_processor;
 mod symbiotic_message_processor;
@@ -21,7 +20,7 @@ use parity_scale_codec::{Decode, Encode};
 use snowbridge_inbound_queue_primitives::v2::{
     AssetTransfer, EthereumAsset, Message, MessageProcessorError,
 };
-use sp_core::H160;
+use sp_core::{H160, H256};
 use sp_io::hashing::blake2_256;
 use sp_runtime::traits::MaybeEquivalence;
 use sp_runtime::DispatchError;
@@ -68,6 +67,14 @@ pub enum MessageExtractionError {
     },
 }
 
+#[derive(Error, Debug)]
+pub enum AssetDerivationError {
+    #[error("Unable to reanchor {location:?}")]
+    UnableToReanchor { location: Location },
+    #[error("Unable to convert {token_id} in location")]
+    UnableToConvertTokenId { token_id: H256 },
+}
+
 impl Into<MessageProcessorError> for MessageExtractionError {
     fn into(self) -> MessageProcessorError {
         MessageProcessorError::ProcessMessage(DispatchError::Other(self.to_string().leak()))
@@ -95,15 +102,19 @@ fn reanchor_location_to_tanssi(
     eth_chain_universal_location: &InteriorLocation,
     tanssi_chain_universal_location: &InteriorLocation,
     location_anchored_to_eth: Location,
-) -> Result<Location, XcmError> {
+) -> Result<Location, AssetDerivationError> {
     let tanssi_reanchored_to_eth = tanssi_chain_universal_location
         .clone()
         .into_location()
         .reanchored(&eth_chain_universal_location.clone().into(), &().into())
-        .map_err(|_e| XcmError::InvalidLocation)?;
+        .map_err(|original_location| AssetDerivationError::UnableToReanchor {
+            location: original_location,
+        })?;
     location_anchored_to_eth
         .reanchored(&tanssi_reanchored_to_eth, eth_chain_universal_location)
-        .map_err(|_e| XcmError::InvalidLocation)
+        .map_err(|original_location| AssetDerivationError::UnableToReanchor {
+            location: original_location,
+        })
 }
 
 pub fn derive_asset_transfer_eth_asset<T>(
@@ -111,7 +122,7 @@ pub fn derive_asset_transfer_eth_asset<T>(
     eth_chain_universal_location: &InteriorLocation,
     asset: &EthereumAsset,
     tanssi_chain_universal_location: &InteriorLocation,
-) -> Result<AssetTransfer, XcmError>
+) -> Result<AssetTransfer, AssetDerivationError>
 where
     T: snowbridge_pallet_system::Config,
 {
@@ -132,9 +143,12 @@ where
         }
         // Foreign to eth
         EthereumAsset::ForeignTokenERC20 { token_id, value } => {
-            // TODO: Remove unwrap
-            let token_location_reanchored_to_eth =
-                snowbridge_pallet_system::Pallet::<T>::convert(&token_id).unwrap();
+            let token_location_reanchored_to_eth = snowbridge_pallet_system::Pallet::<T>::convert(
+                &token_id,
+            )
+            .ok_or(AssetDerivationError::UnableToConvertTokenId {
+                token_id: token_id.clone(),
+            })?;
             let asset_location = reanchor_location_to_tanssi(
                 eth_chain_universal_location,
                 tanssi_chain_universal_location,
@@ -150,7 +164,7 @@ pub fn derive_asset_for_native_eth(
     eth_chain_universal_location: &InteriorLocation,
     tanssi_chain_universal_location: &InteriorLocation,
     value: u128,
-) -> Result<Asset, XcmError> {
+) -> Result<Asset, AssetDerivationError> {
     let native_eth_reanchored_to_tanssi = reanchor_location_to_tanssi(
         eth_chain_universal_location,
         tanssi_chain_universal_location,
@@ -165,7 +179,7 @@ pub fn derive_asset_transfers<T>(
     tanssi_chain_universal_location: &InteriorLocation,
     assets: Vec<EthereumAsset>,
     eth_asset: u128,
-) -> Result<Vec<AssetTransfer>, XcmError>
+) -> Result<Vec<AssetTransfer>, AssetDerivationError>
 where
     T: snowbridge_pallet_system::Config,
 {
@@ -202,7 +216,7 @@ pub fn prepare_raw_message_xcm_instructions<T>(
     extracted_xcm_construction_info: ExtractedXcmConstructionInfo<
         <T as pallet_xcm::Config>::RuntimeCall,
     >,
-) -> Result<Vec<Instruction<<T as pallet_xcm::Config>::RuntimeCall>>, DispatchError>
+) -> Result<Vec<Instruction<<T as pallet_xcm::Config>::RuntimeCall>>, AssetDerivationError>
 where
     T: snowbridge_pallet_system::Config + pallet_xcm::Config,
     [u8; 32]: From<<T as frame_system::Config>::AccountId>,
@@ -238,14 +252,12 @@ where
         tanssi_chain_universal_location,
         assets,
         eth_value,
-    )
-    .map_err(|_e| DispatchError::Other("Unable to derive asset for native eth"))?;
+    )?;
     let execution_fee_asset = derive_asset_for_native_eth(
         eth_chain_universal_location,
         tanssi_chain_universal_location,
         execution_fee_in_eth,
-    )
-    .map_err(|_e| DispatchError::Other("Unable to derive asset for native eth"))?;
+    )?;
 
     let mut instructions = vec![
         Instruction::SetHints {

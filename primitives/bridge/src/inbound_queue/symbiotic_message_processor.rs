@@ -14,18 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use cumulus_primitives_core::relay_chain::AccountId;
 use snowbridge_core::ChannelId;
-use snowbridge_inbound_queue_primitives::v2;
 use {
     alloc::vec::Vec,
     frame_support::pallet_prelude::*,
     parity_scale_codec::DecodeAll,
     snowbridge_core::{Channel, PRIMARY_GOVERNANCE_CHANNEL},
-    snowbridge_inbound_queue_primitives::{
-        v1::{Envelope, MessageProcessor},
-        v2::MessageProcessorError,
-    },
+    snowbridge_inbound_queue_primitives::v1::{Envelope, MessageProcessor},
     sp_runtime::DispatchError,
 };
 

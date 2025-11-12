@@ -40,6 +40,10 @@ use {
     tanssi_runtime_common::relay::v1::{
         NativeContainerTokensProcessor, NativeTokenTransferMessageProcessor,
     },
+    tanssi_runtime_common::relay::v2::{
+        RawMessageProcessor as RawMessageProcessorV2,
+        SymbioticMessageProcessor as SymbioticMessageProcessorV2,
+    },
     tp_bridge::{
         symbiotic_message_processor::SymbioticMessageProcessor, GenericTokenInboundMessageProcessor,
     },
