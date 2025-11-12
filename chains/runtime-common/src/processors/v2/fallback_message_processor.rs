@@ -1,8 +1,12 @@
+extern crate alloc;
+
 use crate::processors::v2::{execute_xcm, ExtractedXcmConstructionInfo, FallbackMessageProcessor};
+use alloc::format;
 use core::marker::PhantomData;
 use frame_support::__private::Get;
 use snowbridge_inbound_queue_primitives::v2::{Message, MessageProcessorError};
 use sp_core::H160;
+use sp_runtime::DispatchError;
 use xcm::latest::{ExecuteXcm, InteriorLocation, NetworkId, Xcm};
 use xcm_executor::traits::WeightBounds;
 
@@ -87,7 +91,15 @@ where
             crate::processors::v2::RAW_MESSAGE_PROCESSOR_TOPIC_PREFIX,
             extracted_message,
         )
-        .map_err(|dispatch_error| MessageProcessorError::ProcessMessage(dispatch_error))?
+        .map_err(|asset_derivation_error| {
+            MessageProcessorError::ProcessMessage(DispatchError::Other(
+                format!(
+                    "Error while preparing xcm instructions: {:?}",
+                    asset_derivation_error
+                )
+                .leak(),
+            ))
+        })?
         .into();
 
         if let Err(instruction_error) = execute_xcm::<T, XcmProcessor, XcmWeigher>(
