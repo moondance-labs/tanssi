@@ -311,9 +311,7 @@ pub mod pallet {
                     .saturating_add(One::one())
             };
 
-            Slashes::<T>::mutate(era_to_consider, |era_slashes| {
-                era_slashes.push(slash);
-            });
+            Slashes::<T>::append(era_to_consider, slash);
 
             NextSlashId::<T>::put(next_slash_id.saturating_add(One::one()));
             Ok(())
@@ -513,23 +511,18 @@ where
                     slash_era + slash_defer_duration + 1,
                 );
 
-                // Cover slash defer duration equal to 0
-                // Slashes are applied at the end of the current era
-                if slash_defer_duration == 0 {
-                    Slashes::<T>::mutate(active_era.saturating_add(One::one()), move |for_now| {
-                        for_now.push(slash)
-                    });
-                    add_db_reads_writes(1, 1);
+                let apply_slash_at = if slash_defer_duration == 0 {
+                    // Cover slash defer duration equal to 0
+                    // Slashes are applied at the end of the current era
+                    active_era.saturating_add(One::one())
                 } else {
                     // Else, slashes are applied after slash_defer_period since the slashed era
-                    Slashes::<T>::mutate(
-                        slash_era
-                            .saturating_add(slash_defer_duration)
-                            .saturating_add(One::one()),
-                        move |for_later| for_later.push(slash),
-                    );
-                    add_db_reads_writes(1, 1);
-                }
+                    slash_era
+                        .saturating_add(slash_defer_duration)
+                        .saturating_add(One::one())
+                };
+                Slashes::<T>::append(apply_slash_at, slash);
+                add_db_reads_writes(1, 1);
 
                 // Fix unwrap
                 next_slash_id = next_slash_id.saturating_add(One::one());
