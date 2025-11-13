@@ -491,10 +491,13 @@ async function createTxBatchForCreatingParathread(api, manager, paraId, slotFreq
         for (const bootnode of rawSpec.bootNodes) {
             const profileTx = api.tx.dataPreservers.forceCreateProfile(
                 {
-                    url: bootnode,
+                    bootnodeUrl: bootnode,
                     paraIds: "AnyParaId",
-                    mode: "Bootnode",
                     assignmentRequest: "Free",
+                    nodeType: "Substrate",
+                    additionalInfo: "0x",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
                 },
                 manager
             );

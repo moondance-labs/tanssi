@@ -20,7 +20,7 @@ use {
     core::cell::RefCell,
     frame_support::{
         derive_impl, parameter_types,
-        traits::{ConstU128, ConstU32, ConstU64, ConstU8, Equals, QueueFootprint},
+        traits::{ConstU128, ConstU32, ConstU64, ConstU8, Equals},
         weights::IdentityFee,
     },
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
@@ -144,9 +144,6 @@ impl<Origin: MaxEncodedLen> frame_support::traits::EnqueueMessage<Origin> for Mo
     ) {
     }
     fn sweep_queue(_: Origin) {}
-    fn footprint(_: Origin) -> QueueFootprint {
-        QueueFootprint::default()
-    }
 }
 
 parameter_types! {
@@ -266,4 +263,12 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 
 pub fn run_to_block(n: u64) {
     System::run_to_block_with::<AllPalletsWithSystem>(n, frame_system::RunToBlockHooks::default());
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<T: snowbridge_pallet_outbound_queue_v2::Config>
+    snowbridge_pallet_outbound_queue_v2::BenchmarkHelper<T> for Test
+{
+    // not implemented since the MockVerifier is used for tests
+    fn initialize_storage(_: snowbridge_beacon_primitives::BeaconHeader, _: H256) {}
 }

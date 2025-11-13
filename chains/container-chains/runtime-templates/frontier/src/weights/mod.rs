@@ -26,6 +26,7 @@ pub mod pallet_assets;
 pub mod pallet_author_inherent;
 pub mod pallet_balances;
 pub mod pallet_cc_authorities_noting;
+pub mod pallet_evm_precompile_sha3fips;
 pub mod pallet_foreign_asset_creator;
 pub mod pallet_message_queue;
 pub mod pallet_multiblock_migrations;

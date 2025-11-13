@@ -342,7 +342,7 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
     type OriginToLocation = xcm_config::LocalOriginToLocation;
     type MinV2Reward = xcm_config::MinV2Reward;
     type EthereumLocation = EthereumLocation;
-    type LocationHashOf = tp_bridge::AgentIdOf;
+    type LocationHashOf = tp_bridge::TanssiAgentIdOf;
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = tp_bridge::EthereumTokenTransfersBenchHelper<Runtime>;
     type WeightInfo = crate::weights::pallet_ethereum_token_transfers::SubstrateWeight<Runtime>;
@@ -492,6 +492,7 @@ pub type NativeTokensProcessor = NativeTokenTransferMessageProcessor<Runtime>;
 #[cfg(not(feature = "runtime-benchmarks"))]
 pub type NativeContainerProcessor = NativeContainerTokensProcessor<
     Runtime,
+    AssetTransactor,
     dancelight_runtime_constants::snowbridge::EthereumLocation,
     dancelight_runtime_constants::snowbridge::EthereumNetwork,
     InboundQueuePalletInstance,
@@ -522,7 +523,7 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type AssetTransactor = AssetTransactor;
     #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (
-        SymbioticInboundMessageProcessor<Self>,
+        SymbioticMessageProcessor<Self>,
         GenericTokenInboundMessageProcessor<
             Self,
             (NativeTokensProcessor, NativeContainerProcessor),
@@ -542,7 +543,7 @@ impl snowbridge_pallet_inbound_queue_v2::Config for Runtime {
     type Verifier = test_helpers::MockVerifier;
     // TODO: Revisit this when we enable xcmp messages
     type GatewayAddress = EthereumGatewayAddress;
-    type MessageProcessor = (SymbioticInboundMessageProcessor<Self>,);
+    type MessageProcessor = (SymbioticMessageProcessor<Self>,);
     type RewardKind = BridgeReward;
     type DefaultRewardKind = SnowbridgeRewardInbound;
     type RewardPayment = BridgeRelayers;

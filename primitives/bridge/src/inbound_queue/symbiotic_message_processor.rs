@@ -67,9 +67,9 @@ where
     },
 }
 
-pub struct SymbioticInboundMessageProcessor<T>(PhantomData<T>);
+pub struct SymbioticMessageProcessor<T>(PhantomData<T>);
 
-impl<T> SymbioticInboundMessageProcessor<T>
+impl<T> SymbioticMessageProcessor<T>
 where
     T: pallet_external_validators::Config,
 {
@@ -80,14 +80,14 @@ where
                 if payload.magic_bytes == MAGIC_BYTES {
                     true
                 } else {
-                    log::debug!("SymbioticInboundMessageProcessor: magic number mismatch, will try next processor: {:?}", payload.magic_bytes);
+                    log::debug!("SymbioticMessageProcessor: magic number mismatch, will try next processor: {:?}", payload.magic_bytes);
                     false
                 }
             }
             Err(e) => {
                 // Message cannot be decoded as `Payload`.
                 // This is expected if the message is intended for a different processor.
-                log::trace!("SymbioticInboundMessageProcessor: failed to decode payload. This is expected if the message is not for this processor. Error: {:?}", e);
+                log::trace!("SymbioticMessageProcessor: failed to decode payload. This is expected if the message is not for this processor. Error: {:?}", e);
                 false
             }
         }
@@ -104,7 +104,7 @@ where
             return Err(DispatchError::Other("unable to parse the envelope payload"));
         };
 
-        log::trace!("SymbioticInboundMessageProcessor: {:?}", message);
+        log::trace!("SymbioticMessageProcessor: {:?}", message);
 
         match message {
             Message::V1(InboundCommand::ReceiveValidators {
@@ -128,7 +128,7 @@ where
     }
 }
 
-impl<T> v2::MessageProcessor<AccountId> for SymbioticInboundMessageProcessor<T>
+impl<T> v2::MessageProcessor<AccountId> for SymbioticMessageProcessor<T>
 where
     T: pallet_external_validators::Config,
 {
@@ -154,7 +154,7 @@ where
     }
 }
 
-impl<T> MessageProcessor for SymbioticInboundMessageProcessor<T>
+impl<T> MessageProcessor for SymbioticMessageProcessor<T>
 where
     T: pallet_external_validators::Config,
 {

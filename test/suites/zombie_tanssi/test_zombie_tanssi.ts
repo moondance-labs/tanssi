@@ -8,15 +8,15 @@ import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { Signer } from "ethers";
 import fs from "node:fs/promises";
 import {
-    checkLogsNotExist,
     chainSpecToContainerChainGenesisData,
+    checkLogsNotExist,
+    countUniqueBlockAuthors,
     getAuthorFromDigest,
     getHeaderFromRelay,
     getKeyringNimbusIdHex,
+    getTmpZombiePath,
     signAndSendAndInclude,
     waitSessions,
-    countUniqueBlockAuthors,
-    getTmpZombiePath,
 } from "utils";
 
 describeSuite({
@@ -254,10 +254,13 @@ describeSuite({
 
                 const profileId = await paraApi.query.dataPreservers.nextProfileId();
                 const profileTx = paraApi.tx.dataPreservers.createProfile({
-                    url: "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
+                    bootnodeUrl: "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
                     paraIds: "AnyParaId",
-                    mode: "Bootnode",
+                    nodeType: "Substrate",
                     assignmentRequest: "Free",
+                    additionalInfo: "0x",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
                 });
 
                 const tx3 = paraApi.tx.dataPreservers.forceStartAssignment(profileId, 2002, "Free");

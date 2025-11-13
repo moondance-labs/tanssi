@@ -24,7 +24,7 @@ use {
     sp_core::{H160, H256},
     sp_runtime::DispatchError,
     tp_bridge::symbiotic_message_processor::{
-        InboundCommand, Message, Payload, SymbioticInboundMessageProcessor, MAGIC_BYTES,
+        InboundCommand, Message, Payload, SymbioticMessageProcessor, MAGIC_BYTES,
     },
 };
 
@@ -44,14 +44,12 @@ fn test_symbiotic_message_processor() {
             payload: vec![0, 1, 2],
         };
 
-        assert!(
-            !SymbioticInboundMessageProcessor::<Runtime>::can_process_message(
-                &default_channel,
-                &envelope_with_invalid_payload
-            )
-        );
+        assert!(!SymbioticMessageProcessor::<Runtime>::can_process_message(
+            &default_channel,
+            &envelope_with_invalid_payload
+        ));
         assert_eq!(
-            SymbioticInboundMessageProcessor::<Runtime>::process_message(
+            SymbioticMessageProcessor::<Runtime>::process_message(
                 default_channel.clone(),
                 envelope_with_invalid_payload
             ),
@@ -72,12 +70,10 @@ fn test_symbiotic_message_processor() {
             nonce: 0,
             payload: payload_with_incorrect_magic_bytes.encode(),
         };
-        assert!(
-            !SymbioticInboundMessageProcessor::<Runtime>::can_process_message(
-                &default_channel,
-                &envelope
-            )
-        );
+        assert!(!SymbioticMessageProcessor::<Runtime>::can_process_message(
+            &default_channel,
+            &envelope
+        ));
 
         // No external validators are set right now
         assert_eq!(
@@ -105,14 +101,12 @@ fn test_symbiotic_message_processor() {
             nonce: 0,
             payload: payload_with_correct_magic_bytes.encode(),
         };
-        assert!(
-            SymbioticInboundMessageProcessor::<Runtime>::can_process_message(
-                &default_channel,
-                &envelope
-            )
-        );
+        assert!(SymbioticMessageProcessor::<Runtime>::can_process_message(
+            &default_channel,
+            &envelope
+        ));
         assert_eq!(
-            SymbioticInboundMessageProcessor::<Runtime>::process_message(
+            SymbioticMessageProcessor::<Runtime>::process_message(
                 default_channel.clone(),
                 envelope
             ),
@@ -162,14 +156,12 @@ fn test_symbiotic_message_processor_rejects_invalid_channel_id() {
             nonce: 0,
             payload: payload_with_correct_magic_bytes.encode(),
         };
-        assert!(
-            SymbioticInboundMessageProcessor::<Runtime>::can_process_message(
-                &default_channel,
-                &envelope
-            )
-        );
+        assert!(SymbioticMessageProcessor::<Runtime>::can_process_message(
+            &default_channel,
+            &envelope
+        ));
         assert_eq!(
-            SymbioticInboundMessageProcessor::<Runtime>::process_message(
+            SymbioticMessageProcessor::<Runtime>::process_message(
                 default_channel.clone(),
                 envelope
             ),
@@ -206,10 +198,10 @@ fn test_symbiotic_message_processor_as_payload() {
             payload: payload_encoded.to_vec(),
         };
         assert!(
-            SymbioticInboundMessageProcessor::<Runtime>::can_process_message(&default_channel, &envelope)
+            SymbioticMessageProcessor::<Runtime>::can_process_message(&default_channel, &envelope)
         );
         assert_eq!(
-            SymbioticInboundMessageProcessor::<Runtime>::process_message(
+            SymbioticMessageProcessor::<Runtime>::process_message(
                 default_channel.clone(),
                 envelope
             ),

@@ -11,12 +11,14 @@ describeSuite({
     testCases: ({ context, it, log }) => {
         let paraApi: ApiPromise;
         let registeredProfiles: PalletDataPreserversRegisteredProfile[];
+        let runtimeVersion: number;
 
         beforeAll(async () => {
             paraApi = context.polkadotJs("para");
             registeredProfiles = (await paraApi.query.dataPreservers.profiles.entries())
                 .filter(([, entry]) => entry.isSome)
                 .map(([, entry]) => entry.unwrap());
+            runtimeVersion = paraApi.runtimeVersion.specVersion.toNumber();
         });
 
         it({
@@ -77,11 +79,34 @@ describeSuite({
             id: "C03",
             title: "all profiles should have valid url",
             test: async () => {
-                const failures = registeredProfiles.filter(
-                    ({ profile }) => !isValidEndpointUrl(profile.url.toHuman().toString())
-                );
+                let failures = [];
+                // the property has been renamed here: https://github.com/moondance-labs/tanssi/pull/1304
+                if (runtimeVersion < 1600) {
+                    failures = registeredProfiles.filter(
+                        // The type has changed for the current runtime, we ignore it
+                        // @ts-ignore
+                        ({ profile }) => !isValidEndpointUrl(profile.url.toHuman().toString())
+                    );
+                } else {
+                    type ProfileType = {
+                        bootnodeUrl: string | null;
+                        directRpcUrls: string[];
+                        proxyRpcUrls: string[];
+                    };
+                    failures = registeredProfiles.filter(({ profile }) => {
+                        const profileDecoded = profile.toHuman() as ProfileType;
+                        // collect any possible URL-s
+                        const urls = [
+                            profileDecoded.bootnodeUrl?.toString() || "",
+                            ...profileDecoded.directRpcUrls,
+                            ...profileDecoded.proxyRpcUrls,
+                        ].filter(Boolean);
+                        return !!urls.map((url: string) => isValidEndpointUrl(url)).includes(false);
+                    });
+                }
+
                 for (const { profile } of failures) {
-                    log(`Invalid URL ${profile.url.toHuman()}`);
+                    log(`Found invalid URL for profile: ${JSON.stringify(profile.toHuman())}`);
                 }
                 expect(failures.length, `${failures.length} invalid endpoint urls registered`).toBe(0);
             },

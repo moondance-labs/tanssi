@@ -51,6 +51,7 @@ sp-io = { workspace = true, features = [ "std" ] }
 default = [ "std" ]
 std = [
 	"alloy-core/std",
+	"bp-relayers/std",
 	"cumulus-primitives-core/std",
 	"dp-chain-state-snapshot/std",
 	"dp-container-chain-genesis-data/std",
