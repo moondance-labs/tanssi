@@ -17,7 +17,7 @@
 use {
     clap::Parser,
     node_common::{cli::BuildSpecCmd, service::node_builder::Sealing},
-    tc_service_container_chain_rpc_provider::RpcProviderCmd,
+    tc_service_container_chain_data_preserver::DataPreserverCmd,
 };
 
 pub type BaseSubcommand = node_common::cli::Subcommand<BuildSpecCmdSimple>;
@@ -26,7 +26,7 @@ pub type BaseSubcommand = node_common::cli::Subcommand<BuildSpecCmdSimple>;
 #[derive(Debug, clap::Subcommand)]
 #[allow(clippy::large_enum_variant)]
 pub enum Subcommand {
-    RpcProvider(RpcProviderCmd),
+    DataPreserver(DataPreserverCmd),
     #[command(flatten)]
     Base(BaseSubcommand),
 }

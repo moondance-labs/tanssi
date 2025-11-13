@@ -37,7 +37,7 @@ use {
     sc_service::DatabaseSource,
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT, Get},
-    tc_service_container_chain_rpc_provider::RpcProviderMode,
+    tc_service_container_chain_data_preserver::DataPreserverMode,
     tc_service_container_chain_spawner::cli::ContainerChainCli,
 };
 
@@ -128,8 +128,8 @@ pub fn run() -> Result<()> {
 
     // Match rpc provider subcommand in wrapper
     let subcommand = match &cli.subcommand {
-        Some(Subcommand::RpcProvider(cmd)) => {
-            return rpc_provider_mode(&cli, cmd);
+        Some(Subcommand::DataPreserver(cmd)) => {
+            return data_preserver_mode(&cli, cmd);
         }
         Some(Subcommand::Base(cmd)) => Some(cmd),
         None => None,
@@ -338,7 +338,6 @@ pub fn run() -> Result<()> {
                         .map_err(Into::into);
                 }
 
-
                 let parachain_account =
                     AccountIdConversion::<polkadot_primitives::AccountId>::into_account_truncating(&id);
 
@@ -404,7 +403,7 @@ pub fn run() -> Result<()> {
     }
 }
 
-fn rpc_provider_mode(cli: &Cli, cmd: &crate::cli::RpcProviderCmd) -> Result<()> {
+fn data_preserver_mode(cli: &Cli, cmd: &crate::cli::DataPreserverCmd) -> Result<()> {
     let runner = cli.create_runner(&cmd.base.container_run.normalize())?;
 
     runner.run_node_until_exit(|config| async move {
@@ -443,7 +442,7 @@ fn rpc_provider_mode(cli: &Cli, cmd: &crate::cli::RpcProviderCmd) -> Result<()> 
             container_chain_template_frontier_runtime::RuntimeApi,
         >::new(rpc_config);
 
-        RpcProviderMode {
+        DataPreserverMode {
             config,
             provider_profile_id: cmd.base.profile_id,
             orchestrator_endpoints: cmd.base.orchestrator_endpoints.clone(),

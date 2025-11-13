@@ -47,7 +47,7 @@ use {
     sp_core::H256,
     sp_runtime::traits::{Hash, MaybeEquivalence, Zero},
     sp_staking::SessionIndex,
-    tp_bridge::{Command, DeliverMessage, Message, TicketInfo, ValidateMessage},
+    tp_bridge::{Command, DeliverMessage, TanssiMessage, TicketInfo, ValidateMessage},
     tp_traits::ExternalIndexProvider,
     xcm::prelude::*,
 };
@@ -318,7 +318,7 @@ pub mod pallet {
 
                     let channel_id: ChannelId = snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
 
-                    let outbound_message = Message {
+                    let outbound_message = TanssiMessage {
                         id: None,
                         channel_id,
                         command: command.clone(),

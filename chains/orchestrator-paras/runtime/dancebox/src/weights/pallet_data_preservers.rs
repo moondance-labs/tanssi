@@ -209,7 +209,7 @@ impl<T: frame_system::Config> pallet_data_preservers::WeightInfo for SubstrateWe
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	/// Storage: `DataPreservers::Profiles` (r:1 w:1)
-	/// Proof: `DataPreservers::Profiles` (`max_values`: None, `max_size`: Some(744), added: 3219, mode: `MaxEncodedLen`)
+	/// Proof: `DataPreservers::Profiles` (`max_values`: None, `max_size`: Some(2564), added: 5039, mode: `MaxEncodedLen`)
 	/// Storage: `System::Account` (r:1 w:1)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	/// Storage: `Balances::Holds` (r:1 w:1)

@@ -12,7 +12,7 @@ import {
 } from "utils";
 
 describeSuite({
-    id: "ZOMBIETANSS03",
+    id: "ZOMBIETANSSCONTTOETH01",
     title: "Container native tokens transfer from Ethereum to container (via Tanssi)",
     foundationMethods: "zombie",
     testCases: ({ context, it }) => {
