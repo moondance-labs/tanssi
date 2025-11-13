@@ -45,7 +45,7 @@ use {
 };
 
 // TODO: only import in case of not benchmarks
-use tp_bridge::symbiotic_message_processor::SymbioticInboundMessageProcessor;
+use tp_bridge::symbiotic_message_processor::SymbioticMessageProcessor;
 
 use crate::{AccountId, BridgeRelayers};
 use dancelight_runtime_constants::snowbridge::EthereumLocation;
