@@ -237,6 +237,7 @@ fn test_combine_paras_with_core_config() {
             let (chains, ordered_by_tip) = Pallet::<Test>::order_paras_with_core_config(
                 generated_parachains.clone(),
                 generated_parathreads.clone(),
+                &alloc::collections::BTreeSet::new(),
                 &config,
                 1,
                 number_of_collators,
