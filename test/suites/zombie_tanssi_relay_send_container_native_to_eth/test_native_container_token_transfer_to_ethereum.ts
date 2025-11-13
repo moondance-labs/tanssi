@@ -4,14 +4,13 @@ import { type ApiPromise, Keyring } from "@polkadot/api";
 
 import {
     SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
-    sleep,
     TESTNET_ETHEREUM_NETWORK_ID,
-    waitEventUntilTimeout,
     SNOWBRIDGE_FEES_ACCOUNT,
+    waitUntilNonceForChannelChanged,
 } from "utils";
 
 describeSuite({
-    id: "ZOMBIETANSS02",
+    id: "ZOMBIETANSSCONTFROMETH01",
     title: "XCM transfer to Ethereum",
     foundationMethods: "zombie",
     testCases: ({ context, it }) => {
@@ -83,7 +82,15 @@ describeSuite({
                 const initialBalance = 100_000_000_000_000n;
                 const txHash = await relayChainPolkadotJs.tx.utility
                     .batch([
-                        relayChainPolkadotJs.tx.balances.transferKeepAlive(convertedAddress, initialBalance),
+                        relayChainPolkadotJs.tx.sudo.sudo(
+                            relayChainPolkadotJs.tx.balances.forceSetBalance(
+                                SNOWBRIDGE_FEES_ACCOUNT,
+                                500_000_000_000_000_000n
+                            )
+                        ),
+                        relayChainPolkadotJs.tx.sudo.sudo(
+                            relayChainPolkadotJs.tx.balances.forceSetBalance(convertedAddress, initialBalance)
+                        ),
                         relayChainPolkadotJs.tx.sudo.sudo(
                             relayChainPolkadotJs.tx.ethereumTokenTransfers.setTokenTransferChannel(
                                 newChannelId,
@@ -153,21 +160,15 @@ describeSuite({
 
                 const channelNonceBefore = await relayChainPolkadotJs.query.ethereumOutboundQueue.nonce(newChannelId);
 
-                // Fees account (on Tanssi) only has the existential deposit
-                const existentialDeposit = relayChainPolkadotJs.consts.balances.existentialDeposit.toBigInt();
                 const feesAccountBalanceBefore = (
                     await relayChainPolkadotJs.query.system.account(SNOWBRIDGE_FEES_ACCOUNT)
                 ).data.free.toBigInt();
-                expect(feesAccountBalanceBefore).to.be.eq(existentialDeposit);
 
                 await containerChainPolkadotJs.tx.polkadotXcm
                     .transferAssets(dest, versionedBeneficiary, versionedAssets, 0, "Unlimited")
                     .signAndSend(alice);
 
-                await waitEventUntilTimeout(relayChainPolkadotJs, "ethereumOutboundQueue.MessageAccepted", 90000);
-
-                // Wait 2 blocks until nonce changed
-                await sleep(24000);
+                await waitUntilNonceForChannelChanged(relayChainPolkadotJs, newChannelId, 90000, 6000);
 
                 const balanceAfter = (
                     await containerChainPolkadotJs.query.system.account(holdingAccount)
@@ -176,9 +177,6 @@ describeSuite({
                 expect(balanceAfter - balanceBefore).toEqual(tokenToTransfer);
 
                 const channelNonceAfter = await relayChainPolkadotJs.query.ethereumOutboundQueue.nonce(newChannelId);
-
-                // Wait a few blocks until fees are collected
-                await sleep(24000);
 
                 // Fees are collected on Tanssi
                 const feesAccountBalanceAfter = (

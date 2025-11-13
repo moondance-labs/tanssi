@@ -4,14 +4,14 @@ import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { jumpSessions } from "utils";
 import {
-    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT,
-    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_DATA_PRESERVERS,
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR,
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR_BESIDES_REGISTER,
+    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_DATA_PRESERVERS,
+    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT,
     checkCallIsFiltered,
 } from "helpers";
+import { jumpSessions } from "utils";
 
 describeSuite({
     id: "DEVT0302",
@@ -377,9 +377,9 @@ async function createTxBatchForCreatingPara(
     );
     const profileTx = api.tx.dataPreservers.forceCreateProfile(
         {
-            url: "0x02",
+            bootnodeUrl: "0x02",
             paraIds: "AnyParaId",
-            mode: "Bootnode",
+            nodeType: "Substrate",
             assignmentRequest: "Free",
         },
         manager

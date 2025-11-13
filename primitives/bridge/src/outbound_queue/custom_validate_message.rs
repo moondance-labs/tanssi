@@ -22,7 +22,7 @@ pub struct TanssiEthMessageValidatorV1<T: snowbridge_pallet_outbound_queue::Conf
 impl<T: snowbridge_pallet_outbound_queue::Config> ValidateMessage
     for TanssiEthMessageValidatorV1<T>
 {
-    type Ticket = Ticket<T>;
+    type Ticket = TanssiTicketV1<T>;
 
     fn validate(message: &TanssiMessage) -> Result<(Self::Ticket, Fee<u64>), SendError> {
         log::trace!("TanssiEthMessageValidatorV1: {:?}", message);
@@ -99,7 +99,7 @@ impl<T: snowbridge_pallet_outbound_queue_v2::Config, OwnOrigin: Get<Location>> V
 
         // This is only called by system level pallets
         // so we can put the origin to system
-        let origin = crate::AgentIdOf::convert_location(&OwnOrigin::get())
+        let origin = crate::TanssiAgentIdOf::convert_location(&OwnOrigin::get())
             .ok_or(SendError::InvalidOrigin)?;
 
         // Generate a unique message id unless one is provided

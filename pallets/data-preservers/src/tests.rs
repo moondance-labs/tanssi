@@ -64,14 +64,17 @@ mod create_profile {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
                     assignment_request: ProviderRequest::Free,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                 };
 
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 1_408); // 1_000 base deposit + 51 * 8 bytes deposit
+                assert_eq!(deposit, 1_612); // 1_000 base deposit + 51 * 12 bytes deposit
 
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
@@ -108,10 +111,13 @@ mod create_profile {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
                     assignment_request: ProviderRequest::Free,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                 };
 
                 assert_noop!(
@@ -132,10 +138,13 @@ mod create_profile {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
                     assignment_request: ProviderRequest::Free,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                 };
 
                 // Set some profile at next id. (this shouldn't occur but we protect from it
@@ -164,10 +173,13 @@ mod create_profile {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
                     assignment_request: ProviderRequest::Free,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                 };
 
                 assert_ok!(DataPreservers::force_create_profile(
@@ -206,10 +218,13 @@ mod create_profile {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
                     assignment_request: ProviderRequest::Free,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                 };
 
                 assert_noop!(
@@ -234,14 +249,17 @@ mod update_profile {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
                     assignment_request: ProviderRequest::Free,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                 };
 
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 1_408);
+                assert_eq!(deposit, 1_612);
 
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
@@ -249,16 +267,17 @@ mod update_profile {
                 ));
 
                 let profile2 = Profile {
-                    url: b"test2".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test2".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::Whitelist(bset![ParaId::from(42)]),
-                    mode: ProfileMode::Rpc {
-                        supports_ethereum_rpcs: false,
-                    },
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
                 let deposit2 = profile_deposit(&profile2);
-                assert_eq!(deposit2, 1_765);
+                assert_eq!(deposit2, 1_918);
                 assert!(deposit < deposit2);
 
                 assert_ok!(DataPreservers::update_profile(
@@ -302,16 +321,17 @@ mod update_profile {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test2".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test2".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::Whitelist(bset![ParaId::from(42)]),
-                    mode: ProfileMode::Rpc {
-                        supports_ethereum_rpcs: false,
-                    },
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 1_765);
+                assert_eq!(deposit, 1918);
 
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
@@ -319,14 +339,17 @@ mod update_profile {
                 ));
 
                 let profile2 = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
                     assignment_request: ProviderRequest::Free,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                 };
 
                 let deposit2 = profile_deposit(&profile2);
-                assert_eq!(deposit2, 1408);
+                assert_eq!(deposit2, 1612);
                 assert!(deposit2 < deposit);
 
                 assert_ok!(DataPreservers::update_profile(
@@ -370,9 +393,12 @@ mod update_profile {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
@@ -382,11 +408,12 @@ mod update_profile {
                 ));
 
                 let profile2 = Profile {
-                    url: b"test2".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test2".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::Whitelist(bset![ParaId::from(42)]),
-                    mode: ProfileMode::Rpc {
-                        supports_ethereum_rpcs: false,
-                    },
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
@@ -408,9 +435,12 @@ mod update_profile {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
@@ -420,11 +450,12 @@ mod update_profile {
                 ));
 
                 let profile2 = Profile {
-                    url: b"test2".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test2".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::Whitelist(bset![ParaId::from(42)]),
-                    mode: ProfileMode::Rpc {
-                        supports_ethereum_rpcs: false,
-                    },
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
@@ -442,13 +473,16 @@ mod update_profile {
     #[test]
     fn insufficient_balance_for_new_deposit() {
         ExtBuilder::default()
-            .with_balances(vec![(ALICE, 1_410)]) // `profile`
+            .with_balances(vec![(ALICE, 1613)]) // `profile`
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
@@ -458,11 +492,12 @@ mod update_profile {
                 ));
 
                 let profile2 = Profile {
-                    url: b"test2".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test2".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::Whitelist(bset![ParaId::from(42)]),
-                    mode: ProfileMode::Rpc {
-                        supports_ethereum_rpcs: false,
-                    },
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
@@ -484,14 +519,17 @@ mod update_profile {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 1_408);
+                assert_eq!(deposit, 1_612);
 
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
@@ -499,11 +537,12 @@ mod update_profile {
                 ));
 
                 let profile2 = Profile {
-                    url: b"test2".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test2".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::Whitelist(bset![ParaId::from(42)]),
-                    mode: ProfileMode::Rpc {
-                        supports_ethereum_rpcs: false,
-                    },
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
@@ -548,9 +587,12 @@ mod update_profile {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
@@ -560,11 +602,12 @@ mod update_profile {
                 ));
 
                 let profile2 = Profile {
-                    url: b"test2".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test2".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::Whitelist(bset![ParaId::from(42)]),
-                    mode: ProfileMode::Rpc {
-                        supports_ethereum_rpcs: false,
-                    },
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
@@ -590,14 +633,17 @@ mod delete_profile {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 1_408);
+                assert_eq!(deposit, 1_612);
 
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
@@ -635,9 +681,12 @@ mod delete_profile {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
@@ -663,9 +712,12 @@ mod delete_profile {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
@@ -691,14 +743,17 @@ mod delete_profile {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 1_408);
+                assert_eq!(deposit, 1_612);
 
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
@@ -736,9 +791,12 @@ mod delete_profile {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
@@ -761,14 +819,17 @@ mod delete_profile {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 1_408);
+                assert_eq!(deposit, 1_612);
 
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(BOB),
@@ -801,14 +862,17 @@ mod delete_profile {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 1_408);
+                assert_eq!(deposit, 1_612);
 
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(BOB),
@@ -845,13 +909,16 @@ mod start_assignment {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 1_408);
+                assert_eq!(deposit, 1_612);
 
                 let para_id = ParaId::from(1002);
 
@@ -907,13 +974,16 @@ mod start_assignment {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::SomeKindOfPayment { amount: 1337 },
                 };
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 2_224);
+                assert_eq!(deposit, 2_428);
 
                 let para_id = ParaId::from(1002);
 
@@ -983,13 +1053,16 @@ mod start_assignment {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::SomeKindOfPayment { amount: 1337 },
                 };
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 2_224);
+                assert_eq!(deposit, 2_428);
 
                 let para_id = ParaId::from(1002);
 
@@ -1028,13 +1101,16 @@ mod start_assignment {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::Whitelist(bset![ParaId::from(42)]),
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::SomeKindOfPayment { amount: 1337 },
                 };
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 2479);
+                assert_eq!(deposit, 2_683);
 
                 let para_id = ParaId::from(1002);
 
@@ -1092,13 +1168,16 @@ mod start_assignment {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 1_408);
+                assert_eq!(deposit, 1_612);
 
                 let para_id = ParaId::from(1002);
 
@@ -1130,13 +1209,16 @@ mod start_assignment {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 1_408);
+                assert_eq!(deposit, 1_612);
 
                 let para_id = ParaId::from(1002);
 
@@ -1168,13 +1250,16 @@ mod start_assignment {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::SomeKindOfPayment { amount: 1337 },
                 };
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 2_224);
+                assert_eq!(deposit, 2_428);
 
                 let para_id = ParaId::from(1002);
 
@@ -1210,13 +1295,16 @@ mod stop_assignment {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 1_408);
+                assert_eq!(deposit, 1_612);
 
                 let para_id = ParaId::from(1002);
 
@@ -1282,13 +1370,16 @@ mod stop_assignment {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 1_408);
+                assert_eq!(deposit, 1_612);
 
                 let para_id = ParaId::from(1002);
 
@@ -1355,13 +1446,16 @@ mod stop_assignment {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 1_408);
+                assert_eq!(deposit, 1_612);
 
                 let para_id = ParaId::from(1002);
 
@@ -1427,13 +1521,16 @@ mod stop_assignment {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 1_408);
+                assert_eq!(deposit, 1_612);
 
                 let para_id = ParaId::from(1002);
 
@@ -1503,13 +1600,16 @@ mod stop_assignment {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 1_408);
+                assert_eq!(deposit, 1_612);
 
                 let para_id = ParaId::from(1002);
 
@@ -1543,13 +1643,16 @@ mod stop_assignment {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::SomeKindOfPayment { amount: 1337 },
                 };
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 2_224);
+                assert_eq!(deposit, 2_428);
 
                 let para_id = ParaId::from(1002);
 
@@ -1623,13 +1726,16 @@ mod stop_assignment {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 1_408);
+                assert_eq!(deposit, 1_612);
 
                 let para_id = ParaId::from(1002);
 
@@ -1663,13 +1769,16 @@ mod stop_assignment {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 1_408);
+                assert_eq!(deposit, 1_612);
 
                 let para_id = ParaId::from(1002);
 
@@ -1697,13 +1806,16 @@ mod stop_assignment {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 1_408);
+                assert_eq!(deposit, 1_612);
 
                 let para_id = ParaId::from(1002);
                 let para_id2 = ParaId::from(1003);
@@ -1739,13 +1851,16 @@ mod stop_assignment {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::SomeKindOfPayment { amount: 1337 },
                 };
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 2_224);
+                assert_eq!(deposit, 2_428);
 
                 let para_id = ParaId::from(1002);
 
@@ -1783,13 +1898,16 @@ mod force_start_assignment {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
                 let deposit = profile_deposit(&profile);
-                assert_eq!(deposit, 1_408);
+                assert_eq!(deposit, 1_612);
 
                 let para_id = ParaId::from(1002);
 
@@ -1850,9 +1968,12 @@ mod poke_deposit {
             .execute_with(|| {
                 // Create profile with small URL (lower deposit)
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
@@ -1865,10 +1986,12 @@ mod poke_deposit {
 
                 // Manually update profile to have longer URL
                 let mut reg = Profiles::<Test>::get(0).unwrap();
-                reg.profile.url = b"this_is_a_much_longer_url_that_requires_more_deposit"
-                    .to_vec()
-                    .try_into()
-                    .unwrap();
+                reg.profile.bootnode_url = Some(
+                    b"this_is_a_much_longer_url_that_requires_more_deposit"
+                        .to_vec()
+                        .try_into()
+                        .unwrap(),
+                );
 
                 // Calculate expected deposit before inserting
                 let new_required_deposit = profile_deposit(&reg.profile);
@@ -1918,12 +2041,17 @@ mod poke_deposit {
             .execute_with(|| {
                 // Create profile with long URL (higher deposit)
                 let profile = Profile {
-                    url: b"this_is_a_much_longer_url_that_requires_more_deposit"
-                        .to_vec()
-                        .try_into()
-                        .unwrap(),
+                    bootnode_url: Some(
+                        b"this_is_a_much_longer_url_that_requires_more_deposit"
+                            .to_vec()
+                            .try_into()
+                            .unwrap(),
+                    ),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
@@ -1936,7 +2064,7 @@ mod poke_deposit {
 
                 // Manually update profile to have shorter URL
                 let mut reg = Profiles::<Test>::get(0).unwrap();
-                reg.profile.url = b"test".to_vec().try_into().unwrap();
+                reg.profile.bootnode_url = Some(b"test".to_vec().try_into().unwrap());
 
                 let new_required_deposit = profile_deposit(&reg.profile);
                 assert!(new_required_deposit < initial_deposit);
@@ -1984,9 +2112,12 @@ mod poke_deposit {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
@@ -2042,9 +2173,12 @@ mod poke_deposit {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
@@ -2068,9 +2202,12 @@ mod poke_deposit {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
@@ -2083,10 +2220,12 @@ mod poke_deposit {
 
                 // Manually update profile to require more deposit
                 let mut reg = Profiles::<Test>::get(0).unwrap();
-                reg.profile.url = b"this_is_a_much_longer_url_that_requires_more_deposit"
-                    .to_vec()
-                    .try_into()
-                    .unwrap();
+                reg.profile.bootnode_url = Some(
+                    b"this_is_a_much_longer_url_that_requires_more_deposit"
+                        .to_vec()
+                        .try_into()
+                        .unwrap(),
+                );
                 Profiles::<Test>::insert(0, reg);
 
                 // Try to poke deposit but ALICE doesn't have enough balance
@@ -2105,14 +2244,17 @@ mod poke_deposit {
             .execute_with(|| {
                 // Create profile with AnyParaId
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
                 let initial_deposit = profile_deposit(&profile);
-                assert_eq!(initial_deposit, 1_408);
+                assert_eq!(initial_deposit, 1_612);
 
                 assert_ok!(DataPreservers::create_profile(
                     RuntimeOrigin::signed(ALICE),
@@ -2166,9 +2308,12 @@ mod poke_deposit {
             .build()
             .execute_with(|| {
                 let profile = Profile {
-                    url: b"test".to_vec().try_into().unwrap(),
+                    bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
                     para_ids: ParaIdsFilter::AnyParaId,
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
+                    proxy_rpc_urls: Default::default(),
+                    additional_info: Default::default(),
+                    direct_rpc_urls: Default::default(),
                     assignment_request: ProviderRequest::Free,
                 };
 
@@ -2193,7 +2338,7 @@ mod poke_deposit {
 
                 // Manually update profile to require different deposit
                 let mut reg = Profiles::<Test>::get(0).unwrap();
-                reg.profile.url = b"updated_url".to_vec().try_into().unwrap();
+                reg.profile.bootnode_url = Some(b"updated_url".to_vec().try_into().unwrap());
                 Profiles::<Test>::insert(0, reg.clone());
 
                 let new_required_deposit = profile_deposit(&reg.profile);

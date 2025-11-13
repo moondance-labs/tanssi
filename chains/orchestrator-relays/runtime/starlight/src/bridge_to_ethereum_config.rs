@@ -24,8 +24,7 @@ use pallet_ethereum_token_transfers::DenyTipHandler;
 use {
     tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
     tp_bridge::{
-        symbiotic_message_processor::SymbioticInboundMessageProcessor,
-        GenericTokenInboundMessageProcessor,
+        symbiotic_message_processor::SymbioticMessageProcessor, GenericTokenInboundMessageProcessor,
     },
 };
 
@@ -157,7 +156,7 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
     type TokenLocationReanchored = TokenLocationReanchored;
     type TokenIdFromLocation = EthereumSystem;
     type ShouldUseV2 = ConstBool<false>;
-    type LocationHashOf = tp_bridge::AgentIdOf;
+    type LocationHashOf = tp_bridge::TanssiAgentIdOf;
     type EthereumLocation = starlight_runtime_constants::snowbridge::EthereumLocation;
     type MinV2Reward = ConstU128<1>;
     type OriginToLocation = xcm_config::LocalOriginToLocation;
@@ -286,7 +285,7 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type AssetTransactor = AssetTransactor;
     #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (
-        SymbioticInboundMessageProcessor<Self>,
+        SymbioticMessageProcessor<Self>,
         GenericTokenInboundMessageProcessor<Self, NativeTokensProcessor, EthTokensProcessor>,
     );
     type RewardProcessor = RewardThroughFeesAccount<Self>;

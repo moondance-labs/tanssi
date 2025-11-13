@@ -72,9 +72,9 @@ impl std::ops::Deref for RunCmd {
 
 /// Watches for an assignment and provide Ethereum RPC services for assigned chain.
 #[derive(Debug, Parser)]
-pub struct RpcProviderCmd {
+pub struct DataPreserverCmd {
     #[clap(flatten)]
-    pub base: tc_service_container_chain_rpc_provider::RpcProviderCmd,
+    pub base: tc_service_container_chain_data_preserver::DataPreserverCmd,
 
     #[clap(flatten)]
     pub eth: EthRpcArguments,
@@ -86,7 +86,7 @@ pub type BaseSubcommand = node_common::cli::Subcommand<BuildSpecCmdFrontier>;
 /// Custom subcommand enum with `rpc-provider`
 #[derive(Debug, clap::Subcommand)]
 pub enum Subcommand {
-    RpcProvider(RpcProviderCmd),
+    DataPreserver(DataPreserverCmd),
     #[command(flatten)]
     Base(BaseSubcommand),
 }

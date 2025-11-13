@@ -17,7 +17,10 @@
 use {
     crate::*,
     alloc::boxed::Box,
-    alloy_core::sol_types::SolValue,
+    alloy_core::{
+        primitives::{Bytes, FixedBytes},
+        sol_types::SolValue,
+    },
     core::marker::PhantomData,
     frame_support::{
         ensure,
@@ -43,9 +46,9 @@ use {
 /// Alternative to [snowbridge_pallet_outbound_queue::Pallet::process_message] using a different
 /// [Command] enum.
 /// Snowbridge V1 implementation!
-pub struct TanssiOutboundEthProcessorSnowbridgeV1<T>(PhantomData<T>);
+pub struct TanssiOutboundEthMessageProcessorV1<T>(PhantomData<T>);
 
-impl<T> TanssiOutboundEthProcessorSnowbridgeV1<T>
+impl<T> TanssiOutboundEthMessageProcessorV1<T>
 where
     T: snowbridge_pallet_outbound_queue::Config,
 {
@@ -125,7 +128,7 @@ where
     }
 }
 
-impl<T> ProcessMessage for TanssiOutboundEthProcessorSnowbridgeV1<T>
+impl<T> ProcessMessage for TanssiOutboundEthMessageProcessorV1<T>
 where
     T: snowbridge_pallet_outbound_queue::Config,
 {
@@ -150,9 +153,9 @@ where
 
 /// Alternative to [snowbridge_pallet_outbound_queue::Pallet::process_message] using a different
 /// [Command] enum.
-pub struct TanssiOutboundEthProcessorSnowbridgeV2<T, SelfLocation>(PhantomData<(T, SelfLocation)>);
+pub struct TanssiOutboundEthMessageProcessorV2<T, SelfLocation>(PhantomData<(T, SelfLocation)>);
 
-impl<T, SelfLocation> TanssiOutboundEthProcessorSnowbridgeV2<T, SelfLocation>
+impl<T, SelfLocation> TanssiOutboundEthMessageProcessorV2<T, SelfLocation>
 where
     T: snowbridge_pallet_outbound_queue_v2::Config + frame_system::Config,
     SelfLocation: Get<Location>,
@@ -201,7 +204,7 @@ where
             payload: params,
         }];
 
-        let origin = AgentIdOf::convert_location(&SelfLocation::get()).ok_or(Unsupported)?;
+        let origin = TanssiAgentIdOf::convert_location(&SelfLocation::get()).ok_or(Unsupported)?;
         let topic = queued_message.id;
         // Construct the final committed message
         let message = OutboundMessageV2 {
@@ -216,14 +219,14 @@ where
             .map(|command| CommandWrapper {
                 kind: command.kind,
                 gas: command.gas,
-                payload: command.payload.into(),
+                payload: Bytes::from(command.payload),
             })
             .collect();
 
         let committed_message = OutboundMessageWrapper {
-            origin: origin.as_fixed_bytes().into(),
+            origin: FixedBytes::from(origin.as_fixed_bytes()),
             nonce,
-            topic: topic.as_fixed_bytes().into(),
+            topic: FixedBytes::from(topic.as_fixed_bytes()),
             commands: abi_commands,
         };
 
@@ -253,7 +256,7 @@ where
     }
 }
 
-impl<T, SelfLocation> ProcessMessage for TanssiOutboundEthProcessorSnowbridgeV2<T, SelfLocation>
+impl<T, SelfLocation> ProcessMessage for TanssiOutboundEthMessageProcessorV2<T, SelfLocation>
 where
     T: snowbridge_pallet_outbound_queue_v2::Config + frame_system::Config,
     SelfLocation: Get<Location>,
