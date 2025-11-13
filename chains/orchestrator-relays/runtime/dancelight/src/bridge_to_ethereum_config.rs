@@ -49,6 +49,7 @@ use {
     },
 };
 
+use crate::xcm_config::UniversalLocation;
 use crate::{AccountId, BridgeRelayers};
 use dancelight_runtime_constants::snowbridge::EthereumLocation;
 use tp_traits::BlockNumber;
@@ -512,6 +513,30 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type MessageProcessor = (benchmark_helper::WorstCaseMessageProcessor<EthTokensProcessor>,);
 }
 
+#[cfg(not(feature = "runtime-benchmarks"))]
+pub type RawMessageProcessorInboundV2 = RawMessageProcessorV2<
+    Runtime,
+    EthereumGatewayAddress,
+    TreasuryAccount,
+    dancelight_runtime_constants::snowbridge::EthereumNetwork,
+    dancelight_runtime_constants::snowbridge::EthereumUniversalLocation,
+    UniversalLocation,
+    xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
+    <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+>;
+
+#[cfg(not(feature = "runtime-benchmarks"))]
+pub type SymbioticInboundMessageProcessorV2 = SymbioticMessageProcessorV2<
+    Runtime,
+    EthereumGatewayAddress,
+    TreasuryAccount,
+    dancelight_runtime_constants::snowbridge::EthereumNetwork,
+    dancelight_runtime_constants::snowbridge::EthereumUniversalLocation,
+    UniversalLocation,
+    xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
+    <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+>;
+
 impl snowbridge_pallet_inbound_queue_v2::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     #[cfg(all(not(test), not(feature = "testing-helpers")))]
@@ -520,7 +545,10 @@ impl snowbridge_pallet_inbound_queue_v2::Config for Runtime {
     type Verifier = test_helpers::MockVerifier;
     // TODO: Revisit this when we enable xcmp messages
     type GatewayAddress = EthereumGatewayAddress;
-    type MessageProcessor = ();
+    type MessageProcessor = (
+        RawMessageProcessorInboundV2,
+        SymbioticInboundMessageProcessorV2,
+    );
     type RewardKind = BridgeReward;
     type DefaultRewardKind = SnowbridgeRewardInbound;
     type RewardPayment = BridgeRelayers;
