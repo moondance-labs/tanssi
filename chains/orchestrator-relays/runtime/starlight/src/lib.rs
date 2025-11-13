@@ -201,7 +201,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("starlight"),
     impl_name: Cow::Borrowed("tanssi-starlight-v2.0"),
     authoring_version: 0,
-    spec_version: 1600,
+    spec_version: 1700,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 27,
@@ -1132,7 +1132,7 @@ impl ProcessMessage for MessageProcessor {
                 )
             }
             AggregateMessageOrigin::SnowbridgeTanssi(_) => {
-                tp_bridge::CustomProcessSnowbridgeMessage::<Runtime>::process_message(
+                tp_bridge::TanssiOutboundEthMessageProcessorV1::<Runtime>::process_message(
                     message, origin, meter, id,
                 )
             }
@@ -1543,8 +1543,9 @@ impl pallet_external_validators_rewards::Config for Runtime {
     type ExternalIndexProvider = ExternalValidators;
     type GetWhitelistedValidators = GetWhitelistedValidators;
     type Hashing = Keccak256;
-    type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
-    type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;
+    type ValidateMessage = tp_bridge::TanssiEthMessageValidatorV1<Runtime>;
+    type OutboundQueue =
+        tp_bridge::TanssiEthMessageSenderV1<Runtime, GetAggregateMessageOriginTanssi>;
     type Currency = Balances;
     type RewardsEthereumSovereignAccount = EthereumSovereignAccount;
     type TokenLocationReanchored = TokenLocationReanchored;
@@ -1563,8 +1564,9 @@ impl pallet_external_validator_slashes::Config for Runtime {
     type SessionInterface = StarlightSessionInterface;
     type EraIndexProvider = ExternalValidators;
     type InvulnerablesProvider = ExternalValidators;
-    type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
-    type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;
+    type ValidateMessage = tp_bridge::TanssiEthMessageValidatorV1<Runtime>;
+    type OutboundQueue =
+        tp_bridge::TanssiEthMessageSenderV1<Runtime, GetAggregateMessageOriginTanssi>;
     type ExternalIndexProvider = ExternalValidators;
     type QueuedSlashesProcessedPerBlock = ConstU32<10>;
     type WeightInfo = weights::pallet_external_validator_slashes::SubstrateWeight<Runtime>;
@@ -1768,7 +1770,9 @@ parameter_types! {
     #[derive(Clone)]
     pub const MaxAssignmentsPerParaId: u32 = 10;
     #[derive(Clone)]
-    pub const MaxNodeUrlLen: u32 = 200;
+    pub const MaxNodeUrlCount: u32 = 4;
+    #[derive(Clone)]
+    pub const MaxStringLen: u32 = 200;
 }
 
 pub type DataPreserversProfileId = u64;
@@ -1786,7 +1790,8 @@ impl pallet_data_preservers::Config for Runtime {
     type ForceSetProfileOrigin = EnsureRoot<AccountId>;
 
     type MaxAssignmentsPerParaId = MaxAssignmentsPerParaId;
-    type MaxNodeUrlLen = MaxNodeUrlLen;
+    type MaxNodeUrlCount = MaxNodeUrlCount;
+    type MaxStringLen = MaxStringLen;
     type MaxParaIdsVecLen = MaxLengthParaIds;
 }
 
@@ -2261,17 +2266,20 @@ impl pallet_registrar::RegistrarHooks for StarlightRegistrarHooks {
     fn benchmarks_ensure_valid_for_collating(para_id: ParaId) {
         use {
             frame_support::traits::EnsureOriginWithArg,
-            pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode},
+            pallet_data_preservers::{NodeType, ParaIdsFilter, Profile},
         };
 
         let profile = Profile {
-            url: b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
+            bootnode_url: Some(b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
                 .to_vec()
                 .try_into()
-                .expect("to fit in BoundedVec"),
+                .expect("to fit in BoundedVec")),
+            direct_rpc_urls: Default::default(),
+            proxy_rpc_urls: Default::default(),
             para_ids: ParaIdsFilter::AnyParaId,
-            mode: ProfileMode::Bootnode,
+            node_type: NodeType::Substrate,
             assignment_request: tp_data_preservers_common::ProviderRequest::Free,
+            additional_info: Default::default(),
         };
 
         let profile_id = pallet_data_preservers::NextProfileId::<Runtime>::get();
@@ -3007,8 +3015,7 @@ sp_api::impl_runtime_apis! {
         /// Fetch boot_nodes for this para id
         fn boot_nodes(para_id: ParaId) -> Vec<Vec<u8>> {
             DataPreservers::assignments_profiles(para_id)
-                .filter(|profile| profile.mode == pallet_data_preservers::ProfileMode::Bootnode)
-                .map(|profile| profile.url.into())
+                .filter_map(|profile| profile.bootnode_url.map(Into::into))
                 .collect()
         }
     }

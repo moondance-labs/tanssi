@@ -131,7 +131,7 @@ services-payment-rpc = { path = "client/services-payment" }
 stream-payment-rpc = { path = "client/stream-payment" }
 tc-consensus = { path = "client/consensus" }
 tc-orchestrator-chain-interface-through-rpc = { path = "client/orchestrator-chain-interface-through-rpc" }
-tc-service-container-chain-rpc-provider = { path = "client/service-container-chain-rpc-provider" }
+tc-service-container-chain-data-preserver = { path = "client/service-container-chain-data-preserver" }
 tc-service-container-chain-spawner = { path = "client/service-container-chain-spawner" }
 tc-service-orchestrator-chain = { path = "client/service-orchestrator-chain" }
 
@@ -313,6 +313,7 @@ xcm-runtime-apis = { git = "https://github.com/moondance-labs/polkadot-sdk", bra
 
 
 # Bridges (wasm)
+alloy-core = { version = "1.1.0", default-features = false }
 alloy-sol-types = { version = "0.4.2", default-features = false }
 milagro-bls = { package = "snowbridge-milagro-bls", version = "1.5.4", default-features = false }
 snowbridge-beacon-primitives = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
@@ -384,6 +385,7 @@ pallet-evm = { git = "https://github.com/moondance-labs/frontier", branch = "tan
 pallet-evm-chain-id = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 pallet-evm-precompile-modexp = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 pallet-evm-precompile-sha3fips = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
+pallet-evm-precompile-sha3fips-benchmarking = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 pallet-evm-precompile-simple = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 precompile-utils = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 

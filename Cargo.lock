@@ -2188,7 +2188,7 @@ checksum = "7c74b8349d32d297c9134b8c88677813a227df8f779daa29bfc29c183fe3dca6"
 
 [[package]]
 name = "container-chain-frontier-node"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
@@ -2278,7 +2278,7 @@ dependencies = [
  "substrate-prometheus-endpoint",
  "tc-consensus",
  "tc-orchestrator-chain-interface-through-rpc",
- "tc-service-container-chain-rpc-provider",
+ "tc-service-container-chain-data-preserver",
  "tc-service-container-chain-spawner",
  "tp-traits",
  "url",
@@ -2286,7 +2286,7 @@ dependencies = [
 
 [[package]]
 name = "container-chain-simple-node"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
@@ -2362,7 +2362,7 @@ dependencies = [
  "substrate-prometheus-endpoint",
  "tc-consensus",
  "tc-orchestrator-chain-interface-through-rpc",
- "tc-service-container-chain-rpc-provider",
+ "tc-service-container-chain-data-preserver",
  "tc-service-container-chain-spawner",
  "tokio",
  "url",
@@ -2416,6 +2416,7 @@ dependencies = [
  "pallet-evm-precompile-modexp",
  "pallet-evm-precompile-proxy",
  "pallet-evm-precompile-sha3fips",
+ "pallet-evm-precompile-sha3fips-benchmarking",
  "pallet-evm-precompile-simple",
  "pallet-evm-precompile-xcm",
  "pallet-evm-precompile-xcm-utils",
@@ -9164,7 +9165,7 @@ checksum = "43794a0ace135be66a25d3ae77d41b91615fb68ae937f904090203e81f755b65"
 
 [[package]]
 name = "node-common"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "async-channel 1.9.0",
  "async-io 1.13.0",
@@ -10502,6 +10503,18 @@ dependencies = [
  "fp-evm",
  "frame-support",
  "pallet-evm",
+ "tiny-keccak",
+]
+
+[[package]]
+name = "pallet-evm-precompile-sha3fips-benchmarking"
+version = "6.0.0-dev"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506-with-generic-message-processing#0d951df46c52dbdfc5791eba522f66f852d8c795"
+dependencies = [
+ "frame-benchmarking",
+ "frame-system",
+ "pallet-evm-precompile-sha3fips",
+ "sp-runtime",
  "tiny-keccak",
 ]
 
@@ -17673,6 +17686,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "snowbridge-pallet-outbound-queue-v2"
+version = "0.2.0"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2506-with-generic-message-processing#f01c39fbd1f641e3e771c83c6d882445f27e2a3c"
+dependencies = [
+ "alloy-core",
+ "bp-relayers",
+ "ethabi-decode",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "hex-literal",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "snowbridge-beacon-primitives",
+ "snowbridge-core",
+ "snowbridge-merkle-tree",
+ "snowbridge-outbound-queue-primitives",
+ "snowbridge-verification-primitives",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "staging-xcm",
+ "staging-xcm-builder",
+ "staging-xcm-executor",
+]
+
+[[package]]
 name = "snowbridge-pallet-system"
 version = "0.14.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2506-with-generic-message-processing#f01c39fbd1f641e3e771c83c6d882445f27e2a3c"
@@ -19731,7 +19774,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-node"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
@@ -19838,7 +19881,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-relay"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "color-eyre",
  "polkadot-core-primitives",
@@ -19857,7 +19900,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-relay-cli"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "clap",
  "frame-benchmarking-cli",
@@ -19898,7 +19941,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-relay-service"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "assert_matches",
  "async-io 1.13.0",
@@ -20209,8 +20252,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "tc-service-container-chain-rpc-provider"
-version = "0.16.0"
+name = "tc-service-container-chain-data-preserver"
+version = "0.17.0"
 dependencies = [
  "async-trait",
  "clap",
@@ -20245,7 +20288,7 @@ dependencies = [
 
 [[package]]
 name = "tc-service-container-chain-spawner"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "async-backing-primitives",
  "async-trait",
@@ -20316,7 +20359,7 @@ dependencies = [
 
 [[package]]
 name = "tc-service-orchestrator-chain"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "async-trait",
  "chrono",
@@ -20867,6 +20910,9 @@ dependencies = [
 name = "tp-bridge"
 version = "0.1.0"
 dependencies = [
+ "alloy-core",
+ "assert_matches",
+ "bp-relayers",
  "cumulus-primitives-core",
  "dp-chain-state-snapshot",
  "dp-container-chain-genesis-data",
@@ -20877,7 +20923,9 @@ dependencies = [
  "impl-trait-for-tuples",
  "log",
  "macro_rules_attribute",
+ "pallet-balances",
  "pallet-external-validators",
+ "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",
  "serde",
@@ -20886,8 +20934,10 @@ dependencies = [
  "snowbridge-inbound-queue-primitives",
  "snowbridge-outbound-queue-primitives",
  "snowbridge-pallet-outbound-queue",
+ "snowbridge-pallet-outbound-queue-v2",
  "snowbridge-pallet-system",
  "sp-core",
+ "sp-io",
  "sp-runtime",
  "staging-xcm",
  "staging-xcm-builder",

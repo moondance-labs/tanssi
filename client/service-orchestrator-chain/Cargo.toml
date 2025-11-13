@@ -3,7 +3,7 @@ name = "tc-service-orchestrator-chain"
 authors = { workspace = true }
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.16.0"
+version = "0.17.0"
 
 [lints]
 workspace = true
@@ -106,3 +106,5 @@ try-runtime = [
 
 fast-runtime = [ "dancebox-runtime/fast-runtime" ]
 metadata-hash = [ "dancebox-runtime/metadata-hash" ]
+
+include-git-hash-in-version = [ "node-common/include-git-hash-in-version", "tc-service-container-chain-spawner/include-git-hash-in-version" ]
