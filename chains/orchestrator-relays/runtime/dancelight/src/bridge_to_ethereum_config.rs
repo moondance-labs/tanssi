@@ -25,8 +25,8 @@ use {
         NativeContainerTokensProcessor, NativeTokenTransferMessageProcessor,
     },
     tp_bridge::{
-        generic_token_message_processor::GenericTokenMessageProcessor,
-        symbiotic_message_processor::SymbioticMessageProcessor,
+        symbiotic_message_processor::SymbioticInboundMessageProcessorV1,
+        GenericTokenInboundMessageProcessor,
     },
 };
 
@@ -297,8 +297,8 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type AssetTransactor = AssetTransactor;
     #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (
-        SymbioticMessageProcessor<Self>,
-        GenericTokenMessageProcessor<
+        SymbioticInboundMessageProcessorV1<Self>,
+        GenericTokenInboundMessageProcessor<
             Self,
             (NativeTokensProcessor, NativeContainerProcessor),
             EthTokensProcessor,
