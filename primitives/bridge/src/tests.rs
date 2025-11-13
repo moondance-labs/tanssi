@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use frame_support::{assert_noop, assert_ok};
+use snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
 use snowbridge_outbound_queue_primitives::v1::AgentExecuteCommand;
 use {super::*, hex_literal::hex};
 
@@ -174,5 +176,632 @@ mod xcm_converter {
                 topic
             )
         )
+    }
+}
+
+mod custom_message_validator {
+    use super::*;
+    use crate::{
+        mock::{new_test_ext, MaxMessagePayloadSize, OwnLocation, Test},
+        SendError,
+    };
+
+    #[test]
+    fn test_message_validator_v1_successful() {
+        // Correct channels and such do work
+        new_test_ext().execute_with(|| {
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let result = TanssiEthMessageValidatorV1::<Test>::validate(&tanssi_message);
+            assert!(result.is_ok());
+        });
+    }
+
+    #[test]
+    fn test_message_validator_v1_wrong_channel() {
+        new_test_ext().execute_with(|| {
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: H256::default().into(),
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            assert_noop!(
+                TanssiEthMessageValidatorV1::<Test>::validate(&tanssi_message),
+                SendError::InvalidChannel
+            );
+        });
+    }
+
+    #[test]
+    fn test_assert_error_max_payload() {
+        new_test_ext().execute_with(|| {
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: H256::default().into(),
+                command: Command::Test(vec![0u8; (MaxMessagePayloadSize::get() + 1) as usize]),
+            };
+
+            assert_noop!(
+                TanssiEthMessageValidatorV1::<Test>::validate(&tanssi_message),
+                SendError::MessageTooLarge
+            );
+        });
+    }
+
+    #[test]
+    fn test_assert_succesful_v2() {
+        new_test_ext().execute_with(|| {
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let result =
+                TanssiEthMessageValidatorV2::<Test, OwnLocation>::validate(&tanssi_message);
+            assert!(result.is_ok());
+        });
+    }
+
+    #[test]
+    fn test_assert_error_max_payload_v2() {
+        new_test_ext().execute_with(|| {
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: H256::default().into(),
+                command: Command::Test(vec![0u8; (MaxMessagePayloadSize::get() + 1) as usize]),
+            };
+
+            assert_noop!(
+                TanssiEthMessageValidatorV2::<Test, OwnLocation>::validate(&tanssi_message),
+                SendError::MessageTooLarge
+            );
+        });
+    }
+
+    #[test]
+    fn test_assert_succesful_v2_in_versioned() {
+        new_test_ext().execute_with(|| {
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let (versioned_ticket, _fee) = VersionedTanssiEthMessageValidator::<
+                Test,
+                OwnLocation,
+                frame_support::traits::ConstBool<true>,
+            >::validate(&tanssi_message)
+            .unwrap();
+            assert!(matches!(versioned_ticket, VersionedTanssiTicket::V2(_)));
+        });
+    }
+
+    #[test]
+    fn test_assert_succesful_v1_in_versioned() {
+        new_test_ext().execute_with(|| {
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let (versioned_ticket, _fee) = VersionedTanssiEthMessageValidator::<
+                Test,
+                OwnLocation,
+                frame_support::traits::ConstBool<false>,
+            >::validate(&tanssi_message)
+            .unwrap();
+            assert!(matches!(versioned_ticket, VersionedTanssiTicket::V1(_)));
+        });
+    }
+}
+
+mod custom_message_delivers {
+    use super::*;
+    use crate::mock::{
+        last_delivered_message_queue, new_test_ext, run_to_block, MockGetAggregateMessageOrigin,
+        OwnLocation, RuntimeEvent, System, Test,
+    };
+    use assert_matches::assert_matches;
+    use snowbridge_outbound_queue_primitives::v2::Message as MessageV2;
+
+    #[test]
+    fn test_message_deliver_v1_successful() {
+        // Correct channels and such do work
+        new_test_ext().execute_with(|| {
+            // otherwise no events
+            run_to_block(1);
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let (ticket, _fee) =
+                TanssiEthMessageValidatorV1::<Test>::validate(&tanssi_message).unwrap();
+
+            let result = TanssiEthMessageSenderV1::<Test, MockGetAggregateMessageOrigin>::deliver(
+                ticket.clone(),
+            );
+
+            assert!(result.is_ok());
+            assert_eq!(
+                last_delivered_message_queue(),
+                ticket.message.as_bounded_slice().to_vec()
+            );
+            // assert event has been emited
+            System::assert_last_event(RuntimeEvent::EthereumOutboundQueue(
+                snowbridge_pallet_outbound_queue::Event::MessageQueued {
+                    id: ticket.message_id,
+                },
+            ));
+        });
+    }
+
+    #[test]
+    fn test_message_deliver_v2_successful() {
+        new_test_ext().execute_with(|| {
+            // otherwise no events
+            run_to_block(1);
+
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let (ticket, _fee) =
+                TanssiEthMessageValidatorV2::<Test, OwnLocation>::validate(&tanssi_message)
+                    .unwrap();
+            let result = TanssiEthMessageSenderV2::<Test, MockGetAggregateMessageOrigin>::deliver(
+                ticket.clone(),
+            );
+
+            assert!(result.is_ok());
+
+            assert_eq!(
+                last_delivered_message_queue(),
+                ticket.message.as_bounded_slice().to_vec()
+            );
+
+            // assert event has been emited
+            System::assert_last_event(RuntimeEvent::EthereumOutboundQueueV2(
+                snowbridge_pallet_outbound_queue_v2::Event::MessageQueued {
+                    message: MessageV2 {
+                        origin: ticket.origin,
+                        fee: ticket.fee,
+                        id: ticket.id,
+                        commands: vec![].try_into().unwrap(),
+                    },
+                },
+            ));
+        });
+    }
+
+    #[test]
+    fn test_message_versioned_deliver_is_succesful_v1() {
+        // Correct channels and such do work
+        new_test_ext().execute_with(|| {
+            // otherwise no events
+            run_to_block(1);
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let (versioned_ticket, _fee) = VersionedTanssiEthMessageValidator::<
+                Test,
+                OwnLocation,
+                frame_support::traits::ConstBool<false>,
+            >::validate(&tanssi_message)
+            .unwrap();
+
+            let result =
+                VersionedTanssiEthMessageSender::<Test, MockGetAggregateMessageOrigin>::deliver(
+                    versioned_ticket.clone(),
+                );
+
+            assert!(result.is_ok());
+            assert_matches!(versioned_ticket, VersionedTanssiTicket::V1(_));
+
+            // assert event has been emited
+            System::assert_last_event(RuntimeEvent::EthereumOutboundQueue(
+                snowbridge_pallet_outbound_queue::Event::MessageQueued {
+                    id: versioned_ticket.message_id(),
+                },
+            ));
+        });
+    }
+
+    #[test]
+    fn test_message_versioned_deliver_is_succesful_v2() {
+        // Correct channels and such do work
+        new_test_ext().execute_with(|| {
+            // otherwise no events
+            run_to_block(1);
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let (versioned_ticket, _fee) = VersionedTanssiEthMessageValidator::<
+                Test,
+                OwnLocation,
+                frame_support::traits::ConstBool<true>,
+            >::validate(&tanssi_message)
+            .unwrap();
+            assert_matches!(versioned_ticket, VersionedTanssiTicket::V2(_));
+
+            let result =
+                VersionedTanssiEthMessageSender::<Test, MockGetAggregateMessageOrigin>::deliver(
+                    versioned_ticket.clone(),
+                );
+
+            assert!(result.is_ok());
+            let event = System::events().pop().expect("Expected event").event;
+
+            assert_matches!(
+                event,
+                RuntimeEvent::EthereumOutboundQueueV2(
+                    snowbridge_pallet_outbound_queue_v2::Event::MessageQueued { ref message }
+                ) if message.id == versioned_ticket.message_id()
+            );
+        });
+    }
+}
+
+mod custom_message_processors {
+    use super::*;
+    use crate::mock::{
+        new_test_ext, run_to_block, MaxMessagesPerBlock, MockAggregateMessageOrigin, OwnLocation,
+        RuntimeEvent, System, Test,
+    };
+    use assert_matches::assert_matches;
+    use frame_support::{
+        traits::{
+            ProcessMessage,
+            ProcessMessageError::{Corrupt, Overweight, Yield},
+        },
+        weights::WeightMeter,
+    };
+    use sp_runtime::Weight;
+
+    #[test]
+    fn test_message_process_v1_successful() {
+        // Correct channels and such do work
+        new_test_ext().execute_with(|| {
+            // otherwise no events
+            run_to_block(1);
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let (ticket, _fee) =
+                TanssiEthMessageValidatorV1::<Test>::validate(&tanssi_message).unwrap();
+
+            assert_ok!(
+                TanssiOutboundEthMessageProcessorV1::<Test>::process_message(
+                    &ticket.message.as_bounded_slice().to_vec(),
+                    MockAggregateMessageOrigin::SnowbridgeTest(ticket.channel_id),
+                    &mut WeightMeter::new(),
+                    &mut [0u8; 32]
+                )
+            );
+
+            let event = System::events().pop().expect("Expected event").event;
+
+            assert_matches!(
+                event,
+                RuntimeEvent::EthereumOutboundQueue(
+                    snowbridge_pallet_outbound_queue::Event::MessageAccepted { id,.. }
+                ) if id == ticket.message_id()
+            );
+        });
+    }
+
+    #[test]
+    fn test_message_process_v1_non_succesful_max_messages_per_block() {
+        // Correct channels and such do work
+        new_test_ext().execute_with(|| {
+            // otherwise no events
+            run_to_block(1);
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let (ticket, _fee) =
+                TanssiEthMessageValidatorV1::<Test>::validate(&tanssi_message).unwrap();
+
+            for _ in 0..MaxMessagesPerBlock::get() {
+                snowbridge_pallet_outbound_queue::MessageLeaves::<Test>::append(H256::zero())
+            }
+
+            assert_noop!(
+                TanssiOutboundEthMessageProcessorV1::<Test>::process_message(
+                    &ticket.message.as_bounded_slice().to_vec(),
+                    MockAggregateMessageOrigin::SnowbridgeTest(ticket.channel_id),
+                    &mut WeightMeter::new(),
+                    &mut [0u8; 32]
+                ),
+                Yield
+            );
+        });
+    }
+
+    #[test]
+    fn test_message_process_v1_non_succesful_if_not_correctly_decode() {
+        // Correct channels and such do work
+        new_test_ext().execute_with(|| {
+            // otherwise no events
+            run_to_block(1);
+
+            let message = [1u8; 32];
+            assert_noop!(
+                TanssiOutboundEthMessageProcessorV1::<Test>::process_message(
+                    &message.to_vec(),
+                    MockAggregateMessageOrigin::SnowbridgeTest(H256::default().into()),
+                    &mut WeightMeter::new(),
+                    &mut [0u8; 32]
+                ),
+                Corrupt
+            );
+        });
+    }
+
+    #[test]
+    fn test_message_process_v1_non_succesful_if_overweight() {
+        // Correct channels and such do work
+        new_test_ext().execute_with(|| {
+            // otherwise no events
+            run_to_block(1);
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let (ticket, _fee) =
+                TanssiEthMessageValidatorV1::<Test>::validate(&tanssi_message).unwrap();
+
+            let result = TanssiOutboundEthMessageProcessorV1::<Test>::process_message(
+                &ticket.message.as_bounded_slice().to_vec(),
+                MockAggregateMessageOrigin::SnowbridgeTest(ticket.channel_id),
+                &mut WeightMeter::with_limit(Weight::default()),
+                &mut [0u8; 32],
+            );
+            assert!(matches!(result, Err(Overweight(_))));
+        });
+    }
+
+    #[test]
+    fn test_message_process_v2_successful() {
+        // Correct channels and such do work
+        new_test_ext().execute_with(|| {
+            // otherwise no events
+            run_to_block(1);
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let (ticket, _fee) =
+                TanssiEthMessageValidatorV2::<Test, OwnLocation>::validate(&tanssi_message)
+                    .unwrap();
+
+            assert_ok!(
+                TanssiOutboundEthMessageProcessorV2::<Test, OwnLocation>::process_message(
+                    &ticket.message.as_bounded_slice().to_vec(),
+                    MockAggregateMessageOrigin::SnowbridgeTestV2(ticket.origin),
+                    &mut WeightMeter::new(),
+                    &mut [0u8; 32]
+                )
+            );
+
+            let event = System::events().pop().expect("Expected event").event;
+
+            assert_matches!(
+                event,
+                RuntimeEvent::EthereumOutboundQueueV2(
+                    snowbridge_pallet_outbound_queue_v2::Event::MessageAccepted { id,.. }
+                ) if id == ticket.message_id()
+            );
+        });
+    }
+
+    #[test]
+    fn test_message_process_v2_non_succesful_max_messages_per_block() {
+        // Correct channels and such do work
+        new_test_ext().execute_with(|| {
+            // otherwise no events
+            run_to_block(1);
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let (ticket, _fee) =
+                TanssiEthMessageValidatorV2::<Test, OwnLocation>::validate(&tanssi_message)
+                    .unwrap();
+
+            for _ in 0..MaxMessagesPerBlock::get() {
+                snowbridge_pallet_outbound_queue_v2::MessageLeaves::<Test>::append(H256::zero())
+            }
+
+            assert_noop!(
+                TanssiOutboundEthMessageProcessorV2::<Test, OwnLocation>::process_message(
+                    &ticket.message.as_bounded_slice().to_vec(),
+                    MockAggregateMessageOrigin::SnowbridgeTestV2(ticket.origin),
+                    &mut WeightMeter::new(),
+                    &mut [0u8; 32]
+                ),
+                Yield
+            );
+        });
+    }
+
+    #[test]
+    fn test_message_process_v2_non_succesful_if_not_correctly_decode() {
+        // Correct channels and such do work
+        new_test_ext().execute_with(|| {
+            // otherwise no events
+            run_to_block(1);
+
+            let message = [1u8; 32];
+            assert_noop!(
+                TanssiOutboundEthMessageProcessorV2::<Test, OwnLocation>::process_message(
+                    &message.to_vec(),
+                    MockAggregateMessageOrigin::SnowbridgeTest(H256::default().into()),
+                    &mut WeightMeter::new(),
+                    &mut [0u8; 32]
+                ),
+                Corrupt
+            );
+        });
+    }
+
+    #[test]
+    fn test_message_process_v2_non_succesful_if_overweight() {
+        // Correct channels and such do work
+        new_test_ext().execute_with(|| {
+            // otherwise no events
+            run_to_block(1);
+            let tanssi_message = TanssiMessage {
+                id: None,
+                channel_id: PRIMARY_GOVERNANCE_CHANNEL,
+                command: Command::ReportRewards {
+                    external_idx: 0u64,
+                    era_index: 0u32,
+                    total_points: 0u128,
+                    tokens_inflated: 0u128,
+                    rewards_merkle_root: H256::default(),
+                    token_id: H256::default(),
+                },
+            };
+
+            let (ticket, _fee) =
+                TanssiEthMessageValidatorV2::<Test, OwnLocation>::validate(&tanssi_message)
+                    .unwrap();
+
+            let result = TanssiOutboundEthMessageProcessorV2::<Test, OwnLocation>::process_message(
+                &ticket.message.as_bounded_slice().to_vec(),
+                MockAggregateMessageOrigin::SnowbridgeTestV2(ticket.origin),
+                &mut WeightMeter::with_limit(Weight::default()),
+                &mut [0u8; 32],
+            );
+            assert!(matches!(result, Err(Overweight(_))));
+        });
     }
 }

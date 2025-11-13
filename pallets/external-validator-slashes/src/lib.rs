@@ -53,7 +53,7 @@ use {
 
 use {
     snowbridge_core::ChannelId,
-    tp_bridge::{Command, DeliverMessage, Message, SlashData, TicketInfo, ValidateMessage},
+    tp_bridge::{Command, DeliverMessage, SlashData, TanssiMessage, TicketInfo, ValidateMessage},
 };
 
 pub use pallet::*;
@@ -344,7 +344,7 @@ pub mod pallet {
                 // Validate
                 let channel_id: ChannelId = snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
 
-                let outbound_message = Message {
+                let outbound_message = TanssiMessage {
                     id: None,
                     channel_id,
                     command,
@@ -618,7 +618,7 @@ impl<T: Config> Pallet<T> {
 
         let channel_id: ChannelId = snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
 
-        let outbound_message = Message {
+        let outbound_message = TanssiMessage {
             id: None,
             channel_id,
             command: command.clone(),
