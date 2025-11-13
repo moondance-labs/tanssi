@@ -63,25 +63,7 @@ use {
     tokio_util::sync::CancellationToken,
 };
 
-#[allow(deprecated)]
-use sc_executor::NativeElseWasmExecutor;
-
 type FullBackend = TFullBackend<Block>;
-
-/// Native executor type.
-pub struct ParachainNativeExecutor;
-
-impl sc_executor::NativeExecutionDispatch for ParachainNativeExecutor {
-    type ExtendHostFunctions = ParachainHostFunctions;
-
-    fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
-        dancebox_runtime::api::dispatch(method, data)
-    }
-
-    fn native_version() -> sc_executor::NativeVersion {
-        dancebox_runtime::native_version()
-    }
-}
 
 #[derive(Default, Copy, Clone)]
 pub struct ContainerChainNodeConfig<RuntimeApi>(PhantomData<RuntimeApi>);
@@ -142,8 +124,7 @@ where
 impl<BI> ParachainBlockImportMarker for OrchestratorParachainBlockImport<BI> {}
 
 // Orchestrator chain types
-#[allow(deprecated)]
-pub type ParachainExecutor = NativeElseWasmExecutor<ParachainNativeExecutor>;
+pub type ParachainExecutor = WasmExecutor<ParachainHostFunctions>;
 pub type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 pub type ParachainBackend = TFullBackend<Block>;
 pub type DevParachainBlockImport = OrchestratorParachainBlockImport<Arc<ParachainClient>>;

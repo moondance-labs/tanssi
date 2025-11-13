@@ -39,11 +39,6 @@ describeSuite({
             id: "T01",
             title: "Should fail with an invalid metadata hash",
             test: async ({ skip }) => {
-                // We disable dancebox, until we switch from native runtime: https://github.com/moondance-labs/tanssi/pull/1060#issue-3093353402
-                if (isDancebox(polkadotJs)) {
-                    skip();
-                }
-
                 const withMetadataOpts: Partial<SignerOptions> = {
                     mode: 1,
                     metadataHash: `0x${"00".repeat(32)}`,
@@ -67,11 +62,6 @@ describeSuite({
             id: "T02",
             title: "Should succeed with a valid metadata hash",
             test: async ({ skip }) => {
-                // We disable dancebox, until we switch from native runtime: https://github.com/moondance-labs/tanssi/pull/1060#issue-3093353402
-                if (isDancebox(polkadotJs)) {
-                    skip();
-                }
-
                 await context.createBlock();
 
                 const withMetadataOpts = {
