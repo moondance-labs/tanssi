@@ -21,6 +21,7 @@ use cumulus_client_consensus_aura::collators::RelayParentData;
 use {
     crate::{find_pre_digest, AuthorityId, OrchestratorAuraWorkerAuxData},
     cumulus_client_collator::service::ServiceInterface as CollatorServiceInterface,
+    cumulus_client_consensus_aura::collators::RelayParentData,
     cumulus_client_consensus_common::ParachainCandidate,
     cumulus_client_consensus_proposer::ProposerInterface,
     cumulus_client_parachain_inherent::{ParachainInherentData, ParachainInherentDataProvider},

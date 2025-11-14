@@ -25,8 +25,8 @@ use {
         NativeContainerTokensProcessor, NativeTokenTransferMessageProcessor,
     },
     tp_bridge::{
-        generic_token_message_processor::GenericTokenMessageProcessor,
-        symbiotic_message_processor::SymbioticMessageProcessor,
+        symbiotic_message_processor::SymbioticInboundMessageProcessorV1,
+        GenericTokenInboundMessageProcessor,
     },
 };
 
@@ -266,6 +266,7 @@ pub type NativeTokensProcessor = NativeTokenTransferMessageProcessor<Runtime>;
 #[cfg(not(feature = "runtime-benchmarks"))]
 pub type NativeContainerProcessor = NativeContainerTokensProcessor<
     Runtime,
+    AssetTransactor,
     dancelight_runtime_constants::snowbridge::EthereumLocation,
     dancelight_runtime_constants::snowbridge::EthereumNetwork,
     InboundQueuePalletInstance,
@@ -296,8 +297,8 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type AssetTransactor = AssetTransactor;
     #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (
-        SymbioticMessageProcessor<Self>,
-        GenericTokenMessageProcessor<
+        SymbioticInboundMessageProcessorV1<Self>,
+        GenericTokenInboundMessageProcessor<
             Self,
             (NativeTokensProcessor, NativeContainerProcessor),
             EthTokensProcessor,

@@ -290,21 +290,37 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// A new para id has been registered. [para_id]
-        ParaIdRegistered { para_id: ParaId },
+        ParaIdRegistered {
+            para_id: ParaId,
+        },
         /// A para id has been deregistered. [para_id]
-        ParaIdDeregistered { para_id: ParaId },
+        ParaIdDeregistered {
+            para_id: ParaId,
+        },
         /// A new para id is now valid for collating. [para_id]
-        ParaIdValidForCollating { para_id: ParaId },
+        ParaIdValidForCollating {
+            para_id: ParaId,
+        },
         /// A para id has been paused from collating.
-        ParaIdPaused { para_id: ParaId },
+        ParaIdPaused {
+            para_id: ParaId,
+        },
         /// A para id has been unpaused.
-        ParaIdUnpaused { para_id: ParaId },
+        ParaIdUnpaused {
+            para_id: ParaId,
+        },
         /// Parathread params changed
-        ParathreadParamsChanged { para_id: ParaId },
+        ParathreadParamsChanged {
+            para_id: ParaId,
+        },
         /// Para manager has changed
         ParaManagerChanged {
             para_id: ParaId,
             manager_address: T::AccountId,
+        },
+        // Deposit has updated
+        DepositUpdated {
+            para_id: ParaId,
         },
     }
 
@@ -750,6 +766,64 @@ pub mod pallet {
 
             Ok(())
         }
+
+        /// Recalculate and reconcile the reserved deposit for `para_id`.
+        ///
+        /// If the required amount differs from the currently held deposit,
+        /// this extrinsic increases or releases the difference on the creator's account.
+        #[pallet::call_index(11)]
+        #[pallet::weight(T::WeightInfo::poke_deposit())]
+        pub fn poke_deposit(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
+            let who = ensure_signed(origin)?;
+
+            // Mutate the deposit entry in-place
+            RegistrarDeposit::<T>::try_mutate_exists(para_id, |maybe_info| -> DispatchResult {
+                let info = maybe_info.as_mut().ok_or(Error::<T>::ParaIdNotRegistered)?;
+
+                // Only the original creator of the para can poke their deposit.
+                ensure!(info.creator == who, Error::<T>::NotParaCreator);
+
+                // Retrieve the genesis data and calculate the cost based on its encoded size.
+                let genesis =
+                    ParaGenesisData::<T>::get(para_id).ok_or(Error::<T>::ParaIdNotRegistered)?;
+                let required = Self::get_genesis_cost(genesis.encoded_size());
+
+                let current = info.deposit;
+
+                // If the current deposit already matches the required one, do nothing.
+                if required == current {
+                    return Ok(());
+                }
+
+                // Adjust the held amount depending on whether we need to increase or decrease
+                if required > current {
+                    // The deposit must increase
+                    let delta = required.saturating_sub(current);
+
+                    // Attempt to hold the additional amount from the creator's balance.
+                    T::Currency::hold(&HoldReason::RegistrarDeposit.into(), &info.creator, delta)
+                        .map_err(|_| Error::<T>::NotSufficientDeposit)?;
+                } else {
+                    // The deposit must decrease
+                    let delta = current.saturating_sub(required);
+
+                    // Release the exact delta from the hold.
+                    T::Currency::release(
+                        &HoldReason::RegistrarDeposit.into(),
+                        &info.creator,
+                        delta,
+                        Precision::Exact,
+                    )?;
+                }
+
+                // Update the stored deposit value
+                info.deposit = required;
+
+                Self::deposit_event(Event::DepositUpdated { para_id });
+
+                Ok(())
+            })
+        }
     }
 
     pub struct SessionChangeOutcome<T: Config> {
@@ -917,13 +991,11 @@ pub mod pallet {
                 Self::deposit_event(Event::ParaIdDeregistered { para_id });
                 // Cleanup immediately
                 Self::cleanup_deregistered_para_id(para_id);
-                BufferedParasToDeregister::<T>::try_mutate(|v| v.try_push(para_id)).map_err(
-                    |_e| {
-                        DispatchError::Other(
-                            "Failed to add paraId to deregistration list: buffer is full",
-                        )
-                    },
-                )?;
+                BufferedParasToDeregister::<T>::try_append(para_id).map_err(|_e| {
+                    DispatchError::Other(
+                        "Failed to add paraId to deregistration list: buffer is full",
+                    )
+                })?;
             } else {
                 Self::schedule_paused_parachain_change(|para_ids, paused| {
                     // We have to find out where, in the sorted vec the para id is, if anywhere.
@@ -1285,9 +1357,7 @@ pub mod pallet {
                         for para_id in new_paras {
                             Self::cleanup_deregistered_para_id(*para_id);
                             removed_para_ids.insert(*para_id);
-                            if let Err(id) =
-                                BufferedParasToDeregister::<T>::try_mutate(|v| v.try_push(*para_id))
-                            {
+                            if let Err(id) = BufferedParasToDeregister::<T>::try_append(*para_id) {
                                 log::error!(
                                     target: LOG_TARGET,
                                     "Failed to add paraId {:?} to deregistration list",
