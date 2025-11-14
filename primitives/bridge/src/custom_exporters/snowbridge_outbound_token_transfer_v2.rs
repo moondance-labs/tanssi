@@ -242,12 +242,11 @@ where
         // this instruction cannot be reached unless export is used
         // or is it also used in send?
 
-        let fee = self.try_extract_fee()?;
-        log::info!("fee is {:?}", fee);
+        let (fee, claimee_amount) = self.try_extract_fee()?;
         let result = match self.peek() {
             Ok(ReserveAssetDeposited { .. }) => self.make_mint_foreign_token_command(),
             // Get withdraw/deposit and make native tokens create message.
-            Ok(WithdrawAsset { .. }) => self.make_unlock_native_token_command(),
+            Ok(WithdrawAsset { .. }) => self.make_unlock_native_token_command(claimee_amount),
             Err(e) => Err(e),
             _ => return Err(XcmConverterError::UnexpectedInstruction),
         }?;
@@ -260,7 +259,7 @@ where
         Ok((result, fee.into()))
     }
 
-    fn try_extract_fee(&mut self) -> Result<Asset, XcmConverterError> {
+    fn try_extract_fee(&mut self) -> Result<(Asset, u128), XcmConverterError> {
         use XcmConverterError::*;
 
         let reserved_fee_assets = match_expression!(self.next()?, ReserveAssetDeposited(fee), fee)
@@ -329,10 +328,13 @@ where
 
         ensure!(fee_amount >= *min_reward_amount, InvalidFeeAsset);
 
-        Ok(fee_asset_reanchored)
+        Ok((fee_asset_reanchored, fee_amount))
     }
 
-    pub fn make_unlock_native_token_command(&mut self) -> Result<Message, XcmConverterError> {
+    pub fn make_unlock_native_token_command(
+        &mut self,
+        claimee_amount: u128,
+    ) -> Result<Message, XcmConverterError> {
         use XcmConverterError::*;
 
         // Get the fee asset from ReserveAssetDeposited, if any.
@@ -422,7 +424,7 @@ where
         let message = Message {
             id: (*topic_id).into(),
             origin,
-            fee: u128::zero(),
+            fee: claimee_amount,
             commands: BoundedVec::try_from(commands).map_err(|_| TooManyCommands)?,
         };
 
