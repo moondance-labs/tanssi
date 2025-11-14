@@ -1,8 +1,13 @@
 # demo of using zombienet with kubernetes
-# this cannot be run using moonwall because moonwall does not support kubernetes provider
+# this cannot be run using moonwall because moonwall does not support kubernetes provider yet
 # install zombienet binary and run:
 #
-# zombienet-linux-x64 spawn configs/zombie_tanssi_relay_k8s_delay.toml --provider kubernetes --monitor
+# pidof kubectl # ensure that all the processes from previous runs are dead, if not, killall kubectl
+# zombienet-linux-x64 spawn configs/zombie_tanssi_relay_k8s_delay.toml --monitor
+#
+# last tested using zombienet version: 1.3.134
+# if you don't check for running kubectl first, you will see a cryptic error "child process exited"
+# that's because the port forwarding fails, and it fails because an old kubectl process is still using that port
 #
 # need to install microk8s to be able to run this on ubuntu
 #
@@ -20,11 +25,16 @@
 #
 # curl -sSL https://mirrors.chaos-mesh.org/v2.8.0/install.sh | bash -s -- --microk8s
 #
+# if you don't want to install chaos-mesh, just remove all the delay_network_settings from config
 
 [settings]
 timeout = 666
+provider = "kubernetes"
+# disable metrics because tanssi-node collators don't have metrics on startup
+node_verifier = "None"
 
 [relaychain]
+# TODO: local registry doesn't work yet, because of the glibc error in the docker image
 # for local testing, create a local registry running this (once)
 #
 # microk8s enable registry
@@ -44,7 +54,7 @@ timeout = 666
 #default_image = "moondancelabs/starlight:sha-fd3014ce-fast-runtime"
 
 # only the official releases work
-default_image = "moondancelabs/starlight:sha-d67cddab-opt"
+default_image = "moondancelabs/starlight:sha-11ebe106-opt"
 
 # command cannot be "tanssi-relay" because it is not in PATH
 # TODO: make docker image put tanssi-relay in /usr/local/bin/
@@ -59,11 +69,12 @@ default_args = [
     #"--wasmtime-precompiled=wasm"
 ]
 
-# chain spec needs to be manually generated using the scripts
+# chain spec needs to be manually generated using script
+# ./scripts/build-spec-dancelight-kubernetes.sh
 # TODO: with this chain-spec, collators cannot connect to the full node
 # relay chain validators find each other not sure how, maybe using the DHT magic
-# we can fix collators by modifying the bootnode url in the chain spec, or maybe trying again when our full nodes
-# support advertising through DHT. Because the full nodes are able to connect to the relay chain.
+# maybe trying again when our full nodes support advertising through DHT.
+# Because the full nodes are able to connect to the relay chain...
 chain_spec_path = "specs/tanssi-relay.json"
 #chain = "dancelight-local"
 [relaychain.default_delay_network_settings]
@@ -90,7 +101,7 @@ chain_spec_path = "specs/single-container-template-container-2000.json"
 [[parachains.collators]]
 name = "fullnode-2000"
 validator = false
-image = "moondancelabs/container-chain-simple-template:sha-85cf7586-opt"
+image = "moondancelabs/container-chain-simple-template:sha-11ebe106-opt"
 command = "/container-chain-template-simple/container-chain-simple-node"
 args = [
     "--no-hardware-benchmarks",
@@ -99,8 +110,7 @@ args = [
     "--pool-type=fork-aware",
 ]
 rpc_port = 9949
-p2p_port = 33049
-prometheus_port = 33102
+#prometheus_port = 33102
 
 [parachains.collators.delay_network_settings]
 latency =  "4000ms"
@@ -109,7 +119,7 @@ correlation = "100"
 
 [[parachains.collators]]
 name = "collator-01"
-image = "moondancelabs/tanssi:sha-d67cddab-opt"
+image = "moondancelabs/tanssi:sha-11ebe106-opt"
 command = "/tanssi/tanssi-node solo-chain"
 args = [
     "--no-hardware-benchmarks",
@@ -117,7 +127,10 @@ args = [
     #"--wasmtime-precompiled=wasm",
     "--pool-type=fork-aware"
 ]
-prometheus_port = 33102
+#prometheus_port = 33102
+# TODO: find a way to disable metrics for collators
+# because the metrics process only spawns after the collator is assigned to a chain, so at init it doesn't exist and
+# that breaks zombienet
 
 [[parachains]]
 id = 2001
@@ -126,7 +139,7 @@ chain_spec_path = "specs/single-container-template-container-2001.json"
 [[parachains.collators]]
 name = "fullnode-2001"
 validator = false
-image = "moondancelabs/container-chain-evm-template:sha-85cf7586-opt"
+image = "moondancelabs/container-chain-evm-template:sha-11ebe106-opt"
 command = "/container-chain-template-evm/container-chain-frontier-node"
 args = [
     "--no-hardware-benchmarks",
@@ -135,7 +148,6 @@ args = [
     "--pool-type=fork-aware",
 ]
 rpc_port = 9950
-p2p_port = 33050
 
 [parachains.collators.delay_network_settings]
 latency =  "4000ms"
