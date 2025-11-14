@@ -30,11 +30,11 @@ import type {
 import type { AnyNumber, IMethod, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, Call, H160, H256, MultiAddress, Perbill } from "@polkadot/types/interfaces/runtime";
 import type {
-    DancelightRuntimeAggregateMessageOrigin,
     DancelightRuntimeOriginCaller,
     DancelightRuntimeProxyType,
     DancelightRuntimeRuntimeParameters,
     DancelightRuntimeSessionKeys,
+    DancelightRuntimeTanssiAggregateMessageOrigin,
     DpContainerChainGenesisDataContainerChainGenesisData,
     FrameSupportPreimagesBounded,
     FrameSupportScheduleDispatchTime,
@@ -4054,7 +4054,7 @@ declare module "@polkadot/api-base/types/submittable" {
             executeOverweight: AugmentedSubmittable<
                 (
                     messageOrigin:
-                        | DancelightRuntimeAggregateMessageOrigin
+                        | DancelightRuntimeTanssiAggregateMessageOrigin
                         | { Ump: any }
                         | { Snowbridge: any }
                         | { SnowbridgeTanssi: any }
@@ -4064,7 +4064,7 @@ declare module "@polkadot/api-base/types/submittable" {
                     index: u32 | AnyNumber | Uint8Array,
                     weightLimit: SpWeightsWeightV2Weight | { refTime?: any; proofSize?: any } | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [DancelightRuntimeAggregateMessageOrigin, u32, u32, SpWeightsWeightV2Weight]
+                [DancelightRuntimeTanssiAggregateMessageOrigin, u32, u32, SpWeightsWeightV2Weight]
             >;
             /**
              * Remove a page which has no more messages remaining to be processed or is stale.
@@ -4072,7 +4072,7 @@ declare module "@polkadot/api-base/types/submittable" {
             reapPage: AugmentedSubmittable<
                 (
                     messageOrigin:
-                        | DancelightRuntimeAggregateMessageOrigin
+                        | DancelightRuntimeTanssiAggregateMessageOrigin
                         | { Ump: any }
                         | { Snowbridge: any }
                         | { SnowbridgeTanssi: any }
@@ -4080,7 +4080,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | Uint8Array,
                     pageIndex: u32 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [DancelightRuntimeAggregateMessageOrigin, u32]
+                [DancelightRuntimeTanssiAggregateMessageOrigin, u32]
             >;
             /**
              * Generic tx
