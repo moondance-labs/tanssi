@@ -17,11 +17,13 @@
 #![cfg(test)]
 
 use {
-    crate::{tests::common::*, EthereumSystemV2},
+    crate::{filter_events, tests::common::*, EthereumSystemV2, RuntimeEvent},
     alloc::vec,
     dancelight_runtime_constants::DANCELIGHT_GENESIS_HASH,
     frame_support::{assert_noop, assert_ok, error::BadOrigin},
     snowbridge_core::reward::MessageId,
+    snowbridge_outbound_queue_primitives::{v2::Initializer, OperatingMode},
+    sp_core::H160,
     xcm::{
         latest::{prelude::*, Junctions::*, Location},
         VersionedLocation,
@@ -73,8 +75,86 @@ fn test_sudo_can_register_ethereum_system_v2() {
                 ),
                 Some(reanchored_location)
             );
+
+            assert_eq!(
+                filter_events!(RuntimeEvent::EthereumOutboundQueueV2(
+                    snowbridge_pallet_outbound_queue_v2::Event::MessageQueued { .. },
+                ))
+                .count(),
+                1,
+                "MessageQueued event should be emitted!"
+            );
         });
 }
+
+#[test]
+fn test_sudo_can_upgrade_ethereum_system_v2() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            let initializer = Initializer {
+                params: [0; 256].into(),
+                maximum_required_gas: 10000,
+            };
+
+            // Even though the register is done through ethereum systemv2, the storage
+            // is from v1
+            assert_ok!(EthereumSystemV2::upgrade(
+                root_origin(),
+                H160::random(),
+                [1_u8; 32].into(),
+                initializer
+            ));
+
+            assert_eq!(
+                filter_events!(RuntimeEvent::EthereumOutboundQueueV2(
+                    snowbridge_pallet_outbound_queue_v2::Event::MessageQueued { .. },
+                ))
+                .count(),
+                1,
+                "MessageQueued event should be emitted!"
+            );
+        });
+}
+
+#[test]
+fn test_sudo_can_set_operating_mode_ethereum_system_v2() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            let mode = OperatingMode::RejectingOutboundMessages;
+
+            // Even though the register is done through ethereum systemv2, the storage
+            // is from v1
+            assert_ok!(EthereumSystemV2::set_operating_mode(root_origin(), mode));
+
+            assert_eq!(
+                filter_events!(RuntimeEvent::EthereumOutboundQueueV2(
+                    snowbridge_pallet_outbound_queue_v2::Event::MessageQueued { .. },
+                ))
+                .count(),
+                1,
+                "MessageQueued event should be emitted!"
+            );
+        });
+}
+
 #[test]
 fn nobody_else_can_register_ethereum_v2() {
     ExtBuilder::default()

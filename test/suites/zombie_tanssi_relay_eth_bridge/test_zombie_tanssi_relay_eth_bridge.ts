@@ -13,6 +13,7 @@ import {
     ASSET_HUB_AGENT_ID,
     ASSET_HUB_CHANNEL_ID,
     ASSET_HUB_PARA_ID,
+    GATEWAY_STORAGE_KEY,
     SNOWBRIDGE_FEES_ACCOUNT,
     signAndSendAndInclude,
     sleep,
@@ -23,8 +24,6 @@ import { keccak256 } from "viem";
 import { ETHEREUM_NETWORK_TESTNET, FOREIGN_ASSET_ID } from "utils/constants";
 import type { SubmittableExtrinsic } from "@polkadot/api/types";
 
-// Change this if we change the storage parameter in runtime
-const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
 const RESERVE_TRANSFER_FEE = 100000000000;
 
 function execCommand(command: string, options?): Promise<{ stdout: string; stderr: string }> {

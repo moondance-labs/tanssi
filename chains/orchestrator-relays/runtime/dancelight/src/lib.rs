@@ -248,6 +248,14 @@ pub enum AggregateMessageOrigin {
     /// This will be processed by `CustomProcessSnowbridgeMessage`.
     #[codec(index = 2)]
     SnowbridgeTanssi(ChannelId),
+
+    /// The message came from a snowbridge channel. It will be processed by `snowbridge_pallet_outbound_queue_v2`.
+    #[codec(index = 3)]
+    SnowbridgeV2(H256),
+
+    /// The message came from a snowbridge channel. It will be processed by `snowbridge_pallet_outbound_queue_v2`.
+    #[codec(index = 4)]
+    SnowbridgeTanssiV2(H256),
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -258,11 +266,24 @@ impl From<u32> for AggregateMessageOrigin {
     }
 }
 
+impl From<H256> for AggregateMessageOrigin {
+    fn from(n: H256) -> Self {
+        // Some dummy for the benchmarks.
+        AggregateMessageOrigin::SnowbridgeV2(n)
+    }
+}
+
 pub struct GetAggregateMessageOrigin;
 
 impl Convert<ChannelId, AggregateMessageOrigin> for GetAggregateMessageOrigin {
     fn convert(channel_id: ChannelId) -> AggregateMessageOrigin {
         AggregateMessageOrigin::Snowbridge(channel_id)
+    }
+}
+
+impl Convert<H256, AggregateMessageOrigin> for GetAggregateMessageOrigin {
+    fn convert(channel_id: H256) -> AggregateMessageOrigin {
+        AggregateMessageOrigin::SnowbridgeV2(channel_id.into())
     }
 }
 
@@ -277,6 +298,12 @@ pub struct GetAggregateMessageOriginTanssi;
 impl Convert<ChannelId, AggregateMessageOrigin> for GetAggregateMessageOriginTanssi {
     fn convert(channel_id: ChannelId) -> AggregateMessageOrigin {
         AggregateMessageOrigin::SnowbridgeTanssi(channel_id)
+    }
+}
+
+impl Convert<H256, AggregateMessageOrigin> for GetAggregateMessageOriginTanssi {
+    fn convert(channel_id: H256) -> AggregateMessageOrigin {
+        AggregateMessageOrigin::SnowbridgeTanssiV2(channel_id)
     }
 }
 
@@ -301,6 +328,10 @@ impl Convert<AggregateMessageOrigin, ParaId> for GetParaFromAggregateMessageOrig
                         ParaId::from(0)
                     }
                 }
+            }
+            _ => {
+                log::warn!("We should never get this",);
+                ParaId::from(0)
             }
         }
     }
@@ -1114,8 +1145,18 @@ impl ProcessMessage for MessageProcessor {
                     message, origin, meter, id,
                 )
             }
+            AggregateMessageOrigin::SnowbridgeV2(_) => {
+                snowbridge_pallet_outbound_queue_v2::Pallet::<Runtime>::process_message(
+                    message, origin, meter, id,
+                )
+            }
             AggregateMessageOrigin::SnowbridgeTanssi(_) => {
                 tp_bridge::TanssiOutboundEthMessageProcessorV1::<Runtime>::process_message(
+                    message, origin, meter, id,
+                )
+            }
+            AggregateMessageOrigin::SnowbridgeTanssiV2(_) => {
+                tp_bridge::TanssiOutboundEthMessageProcessorV2::<Runtime, TokenLocationReanchored>::process_message(
                     message, origin, meter, id,
                 )
             }
@@ -1493,6 +1534,8 @@ parameter_types! {
         &EthereumLocation::get(),
         &xcm_config::UniversalLocation::get()
     ).expect("unable to reanchor reward token");
+
+    pub storage UseSnowbridgeV2: bool = false;
 }
 
 pub struct GetWhitelistedValidators;
@@ -1527,9 +1570,13 @@ impl pallet_external_validators_rewards::Config for Runtime {
     type ExternalIndexProvider = ExternalValidators;
     type GetWhitelistedValidators = GetWhitelistedValidators;
     type Hashing = Keccak256;
-    type ValidateMessage = tp_bridge::TanssiEthMessageValidatorV1<Runtime>;
+    type ValidateMessage = tp_bridge::VersionedTanssiEthMessageValidator<
+        Runtime,
+        TokenLocationReanchored,
+        UseSnowbridgeV2,
+    >;
     type OutboundQueue =
-        tp_bridge::TanssiEthMessageSenderV1<Runtime, GetAggregateMessageOriginTanssi>;
+        tp_bridge::VersionedTanssiEthMessageSender<Runtime, GetAggregateMessageOriginTanssi>;
     type Currency = Balances;
     type RewardsEthereumSovereignAccount = EthereumSovereignAccount;
     type TokenLocationReanchored = TokenLocationReanchored;
@@ -1548,9 +1595,13 @@ impl pallet_external_validator_slashes::Config for Runtime {
     type SessionInterface = DancelightSessionInterface;
     type EraIndexProvider = ExternalValidators;
     type InvulnerablesProvider = ExternalValidators;
-    type ValidateMessage = tp_bridge::TanssiEthMessageValidatorV1<Runtime>;
+    type ValidateMessage = tp_bridge::VersionedTanssiEthMessageValidator<
+        Runtime,
+        TokenLocationReanchored,
+        UseSnowbridgeV2,
+    >;
     type OutboundQueue =
-        tp_bridge::TanssiEthMessageSenderV1<Runtime, GetAggregateMessageOriginTanssi>;
+        tp_bridge::VersionedTanssiEthMessageSender<Runtime, GetAggregateMessageOriginTanssi>;
     type ExternalIndexProvider = ExternalValidators;
     type QueuedSlashesProcessedPerBlock = ConstU32<10>;
     type WeightInfo = weights::pallet_external_validator_slashes::SubstrateWeight<Runtime>;
@@ -2025,7 +2076,7 @@ construct_runtime! {
         MaintenanceMode: pallet_maintenance_mode = 122,
 
         // Bridge v2
-        //EthereumOutboundQueueV2: snowbridge_pallet_outbound_queue_v2 = 123,
+        EthereumOutboundQueueV2: snowbridge_pallet_outbound_queue_v2 = 123,
         EthereumInboundQueueV2: snowbridge_pallet_inbound_queue_v2 = 124,
         EthereumSystemV2: snowbridge_pallet_system_v2 = 125,
         BridgeRelayers: pallet_bridge_relayers = 126,

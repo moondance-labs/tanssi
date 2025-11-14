@@ -177,10 +177,11 @@ bp-relayers = { workspace = true }
 bridge-hub-common = { workspace = true }
 pallet-bridge-relayers = { workspace = true }
 snowbridge-pallet-inbound-queue-v2 = { workspace = true }
-# snowbridge-pallet-outbound-queue-v2 = { workspace = true }
+snowbridge-pallet-outbound-queue-v2 = { workspace = true }
 snowbridge-pallet-system-v2 = { workspace = true }
 
 [dev-dependencies]
+alloy-core = { workspace = true, features = ["sol-types"] } 
 alloy-sol-types = { workspace = true, default-features = true }
 finality-grandpa = { workspace = true, default-features = true, features = [ "derive-codec" ] }
 milagro-bls = { workspace = true, features = [ "std" ] }
@@ -316,9 +317,9 @@ std = [
 	"snowbridge-pallet-inbound-queue-v2/std",
 	"snowbridge-pallet-inbound-queue/std",
 	"snowbridge-pallet-outbound-queue/std",
-	"snowbridge-pallet-system-v2/std",
-	# "snowbridge-pallet-outbound-queue-v2/std",
+	"snowbridge-pallet-outbound-queue-v2/std",
 	"snowbridge-pallet-system/std",
+	"snowbridge-pallet-system-v2/std",
 	"snowbridge-verification-primitives/std",
 	"sp-api/std",
 	"sp-application-crypto/std",

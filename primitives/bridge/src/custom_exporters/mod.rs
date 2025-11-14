@@ -16,6 +16,30 @@
 
 pub mod container_token_to_ethereum_message_exporter;
 pub mod snowbridge_outbound_token_transfer;
+pub mod snowbridge_outbound_token_transfer_v2;
 
 pub use container_token_to_ethereum_message_exporter::*;
 pub use snowbridge_outbound_token_transfer::*;
+pub use snowbridge_outbound_token_transfer_v2::*;
+
+#[derive(PartialEq, Debug)]
+pub enum XcmConverterError {
+    UnexpectedEndOfXcm,
+    EndOfXcmMessageExpected,
+    WithdrawAssetExpected,
+    DepositAssetExpected,
+    NoReserveAssets,
+    FilterDoesNotConsumeAllAssets,
+    TooManyAssets,
+    ZeroAssetTransfer,
+    BeneficiaryResolutionFailed,
+    AssetResolutionFailed,
+    InvalidFeeAsset,
+    SetTopicExpected,
+    ReserveAssetDepositedExpected,
+    InvalidAsset,
+    UnexpectedInstruction,
+    AliasOriginExpected,
+    InvalidOrigin,
+    TooManyCommands,
+}
