@@ -991,13 +991,11 @@ pub mod pallet {
                 Self::deposit_event(Event::ParaIdDeregistered { para_id });
                 // Cleanup immediately
                 Self::cleanup_deregistered_para_id(para_id);
-                BufferedParasToDeregister::<T>::try_mutate(|v| v.try_push(para_id)).map_err(
-                    |_e| {
-                        DispatchError::Other(
-                            "Failed to add paraId to deregistration list: buffer is full",
-                        )
-                    },
-                )?;
+                BufferedParasToDeregister::<T>::try_append(para_id).map_err(|_e| {
+                    DispatchError::Other(
+                        "Failed to add paraId to deregistration list: buffer is full",
+                    )
+                })?;
             } else {
                 Self::schedule_paused_parachain_change(|para_ids, paused| {
                     // We have to find out where, in the sorted vec the para id is, if anywhere.
@@ -1359,9 +1357,7 @@ pub mod pallet {
                         for para_id in new_paras {
                             Self::cleanup_deregistered_para_id(*para_id);
                             removed_para_ids.insert(*para_id);
-                            if let Err(id) =
-                                BufferedParasToDeregister::<T>::try_mutate(|v| v.try_push(*para_id))
-                            {
+                            if let Err(id) = BufferedParasToDeregister::<T>::try_append(*para_id) {
                                 log::error!(
                                     target: LOG_TARGET,
                                     "Failed to add paraId {:?} to deregistration list",
