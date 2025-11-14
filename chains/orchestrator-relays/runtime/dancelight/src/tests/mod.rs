@@ -39,6 +39,7 @@ mod inflation_rewards;
 mod integration_test;
 mod migrations_test;
 mod offline_marking;
+mod processors;
 mod relay_configuration;
 mod relay_registrar;
 mod services_payment;
