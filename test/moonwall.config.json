@@ -591,43 +591,6 @@
             ]
         },
         {
-            "name": "zombie_tanssi_collator_peers",
-            "testFileDir": ["suites/zombie_tanssi_collator_peers"],
-            "runScripts": [
-                "build-spec-single-container.sh",
-                "downloadPolkadot.ts",
-                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
-                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
-            ],
-            "timeout": 600000,
-            "foundation": {
-                "type": "zombie",
-                "zombieSpec": {
-                    "configPath": "./configs/zombie_tanssi_collator_peers.json"
-                }
-            },
-            "vitestArgs": {
-                "bail": 1
-            },
-            "connections": [
-                {
-                    "name": "Relay",
-                    "type": "polkadotJs",
-                    "endpoints": ["ws://127.0.0.1:9947"]
-                },
-                {
-                    "name": "Tanssi",
-                    "type": "polkadotJs",
-                    "endpoints": ["ws://127.0.0.1:9948"]
-                },
-                {
-                    "name": "Container2000",
-                    "type": "polkadotJs",
-                    "endpoints": ["ws://127.0.0.1:9949"]
-                }
-            ]
-        },
-        {
             "name": "zombie_dancebox_upgrade",
             "testFileDir": ["suites/zombie_dancebox_upgrade"],
             "runScripts": [
@@ -979,6 +942,298 @@
                     "name": "Container2002",
                     "type": "polkadotJs",
                     "endpoints": ["ws://127.0.0.1:9951"]
+                },
+                {
+                    "name": "ethers",
+                    "type": "ethers",
+                    "endpoints": ["ws://127.0.0.1:9950"]
+                },
+                {
+                    "name": "w3",
+                    "type": "web3",
+                    "endpoints": ["ws://127.0.0.1:9950"]
+                }
+            ]
+        },
+        {
+            "name": "zombie_tanssi_collator_peers",
+            "testFileDir": ["suites/zombie_tanssi_collator_peers"],
+            "runScripts": [
+                "build-spec-single-container.sh",
+                "downloadPolkadot.ts",
+                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
+            ],
+            "timeout": 600000,
+            "foundation": {
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombie_tanssi_collator_peers.json"
+                }
+            },
+            "vitestArgs": {
+                "bail": 1
+            },
+            "connections": [
+                {
+                    "name": "Relay",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9947"]
+                },
+                {
+                    "name": "Tanssi",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9948"]
+                },
+                {
+                    "name": "Container2000",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9949"]
+                }
+            ]
+        },
+        {
+            "name": "zombie_tanssi_relay_receive_container_native_from_eth",
+            "timeout": 600000,
+            "testFileDir": [
+                "suites/zombie_tanssi_relay_receive_container_native_from_eth"
+            ],
+            "runScripts": [
+                "build-spec-dancelight.sh",
+                "compile-wasm.ts compile -b ../target/release/tanssi-relay -o wasm -c specs/tanssi-relay.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2001.json"
+            ],
+            "foundation": {
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombie_tanssi_relay.json",
+                    "skipBlockCheck": [
+                        "Container2002"
+                    ]
+                }
+            },
+            "vitestArgs": {
+                "bail": 1
+            },
+            "connections": [
+                {
+                    "name": "Tanssi-relay",
+                    "type": "polkadotJs",
+                    "endpoints": [
+                        "ws://127.0.0.1:9947"
+                    ]
+                },
+                {
+                    "name": "Container2000",
+                    "type": "polkadotJs",
+                    "endpoints": [
+                        "ws://127.0.0.1:9949"
+                    ]
+                },
+                {
+                    "name": "Container2001",
+                    "type": "polkadotJs",
+                    "endpoints": [
+                        "ws://127.0.0.1:9950"
+                    ]
+                },
+                {
+                    "name": "Container2002",
+                    "type": "polkadotJs",
+                    "endpoints": [
+                        "ws://127.0.0.1:9951"
+                    ]
+                },
+                {
+                    "name": "ethers",
+                    "type": "ethers",
+                    "endpoints": [
+                        "ws://127.0.0.1:9950"
+                    ]
+                },
+                {
+                    "name": "w3",
+                    "type": "web3",
+                    "endpoints": [
+                        "ws://127.0.0.1:9950"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "zombie_tanssi_relay_send_container_native_to_eth",
+            "timeout": 600000,
+            "testFileDir": [
+                "suites/zombie_tanssi_relay_send_container_native_to_eth"
+            ],
+            "runScripts": [
+                "build-spec-dancelight.sh",
+                "compile-wasm.ts compile -b ../target/release/tanssi-relay -o wasm -c specs/tanssi-relay.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2001.json"
+            ],
+            "foundation": {
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombie_tanssi_relay.json",
+                    "skipBlockCheck": [
+                        "Container2002"
+                    ]
+                }
+            },
+            "vitestArgs": {
+                "bail": 1
+            },
+            "connections": [
+                {
+                    "name": "Tanssi-relay",
+                    "type": "polkadotJs",
+                    "endpoints": [
+                        "ws://127.0.0.1:9947"
+                    ]
+                },
+                {
+                    "name": "Container2000",
+                    "type": "polkadotJs",
+                    "endpoints": [
+                        "ws://127.0.0.1:9949"
+                    ]
+                },
+                {
+                    "name": "Container2001",
+                    "type": "polkadotJs",
+                    "endpoints": [
+                        "ws://127.0.0.1:9950"
+                    ]
+                },
+                {
+                    "name": "Container2002",
+                    "type": "polkadotJs",
+                    "endpoints": [
+                        "ws://127.0.0.1:9951"
+                    ]
+                },
+                {
+                    "name": "ethers",
+                    "type": "ethers",
+                    "endpoints": [
+                        "ws://127.0.0.1:9950"
+                    ]
+                },
+                {
+                    "name": "w3",
+                    "type": "web3",
+                    "endpoints": [
+                        "ws://127.0.0.1:9950"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "zombie_tanssi_relay_send_erc20_to_eth",
+            "timeout": 600000,
+            "testFileDir": [
+                "suites/zombie_tanssi_relay_send_erc20_to_eth"
+            ],
+            "runScripts": [
+                "build-spec-dancelight.sh",
+                "compile-wasm.ts compile -b ../target/release/tanssi-relay -o wasm -c specs/tanssi-relay.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2001.json"
+            ],
+            "foundation": {
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombie_tanssi_relay.json",
+                    "skipBlockCheck": [
+                        "Container2002"
+                    ]
+                }
+            },
+            "vitestArgs": {
+                "bail": 1
+            },
+            "connections": [
+                {
+                    "name": "Tanssi-relay",
+                    "type": "polkadotJs",
+                    "endpoints": [
+                        "ws://127.0.0.1:9947"
+                    ]
+                },
+                {
+                    "name": "Container2000",
+                    "type": "polkadotJs",
+                    "endpoints": [
+                        "ws://127.0.0.1:9949"
+                    ]
+                },
+                {
+                    "name": "Container2001",
+                    "type": "polkadotJs",
+                    "endpoints": [
+                        "ws://127.0.0.1:9950"
+                    ]
+                },
+                {
+                    "name": "Container2002",
+                    "type": "polkadotJs",
+                    "endpoints": [
+                        "ws://127.0.0.1:9951"
+                    ]
+                },
+                {
+                    "name": "ethers",
+                    "type": "ethers",
+                    "endpoints": [
+                        "ws://127.0.0.1:9950"
+                    ]
+                },
+                {
+                    "name": "w3",
+                    "type": "web3",
+                    "endpoints": [
+                        "ws://127.0.0.1:9950"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "zombie_tanssi_relay_foreign_tokens",
+            "timeout": 600000,
+            "testFileDir": ["suites/zombie_tanssi_relay_foreign_tokens"],
+            "runScripts": [
+                "build-spec-dancelight.sh",
+                "compile-wasm.ts compile -b ../target/release/tanssi-relay -o wasm -c specs/tanssi-relay.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2001.json"
+            ],
+            "foundation": {
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombie_tanssi_relay_foreign_tokens.json",
+                    "skipBlockCheck": ["Container2002"]
+                }
+            },
+            "vitestArgs": {
+                "bail": 1
+            },
+            "connections": [
+                {
+                    "name": "Tanssi-relay",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9947"]
+                },
+                {
+                    "name": "Container2000",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9949"]
+                },
+                {
+                    "name": "Container2001",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9950"]
                 },
                 {
                     "name": "ethers",

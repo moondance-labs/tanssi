@@ -110,7 +110,7 @@ use {
     snowbridge_outbound_queue_primitives::v1::Command,
     snowbridge_outbound_queue_primitives::v1::Fee,
     sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
-    sp_core::{OpaqueMetadata, H256},
+    sp_core::{ConstUint, OpaqueMetadata, H256},
     sp_genesis_builder::PresetId,
     sp_runtime::{
         generic, impl_opaque_keys,
@@ -197,7 +197,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("dancelight"),
     impl_name: Cow::Borrowed("tanssi-dancelight-v2.0"),
     authoring_version: 0,
-    spec_version: 1600,
+    spec_version: 1700,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 27,
@@ -602,6 +602,7 @@ impl Convert<AccountId, Option<()>> for FullIdentificationOf {
 }
 
 impl pallet_session::historical::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
     type FullIdentification = ();
     type FullIdentificationOf = FullIdentificationOf;
 }
@@ -788,11 +789,11 @@ where
     type RuntimeCall = RuntimeCall;
 }
 
-impl<LocalCall> frame_system::offchain::CreateInherent<LocalCall> for Runtime
+impl<LocalCall> frame_system::offchain::CreateBare<LocalCall> for Runtime
 where
     RuntimeCall: From<LocalCall>,
 {
-    fn create_inherent(call: RuntimeCall) -> UncheckedExtrinsic {
+    fn create_bare(call: RuntimeCall) -> UncheckedExtrinsic {
         UncheckedExtrinsic::new_bare(call)
     }
 }
@@ -828,6 +829,8 @@ impl pallet_identity::Config for Runtime {
     type UsernameGracePeriod = ConstU32<{ 30 * DAYS }>;
     type MaxSuffixLength = ConstU32<7>;
     type MaxUsernameLength = ConstU32<32>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = ();
     type WeightInfo = weights::pallet_identity::SubstrateWeight<Runtime>;
 }
 
@@ -1067,6 +1070,11 @@ impl parachains_paras::Config for Runtime {
     type NextSessionRotation = Babe;
     type OnNewHead = Registrar;
     type AssignCoretime = ();
+    type Fungible = Balances;
+    // TODO: this could be set to 1 because we don't care, but benchmarks fail in that case
+    // Per day the cooldown is removed earlier, it should cost 1000.
+    type CooldownRemovalMultiplier = ConstUint<{ 1000 * UNITS / DAYS as u128 }>;
+    type AuthorizeCurrentCodeOrigin = EnsureRoot<Self::AccountId>;
 }
 
 parameter_types! {
@@ -1107,7 +1115,7 @@ impl ProcessMessage for MessageProcessor {
                 )
             }
             AggregateMessageOrigin::SnowbridgeTanssi(_) => {
-                tp_bridge::CustomProcessSnowbridgeMessage::<Runtime>::process_message(
+                tp_bridge::TanssiOutboundEthMessageProcessorV1::<Runtime>::process_message(
                     message, origin, meter, id,
                 )
             }
@@ -1448,7 +1456,6 @@ prod_or_fast_parameter_types! {
 }
 
 impl pallet_external_validators::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type UpdateOrigin = EnsureRoot<AccountId>;
     type HistoryDepth = ConstU32<84>;
     type MaxWhitelistedValidators = MaxWhitelistedValidators;
@@ -1509,7 +1516,6 @@ impl tp_bridge::TokenChannelSetterBenchmarkHelperTrait for RewardsBenchHelper {
 
 // Pallet to reward validators.
 impl pallet_external_validators_rewards::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type EraIndexProvider = ExternalValidators;
     type HistoryDepth = ConstU32<64>;
     type BackingPoints = ConstU32<20>;
@@ -1521,8 +1527,9 @@ impl pallet_external_validators_rewards::Config for Runtime {
     type ExternalIndexProvider = ExternalValidators;
     type GetWhitelistedValidators = GetWhitelistedValidators;
     type Hashing = Keccak256;
-    type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
-    type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;
+    type ValidateMessage = tp_bridge::TanssiEthMessageValidatorV1<Runtime>;
+    type OutboundQueue =
+        tp_bridge::TanssiEthMessageSenderV1<Runtime, GetAggregateMessageOriginTanssi>;
     type Currency = Balances;
     type RewardsEthereumSovereignAccount = EthereumSovereignAccount;
     type TokenLocationReanchored = TokenLocationReanchored;
@@ -1533,7 +1540,6 @@ impl pallet_external_validators_rewards::Config for Runtime {
 }
 
 impl pallet_external_validator_slashes::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type ValidatorId = AccountId;
     type ValidatorIdOf = ValidatorIdOf;
     type SlashDeferDuration = SlashDeferDuration;
@@ -1542,8 +1548,9 @@ impl pallet_external_validator_slashes::Config for Runtime {
     type SessionInterface = DancelightSessionInterface;
     type EraIndexProvider = ExternalValidators;
     type InvulnerablesProvider = ExternalValidators;
-    type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
-    type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;
+    type ValidateMessage = tp_bridge::TanssiEthMessageValidatorV1<Runtime>;
+    type OutboundQueue =
+        tp_bridge::TanssiEthMessageSenderV1<Runtime, GetAggregateMessageOriginTanssi>;
     type ExternalIndexProvider = ExternalValidators;
     type QueuedSlashesProcessedPerBlock = ConstU32<10>;
     type WeightInfo = weights::pallet_external_validator_slashes::SubstrateWeight<Runtime>;
@@ -1578,7 +1585,6 @@ parameter_types! {
 }
 
 impl pallet_invulnerables::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type UpdateOrigin = EnsureRoot<AccountId>;
     type MaxInvulnerables = MaxInvulnerables;
     type CollatorId = <Self as frame_system::Config>::AccountId;
@@ -1614,7 +1620,6 @@ impl pallet_configuration::Config for Runtime {
 }
 
 impl pallet_migrations::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type MigrationsList = (tanssi_runtime_common::migrations::DancelightMigrations<Runtime>,);
     type XcmExecutionManager = ();
 }
@@ -1670,7 +1675,6 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
 type NormalFilter = EverythingBut<(IsRelayRegister, IsParathreadRegistrar)>;
 
 impl pallet_maintenance_mode::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
     type MaintenanceOrigin = EitherOf<
@@ -1705,7 +1709,6 @@ parameter_types! {
 }
 
 impl pallet_services_payment::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     /// Handler for fees
     type OnChargeForBlock = ();
     type OnChargeForCollatorAssignment = ();
@@ -1732,7 +1735,6 @@ parameter_types! {
 }
 
 impl pallet_stream_payment::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type StreamId = tp_stream_payment_common::StreamId;
     type TimeUnit = tp_stream_payment_common::TimeUnit;
     type Balance = Balance;
@@ -1751,13 +1753,14 @@ parameter_types! {
     #[derive(Clone)]
     pub const MaxAssignmentsPerParaId: u32 = 10;
     #[derive(Clone)]
-    pub const MaxNodeUrlLen: u32 = 200;
+    pub const MaxNodeUrlCount: u32 = 4;
+    #[derive(Clone)]
+    pub const MaxStringLen: u32 = 200;
 }
 
 pub type DataPreserversProfileId = u64;
 
 impl pallet_data_preservers::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type RuntimeHoldReason = RuntimeHoldReason;
     type Currency = Balances;
     type WeightInfo = weights::pallet_data_preservers::SubstrateWeight<Runtime>;
@@ -1770,7 +1773,8 @@ impl pallet_data_preservers::Config for Runtime {
     type ForceSetProfileOrigin = EnsureRoot<AccountId>;
 
     type MaxAssignmentsPerParaId = MaxAssignmentsPerParaId;
-    type MaxNodeUrlLen = MaxNodeUrlLen;
+    type MaxNodeUrlCount = MaxNodeUrlCount;
+    type MaxStringLen = MaxStringLen;
     type MaxParaIdsVecLen = MaxLengthParaIds;
 }
 
@@ -1803,7 +1807,6 @@ impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnba
 
 // Pallet to reward container chains collators.
 impl pallet_inflation_rewards::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type ContainerChains = ContainerRegistrar;
     type GetSelfChainBlockAuthor = ();
@@ -1865,7 +1868,6 @@ parameter_types! {
     pub const MaxCandidatesBufferSize: u32 = 100;
 }
 impl pallet_pooled_staking::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type Balance = Balance;
     type StakingAccount = StakingAccount;
@@ -1886,7 +1888,6 @@ parameter_types! {
     pub const CooldownLenghtInSessions: u32 = 2;
 }
 impl pallet_inactivity_tracking::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type MaxInactiveSessions = MaxInactiveSessions;
     type MaxCollatorsPerSession = MaxCandidatesBufferSize;
     type MaxContainerChains = MaxLengthParaIds;
@@ -2191,7 +2192,6 @@ where
 }
 
 impl pallet_registrar::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin =
         EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
@@ -2254,17 +2254,20 @@ impl pallet_registrar::RegistrarHooks for DancelightRegistrarHooks {
     fn benchmarks_ensure_valid_for_collating(para_id: ParaId) {
         use {
             frame_support::traits::EnsureOriginWithArg,
-            pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode},
+            pallet_data_preservers::{NodeType, ParaIdsFilter, Profile},
         };
 
         let profile = Profile {
-            url: b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
+            bootnode_url: Some(b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
                 .to_vec()
                 .try_into()
-                .expect("to fit in BoundedVec"),
+                .expect("to fit in BoundedVec")),
+            direct_rpc_urls: Default::default(),
+            proxy_rpc_urls: Default::default(),
             para_ids: ParaIdsFilter::AnyParaId,
-            mode: ProfileMode::Bootnode,
+            node_type: NodeType::Substrate,
             assignment_request: tp_data_preservers_common::ProviderRequest::Free,
+            additional_info: Default::default(),
         };
 
         let profile_id = pallet_data_preservers::NextProfileId::<Runtime>::get();
@@ -2294,7 +2297,6 @@ impl pallet_registrar::RegistrarHooks for DancelightRegistrarHooks {
 }
 
 impl pallet_author_noting::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type ContainerChains = TanssiCollatorAssignment;
     type SlotBeacon = BabeSlotBeacon<Runtime>;
     type ContainerChainAuthor = TanssiCollatorAssignment;
@@ -3002,8 +3004,7 @@ sp_api::impl_runtime_apis! {
         /// Fetch boot_nodes for this para id
         fn boot_nodes(para_id: ParaId) -> Vec<Vec<u8>> {
             DataPreservers::assignments_profiles(para_id)
-                .filter(|profile| profile.mode == pallet_data_preservers::ProfileMode::Bootnode)
-                .map(|profile| profile.url.into())
+                .filter_map(|profile| profile.bootnode_url.map(Into::into))
                 .collect()
         }
     }
@@ -3399,11 +3400,11 @@ sp_api::impl_runtime_apis! {
                     Ok((origin, ticket, assets))
                 }
 
-                fn fee_asset() -> Result<Asset, BenchmarkError> {
-                    Ok(Asset {
+                fn worst_case_for_trader() -> Result<(Asset, WeightLimit), BenchmarkError> {
+                    Ok((Asset {
                         id: AssetId(TokenLocation::get()),
                         fun: Fungible(1_000_000 * UNITS),
-                    })
+                    }, WeightLimit::Unlimited))
                 }
 
                 fn unlockable_asset() -> Result<(Location, Location, Asset), BenchmarkError> {
@@ -3803,7 +3804,6 @@ impl Get<Option<CoreAllocationConfiguration>> for GetCoreAllocationConfiguration
 }
 
 impl pallet_collator_assignment::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type HostConfiguration = CollatorConfiguration;
     type ContainerChains = ContainerRegistrar;
     type SessionIndex = u32;

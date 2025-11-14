@@ -185,7 +185,7 @@ mod benchmarks {
         {
             result = polkadot_runtime_parachains::disputes::slashing::Pallet::<T>::report_dispute_lost_unsigned(
                 RawOrigin::None.into(),
-                Box::new(dispute_proof),
+                Box::new(dispute_proof.into()),
                 key_owner_proof,
             );
         }
