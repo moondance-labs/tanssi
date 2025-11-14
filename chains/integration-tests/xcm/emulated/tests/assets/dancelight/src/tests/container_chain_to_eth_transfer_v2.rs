@@ -17,8 +17,7 @@
 use {
     dancelight_emulated_chain::{genesis::INITIAL_BALANCE, DancelightRelayPallet},
     dancelight_system_emulated_network::{
-        DancelightRelay as Dancelight, DancelightSender,
-        FrontierTemplatePara as FrontierTemplate,
+        DancelightRelay as Dancelight, DancelightSender, FrontierTemplatePara as FrontierTemplate,
         SimpleTemplatePara as SimpleTemplate, SimpleTemplateSender,
     },
     frame_support::{assert_ok, traits::PalletInfoAccess},
@@ -149,8 +148,8 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier_snowbrid
         let container_asset_to_transfer =
             AssetId(asset_location.clone()).into_asset(Fungibility::Fungible(amount_to_transfer));
 
-        let fee_asset =
-            AssetId(relay_asset_location.clone()).into_asset(Fungibility::Fungible(export_fee_amount));
+        let fee_asset = AssetId(relay_asset_location.clone())
+            .into_asset(Fungibility::Fungible(export_fee_amount));
 
         let alice_origin =
             <FrontierTemplate as Chain>::RuntimeOrigin::signed(EthereumSender::get());
@@ -222,7 +221,10 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier_snowbrid
             .data
             .free;
 
-        assert_eq!(eth_sovereign_account_balance_after - eth_sovereign_account_balance_before, amount_to_transfer);
+        assert_eq!(
+            eth_sovereign_account_balance_after - eth_sovereign_account_balance_before,
+            amount_to_transfer
+        );
     });
 
     Dancelight::execute_with(|| {
@@ -248,7 +250,10 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier_snowbrid
                 .free;
 
         assert!(container_sovereign_account_balance_after < INITIAL_BALANCE);
-        assert!(container_sovereign_account_balance_after >= INITIAL_BALANCE - export_fee_amount - container_fee);
+        assert!(
+            container_sovereign_account_balance_after
+                >= INITIAL_BALANCE - export_fee_amount - container_fee
+        );
     });
 }
 
@@ -339,9 +344,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple_snowbridge
             parents: 0,
             interior: Junctions::X1(
                 [AccountKey20 {
-                    network: Some(
-                        container_chain_template_simple_runtime::EthereumNetwork::get(),
-                    ),
+                    network: Some(container_chain_template_simple_runtime::EthereumNetwork::get()),
                     key: beneficiary_address.into(),
                 }]
                 .into(),
@@ -367,8 +370,8 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple_snowbridge
         let container_asset_to_transfer =
             AssetId(asset_location.clone()).into_asset(Fungibility::Fungible(amount_to_transfer));
 
-        let fee_asset =
-            AssetId(relay_asset_location.clone()).into_asset(Fungibility::Fungible(export_fee_amount));
+        let fee_asset = AssetId(relay_asset_location.clone())
+            .into_asset(Fungibility::Fungible(export_fee_amount));
 
         let alice_origin =
             <SimpleTemplate as Chain>::RuntimeOrigin::signed(SimpleTemplateSender::get());
@@ -440,7 +443,10 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple_snowbridge
             .data
             .free;
 
-        assert_eq!(eth_sovereign_account_balance_after - eth_sovereign_account_balance_before, amount_to_transfer);
+        assert_eq!(
+            eth_sovereign_account_balance_after - eth_sovereign_account_balance_before,
+            amount_to_transfer
+        );
     });
 
     Dancelight::execute_with(|| {
@@ -466,7 +472,9 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple_snowbridge
                 .free;
 
         assert!(container_sovereign_account_balance_after < INITIAL_BALANCE);
-        assert!(container_sovereign_account_balance_after >= INITIAL_BALANCE - export_fee_amount - container_fee);
+        assert!(
+            container_sovereign_account_balance_after
+                >= INITIAL_BALANCE - export_fee_amount - container_fee
+        );
     });
 }
-
