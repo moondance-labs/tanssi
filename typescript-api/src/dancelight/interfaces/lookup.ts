@@ -2024,7 +2024,7 @@ export default {
         additionalInfo: "Bytes",
     },
     /**
-     * Lookup191: pallet_data_preservers::types::ParaIdsFilter<T>
+     * Lookup190: pallet_data_preservers::types::ParaIdsFilter<T>
      **/
     PalletDataPreserversParaIdsFilter: {
         _enum: {
@@ -3599,11 +3599,11 @@ export default {
     PalletMessageQueueCall: {
         _enum: {
             reap_page: {
-                messageOrigin: "DancelightRuntimeAggregateMessageOrigin",
+                messageOrigin: "DancelightRuntimeTanssiAggregateMessageOrigin",
                 pageIndex: "u32",
             },
             execute_overweight: {
-                messageOrigin: "DancelightRuntimeAggregateMessageOrigin",
+                messageOrigin: "DancelightRuntimeTanssiAggregateMessageOrigin",
                 page: "u32",
                 index: "u32",
                 weightLimit: "SpWeightsWeightV2Weight",
@@ -3611,9 +3611,9 @@ export default {
         },
     },
     /**
-     * Lookup328: dancelight_runtime::AggregateMessageOrigin
+     * Lookup328: dancelight_runtime::TanssiAggregateMessageOrigin
      **/
-    DancelightRuntimeAggregateMessageOrigin: {
+    DancelightRuntimeTanssiAggregateMessageOrigin: {
         _enum: {
             Ump: "PolkadotRuntimeParachainsInclusionUmpQueueId",
             Snowbridge: "SnowbridgeCoreChannelId",
@@ -5890,23 +5890,23 @@ export default {
         _enum: {
             ProcessingFailed: {
                 id: "H256",
-                origin: "DancelightRuntimeAggregateMessageOrigin",
+                origin: "DancelightRuntimeTanssiAggregateMessageOrigin",
                 error: "FrameSupportMessagesProcessMessageError",
             },
             Processed: {
                 id: "H256",
-                origin: "DancelightRuntimeAggregateMessageOrigin",
+                origin: "DancelightRuntimeTanssiAggregateMessageOrigin",
                 weightUsed: "SpWeightsWeightV2Weight",
                 success: "bool",
             },
             OverweightEnqueued: {
                 id: "[u8;32]",
-                origin: "DancelightRuntimeAggregateMessageOrigin",
+                origin: "DancelightRuntimeTanssiAggregateMessageOrigin",
                 pageIndex: "u32",
                 messageIndex: "u32",
             },
             PageReaped: {
-                origin: "DancelightRuntimeAggregateMessageOrigin",
+                origin: "DancelightRuntimeTanssiAggregateMessageOrigin",
                 index: "u32",
             },
         },
@@ -8237,7 +8237,7 @@ export default {
         ],
     },
     /**
-     * Lookup848: pallet_message_queue::BookState<dancelight_runtime::AggregateMessageOrigin>
+     * Lookup848: pallet_message_queue::BookState<dancelight_runtime::TanssiAggregateMessageOrigin>
      **/
     PalletMessageQueueBookState: {
         _alias: {
@@ -8251,11 +8251,11 @@ export default {
         size_: "u64",
     },
     /**
-     * Lookup850: pallet_message_queue::Neighbours<dancelight_runtime::AggregateMessageOrigin>
+     * Lookup850: pallet_message_queue::Neighbours<dancelight_runtime::TanssiAggregateMessageOrigin>
      **/
     PalletMessageQueueNeighbours: {
-        prev: "DancelightRuntimeAggregateMessageOrigin",
-        next: "DancelightRuntimeAggregateMessageOrigin",
+        prev: "DancelightRuntimeTanssiAggregateMessageOrigin",
+        next: "DancelightRuntimeTanssiAggregateMessageOrigin",
     },
     /**
      * Lookup852: pallet_message_queue::Page<Size, HeapSize>
