@@ -4,12 +4,7 @@ import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import {
-    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS,
-    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_FOREIGN_ASSETS_CREATOR,
-    checkCallIsFiltered,
-    expectEventCount,
-} from "helpers";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2, checkCallIsFiltered, expectEventCount } from "helpers";
 import { XcmFragment, SNOWBRIDGE_FEES_ACCOUNT } from "utils";
 import type { KeyringPair } from "@moonwall/util";
 import { hexToU8a, u8aToHex } from "@polkadot/util";
@@ -45,6 +40,10 @@ describeSuite({
             id: "E01",
             title: "Send ERC20 back to ethereum",
             test: async () => {
+                if (shouldSkipStarlightETT) {
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                    return;
+                }
                 const initialBalance = BigInt(100_000);
 
                 const transferAmount = BigInt(10_000);

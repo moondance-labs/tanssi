@@ -14,6 +14,7 @@ import {
     USE_V2_STORAGE_KEY,
     sleep,
 } from "utils";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2 } from "helpers";
 
 describeSuite({
     id: "DEVT0604",
@@ -25,6 +26,9 @@ describeSuite({
         let alice: KeyringPair;
         let runtimeName: string;
         let sovereignAccountToCheck: string;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipStarlightETT: boolean;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -59,6 +63,12 @@ describeSuite({
                 decimals: 12,
             };
 
+            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            isStarlight = runtimeName === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightETT =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2.includes(specVersion);
+
             // Register Alice as an external validator, because it starts as a whitelisted validator and whitelisted
             // validators don't get rewards.
             let aliceNonce = (await polkadotJs.rpc.system.accountNextIndex(alice.address)).toNumber();
@@ -80,6 +90,10 @@ describeSuite({
             id: "E01",
             title: "Ethereum Sovereign Account balance should increase on era change",
             test: async () => {
+                if (shouldSkipStarlightETT) {
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                    return;
+                }
                 const currentIndex = await polkadotJs.query.session.currentIndex();
                 const sessionsPerEra = polkadotJs.consts.externalValidators.sessionsPerEra;
 
