@@ -28,7 +28,7 @@ use xcm::latest::prelude::*;
 use xcm_executor::traits::WeightBounds;
 
 /// Topic prefix used for generating unique identifiers for messages
-const RAW_MESSAGE_PROCESSOR_TOPIC_PREFIX: &str = "TanssiRawMessageProcessor";
+pub const RAW_MESSAGE_PROCESSOR_TOPIC_PREFIX: &str = "TanssiRawMessageProcessor";
 
 /// Wrapping parity_scale_codec::Error so that it implements Error
 #[derive(Debug)]
