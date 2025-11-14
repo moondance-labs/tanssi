@@ -14,30 +14,27 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use {
-    crate as dancelight_runtime,
-    crate::tests::common::{root_origin, ExtBuilder},
-    dancelight_runtime::{AccountId, Runtime},
-    dancelight_runtime_constants::DANCELIGHT_GENESIS_HASH,
-    frame_support::{assert_ok, parameter_types, BoundedVec},
-    parity_scale_codec::Encode,
-    snowbridge_core::{AgentId, ChannelId},
-    snowbridge_inbound_queue_primitives::v2::EthereumAsset,
-    sp_core::{H160, H256},
-    tanssi_runtime_common::processors::v2::{
-        prepare_raw_message_xcm_instructions, ExtractedXcmConstructionInfo,
-        RAW_MESSAGE_PROCESSOR_TOPIC_PREFIX,
-    },
-    xcm::latest::{prelude::*, Junctions::*, Location},
+use crate as dancelight_runtime;
+use crate::tests::common::{root_origin, ExtBuilder};
+use dancelight_runtime::{AccountId, Runtime};
+use dancelight_runtime_constants::DANCELIGHT_GENESIS_HASH;
+use frame_support::{assert_ok, parameter_types, BoundedVec};
+use parity_scale_codec::Encode;
+use snowbridge_core::{AgentId, ChannelId};
+use snowbridge_inbound_queue_primitives::v2::EthereumAsset;
+use sp_core::H160;
+use sp_core::H256;
+use tanssi_runtime_common::processors::v2::{
+    prepare_raw_message_xcm_instructions, ExtractedXcmConstructionInfo,
+    RAW_MESSAGE_PROCESSOR_TOPIC_PREFIX,
 };
-
-// mod raw_message_processor;
+use xcm::latest::{prelude::*, Junctions::*, Location};
 
 // TODO: Move later to dancelight-runtime-test-utils after refactoring
 pub const ALICE: [u8; 32] = [4u8; 32];
 pub const BOB: [u8; 32] = [5u8; 32];
 
-// TODO: Get from runtime once wired
+// TODO: Get from runtime once ready
 parameter_types! {
     const EthereumNetwork: NetworkId = Ethereum { chain_id: 11155111 };
     const BridgeChannelInfo: Option<(ChannelId, AgentId)> = Some((ChannelId::new([1u8; 32]), H256([2u8; 32])));
@@ -96,6 +93,7 @@ fn prepare_raw_message_xcm_instructions_without_claimer_works() {
                     .into())
                 );
             }
+            _ => panic!("Expected Hint::AssetClaimer"),
         }
     } else {
         panic!("Expected SetHints instruction first");
@@ -176,6 +174,7 @@ fn prepare_raw_message_xcm_instructions_with_claimer_works() {
                     .into())
                 );
             }
+            _ => panic!("Expected Hint::AssetClaimer"),
         }
     } else {
         panic!("Expected SetHints instruction first");
@@ -281,6 +280,7 @@ fn prepare_raw_message_xcm_instructions_with_foreign_asset_works() {
                         .into())
                     );
                 }
+                _ => panic!("Expected Hint::AssetClaimer"),
             }
         } else {
             panic!("Expected SetHints instruction first");
