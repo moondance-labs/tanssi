@@ -62,9 +62,10 @@ use {
         ChildParachainConvertsVia, ConvertedConcreteId, DescribeAllTerminal, DescribeFamily,
         FixedWeightBounds, FrameTransactionalProcessor, FungibleAdapter, FungiblesAdapter,
         HashedDescription, IsChildSystemParachain, IsConcrete, MintLocation, NoChecking,
-        OriginToPluralityVoice, SignedAccountId32AsNative, SignedToAccountId32,
-        SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents,
-        WeightInfoBounds, WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
+        OriginToPluralityVoice, SendXcmFeeToAccount, SignedAccountId32AsNative,
+        SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
+        UsingComponents, WeightInfoBounds, WithComputedOrigin, WithUniqueTopic,
+        XcmFeeManagerFromComponents,
     },
     xcm_executor::XcmExecutor,
 };
@@ -397,6 +398,7 @@ pub type SnowbridgeExporterv2 = EthereumBlobExporterV2<
     snowbridge_pallet_outbound_queue_v2::Pallet<Runtime>,
     EthereumSystem,
     MinSnowbridgeV2Reward,
+    SendXcmFeeToAccount<LocalAssetTransactor, SnowbridgeFeesAccount>,
 >;
 
 /// Exports message to the Ethereum Gateway contract.

@@ -1649,11 +1649,10 @@ fn send_eth_native_token_works_v2() {
                 .into_asset(Fungibility::Fungible(amount_to_transfer));
 
             let fee_amount_withdrawn = 1_000_000_000_000u128;
+            let fee_amount = 600_000_000_000u128;
 
             let fee_asset_withdrawn = AssetId(crate::xcm_config::TokenLocation::get().clone())
                 .into_asset(Fungibility::Fungible(fee_amount_withdrawn));
-
-            let fee_amount = 1_000_000_000u128;
 
             let fee_asset = AssetId(crate::xcm_config::TokenLocation::get().clone())
                 .into_asset(Fungibility::Fungible(fee_amount));
