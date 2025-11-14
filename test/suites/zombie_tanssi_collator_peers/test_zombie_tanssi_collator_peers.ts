@@ -3,7 +3,6 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import {
-    getAuthorFromDigestRange,
     checkLogsNotExist,
     getAuthorFromDigest,
     getHeaderFromRelay,
@@ -11,7 +10,410 @@ import {
     getTmpZombiePath,
     waitSessions,
     signAndSendAndInclude,
+    sleep,
+    escapeRegex,
+    printBlockAuthorsWindow,
 } from "utils";
+
+type PeerSeries = { peers: number[]; times: string[] };
+
+/**
+ * Parse peer counts over time for a given node from a multiline log string.
+ *
+ * The function scans the given text line by line and, for each log line that looks like this:
+ *
+ * 2025-11-14 15:21:53 [Container-2000] 💤 Idle (1 peers), best: #0 (0xb844…07ae), finalized #0 (0xb844…07ae), ⬇ 295.0kiB/s ⬆ 2.8kiB/s
+ *
+ * It extracts:
+ *   - the peer count `N` as a number, and
+ *   - the timestamp at the start of the line (everything before the first `[`).
+ *
+ * So in this example it would return:
+ *
+ * { peers: [1], times: ["2025-11-14 15:21:53"] }
+ *
+ * All other lines are ignored. The result is two parallel arrays where
+ * `peers[i]` corresponds to `times[i]`.
+ *
+ * @param txt - Multiline log text to parse.
+ * @param nodeLabel - The node label inside square brackets, e.g. "Container-2000".
+ * @returns An object with `peers` (number[]) and `times` (string[]) arrays.
+ */
+export function parsePeerSeries(txt: string, nodeLabel: string): PeerSeries {
+    const peers: number[] = [];
+    const times: string[] = [];
+
+    const escapedLabel = escapeRegex(nodeLabel);
+    // 1 regex, 1 match attempt per line:
+    //   group 1: timestamp (everything before first "[")
+    //   group 2: peer count number
+    const lineRegex = new RegExp(`^([^\\[]+)\\s+\\[${escapedLabel}\\].*?Idle\\s*\\(\\s*(\\d+)\\s*peers?\\s*\\)`, "i");
+
+    for (const line of txt.split(/\r?\n/)) {
+        if (!line) continue;
+
+        const match = lineRegex.exec(line);
+        if (!match) continue;
+
+        const rawTime = match[1];
+        const rawPeers = match[2];
+
+        if (!rawTime || !rawPeers) {
+            throw new Error(
+                `Failed to parse log line for [${nodeLabel}]: missing timestamp or peer count in line: ${JSON.stringify(
+                    line
+                )}`
+            );
+        }
+
+        const ts = rawTime.trim();
+        if (!ts) {
+            throw new Error(`Failed to parse timestamp for [${nodeLabel}] from line: ${JSON.stringify(line)}`);
+        }
+
+        const n = Number.parseInt(rawPeers, 10);
+        if (!Number.isFinite(n)) {
+            throw new Error(
+                `Failed to parse peer count "${rawPeers}" for [${nodeLabel}] from line: ${JSON.stringify(line)}`
+            );
+        }
+
+        peers.push(n);
+        times.push(ts);
+    }
+
+    return { peers, times };
+}
+
+export const collectSeries = async (
+    logPath: string,
+    nodeLabel: string,
+    minSamples = 8,
+    maxTries = 5,
+    delayMs = 5000
+): Promise<PeerSeries> => {
+    const { readFile } = await import("node:fs/promises");
+
+    let lastSeries: PeerSeries = { peers: [], times: [] };
+
+    for (let attempt = 1; attempt <= maxTries; attempt++) {
+        let txt: string;
+
+        try {
+            txt = await readFile(logPath, "utf8");
+        } catch (err) {
+            throw new Error(`Failed to read log file "${logPath}" on attempt ${attempt}: ${(err as Error).message}`);
+        }
+
+        try {
+            lastSeries = parsePeerSeries(txt, nodeLabel);
+        } catch (err) {
+            // Add context but keep the original error message
+            throw new Error(
+                `Failed to parse peer series for [${nodeLabel}] from "${logPath}" on attempt ${attempt}: ${
+                    (err as Error).message
+                }`
+            );
+        }
+
+        if (lastSeries.peers.length >= minSamples) {
+            return lastSeries;
+        }
+
+        // Not enough data yet, wait for more logs to accumulate
+        await sleep(delayMs);
+    }
+
+    // We never reached the required number of samples
+    throw new Error(
+        `Expected at least ${minSamples} samples for [${nodeLabel}], ` +
+            `but only got ${lastSeries.peers.length} after ${maxTries} attempts reading "${logPath}".`
+    );
+};
+
+/**
+ * Render a tiny unicode sparkline for a sequence of numbers.
+ *
+ * - Downsamples long series to at most `maxWidth` points (by averaging chunks).
+ * - Maps values linearly between the min/max to unicode “height” blocks.
+ * - Returns an empty string for an empty input.
+ */
+function sparkline(values: number[], maxWidth = 120): string {
+    if (values.length === 0) return "";
+
+    const blocks = "▁▂▃▄▅▆▇█";
+
+    const data = values.length <= maxWidth ? values : downsample(values, maxWidth);
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+
+    // Flat line → pick a “middle” block and repeat it.
+    if (max === min) {
+        const mid = Math.floor(blocks.length / 2);
+        const idx = Math.min(blocks.length - 1, Math.max(0, mid));
+        return blocks[idx].repeat(data.length);
+    }
+
+    return data
+        .map((v) => {
+            const t = (v - min) / (max - min); // 0..1
+            const idx = Math.max(0, Math.min(blocks.length - 1, Math.round(t * (blocks.length - 1))));
+            return blocks[idx];
+        })
+        .join("");
+}
+
+/**
+ * Downsample `values` to at most `width` points by averaging contiguous chunks.
+ */
+function downsample(values: number[], width: number): number[] {
+    if (values.length <= width) return values;
+
+    const chunkSize = Math.ceil(values.length / width);
+    const out: number[] = [];
+
+    for (let i = 0; i < values.length; i += chunkSize) {
+        const chunk = values.slice(i, i + chunkSize);
+        const sum = chunk.reduce((a, b) => a + b, 0);
+        out.push(sum / chunk.length);
+    }
+
+    return out;
+}
+
+/**
+ * Basic statistics for a numeric array:
+ * - min, max, mean
+ * - p50 (median-ish) and p90 (90th percentile)
+ *
+ * Returns zeros when the input array is empty.
+ */
+function stats(arr: number[]) {
+    if (arr.length === 0) {
+        return { min: 0, max: 0, mean: 0, p50: 0, p90: 0 };
+    }
+
+    const min = Math.min(...arr);
+    const max = Math.max(...arr);
+    const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
+    const sorted = [...arr].sort((a, b) => a - b);
+
+    const quantile = (p: number) => {
+        const idx = Math.min(sorted.length - 1, Math.floor(p * (sorted.length - 1)));
+        return sorted[idx];
+    };
+
+    return { min, max, mean, p50: quantile(0.5), p90: quantile(0.9) };
+}
+
+/**
+ * Read peer-count series from collator log files, print a short report
+ * for each, and assert that “1 peer” is not the majority of samples.
+ *
+ * @param baseDir       Directory where the collator log files live.
+ * @param collatorNames Names of collators (without ".log"), e.g. ["Collator2000-01", "Collator2000-02"].
+ * @param nodeLabel     Node label passed to `collectSeries` and used in log output (e.g. "Container-2000").
+ */
+export async function analyzeCollatorPeers(baseDir: string, collatorNames: string[], nodeLabel: string): Promise<void> {
+    for (const name of collatorNames) {
+        const path = `${base}/${name}.log`;
+        const { peers, times } = await collectSeries(path, nodeLabel);
+
+        expect(peers.length, `${name}: no 'Idle (N peers)' lines found in ${path}`).to.be.greaterThan(0);
+
+        const st = stats(peers);
+        const ones = peers.filter((n) => n === 1).length;
+        const zeros = peers.filter((n) => n === 0).length;
+        const frac1 = ones / peers.length;
+        const frac0 = zeros / peers.length;
+
+        const firstTs = times[0] || "(unknown start)";
+        const lastTs = times[times.length - 1] || "(unknown end)";
+
+        console.log(`\n[${name}] peers over time (${peers.length} samples)`);
+        console.log(`[${name}] window: ${firstTs}  →  ${lastTs}`);
+        console.log(
+            `[${name}] min=${st.min}, max=${st.max}, mean=${st.mean.toFixed(
+                2
+            )}, p50=${st.p50}, p90=${st.p90} | 1-peer=${(frac1 * 100).toFixed(
+                1
+            )}% (${ones}/${peers.length}) | 0-peer=${(frac0 * 100).toFixed(1)}% (${zeros}/${peers.length})`
+        );
+        console.log(`[${name}] sparkline:\n${sparkline(peers)}\n`);
+
+        expect(
+            frac1,
+            `${name}: majority of samples report exactly 1 peer (${ones}/${peers.length} = ${(frac1 * 100).toFixed(
+                1
+            )}%). Expected ≤ 50%.`
+        ).to.be.at.most(0.5);
+    }
+}
+
+// (log file, node kind) -> list of discovered addresses (unique, in order seen)
+type DiscoveryMap = Map<string, Map<string, string[]>>;
+
+// file -> kind -> Set<port>
+type PortMap = Map<string, Map<string, Set<number>>>;
+
+/**
+ * Scan all *.log files in `baseDir` for
+ * "Discovered new external address for our node: <multiaddr>" lines.
+ *
+ * Returns:
+ *   filePath -> nodeKind -> [multiaddr, ...]   (unique per kind, in order seen)
+ */
+async function buildDiscoveryMap(baseDir: string): Promise<DiscoveryMap> {
+    const { readFile, readdir } = await import("node:fs/promises");
+
+    const map: DiscoveryMap = new Map();
+    const names = await readdir(baseDir);
+    const files = names.filter((n) => n.endsWith(".log")).map((n) => `${baseDir}/${n}`);
+
+    // Example line:
+    // 2025-10-16 12:38:12 [Container-2000] 🔍 Discovered new external address for our node: /ip4/127.0.0.1/tcp/46873/ws/p2p/...
+    const re =
+        /^\s*\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:\.\d+)?[^\[]*\[([^\]]+)\].*?Discovered new external address for our node:\s*(\S+)/gim;
+
+    for (const file of files) {
+        let txt: string;
+        try {
+            txt = await readFile(file, "utf8");
+        } catch {
+            continue;
+        }
+
+        for (const m of txt.matchAll(re)) {
+            const nodeKind = m[1]; // e.g. "Container-2000", "Parachain", "Relaychain"
+            const addr = m[2]; // multiaddr
+
+            let inner = map.get(file);
+            if (!inner) {
+                inner = new Map<string, string[]>();
+                map.set(file, inner);
+            }
+
+            let list = inner.get(nodeKind);
+            if (!list) {
+                list = [];
+                inner.set(nodeKind, list);
+            }
+
+            if (!list.includes(addr)) {
+                list.push(addr);
+            }
+        }
+    }
+
+    return map;
+}
+
+function printDiscoverySummary(discovered: DiscoveryMap): void {
+    for (const [file, byKind] of discovered) {
+        for (const [kind, addrs] of byKind) {
+            console.log(`[Discovery] ${file} [${kind}] (${addrs.length} addrs):\n  ${addrs.join("\n  ")}`);
+        }
+    }
+}
+
+/**
+ * Extract all tcp/udp port numbers from a multiaddr string.
+ * e.g. ".../tcp/46873/ws..." or ".../udp/30333/quic-v1/..." => [46873] / [30333]
+ */
+function extractPorts(addr: string): number[] {
+    const out: number[] = [];
+    for (const m of addr.matchAll(/\/(?:tcp|udp)\/(\d+)\b/gi)) {
+        const n = Number.parseInt(m[1] ?? "", 10);
+        if (Number.isFinite(n)) out.push(n);
+    }
+    return out;
+}
+
+/**
+ * From the discovery map, build:
+ *   - portMap: file -> kind -> Set<port>
+ *   - ownersByPort: port -> Set<"file [kind]">
+ */
+function buildPortMaps(discovered: DiscoveryMap): {
+    portMap: PortMap;
+    ownersByPort: Map<number, Set<string>>;
+} {
+    const portMap: PortMap = new Map();
+    const ownersByPort: Map<number, Set<string>> = new Map();
+
+    for (const [file, byKind] of discovered) {
+        let kindsMap = portMap.get(file);
+        if (!kindsMap) {
+            kindsMap = new Map<string, Set<number>>();
+            portMap.set(file, kindsMap);
+        }
+
+        for (const [kind, addrs] of byKind) {
+            let portSet = kindsMap.get(kind);
+            if (!portSet) {
+                portSet = new Set<number>();
+                kindsMap.set(kind, portSet);
+            }
+
+            for (const addr of addrs) {
+                const ports = extractPorts(addr);
+                for (const p of ports) {
+                    portSet.add(p);
+
+                    const owner = `${file} [${kind}]`;
+                    let owners = ownersByPort.get(p);
+                    if (!owners) {
+                        owners = new Set<string>();
+                        ownersByPort.set(p, owners);
+                    }
+                    owners.add(owner);
+                }
+            }
+        }
+    }
+
+    return { portMap, ownersByPort };
+}
+
+function printPortSummary(portMap: PortMap): void {
+    for (const [file, kinds] of portMap) {
+        for (const [kind, ports] of kinds) {
+            const sorted = [...ports].sort((a, b) => a - b);
+            console.log(`[DiscoveryPorts] ${file} [${kind}] (${sorted.length} ports): ${sorted.join(", ")}`);
+        }
+    }
+}
+
+/**
+ * Assert that no TCP/UDP port is reused by more than one (file, kind) owner.
+ * Fails the test with a clear message listing all owners of the colliding port.
+ */
+function assertUniquePorts(ownersByPort: Map<number, Set<string>>): void {
+    for (const [port, owners] of ownersByPort) {
+        if (owners.size > 1) {
+            const list = [...owners].join(" , ");
+            expect.fail(`Port ${port} reused by multiple nodes: ${list}`);
+        }
+    }
+}
+
+/**
+ * End-to-end check:
+ *   1. Load discovery lines from all *.log files in baseDir.
+ *   2. Print a human-readable summary (addresses + ports).
+ *   3. Assert that no TCP/UDP port is reused by multiple nodes.
+ */
+export async function assertNoPortCollisionsInDiscoveryLogs(baseDir: string): Promise<void> {
+    const discovered = await buildDiscoveryMap(baseDir);
+
+    // Optional summaries; keep or remove as you prefer.
+    printDiscoverySummary(discovered);
+
+    const { portMap, ownersByPort } = buildPortMaps(discovered);
+    printPortSummary(portMap);
+
+    assertUniquePorts(ownersByPort);
+}
 
 describeSuite({
     id: "ZOMBIETANSSICP01",
@@ -165,400 +567,37 @@ describeSuite({
             id: "T11",
             title: "Gather logs: Discovered new external address",
             test: async () => {
-                // Parse "Discovered new external address" lines across all logs
-                const { readFile, readdir } = await import("node:fs/promises");
-
-                // (log file, node kind) -> list of discovered addresses (unique, in order seen)
-                type DiscoveryMap = Map<string, Map<string, string[]>>;
-
-                const buildDiscoveryMap = async (baseDir: string): Promise<DiscoveryMap> => {
-                    const map: DiscoveryMap = new Map();
-                    const names = await readdir(baseDir);
-                    const files = names.filter((n) => n.endsWith(".log")).map((n) => `${baseDir}/${n}`);
-
-                    // Example line:
-                    // 2025-10-16 12:38:12 [Container-2000] 🔍 Discovered new external address for our node: /ip4/127.0.0.1/tcp/46873/ws/p2p/...
-                    const re =
-                        /^\s*\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:\.\d+)?[^\[]*\[([^\]]+)\].*?Discovered new external address for our node:\s*(\S+)/gim;
-
-                    for (const file of files) {
-                        let txt = "";
-                        try {
-                            txt = await readFile(file, "utf8");
-                        } catch {
-                            continue;
-                        }
-
-                        // If `re` is global (/g or /y), reset lastIndex before reusing it.
-                        if ("lastIndex" in re) re.lastIndex = 0;
-
-                        let m: RegExpExecArray | null;
-                        while (true) {
-                            m = re.exec(txt);
-                            if (m === null) break;
-
-                            const nodeKind = m[1]; // e.g. "Container-2000", "Parachain", "Relaychain"
-                            const addr = m[2]; // multiaddr
-
-                            let inner = map.get(file);
-                            if (!inner) {
-                                inner = new Map<string, string[]>();
-                                map.set(file, inner);
-                            }
-
-                            let list = inner.get(nodeKind);
-                            if (!list) {
-                                list = [];
-                                inner.set(nodeKind, list);
-                            }
-
-                            if (!list.includes(addr)) list.push(addr);
-                        }
-                    }
-                    return map;
-                };
-
-                const base = getTmpZombiePath();
-                const discoveredAddressMap = await buildDiscoveryMap(base);
-
-                // Optional: print a readable summary
-                for (const [file, byKind] of discoveredAddressMap) {
-                    for (const [kind, addrs] of byKind) {
-                        console.log(`[Discovery] ${file} [${kind}] (${addrs.length} addrs):\n  ${addrs.join("\n  ")}`);
-                    }
-                }
-
-                // ---- Extract TCP/UDP ports from multiaddrs, build port maps, assert uniqueness ----
-                const extractPorts = (addr: string): number[] => {
-                    const out: number[] = [];
-                    // capture all tcp/udp segments, e.g. .../tcp/46873/ws..., .../udp/30333/quic-v1/...
-                    for (const m of addr.matchAll(/\/(?:tcp|udp)\/(\d+)\b/gi)) {
-                        const n = Number.parseInt(m[1] ?? "", 10);
-                        if (Number.isFinite(n)) out.push(n);
-                    }
-                    return out;
-                };
-
-                // file -> kind -> Set<port>
-                const portMap: Map<string, Map<string, Set<number>>> = new Map();
-                // port -> Set<ownerPair> (ownerPair = `${file} [${kind}]`)
-                const ownersByPort: Map<number, Set<string>> = new Map();
-
-                for (const [file, byKind] of discoveredAddressMap) {
-                    let kindsMap = portMap.get(file);
-                    if (!kindsMap) {
-                        kindsMap = new Map(); // Map<Kind, Set<number>>
-                        portMap.set(file, kindsMap);
-                    }
-
-                    for (const [kind, addrs] of byKind) {
-                        let portSet = kindsMap.get(kind);
-                        if (!portSet) {
-                            portSet = new Set<number>();
-                            kindsMap.set(kind, portSet);
-                        }
-
-                        for (const addr of addrs) {
-                            const ports = extractPorts(addr);
-                            for (const p of ports) {
-                                portSet.add(p);
-
-                                const owner = `${file} [${kind}]`;
-                                let set = ownersByPort.get(p);
-                                if (!set) {
-                                    set = new Set<typeof owner>();
-                                    ownersByPort.set(p, set);
-                                }
-                                set.add(owner);
-                            }
-                        }
-                    }
-                }
-
-                // Optional: print a summary of discovered ports per (file, kind)
-                for (const [file, kinds] of portMap) {
-                    for (const [kind, ports] of kinds) {
-                        const sorted = [...ports].sort((a, b) => a - b);
-                        console.log(
-                            `[DiscoveryPorts] ${file} [${kind}] (${sorted.length} ports): ${sorted.join(", ")}`
-                        );
-                    }
-                }
-
-                // Assertion A: within the same file, no port reused by different node kinds
-                for (const [file, kinds] of portMap) {
-                    const ownerByPort = new Map<number, string>();
-                    for (const [kind, ports] of kinds) {
-                        for (const p of ports) {
-                            const prev = ownerByPort.get(p);
-                            if (prev && prev !== kind) {
-                                expect.fail(`Port collision in ${file}: port ${p} used by [${prev}] and [${kind}]`);
-                            }
-                            ownerByPort.set(p, kind);
-                        }
-                    }
-                }
-
-                // Assertion B: across files, no ports in common
-                const files = [...portMap.keys()];
-                for (let i = 0; i < files.length; i++) {
-                    const fi = files[i];
-                    const portsI = new Set<number>();
-                    const setsI = portMap.get(fi);
-                    for (const set of setsI.values()) {
-                        for (const p of set) {
-                            portsI.add(p);
-                        }
-                    }
-
-                    for (let j = i + 1; j < files.length; j++) {
-                        const fj = files[j];
-                        const portsJ = new Set<number>();
-                        const setsJ = portMap.get(fj);
-                        if (setsJ) {
-                            for (const set of setsJ.values()) {
-                                for (const p of set) {
-                                    portsJ.add(p);
-                                }
-                            }
-                        }
-
-                        for (const p of portsI) {
-                            if (portsJ.has(p)) {
-                                expect.fail(`Port collision across files: port ${p} appears in both ${fi} and ${fj}`);
-                            }
-                        }
-                    }
-                }
-
-                // Bonus single-pass global check (covers both A & B). Comment out if you prefer the tailored messages above.
-                // for (const [p, owners] of ownersByPort) {
-                //     if (owners.size > 1) {
-                //         expect.fail(`Port ${p} reused by multiple nodes: ${[...owners].join(" , ")}`);
-                //     }
-                // }
+                const baseDir = getTmpZombiePath();
+                await assertNoPortCollisionsInDiscoveryLogs(baseDir);
             },
         });
 
         it({
-            id: "T13",
+            id: "T12",
             title: "Wait 2 sessions",
             timeout: 600000,
             test: async () => {
                 await waitSessions(context, relayApi, 3, null, "Tanssi");
             },
         });
+
         it({
-            id: "T12",
+            id: "T13",
             title: "Peers over time for container collators (fail if majority == 1) + block authors list",
             timeout: 240000,
             test: async () => {
-                const { readFile } = await import("node:fs/promises");
+                // Print block authors list for Container-2000
+                // This is to detect issues that affect a single collator: we expect to see both collators producing
+                // blocks. If only one collator is producing blocks, then it means that the other collator crashed or
+                // failed to start, so it is expected to see that the other one only has 1 peer.
+                await printBlockAuthorsWindow(container2000Api, "Container-2000");
 
-                const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-                // -------- Peer series helpers --------
-                const parsePeerSeries = (txt: string) => {
-                    const peers: number[] = [];
-                    const times: string[] = [];
-                    const lines = txt.split(/\r?\n/);
-                    const rePeers = /Idle\s*\(\s*(\d+)\s*peers?\s*\)/i;
-
-                    for (const line of lines) {
-                        if (!line.includes("[Container-2000]") || !line.includes("Idle")) continue;
-                        const m = rePeers.exec(line);
-                        if (!m) continue;
-                        const n = Number.parseInt(m[1], 10);
-                        if (!Number.isNaN(n)) {
-                            peers.push(n);
-                            const bracket = line.indexOf("[");
-                            const ts = bracket > 0 ? line.slice(0, bracket).trim() : "";
-                            times.push(ts);
-                        }
-                    }
-                    return { peers, times };
-                };
-
-                const sparkline = (nums: number[]) => {
-                    if (nums.length === 0) return "";
-                    const blocks = "▁▂▃▄▅▆▇█";
-                    const target = 120;
-                    const downsample = (arr: number[], width: number) => {
-                        if (arr.length <= width) return arr;
-                        const size = Math.ceil(arr.length / width);
-                        const out: number[] = [];
-                        for (let i = 0; i < arr.length; i += size) {
-                            const chunk = arr.slice(i, i + size);
-                            const avg = chunk.reduce((a, b) => a + b, 0) / chunk.length;
-                            out.push(avg);
-                        }
-                        return out;
-                    };
-                    const data = downsample(nums, target);
-                    const min = Math.min(...data);
-                    const max = Math.max(...data);
-                    if (max === min)
-                        return blocks[Math.min(blocks.length - 1, Math.max(0, Math.floor(blocks.length / 2)))].repeat(
-                            data.length
-                        );
-                    return data
-                        .map((v) => {
-                            const t = (v - min) / (max - min);
-                            const idx = Math.max(0, Math.min(blocks.length - 1, Math.round(t * (blocks.length - 1))));
-                            return blocks[idx];
-                        })
-                        .join("");
-                };
-
-                const stats = (arr: number[]) => {
-                    if (arr.length === 0) return { min: 0, max: 0, mean: 0, p50: 0, p90: 0 };
-                    const min = Math.min(...arr);
-                    const max = Math.max(...arr);
-                    const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
-                    const sorted = [...arr].sort((a, b) => a - b);
-                    const q = (p: number) => sorted[Math.min(sorted.length - 1, Math.floor(p * (sorted.length - 1)))];
-                    return { min, max, mean, p50: q(0.5), p90: q(0.9) };
-                };
-
-                const collectSeries = async (logPath: string) => {
-                    let tries = 0;
-                    let series = { peers: [] as number[], times: [] as string[] };
-                    while (tries < 5) {
-                        try {
-                            const txt = await readFile(logPath, "utf8");
-                            series = parsePeerSeries(txt);
-                            if (series.peers.length >= 8) break;
-                        } catch {
-                            // file may not exist yet
-                        }
-                        await sleep(5000);
-                        tries++;
-                    }
-                    return series;
-                };
-
-                const base = getTmpZombiePath();
-                const collatorLogs = [
-                    { name: "Collator2000-01", path: `${base}/Collator2000-01.log` },
-                    { name: "Collator2000-02", path: `${base}/Collator2000-02.log` },
-                ];
-
-                // -------- Block authors list (Container-2000) --------
-                // Prefer project utility.
-                const getAuthorsRange = async (start: number, end: number): Promise<Array<[number, string]>> => {
-                    return await getAuthorFromDigestRange(container2000Api, start, end);
-                };
-
-                // Fetch block timestamp (ms) at a given height. Try storage first; fallback to scanning extrinsics.
-                const fetchTimestampMs = async (num: number): Promise<number | undefined> => {
-                    try {
-                        const hash = await container2000Api.rpc.chain.getBlockHash(num);
-                        try {
-                            const ts = await (container2000Api as any).query?.timestamp?.now?.at?.(hash);
-                            if (ts && typeof ts.toNumber === "function") return ts.toNumber();
-                        } catch {
-                            // fall through to extrinsic scan
-                        }
-                        const blk = await container2000Api.rpc.chain.getBlock(hash);
-                        for (const ex of blk.block.extrinsics as any[]) {
-                            const m = ex.method;
-                            if (m?.section === "timestamp" && m?.method === "set" && m?.args?.length) {
-                                const v = m.args[0];
-                                const n =
-                                    typeof v?.toNumber === "function"
-                                        ? v.toNumber()
-                                        : Number(v?.toString?.() ?? Number.NaN);
-                                if (Number.isFinite(n)) return n;
-                            }
-                        }
-                    } catch {
-                        // ignore
-                    }
-                    return undefined;
-                };
-
-                const head = await container2000Api.rpc.chain.getBlock();
-                const current = head.block.header.number.toNumber();
-                const window = Math.min(60, Math.max(10, current >= 10 ? 40 : current + 1)); // 40 by default, clamp 10..60
-                const start = Math.max(1, current - window + 1);
-                const end = current;
-
-                const authorPairs = await getAuthorsRange(start, end);
-
-                // Pretty print list + time deltas + a tiny summary
-                const byAuthor = new Map<string, number>();
-                console.log(`\n[Container-2000] Block authors for #${start}..#${end} (${authorPairs.length} blocks):`);
-
-                // Seed previous timestamp with block (start-1) if available; otherwise first delta will be 0s.
-                let prevTs = null;
-
-                const rows: Array<{ n: number; author: string; delta: number }> = [];
-                for (const [n, author] of authorPairs) {
-                    const ts = await fetchTimestampMs(n);
-                    const deltaSec = prevTs != null && ts != null ? Math.max(0, Math.round((ts - prevTs) / 1000)) : 0;
-
-                    rows.push({ n, author, delta: deltaSec });
-
-                    if (ts != null) prevTs = ts;
-                    byAuthor.set(author, (byAuthor.get(author) ?? 0) + 1);
-                }
-
-                const numWidth = Math.max(...rows.map((r) => r.n)).toString().length; // width for block numbers
-                const deltaWidth = Math.max(...rows.map((r) => r.delta), 0).toString().length; // width for delta seconds
-
-                const lines = rows.map(
-                    ({ n, author, delta }) =>
-                        `#${n.toString().padStart(numWidth)} (+${delta.toString().padStart(deltaWidth)}s): ${author}`
-                );
-
-                console.log(lines.join("\n"));
-                const entries = [...byAuthor.entries()].sort((a, b) => b[1] - a[1]);
-                const summaryLines = entries.map(([a, c]) => `  - ${a}: ${c}`).join("\n") || "  (none)";
-                console.log(`[Container-2000] Authors summary:\n${summaryLines}`);
-
-                // -------- Run peers analysis + assertions --------
-                for (const { name, path } of collatorLogs) {
-                    const { peers, times } = await collectSeries(path);
-
-                    expect(peers.length, `${name}: no 'Idle (N peers)' lines found in ${path}`).to.be.greaterThan(0);
-
-                    const st = stats(peers);
-                    const ones = peers.filter((n) => n === 1).length;
-                    const zeros = peers.filter((n) => n === 0).length;
-                    const frac1 = ones / peers.length;
-                    const frac0 = zeros / peers.length;
-
-                    const firstTs = times[0] || "(unknown start)";
-                    const lastTs = times[times.length - 1] || "(unknown end)";
-
-                    console.log(`\n[${name}] peers over time (${peers.length} samples)`);
-                    console.log(`[${name}] window: ${firstTs}  →  ${lastTs}`);
-                    console.log(
-                        `[${name}] min=${st.min}, max=${st.max}, mean=${st.mean.toFixed(2)}, p50=${st.p50}, p90=${st.p90} | 1-peer=${(
-                            frac1 * 100
-                        ).toFixed(
-                            1
-                        )}% (${ones}/${peers.length}) | 0-peer=${(frac0 * 100).toFixed(1)}% (${zeros}/${peers.length})`
-                    );
-                    console.log(`[${name}] sparkline:\n${sparkline(peers)}\n`);
-
-                    expect(
-                        frac1,
-                        `${name}: majority of samples report exactly 1 peer (${ones}/${peers.length} = ${(frac1 * 100).toFixed(1)}%). Expected ≤ 50%.`
-                    ).to.be.at.most(0.5);
-                }
-
-                // Optional cross-check: current RPC health peers for Container2000 (non-fatal)
-                try {
-                    const health: any = await container2000Api.rpc.system.health();
-                    const peersNow =
-                        typeof health?.peers?.toNumber === "function"
-                            ? health.peers.toNumber()
-                            : (health?.toJSON?.().peers ?? 0);
-                    console.log(`[Container2000 RPC] current peers=${peersNow}`);
-                } catch {
-                    // ignore if not available
-                }
+                // Parse collator logs and get the number of peers over time from there
+                // This will fail the test if both collators only have 1 peer
+                const baseDir = getTmpZombiePath();
+                const collators = ["Collator2000-01", "Collator2000-02"];
+                const nodeLabel = "Container-2000";
+                await analyzeCollatorPeers(baseDir, collators, nodeLabel);
             },
         });
 
