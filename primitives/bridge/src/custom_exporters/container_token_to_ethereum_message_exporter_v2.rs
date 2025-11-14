@@ -467,7 +467,8 @@ where
         let origin_location = match_expression!(self.next()?, AliasOrigin(origin), origin)
             .ok_or(AliasOriginExpected)?;
 
-        let origin = crate::TanssiAgentIdOf::convert_location(origin_location).ok_or(InvalidOrigin)?;
+        let origin =
+            crate::TanssiAgentIdOf::convert_location(origin_location).ok_or(InvalidOrigin)?;
 
         let (deposit_assets, beneficiary) = match_expression!(
             self.next()?,

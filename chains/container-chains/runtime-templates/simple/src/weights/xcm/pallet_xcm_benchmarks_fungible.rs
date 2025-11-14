@@ -201,31 +201,6 @@ impl<T: frame_system::Config> WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(11_u64))
 			.saturating_add(T::DbWeight::get().writes(5_u64))
 	}
-	/// Storage: `Parameters::Parameters` (r:1 w:0)
-	/// Proof: `Parameters::Parameters` (`max_values`: None, `max_size`: Some(61), added: 2536, mode: `MaxEncodedLen`)
-	/// Storage: `ParachainSystem::UpwardDeliveryFeeFactor` (r:1 w:0)
-	/// Proof: `ParachainSystem::UpwardDeliveryFeeFactor` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `PolkadotXcm::SupportedVersion` (r:1 w:0)
-	/// Proof: `PolkadotXcm::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `PolkadotXcm::VersionDiscoveryQueue` (r:1 w:1)
-	/// Proof: `PolkadotXcm::VersionDiscoveryQueue` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `PolkadotXcm::SafeXcmVersion` (r:1 w:0)
-	/// Proof: `PolkadotXcm::SafeXcmVersion` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `ParachainSystem::HostConfiguration` (r:1 w:0)
-	/// Proof: `ParachainSystem::HostConfiguration` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `ForeignAssetsCreator::ForeignAssetToAssetId` (r:1 w:0)
-	/// Proof: `ForeignAssetsCreator::ForeignAssetToAssetId` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `ParachainSystem::PendingUpwardMessages` (r:1 w:1)
-	/// Proof: `ParachainSystem::PendingUpwardMessages` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	pub(crate) fn initiate_teleport() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `400`
-		//  Estimated: `3865`
-		// Minimum execution time: 32_000_000 picoseconds.
-		Weight::from_parts(37_000_000, 3865)
-			.saturating_add(T::DbWeight::get().reads(8_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
-	}
 	/// Storage: `ForeignAssetsCreator::ForeignAssetToAssetId` (r:1 w:0)
 	/// Proof: `ForeignAssetsCreator::ForeignAssetToAssetId` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)

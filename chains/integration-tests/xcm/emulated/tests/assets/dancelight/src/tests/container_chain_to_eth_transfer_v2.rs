@@ -17,29 +17,35 @@
 use {
     dancelight_emulated_chain::{genesis::INITIAL_BALANCE, DancelightRelayPallet},
     dancelight_system_emulated_network::{
-        DancelightRelay as Dancelight, DancelightSender, FrontierTemplatePara as FrontierTemplate,
+        DancelightRelay as Dancelight, DancelightSender,
+        FrontierTemplatePara as FrontierTemplate,
         SimpleTemplatePara as SimpleTemplate, SimpleTemplateSender,
     },
-    frame_support::assert_ok,
-    frame_support::traits::PalletInfoAccess,
+    frame_support::{assert_ok, traits::PalletInfoAccess},
     frontier_template_emulated_chain::{EthereumSender, FrontierTemplateParaPallet},
     simple_template_emulated_chain::SimpleTemplateParaPallet,
-    snowbridge_core::{AgentId, ChannelId},
     sp_core::H160,
-    xcm::latest::prelude::*,
-    xcm_emulator::{Chain, TestExt},
+    sp_runtime::{BoundedVec, FixedU128},
+    xcm::{latest::prelude::*, opaque::latest::AssetTransferFilter, VersionedXcm},
+    xcm_emulator::{assert_expected_events, Chain, TestExt},
     xcm_executor::traits::ConvertLocation,
 };
 
+const RELAY_NATIVE_TOKEN_ASSET_ID: u16 = 42;
+const RELAY_TOKEN_ASSET_LOCATION: Location = Location::parent();
+
 #[test]
-fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
+fn check_if_container_chain_router_is_working_for_eth_transfer_frontier_snowbridge_v2() {
     // Define common constants and accounts
     const CONTAINER_PARA_ID: u32 = 2001;
 
     let container_fee =
         container_chain_template_frontier_runtime::xcm_config::ContainerToEthTransferFee::get();
 
+    let export_fee_amount = 1_000_000_000u128;
+
     let fees_account = dancelight_runtime::SnowbridgeFeesAccount::get();
+    let mut fees_account_balance_before = 0u128;
 
     // Common location calculations
     let container_location = Location::new(0, Parachain(CONTAINER_PARA_ID));
@@ -49,12 +55,12 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
 
     Dancelight::execute_with(|| {
         // Get initial balances
-        let fees_balance_before =
+        fees_account_balance_before =
             <Dancelight as DancelightRelayPallet>::System::account(fees_account.clone())
                 .data
                 .free;
 
-        assert_eq!(fees_balance_before, INITIAL_BALANCE);
+        assert_eq!(fees_account_balance_before, INITIAL_BALANCE);
 
         // Setup origins
         let root_origin = <Dancelight as Chain>::RuntimeOrigin::root();
@@ -86,32 +92,30 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
                 }
             )
         );
-
-        // Set token transfer channel in EthereumTokenTransfers
-        assert_ok!(<Dancelight as DancelightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(root_origin, ChannelId::new([5u8; 32]), AgentId::from_low_u64_be(10), 3000u32.into()));
     });
 
     FrontierTemplate::execute_with(|| {
-        let sovereign_account =
+        let root_origin = <FrontierTemplate as Chain>::RuntimeOrigin::root();
+        let alice_account = EthereumSender::get();
+        let ethereum_sovereign_account =
             container_chain_template_frontier_runtime::xcm_config::LocationToAccountId::convert_location(
                 &Location::new(2, container_chain_template_frontier_runtime::EthereumNetwork::get()),
             )
                 .unwrap();
 
+        let eth_sovereign_account_balance_before =
+            <FrontierTemplate as FrontierTemplateParaPallet>::System::account(
+                ethereum_sovereign_account.clone(),
+            )
+            .data
+            .free;
+
+        assert_eq!(eth_sovereign_account_balance_before, 0u128);
+
         let beneficiary_address = H160([
             0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab,
             0xcd, 0xef, 0x01, 0x23, 0x45, 0x67,
         ]);
-
-        let eth_destination = Location {
-            parents: 2,
-            interior: Junctions::X1(
-                [GlobalConsensus(
-                    container_chain_template_frontier_runtime::EthereumNetwork::get(),
-                )]
-                .into(),
-            ),
-        };
 
         let beneficiary_location = Location {
             parents: 0,
@@ -126,76 +130,140 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
             ),
         };
 
-        let amount_to_transfer = 1_000;
+        let amount_to_withdraw = 1_000_000_000_000_000u128;
+        let amount_to_transfer = 1_000_000_000_000u128;
 
         let asset_location = Location {
             parents: 0,
             interior: Junctions::X1([PalletInstance(<<FrontierTemplate as FrontierTemplateParaPallet>::Balances as PalletInfoAccess>::index() as u8)].into()),
         };
 
-        let eth_asset =
+        let relay_asset_location = Location {
+            parents: 1,
+            interior: Here,
+        };
+
+        let container_asset_to_withdraw =
+            AssetId(asset_location.clone()).into_asset(Fungibility::Fungible(amount_to_withdraw));
+
+        let container_asset_to_transfer =
             AssetId(asset_location.clone()).into_asset(Fungibility::Fungible(amount_to_transfer));
+
+        let fee_asset =
+            AssetId(relay_asset_location.clone()).into_asset(Fungibility::Fungible(export_fee_amount));
 
         let alice_origin =
             <FrontierTemplate as Chain>::RuntimeOrigin::signed(EthereumSender::get());
 
-        let balance_before =
-            <FrontierTemplate as FrontierTemplateParaPallet>::System::account(sovereign_account)
-                .data
-                .free;
-
         assert_ok!(
-            <FrontierTemplate as FrontierTemplateParaPallet>::PolkadotXcm::transfer_assets(
-                alice_origin,
-                Box::new(eth_destination.into()),
-                Box::new(beneficiary_location.into()),
-                Box::new(vec![eth_asset].into()),
-                0u32,
-                Unlimited
+            <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
+                root_origin.clone(),
+                RELAY_TOKEN_ASSET_LOCATION,
+                RELAY_NATIVE_TOKEN_ASSET_ID,
+                alice_account.clone().into(),
+                true,
+                1
             )
         );
 
-        let balance_after =
-            <FrontierTemplate as FrontierTemplateParaPallet>::System::account(sovereign_account)
-                .data
-                .free;
+        // Create asset rate for relay token
+        assert_ok!(
+            <FrontierTemplate as FrontierTemplateParaPallet>::AssetRate::create(
+                root_origin.clone(),
+                Box::new(RELAY_NATIVE_TOKEN_ASSET_ID),
+                FixedU128::from_u32(500_000_000)
+            )
+        );
 
-        assert_eq!(balance_after - balance_before, amount_to_transfer);
+        assert_ok!(
+            <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssets::mint(
+                alice_origin.clone(),
+                RELAY_NATIVE_TOKEN_ASSET_ID,
+                alice_account,
+                100_000_000_000_000u128
+            )
+        );
+
+        let assets = vec![container_asset_to_withdraw.clone(), fee_asset.clone()];
+
+        let xcm: VersionedXcm<container_chain_template_frontier_runtime::RuntimeCall> =
+            VersionedXcm::from(Xcm(vec![
+                WithdrawAsset(assets.clone().into()),
+                InitiateTransfer {
+                    destination: container_chain_template_frontier_runtime::EthereumLocation::get()
+                        .into(),
+                    remote_fees: Some(AssetTransferFilter::ReserveWithdraw(
+                        fee_asset.clone().into(),
+                    )),
+                    preserve_origin: true,
+                    assets: BoundedVec::truncate_from(vec![AssetTransferFilter::ReserveDeposit(
+                        Definite(container_asset_to_transfer.clone().into()),
+                    )]),
+                    remote_xcm: Xcm(vec![DepositAsset {
+                        assets: Wild(AllCounted(1)),
+                        beneficiary: beneficiary_location,
+                    }]),
+                },
+            ]))
+            .into();
+
+        assert_ok!(
+            <FrontierTemplate as FrontierTemplateParaPallet>::PolkadotXcm::execute(
+                alice_origin.clone(),
+                Box::new(xcm),
+                Weight::from(16_000_000_000)
+            )
+        );
+
+        let eth_sovereign_account_balance_after =
+            <FrontierTemplate as FrontierTemplateParaPallet>::System::account(
+                ethereum_sovereign_account.clone(),
+            )
+            .data
+            .free;
+
+        assert_eq!(eth_sovereign_account_balance_after - eth_sovereign_account_balance_before, amount_to_transfer);
     });
 
     Dancelight::execute_with(|| {
-        // Check final balances
-        let fees_balance_after =
+        type RuntimeEvent = <Dancelight as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            Dancelight,
+            vec![
+                RuntimeEvent::EthereumOutboundQueueV2(snowbridge_pallet_outbound_queue_v2::Event::MessageAccepted { nonce: 1, id: _ }) => {},
+            ]
+        );
+
+        // Check feesAccount balance (fees should have been collected)
+        let fees_account_balance_after =
             <Dancelight as DancelightRelayPallet>::System::account(fees_account)
                 .data
                 .free;
-        let container_sovereign_balance_after =
+        assert!(fees_account_balance_after > fees_account_balance_before);
+        assert!(fees_account_balance_after <= fees_account_balance_before + export_fee_amount);
+
+        let container_sovereign_account_balance_after =
             <Dancelight as DancelightRelayPallet>::System::account(container_sovereign_account)
                 .data
                 .free;
 
-        // Fees are collected on Tanssi
-        assert!(fees_balance_after > INITIAL_BALANCE);
-
-        // Check we are in range
-        assert!(fees_balance_after <= INITIAL_BALANCE + container_fee);
-
-        // Check that fees were deducted from the container's sovereign account
-        // and that we are in range as well.
-        assert!(container_sovereign_balance_after < INITIAL_BALANCE);
-        assert!(container_sovereign_balance_after >= INITIAL_BALANCE - container_fee);
+        assert!(container_sovereign_account_balance_after < INITIAL_BALANCE);
+        assert!(container_sovereign_account_balance_after >= INITIAL_BALANCE - export_fee_amount - container_fee);
     });
 }
 
 #[test]
-fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
+fn check_if_container_chain_router_is_working_for_eth_transfer_simple_snowbridge_v2() {
     // Define common constants and accounts
     const CONTAINER_PARA_ID: u32 = 2002;
 
     let container_fee =
         container_chain_template_simple_runtime::xcm_config::ContainerToEthTransferFee::get();
 
+    let export_fee_amount = 1_000_000_000u128;
+
     let fees_account = dancelight_runtime::SnowbridgeFeesAccount::get();
+    let mut fees_account_balance_before = 0u128;
 
     // Common location calculations
     let container_location = Location::new(0, Parachain(CONTAINER_PARA_ID));
@@ -205,12 +273,12 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
 
     Dancelight::execute_with(|| {
         // Get initial balances
-        let fees_balance_before =
+        fees_account_balance_before =
             <Dancelight as DancelightRelayPallet>::System::account(fees_account.clone())
                 .data
                 .free;
 
-        assert_eq!(fees_balance_before, INITIAL_BALANCE);
+        assert_eq!(fees_account_balance_before, INITIAL_BALANCE);
 
         // Setup origins
         let root_origin = <Dancelight as Chain>::RuntimeOrigin::root();
@@ -236,118 +304,169 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
                 root_origin.clone(),
                 Box::new(asset_location.into()),
                 snowbridge_core::AssetMetadata {
-                    name: "container2002".as_bytes().to_vec().try_into().unwrap(),
-                    symbol: "container2002".as_bytes().to_vec().try_into().unwrap(),
-                    decimals: 12,
+                    name: "container2000".as_bytes().to_vec().try_into().unwrap(),
+                    symbol: "container2000".as_bytes().to_vec().try_into().unwrap(),
+                    decimals: 18,
                 }
             )
         );
-
-        // Set token transfer channel in EthereumTokenTransfers
-        assert_ok!(<Dancelight as DancelightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(root_origin, ChannelId::new([5u8; 32]), AgentId::from_low_u64_be(10), 3000u32.into()));
     });
 
     SimpleTemplate::execute_with(|| {
-        let sovereign_account =
+        let root_origin = <SimpleTemplate as Chain>::RuntimeOrigin::root();
+        let alice_account = SimpleTemplateSender::get();
+        let ethereum_sovereign_account =
             container_chain_template_simple_runtime::xcm_config::LocationToAccountId::convert_location(
                 &Location::new(2, container_chain_template_simple_runtime::EthereumNetwork::get()),
             )
                 .unwrap();
+
+        let eth_sovereign_account_balance_before =
+            <SimpleTemplate as SimpleTemplateParaPallet>::System::account(
+                ethereum_sovereign_account.clone(),
+            )
+            .data
+            .free;
+
+        assert_eq!(eth_sovereign_account_balance_before, 0u128);
 
         let beneficiary_address = H160([
             0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab,
             0xcd, 0xef, 0x01, 0x23, 0x45, 0x67,
         ]);
 
-        let eth_destination = Location {
-            parents: 2,
-            interior: Junctions::X1(
-                [GlobalConsensus(
-                    container_chain_template_simple_runtime::EthereumNetwork::get(),
-                )]
-                .into(),
-            ),
-        };
-
         let beneficiary_location = Location {
             parents: 0,
             interior: Junctions::X1(
                 [AccountKey20 {
-                    network: Some(container_chain_template_simple_runtime::EthereumNetwork::get()),
+                    network: Some(
+                        container_chain_template_simple_runtime::EthereumNetwork::get(),
+                    ),
                     key: beneficiary_address.into(),
                 }]
                 .into(),
             ),
         };
 
-        let amount_to_transfer = 1_000_000_000;
+        let amount_to_withdraw = 1_000_000_000_000_000u128;
+        let amount_to_transfer = 1_000_000_000_000u128;
 
         let asset_location = Location {
             parents: 0,
             interior: Junctions::X1([PalletInstance(<<SimpleTemplate as SimpleTemplateParaPallet>::Balances as PalletInfoAccess>::index() as u8)].into()),
         };
 
-        let eth_asset =
+        let relay_asset_location = Location {
+            parents: 1,
+            interior: Here,
+        };
+
+        let container_asset_to_withdraw =
+            AssetId(asset_location.clone()).into_asset(Fungibility::Fungible(amount_to_withdraw));
+
+        let container_asset_to_transfer =
             AssetId(asset_location.clone()).into_asset(Fungibility::Fungible(amount_to_transfer));
 
-        let alice_origin = <SimpleTemplate as Chain>::RuntimeOrigin::signed(
-            container_chain_template_simple_runtime::AccountId::from(SimpleTemplateSender::get()),
-        );
+        let fee_asset =
+            AssetId(relay_asset_location.clone()).into_asset(Fungibility::Fungible(export_fee_amount));
 
-        let balance_before = <SimpleTemplate as SimpleTemplateParaPallet>::System::account(
-            sovereign_account.clone(),
-        )
-        .data
-        .free;
-
-        let alice_balance = <SimpleTemplate as SimpleTemplateParaPallet>::System::account(
-            container_chain_template_simple_runtime::AccountId::from(SimpleTemplateSender::get()),
-        )
-        .data
-        .free;
-
-        assert_ne!(alice_balance, 0);
+        let alice_origin =
+            <SimpleTemplate as Chain>::RuntimeOrigin::signed(SimpleTemplateSender::get());
 
         assert_ok!(
-            <SimpleTemplate as SimpleTemplateParaPallet>::PolkadotXcm::transfer_assets(
-                alice_origin,
-                Box::new(eth_destination.into()),
-                Box::new(beneficiary_location.into()),
-                Box::new(vec![eth_asset].into()),
-                0u32,
-                Unlimited
+            <SimpleTemplate as SimpleTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
+                root_origin.clone(),
+                RELAY_TOKEN_ASSET_LOCATION,
+                RELAY_NATIVE_TOKEN_ASSET_ID,
+                alice_account.clone().into(),
+                true,
+                1
             )
         );
 
-        let balance_after = <SimpleTemplate as SimpleTemplateParaPallet>::System::account(
-            sovereign_account.clone(),
-        )
-        .data
-        .free;
+        // Create asset rate for relay token
+        assert_ok!(
+            <SimpleTemplate as SimpleTemplateParaPallet>::AssetRate::create(
+                root_origin.clone(),
+                Box::new(RELAY_NATIVE_TOKEN_ASSET_ID),
+                FixedU128::from_u32(500_000_000)
+            )
+        );
 
-        assert_eq!(balance_after - balance_before, amount_to_transfer);
+        assert_ok!(
+            <SimpleTemplate as SimpleTemplateParaPallet>::ForeignAssets::mint(
+                alice_origin.clone(),
+                RELAY_NATIVE_TOKEN_ASSET_ID,
+                alice_account.into(),
+                100_000_000_000_000u128
+            )
+        );
+
+        let assets = vec![container_asset_to_withdraw.clone(), fee_asset.clone()];
+
+        let xcm: VersionedXcm<container_chain_template_simple_runtime::RuntimeCall> =
+            VersionedXcm::from(Xcm(vec![
+                WithdrawAsset(assets.clone().into()),
+                InitiateTransfer {
+                    destination: container_chain_template_simple_runtime::EthereumLocation::get()
+                        .into(),
+                    remote_fees: Some(AssetTransferFilter::ReserveWithdraw(
+                        fee_asset.clone().into(),
+                    )),
+                    preserve_origin: true,
+                    assets: BoundedVec::truncate_from(vec![AssetTransferFilter::ReserveDeposit(
+                        Definite(container_asset_to_transfer.clone().into()),
+                    )]),
+                    remote_xcm: Xcm(vec![DepositAsset {
+                        assets: Wild(AllCounted(1)),
+                        beneficiary: beneficiary_location,
+                    }]),
+                },
+            ]))
+            .into();
+
+        assert_ok!(
+            <SimpleTemplate as SimpleTemplateParaPallet>::PolkadotXcm::execute(
+                alice_origin.clone(),
+                Box::new(xcm),
+                Weight::from(16_000_000_000)
+            )
+        );
+
+        let eth_sovereign_account_balance_after =
+            <SimpleTemplate as SimpleTemplateParaPallet>::System::account(
+                ethereum_sovereign_account.clone(),
+            )
+            .data
+            .free;
+
+        assert_eq!(eth_sovereign_account_balance_after - eth_sovereign_account_balance_before, amount_to_transfer);
     });
 
     Dancelight::execute_with(|| {
-        // Check final balances
-        let fees_balance_after =
+        type RuntimeEvent = <Dancelight as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            Dancelight,
+            vec![
+                RuntimeEvent::EthereumOutboundQueueV2(snowbridge_pallet_outbound_queue_v2::Event::MessageAccepted { nonce: 1, id: _ }) => {},
+            ]
+        );
+
+        // Check feesAccount balance (fees should have been collected)
+        let fees_account_balance_after =
             <Dancelight as DancelightRelayPallet>::System::account(fees_account)
                 .data
                 .free;
-        let container_sovereign_balance_after =
+        assert!(fees_account_balance_after > fees_account_balance_before);
+        assert!(fees_account_balance_after <= fees_account_balance_before + export_fee_amount);
+
+        let container_sovereign_account_balance_after =
             <Dancelight as DancelightRelayPallet>::System::account(container_sovereign_account)
                 .data
                 .free;
 
-        // Fees are collected on Tanssi
-        assert!(fees_balance_after > INITIAL_BALANCE);
-
-        // Check we are in range
-        assert!(fees_balance_after <= INITIAL_BALANCE + container_fee);
-
-        // Check that fees were deducted from the container's sovereign account
-        // and that we are in range as well.
-        assert!(container_sovereign_balance_after < INITIAL_BALANCE);
-        assert!(container_sovereign_balance_after >= INITIAL_BALANCE - container_fee);
+        assert!(container_sovereign_account_balance_after < INITIAL_BALANCE);
+        assert!(container_sovereign_account_balance_after >= INITIAL_BALANCE - export_fee_amount - container_fee);
     });
 }
+

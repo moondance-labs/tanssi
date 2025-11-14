@@ -265,6 +265,9 @@ describeSuite({
 
                 await sleep(24000);
 
+                const weight = await containerChainPolkadotJs.call.xcmPaymentApi.queryXcmWeight(xcmMessage as any);
+                console.log("Weight: ", weight.toHuman());
+
                 await containerChainPolkadotJs.tx.polkadotXcm
                     .execute(xcmMessage as any, {
                         refTime: 100000000000,
