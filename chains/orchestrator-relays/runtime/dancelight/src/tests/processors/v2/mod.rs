@@ -261,8 +261,6 @@ fn prepare_raw_message_xcm_instructions_with_foreign_asset_works() {
         assert_ok!(&res);
         let instructions = res.unwrap();
 
-        // panic!("{:?}", instructions);
-
         assert!(!instructions.is_empty(), "instructions must not be empty");
 
         if let Some(SetHints { hints }) = instructions.first() {
