@@ -51,3 +51,9 @@ export const TREASURY_ADDRESS_LIGHT_CHAINS = "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG
 export const TREASURY_ADDRESS_BOX_CHAINS = "5EYCAe5jXiVvytpxmBupXPCNE9Vduq7gPeTwy9xMgQtKWMnR";
 
 export const PER_BILL_RATIO = 1000000000n;
+
+// Change this if we change the storage parameter in runtime
+// this value is a twox128(:EthereumGatewayAddress:)
+export const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
+// this value is a twox128(::UseSnowbridgeV2:)
+export const USE_V2_STORAGE_KEY = "0x6c0371aaced112cb139962c46fee0c22";

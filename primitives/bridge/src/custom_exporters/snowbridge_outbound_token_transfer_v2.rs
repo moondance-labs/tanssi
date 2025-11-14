@@ -33,10 +33,10 @@ use parity_scale_codec::{Decode, Encode};
 use snowbridge_core::TokenId;
 use snowbridge_outbound_queue_primitives::v2::message::{Command, Message, SendMessage};
 use sp_core::H160;
-use sp_runtime::traits::MaybeEquivalence;
+use sp_runtime::traits::{MaybeEquivalence, Zero};
 use xcm::prelude::*;
-use xcm_builder::{CreateMatcher, MatchXcm};
-use xcm_executor::traits::{ConvertLocation, ExportXcm};
+use xcm_builder::{CreateMatcher, HandleFee, MatchXcm};
+use xcm_executor::traits::{ConvertLocation, ExportXcm, FeeReason};
 
 pub struct EthereumBlobExporterV2<
     UniversalLocation,
@@ -44,6 +44,7 @@ pub struct EthereumBlobExporterV2<
     OutboundQueue,
     ConvertAssetId,
     MinReward,
+    FeeHandler,
 >(
     PhantomData<(
         UniversalLocation,
@@ -51,16 +52,19 @@ pub struct EthereumBlobExporterV2<
         OutboundQueue,
         ConvertAssetId,
         MinReward,
+        FeeHandler,
     )>,
 );
 
-impl<UniversalLocation, EthereumNetwork, OutboundQueue, ConvertAssetId, MinReward> ExportXcm
+impl<UniversalLocation, EthereumNetwork, OutboundQueue, ConvertAssetId, MinReward, FeeHandler>
+    ExportXcm
     for EthereumBlobExporterV2<
         UniversalLocation,
         EthereumNetwork,
         OutboundQueue,
         ConvertAssetId,
         MinReward,
+        FeeHandler,
     >
 where
     UniversalLocation: Get<InteriorLocation>,
@@ -69,6 +73,7 @@ where
     ConvertAssetId: MaybeEquivalence<TokenId, Location>,
     // Evaluated in XCM context!
     MinReward: Get<Asset>,
+    FeeHandler: HandleFee,
 {
     type Ticket = (Vec<u8>, XcmHash);
 
@@ -143,20 +148,13 @@ where
         );
         ensure!(result.is_err(), SendError::NotApplicable);
 
-        let dest_junction: Junction = expected_network.into();
-        let dest_location = dest_junction.into_exterior(1);
-        let min_reward_destination_view = MinReward::get().reanchored(&dest_location, &UniversalLocation::get()).map_err(|err| {
-            log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue validation of message failed. {err:?}");
-            SendError::Unroutable
-        })?;
-
-        let mut converter = XcmConverterV2::<ConvertAssetId, ()>::new(
+        let mut converter = XcmConverterV2::<ConvertAssetId, (), UniversalLocation>::new(
             &message,
             expected_network,
-            min_reward_destination_view,
+            MinReward::get(),
         );
 
-        let outbound_message = converter.convert().map_err(|err|{
+        let (outbound_message, fees) = converter.convert().map_err(|err|{
             log::error!(target: "xcm::ethereum_blob_exporter", "unroutable due to pattern matching error '{err:?}'.");
             SendError::Unroutable
         })?;
@@ -168,9 +166,25 @@ where
         })?;
 
         // convert fee to Asset
-        let fee = Asset::from((MinReward::get().id, outbound_message.fee)).into();
+        // We handle fees here because we cannot do it within the xcm machine itself
+        // initiateTransfer already takes assets from holding
+        // we cannot have the xcmHandler deal with xcms as it tries to get from holding again
+        // i.e., charges twice.
+        // since initiateTransfer already removes from holding, we can safely assume this comes
+        // from a place in which assets have been burnt
+        FeeHandler::handle_fee(
+            fees,
+            None,
+            FeeReason::Export {
+                network: EthereumNetwork::get(),
+                destination: dest,
+            },
+        );
 
-        Ok(((ticket.encode(), XcmHash::from(outbound_message.id)), fee))
+        Ok((
+            (ticket.encode(), XcmHash::from(outbound_message.id)),
+            Assets::default(),
+        ))
     }
 
     fn deliver(blob: (Vec<u8>, XcmHash)) -> Result<XcmHash, SendError> {
@@ -199,15 +213,17 @@ macro_rules! match_expression {
 	};
 }
 
-pub struct XcmConverterV2<'a, ConvertAssetId, Call> {
+pub struct XcmConverterV2<'a, ConvertAssetId, Call, UniversalLocation> {
     iter: Peekable<Iter<'a, Instruction<Call>>>,
     ethereum_network: NetworkId,
     min_reward: Asset,
-    _marker: PhantomData<ConvertAssetId>,
+    _marker: PhantomData<(ConvertAssetId, UniversalLocation)>,
 }
-impl<'a, ConvertAssetId, Call> XcmConverterV2<'a, ConvertAssetId, Call>
+impl<'a, ConvertAssetId, Call, UniversalLocation>
+    XcmConverterV2<'a, ConvertAssetId, Call, UniversalLocation>
 where
     ConvertAssetId: MaybeEquivalence<TokenId, Location>,
+    UniversalLocation: Get<InteriorLocation>,
 {
     pub fn new(message: &'a Xcm<Call>, ethereum_network: NetworkId, min_reward: Asset) -> Self {
         Self {
@@ -218,7 +234,7 @@ where
         }
     }
 
-    pub fn convert(&mut self) -> Result<Message, XcmConverterError> {
+    pub fn convert(&mut self) -> Result<(Message, Assets), XcmConverterError> {
         // Step 1: Try to extract optional remote fee
         // Can THIS be sent without the fee being extracted? this is a key question
         // If the answer to this is yes then we are screwed
@@ -226,11 +242,11 @@ where
         // this instruction cannot be reached unless export is used
         // or is it also used in send?
 
-        let fee = self.try_extract_fee()?;
+        let (fee, claimee_amount) = self.try_extract_fee()?;
         let result = match self.peek() {
-            Ok(ReserveAssetDeposited { .. }) => self.make_mint_foreign_token_command(fee),
+            Ok(ReserveAssetDeposited { .. }) => self.make_mint_foreign_token_command(),
             // Get withdraw/deposit and make native tokens create message.
-            Ok(WithdrawAsset { .. }) => self.make_unlock_native_token_command(fee),
+            Ok(WithdrawAsset { .. }) => self.make_unlock_native_token_command(claimee_amount),
             Err(e) => Err(e),
             _ => return Err(XcmConverterError::UnexpectedInstruction),
         }?;
@@ -240,10 +256,10 @@ where
             return Err(XcmConverterError::EndOfXcmMessageExpected);
         }
 
-        Ok(result)
+        Ok((result, fee.into()))
     }
 
-    fn try_extract_fee(&mut self) -> Result<u128, XcmConverterError> {
+    fn try_extract_fee(&mut self) -> Result<(Asset, u128), XcmConverterError> {
         use XcmConverterError::*;
 
         let reserved_fee_assets = match_expression!(self.next()?, ReserveAssetDeposited(fee), fee)
@@ -259,7 +275,15 @@ where
             .cloned()
             .ok_or(XcmConverterError::AssetResolutionFailed)?;
 
-        let (reserved_fee_asset_id, reserved_fee_amount) = match reserved_fee_asset {
+        let reserved_fee_asset_reanchored = reserved_fee_asset
+            .clone()
+            .reanchored(
+                &UniversalLocation::get().into_exterior(1),
+                &UniversalLocation::get(),
+            )
+            .map_err(|_| XcmConverterError::AssetResolutionFailed)?;
+
+        let (reserved_fee_asset_id, reserved_fee_amount) = match reserved_fee_asset_reanchored {
             Asset {
                 id: asset_id,
                 fun: Fungible(amount),
@@ -270,11 +294,19 @@ where
         let fee_asset =
             match_expression!(self.next()?, PayFees { asset: fee }, fee).ok_or(InvalidFeeAsset)?;
 
-        let (fee_asset_id, fee_amount) = match fee_asset {
+        // we are going to charge the asset in our chain, so let's reanchor it
+        let fee_asset_reanchored = fee_asset
+            .clone()
+            .reanchored(
+                &UniversalLocation::get().into_exterior(1),
+                &UniversalLocation::get(),
+            )
+            .map_err(|_| InvalidFeeAsset)?;
+        let (fee_asset_id, fee_amount) = match fee_asset_reanchored.clone() {
             Asset {
                 id: asset_id,
                 fun: Fungible(amount),
-            } => Ok((asset_id, *amount)),
+            } => Ok((asset_id, amount)),
             _ => Err(XcmConverterError::AssetResolutionFailed),
         }?;
 
@@ -287,7 +319,6 @@ where
         }?;
 
         ensure!(fee_asset_id.0 == min_reward_asset_id.0, InvalidFeeAsset);
-
         ensure!(
             reserved_fee_asset_id.0 == min_reward_asset_id.0,
             InvalidFeeAsset
@@ -297,12 +328,12 @@ where
 
         ensure!(fee_amount >= *min_reward_amount, InvalidFeeAsset);
 
-        Ok(fee_amount)
+        Ok((fee_asset_reanchored, fee_amount))
     }
 
     pub fn make_unlock_native_token_command(
         &mut self,
-        fee: u128,
+        claimee_amount: u128,
     ) -> Result<Message, XcmConverterError> {
         use XcmConverterError::*;
 
@@ -393,7 +424,7 @@ where
         let message = Message {
             id: (*topic_id).into(),
             origin,
-            fee,
+            fee: claimee_amount,
             commands: BoundedVec::try_from(commands).map_err(|_| TooManyCommands)?,
         };
 
@@ -427,10 +458,7 @@ where
     /// # BuyExecution
     /// # DepositAsset
     /// # SetTopic
-    fn make_mint_foreign_token_command(
-        &mut self,
-        _fee: u128,
-    ) -> Result<Message, XcmConverterError> {
+    fn make_mint_foreign_token_command(&mut self) -> Result<Message, XcmConverterError> {
         // TODO: This function will be used only when we start receiving tokens from containers.
         // The whole struct is copied from Snowbridge and modified for our needs, and thus function
         // will be modified in a latter PR.
