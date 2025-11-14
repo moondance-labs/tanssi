@@ -77,7 +77,7 @@ impl<T: frame_system::Config> cumulus_pallet_xcmp_queue::WeightInfo for Substrat
 	/// The range of component `n` is `[0, 65531]`.
 	fn enqueue_n_bytes_xcmp_message(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `151`
+		//  Measured:  `115`
 		//  Estimated: `5487`
 		// Minimum execution time: 18_883_000 picoseconds.
 		Weight::from_parts(15_132_436, 5487)
@@ -99,7 +99,7 @@ impl<T: frame_system::Config> cumulus_pallet_xcmp_queue::WeightInfo for Substrat
 	/// The range of component `n` is `[0, 1000]`.
 	fn enqueue_n_empty_xcmp_messages(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `151`
+		//  Measured:  `115`
 		//  Estimated: `5487`
 		// Minimum execution time: 15_908_000 picoseconds.
 		Weight::from_parts(21_512_910, 5487)
@@ -211,7 +211,7 @@ impl<T: frame_system::Config> cumulus_pallet_xcmp_queue::WeightInfo for Substrat
 	/// Storage: `XcmpQueue::InboundXcmpSuspended` (r:1 w:0)
 	/// Proof: `XcmpQueue::InboundXcmpSuspended` (`max_values`: Some(1), `max_size`: Some(4002), added: 4497, mode: `MaxEncodedLen`)
 	/// Storage: `MessageQueue::Pages` (r:0 w:1)
-	/// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(105521), added: 107996, mode: `MaxEncodedLen`)
+	/// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(65585), added: 68060, mode: `MaxEncodedLen`)
 	fn on_idle_good_msg() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `65744`
@@ -225,16 +225,6 @@ impl<T: frame_system::Config> cumulus_pallet_xcmp_queue::WeightInfo for Substrat
 	/// Proof: UNKNOWN KEY `0x7b3237373ffdfeb1cab4222e3b520d6b345d8e88afa015075c945637c07e8f20` (r:1 w:1)
 	/// Storage: UNKNOWN KEY `0x7b3237373ffdfeb1cab4222e3b520d6bedc49980ba3aa32b0a189290fd036649` (r:1 w:1)
 	/// Proof: UNKNOWN KEY `0x7b3237373ffdfeb1cab4222e3b520d6bedc49980ba3aa32b0a189290fd036649` (r:1 w:1)
-	/// Storage: `MessageQueue::BookStateFor` (r:1 w:1)
-	/// Proof: `MessageQueue::BookStateFor` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
-	/// Storage: `MessageQueue::ServiceHead` (r:1 w:1)
-	/// Proof: `MessageQueue::ServiceHead` (`max_values`: Some(1), `max_size`: Some(5), added: 500, mode: `MaxEncodedLen`)
-	/// Storage: `XcmpQueue::QueueConfig` (r:1 w:0)
-	/// Proof: `XcmpQueue::QueueConfig` (`max_values`: Some(1), `max_size`: Some(12), added: 507, mode: `MaxEncodedLen`)
-	/// Storage: `XcmpQueue::InboundXcmpSuspended` (r:1 w:0)
-	/// Proof: `XcmpQueue::InboundXcmpSuspended` (`max_values`: Some(1), `max_size`: Some(4002), added: 4497, mode: `MaxEncodedLen`)
-	/// Storage: `MessageQueue::Pages` (r:0 w:1)
-	/// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(105521), added: 107996, mode: `MaxEncodedLen`)
 	fn on_idle_large_msg() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `65743`

@@ -53,28 +53,17 @@ use core::marker::PhantomData;
 /// Weights for pallet_assets using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
-	/// Storage: `ParachainInfo::ParachainId` (r:1 w:0)
-	/// Proof: `ParachainInfo::ParachainId` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
-	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
-	/// Storage: `ForeignAssets::NextAssetId` (r:1 w:0)
-	/// Proof: `ForeignAssets::NextAssetId` (`max_values`: Some(1), `max_size`: Some(602), added: 1097, mode: `MaxEncodedLen`)
-	/// Storage: `System::Account` (r:1 w:1)
-	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	fn create() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `139`
-		//  Estimated: `4273`
-		// Minimum execution time: 29_713_000 picoseconds.
-		Weight::from_parts(30_405_000, 0)
-			.saturating_add(Weight::from_parts(0, 4273))
-			.saturating_add(T::DbWeight::get().reads(4))
-			.saturating_add(T::DbWeight::get().writes(2))
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 0_000 picoseconds.
+		Weight::from_parts(0, 0)
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::NextAssetId` (r:1 w:0)
-	/// Proof: `ForeignAssets::NextAssetId` (`max_values`: Some(1), `max_size`: Some(602), added: 1097, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::NextAssetId` (`max_values`: Some(1), `max_size`: Some(2), added: 497, mode: `MaxEncodedLen`)
 	fn force_create() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `3`
@@ -85,9 +74,7 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
-	/// Storage: `ForeignAssetsFreezer::Freezes` (r:1 w:0)
-	/// Proof: `ForeignAssetsFreezer::Freezes` (`max_values`: None, `max_size`: Some(685), added: 3160, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	fn start_destroy() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `273`
@@ -98,17 +85,11 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Account` (r:1001 w:1000)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
-	/// Storage: `ForeignAssetsFreezer::FrozenBalances` (r:1000 w:1000)
-	/// Proof: `ForeignAssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(682), added: 3157, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
 	/// Storage: `System::Account` (r:1000 w:1000)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
-	/// Storage: `ForeignAssetsFreezer::Freezes` (r:1000 w:1000)
-	/// Proof: `ForeignAssetsFreezer::Freezes` (`max_values`: None, `max_size`: Some(685), added: 3160, mode: `MaxEncodedLen`)
-	/// The range of component `c` is `[0, 1000]`.
-	/// The range of component `c` is `[0, 1000]`.
 	/// The range of component `c` is `[0, 1000]`.
 	fn destroy_accounts(c: u32, ) -> Weight {
 		// Proof Size summary in bytes:
@@ -125,11 +106,9 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(Weight::from_parts(0, 2607).saturating_mul(c.into()))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Approvals` (r:1001 w:1000)
-	/// Proof: `ForeignAssets::Approvals` (`max_values`: None, `max_size`: Some(746), added: 3221, mode: `MaxEncodedLen`)
-	/// The range of component `a` is `[0, 1000]`.
-	/// The range of component `a` is `[0, 1000]`.
+	/// Proof: `ForeignAssets::Approvals` (`max_values`: None, `max_size`: Some(146), added: 2621, mode: `MaxEncodedLen`)
 	/// The range of component `a` is `[0, 1000]`.
 	fn destroy_approvals(a: u32, ) -> Weight {
 		// Proof Size summary in bytes:
@@ -141,14 +120,14 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(Weight::from_parts(6_405_999, 0).saturating_mul(a.into()))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(a.into())))
-			.saturating_add(T::DbWeight::get().writes(1))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(a.into())))
-			.saturating_add(Weight::from_parts(0, 3221).saturating_mul(a.into()))
+			.saturating_add(Weight::from_parts(0, 2621).saturating_mul(a.into()))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Metadata` (r:1 w:0)
-	/// Proof: `ForeignAssets::Metadata` (`max_values`: None, `max_size`: Some(738), added: 3213, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Metadata` (`max_values`: None, `max_size`: Some(138), added: 2613, mode: `MaxEncodedLen`)
 	fn finish_destroy() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `239`
@@ -159,9 +138,9 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Account` (r:1 w:1)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
 	fn mint() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `239`
@@ -172,13 +151,9 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Account` (r:1 w:1)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
-	/// Storage: `ForeignAssetsFreezer::FrozenBalances` (r:1 w:1)
-	/// Proof: `ForeignAssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(682), added: 3157, mode: `MaxEncodedLen`)
-	/// Storage: `ForeignAssetsFreezer::Freezes` (r:1 w:1)
-	/// Proof: `ForeignAssetsFreezer::Freezes` (`max_values`: None, `max_size`: Some(685), added: 3160, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
 	fn burn() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `345`
@@ -189,15 +164,11 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Account` (r:2 w:2)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
-	/// Storage: `ForeignAssetsFreezer::FrozenBalances` (r:1 w:1)
-	/// Proof: `ForeignAssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(682), added: 3157, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
 	/// Storage: `System::Account` (r:1 w:1)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
-	/// Storage: `ForeignAssetsFreezer::Freezes` (r:1 w:1)
-	/// Proof: `ForeignAssetsFreezer::Freezes` (`max_values`: None, `max_size`: Some(685), added: 3160, mode: `MaxEncodedLen`)
 	fn transfer() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `384`
@@ -208,11 +179,9 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Account` (r:2 w:2)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
-	/// Storage: `ForeignAssetsFreezer::FrozenBalances` (r:1 w:0)
-	/// Proof: `ForeignAssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(682), added: 3157, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
 	/// Storage: `System::Account` (r:1 w:1)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	fn transfer_keep_alive() -> Weight {
@@ -225,15 +194,11 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Account` (r:2 w:2)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
-	/// Storage: `ForeignAssetsFreezer::FrozenBalances` (r:1 w:1)
-	/// Proof: `ForeignAssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(682), added: 3157, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
 	/// Storage: `System::Account` (r:1 w:1)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
-	/// Storage: `ForeignAssetsFreezer::Freezes` (r:1 w:1)
-	/// Proof: `ForeignAssetsFreezer::Freezes` (`max_values`: None, `max_size`: Some(685), added: 3160, mode: `MaxEncodedLen`)
 	fn force_transfer() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `384`
@@ -244,9 +209,9 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:0)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Account` (r:1 w:1)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
 	fn freeze() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `345`
@@ -257,9 +222,9 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:0)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Account` (r:1 w:1)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
 	fn thaw() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `345`
@@ -270,7 +235,7 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	fn freeze_asset() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `273`
@@ -281,7 +246,7 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	fn thaw_asset() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `273`
@@ -292,9 +257,9 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Metadata` (r:1 w:0)
-	/// Proof: `ForeignAssets::Metadata` (`max_values`: None, `max_size`: Some(738), added: 3213, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Metadata` (`max_values`: None, `max_size`: Some(138), added: 2613, mode: `MaxEncodedLen`)
 	fn transfer_ownership() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `239`
@@ -305,7 +270,7 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	fn set_team() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `239`
@@ -316,13 +281,9 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:0)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Metadata` (r:1 w:1)
-	/// Proof: `ForeignAssets::Metadata` (`max_values`: None, `max_size`: Some(738), added: 3213, mode: `MaxEncodedLen`)
-	/// The range of component `n` is `[0, 50]`.
-	/// The range of component `s` is `[0, 50]`.
-	/// The range of component `n` is `[0, 50]`.
-	/// The range of component `s` is `[0, 50]`.
+	/// Proof: `ForeignAssets::Metadata` (`max_values`: None, `max_size`: Some(138), added: 2613, mode: `MaxEncodedLen`)
 	/// The range of component `n` is `[0, 50]`.
 	/// The range of component `s` is `[0, 50]`.
 	fn set_metadata(n: u32, s: u32, ) -> Weight {
@@ -339,9 +300,9 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:0)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Metadata` (r:1 w:1)
-	/// Proof: `ForeignAssets::Metadata` (`max_values`: None, `max_size`: Some(738), added: 3213, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Metadata` (`max_values`: None, `max_size`: Some(138), added: 2613, mode: `MaxEncodedLen`)
 	fn clear_metadata() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `401`
@@ -352,13 +313,9 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:0)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Metadata` (r:1 w:1)
-	/// Proof: `ForeignAssets::Metadata` (`max_values`: None, `max_size`: Some(738), added: 3213, mode: `MaxEncodedLen`)
-	/// The range of component `n` is `[0, 50]`.
-	/// The range of component `s` is `[0, 50]`.
-	/// The range of component `n` is `[0, 50]`.
-	/// The range of component `s` is `[0, 50]`.
+	/// Proof: `ForeignAssets::Metadata` (`max_values`: None, `max_size`: Some(138), added: 2613, mode: `MaxEncodedLen`)
 	/// The range of component `n` is `[0, 50]`.
 	/// The range of component `s` is `[0, 50]`.
 	fn force_set_metadata(n: u32, s: u32, ) -> Weight {
@@ -375,9 +332,9 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:0)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Metadata` (r:1 w:1)
-	/// Proof: `ForeignAssets::Metadata` (`max_values`: None, `max_size`: Some(738), added: 3213, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Metadata` (`max_values`: None, `max_size`: Some(138), added: 2613, mode: `MaxEncodedLen`)
 	fn force_clear_metadata() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `401`
@@ -388,7 +345,7 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	fn force_asset_status() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `239`
@@ -399,9 +356,9 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Approvals` (r:1 w:1)
-	/// Proof: `ForeignAssets::Approvals` (`max_values`: None, `max_size`: Some(746), added: 3221, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Approvals` (`max_values`: None, `max_size`: Some(146), added: 2621, mode: `MaxEncodedLen`)
 	fn approve_transfer() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `273`
@@ -412,17 +369,13 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Approvals` (r:1 w:1)
-	/// Proof: `ForeignAssets::Approvals` (`max_values`: None, `max_size`: Some(746), added: 3221, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Approvals` (`max_values`: None, `max_size`: Some(146), added: 2621, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Account` (r:2 w:2)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
-	/// Storage: `ForeignAssetsFreezer::FrozenBalances` (r:1 w:1)
-	/// Proof: `ForeignAssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(682), added: 3157, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
 	/// Storage: `System::Account` (r:1 w:1)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
-	/// Storage: `ForeignAssetsFreezer::Freezes` (r:1 w:1)
-	/// Proof: `ForeignAssetsFreezer::Freezes` (`max_values`: None, `max_size`: Some(685), added: 3160, mode: `MaxEncodedLen`)
 	fn transfer_approved() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `552`
@@ -433,9 +386,9 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(5_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Approvals` (r:1 w:1)
-	/// Proof: `ForeignAssets::Approvals` (`max_values`: None, `max_size`: Some(746), added: 3221, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Approvals` (`max_values`: None, `max_size`: Some(146), added: 2621, mode: `MaxEncodedLen`)
 	fn cancel_approval() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `441`
@@ -446,9 +399,9 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Approvals` (r:1 w:1)
-	/// Proof: `ForeignAssets::Approvals` (`max_values`: None, `max_size`: Some(746), added: 3221, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Approvals` (`max_values`: None, `max_size`: Some(146), added: 2621, mode: `MaxEncodedLen`)
 	fn force_cancel_approval() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `441`
@@ -459,7 +412,7 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	fn set_min_balance() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `239`
@@ -470,11 +423,9 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `ForeignAssets::Account` (r:1 w:1)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
-	/// Storage: `System::Account` (r:1 w:1)
-	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	fn touch() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `239`
@@ -485,9 +436,9 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	/// Storage: `ForeignAssets::Account` (r:1 w:1)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	fn touch_other() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `239`
@@ -498,15 +449,9 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	/// Storage: `ForeignAssets::Account` (r:1 w:1)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
-	/// Storage: `ForeignAssetsFreezer::FrozenBalances` (r:1 w:1)
-	/// Proof: `ForeignAssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(682), added: 3157, mode: `MaxEncodedLen`)
-	/// Storage: `System::Account` (r:1 w:1)
-	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
-	/// Storage: `ForeignAssetsFreezer::Freezes` (r:1 w:1)
-	/// Proof: `ForeignAssetsFreezer::Freezes` (`max_values`: None, `max_size`: Some(685), added: 3160, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	fn refund() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `363`
@@ -517,13 +462,9 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	/// Storage: `ForeignAssets::Account` (r:1 w:1)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
-	/// Storage: `ForeignAssetsFreezer::FrozenBalances` (r:1 w:1)
-	/// Proof: `ForeignAssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(682), added: 3157, mode: `MaxEncodedLen`)
-	/// Storage: `ForeignAssetsFreezer::Freezes` (r:1 w:1)
-	/// Proof: `ForeignAssetsFreezer::Freezes` (`max_values`: None, `max_size`: Some(685), added: 3160, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	fn refund_other() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `396`
@@ -534,9 +475,9 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:0)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Account` (r:1 w:1)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
 	fn block() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `345`
@@ -547,13 +488,9 @@ impl<T: frame_system::Config> pallet_assets::WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
 	/// Storage: `ForeignAssets::Account` (r:2 w:2)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
-	/// Storage: `ForeignAssetsFreezer::FrozenBalances` (r:1 w:1)
-	/// Proof: `ForeignAssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(682), added: 3157, mode: `MaxEncodedLen`)
-	/// Storage: `ForeignAssetsFreezer::Freezes` (r:1 w:1)
-	/// Proof: `ForeignAssetsFreezer::Freezes` (`max_values`: None, `max_size`: Some(685), added: 3160, mode: `MaxEncodedLen`)
+	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
 	/// Storage: `System::Account` (r:1 w:1)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	fn transfer_all() -> Weight {
