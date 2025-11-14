@@ -17,7 +17,6 @@
 pub mod basic;
 pub mod lookahead;
 
-use cumulus_client_consensus_aura::collators::RelayParentData;
 use {
     crate::{find_pre_digest, AuthorityId, OrchestratorAuraWorkerAuxData},
     cumulus_client_collator::service::ServiceInterface as CollatorServiceInterface,

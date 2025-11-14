@@ -1118,7 +1118,7 @@ impl ProcessMessage for MessageProcessor {
                     message, origin, meter, id,
                 )
             }
-            AggregateMessageOrigin::SnowbridgeTanssi(_) => {
+            TanssiAggregateMessageOrigin::SnowbridgeTanssi(_) => {
                 tp_bridge::TanssiOutboundEthMessageProcessorV1::<Runtime>::process_message(
                     message, origin, meter, id,
                 )
