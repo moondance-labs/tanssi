@@ -27,7 +27,7 @@ RUN chmod uog+x /usr/local/bin/tanssi-relay* && \
     # For backwards compatibility: symlink all binaries into the old location
     for f in /usr/local/bin/tanssi-relay*; do \
         ln -sf "$f" "/tanssi-relay/$(basename "$f")"; \
-    done \
+    done
 
 # Drop privileges for runtime
 USER tanssi-relay
