@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
-use syn::{DeriveInput, GenericParam, WhereClause, parse_macro_input, parse_quote};
+use syn::{parse_macro_input, parse_quote, DeriveInput, GenericParam, WhereClause};
 
 #[proc_macro_derive(MessageProcessor)]
 pub fn message_processor_trait_derive(input: TokenStream) -> TokenStream {
@@ -48,8 +48,12 @@ fn message_processor_trait_derive_impl(ast: DeriveInput) -> proc_macro2::TokenSt
                     // formed, which implies that it must be handled by the fallback processor for this
                     // message processor.
                     Err(MessageExtractionError::InvalidMessage { .. }) => true,
+                    // We want to return true in case of other message as it typically means that something
+                    // internal has failed in this message processor, and it does not mean that we should
+                    // pass message to other processor down the line
+                    Err(MessageExtractionError::Other { .. }) => true,
+                    // Message is unsupported by this processor, let's forward it to next one
                     Err(MessageExtractionError::UnsupportedMessage { .. }) => false,
-                    Err(MessageExtractionError::Other { .. }) => false,
                 }
             }
 
@@ -105,8 +109,8 @@ where
         match result {
             Ok(_) => true,
             Err(MessageExtractionError::InvalidMessage { .. }) => true,
+            Err(MessageExtractionError::Other { .. }) => true,
             Err(MessageExtractionError::UnsupportedMessage { .. }) => false,
-            Err(MessageExtractionError::Other { .. }) => false,
         }
     }
     fn process_message(
