@@ -498,7 +498,6 @@ import type {
     StagingXcmV5TraitsInstructionError,
     StagingXcmV5TraitsOutcome,
     StagingXcmV5Xcm,
-    StarlightRuntimeAggregateMessageOrigin,
     StarlightRuntimeDynamicParamsPreimageBaseDeposit,
     StarlightRuntimeDynamicParamsPreimageByteDeposit,
     StarlightRuntimeDynamicParamsPreimageParameters,
@@ -513,6 +512,7 @@ import type {
     StarlightRuntimeRuntimeParametersKey,
     StarlightRuntimeRuntimeParametersValue,
     StarlightRuntimeSessionKeys,
+    StarlightRuntimeTanssiAggregateMessageOrigin,
     TpBridgeChannelInfo,
     TpBridgeCommand,
     TpBridgeSlashData,
@@ -1054,7 +1054,6 @@ declare module "@polkadot/types/types/registry" {
         StagingXcmV5TraitsInstructionError: StagingXcmV5TraitsInstructionError;
         StagingXcmV5TraitsOutcome: StagingXcmV5TraitsOutcome;
         StagingXcmV5Xcm: StagingXcmV5Xcm;
-        StarlightRuntimeAggregateMessageOrigin: StarlightRuntimeAggregateMessageOrigin;
         StarlightRuntimeDynamicParamsPreimageBaseDeposit: StarlightRuntimeDynamicParamsPreimageBaseDeposit;
         StarlightRuntimeDynamicParamsPreimageByteDeposit: StarlightRuntimeDynamicParamsPreimageByteDeposit;
         StarlightRuntimeDynamicParamsPreimageParameters: StarlightRuntimeDynamicParamsPreimageParameters;
@@ -1069,6 +1068,7 @@ declare module "@polkadot/types/types/registry" {
         StarlightRuntimeRuntimeParametersKey: StarlightRuntimeRuntimeParametersKey;
         StarlightRuntimeRuntimeParametersValue: StarlightRuntimeRuntimeParametersValue;
         StarlightRuntimeSessionKeys: StarlightRuntimeSessionKeys;
+        StarlightRuntimeTanssiAggregateMessageOrigin: StarlightRuntimeTanssiAggregateMessageOrigin;
         TpBridgeChannelInfo: TpBridgeChannelInfo;
         TpBridgeCommand: TpBridgeCommand;
         TpBridgeSlashData: TpBridgeSlashData;

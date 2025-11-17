@@ -82,11 +82,11 @@ import type {
     SpWeightsWeightV2Weight,
     StagingXcmExecutorAssetTransferTransferType,
     StagingXcmV5Location,
-    StarlightRuntimeAggregateMessageOrigin,
     StarlightRuntimeOriginCaller,
     StarlightRuntimeProxyType,
     StarlightRuntimeRuntimeParameters,
     StarlightRuntimeSessionKeys,
+    StarlightRuntimeTanssiAggregateMessageOrigin,
     TpDataPreserversCommonAssignerExtra,
     TpDataPreserversCommonAssignmentWitness,
     TpStreamPaymentCommonAssetId,
@@ -4053,7 +4053,7 @@ declare module "@polkadot/api-base/types/submittable" {
             executeOverweight: AugmentedSubmittable<
                 (
                     messageOrigin:
-                        | StarlightRuntimeAggregateMessageOrigin
+                        | StarlightRuntimeTanssiAggregateMessageOrigin
                         | { Ump: any }
                         | { Snowbridge: any }
                         | { SnowbridgeTanssi: any }
@@ -4063,7 +4063,7 @@ declare module "@polkadot/api-base/types/submittable" {
                     index: u32 | AnyNumber | Uint8Array,
                     weightLimit: SpWeightsWeightV2Weight | { refTime?: any; proofSize?: any } | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [StarlightRuntimeAggregateMessageOrigin, u32, u32, SpWeightsWeightV2Weight]
+                [StarlightRuntimeTanssiAggregateMessageOrigin, u32, u32, SpWeightsWeightV2Weight]
             >;
             /**
              * Remove a page which has no more messages remaining to be processed or is stale.
@@ -4071,7 +4071,7 @@ declare module "@polkadot/api-base/types/submittable" {
             reapPage: AugmentedSubmittable<
                 (
                     messageOrigin:
-                        | StarlightRuntimeAggregateMessageOrigin
+                        | StarlightRuntimeTanssiAggregateMessageOrigin
                         | { Ump: any }
                         | { Snowbridge: any }
                         | { SnowbridgeTanssi: any }
@@ -4079,7 +4079,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | Uint8Array,
                     pageIndex: u32 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [StarlightRuntimeAggregateMessageOrigin, u32]
+                [StarlightRuntimeTanssiAggregateMessageOrigin, u32]
             >;
             /**
              * Generic tx
