@@ -43,6 +43,7 @@ use {
     frame_support::{
         construct_runtime,
         dispatch::DispatchClass,
+        dynamic_params::{dynamic_pallet_params, dynamic_params},
         genesis_builder_helper::{build_state, get_preset},
         pallet_prelude::DispatchResult,
         parameter_types,
@@ -64,6 +65,7 @@ use {
         EnsureRoot,
     },
     nimbus_primitives::{NimbusId, SlotBeacon},
+    pallet_parameters,
     pallet_transaction_payment::FungibleAdapter,
     parity_scale_codec::{Decode, DecodeWithMemTracking, Encode},
     polkadot_runtime_common::SlowAdjustingFeeUpdate,
@@ -82,6 +84,7 @@ use {
         ApplyExtrinsicResult, Cow, MultiSignature, SaturatedConversion,
     },
     sp_version::RuntimeVersion,
+    xcm::prelude::Location,
     xcm::Version as XcmVersion,
     xcm::{
         v5::NetworkId, IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation,
@@ -211,6 +214,7 @@ parameter_types! {
         /// <https://chainlist.org/chain/1>
         /// <https://ethereum.org/en/developers/docs/apis/json-rpc/#net_version>
         pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 11155111 };
+        pub EthereumLocation: Location = Location::new(2, EthereumNetwork::get());
 }
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
@@ -241,7 +245,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("container-chain-template"),
     impl_name: Cow::Borrowed("container-chain-template"),
     authoring_version: 1,
-    spec_version: 1600,
+    spec_version: 1700,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -429,6 +433,47 @@ impl pallet_transaction_payment::Config for Runtime {
     type WeightInfo = weights::pallet_transaction_payment::SubstrateWeight<Runtime>;
 }
 
+/// Dynamic params that can be adjusted at runtime.
+#[dynamic_params(RuntimeParameters, pallet_parameters::Parameters::<Runtime>)]
+pub mod dynamic_params {
+    use super::*;
+
+    /// The Dancelight genesis hash used as the default relay network identifier.
+    pub const DANCELIGHT_GENESIS_HASH: [u8; 32] =
+        hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"];
+
+    #[dynamic_pallet_params]
+    #[codec(index = 0)]
+    pub mod xcm_config {
+        use super::*;
+
+        /// The relay network identifier for this container chain.
+        /// Using Dancelight genesis hash as default.
+        #[codec(index = 0)]
+        pub static RelayNetwork: xcm::latest::NetworkId =
+            xcm::latest::NetworkId::ByGenesis(DANCELIGHT_GENESIS_HASH);
+    }
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl Default for RuntimeParameters {
+    fn default() -> Self {
+        RuntimeParameters::XcmConfig(dynamic_params::xcm_config::Parameters::RelayNetwork(
+            dynamic_params::xcm_config::RelayNetwork,
+            Some(xcm::latest::NetworkId::ByGenesis(
+                dynamic_params::DANCELIGHT_GENESIS_HASH,
+            )),
+        ))
+    }
+}
+
+impl pallet_parameters::Config for Runtime {
+    type AdminOrigin = EnsureRoot<AccountId>;
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeParameters = RuntimeParameters;
+    type WeightInfo = weights::pallet_parameters::SubstrateWeight<Runtime>;
+}
+
 parameter_types! {
     pub ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT / 4;
     pub ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT / 4;
@@ -458,6 +503,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
     type ConsensusHook = ConsensusHook;
     type SelectCore = cumulus_pallet_parachain_system::DefaultCoreSelector<Runtime>;
+    type RelayParentOffset = ConstU32<0>;
 }
 
 pub struct ParaSlotProvider;
@@ -610,7 +656,6 @@ impl xcm_primitives::PauseXcmExecution for XcmExecutionManager {
 }
 
 impl pallet_migrations::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type MigrationsList = (migrations::TemplateMigrations<Runtime, XcmpQueue, PolkadotXcm>,);
     type XcmExecutionManager = XcmExecutionManager;
 }
@@ -655,7 +700,6 @@ impl Contains<RuntimeCall> for NormalFilter {
 }
 
 impl pallet_maintenance_mode::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
@@ -771,17 +815,16 @@ where
     type RuntimeCall = RuntimeCall;
 }
 
-impl<LocalCall> frame_system::offchain::CreateInherent<LocalCall> for Runtime
+impl<LocalCall> frame_system::offchain::CreateBare<LocalCall> for Runtime
 where
     RuntimeCall: From<LocalCall>,
 {
-    fn create_inherent(call: RuntimeCall) -> UncheckedExtrinsic {
+    fn create_bare(call: RuntimeCall) -> UncheckedExtrinsic {
         UncheckedExtrinsic::new_bare(call)
     }
 }
 
 impl pallet_ocw_testing::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type UnsignedInterval = ConstU32<6>;
 }
 
@@ -814,6 +857,7 @@ construct_runtime!(
 
         // Other utilities
         Multisig: pallet_multisig = 16,
+        Parameters: pallet_parameters = 17,
 
         // ContainerChain Author Verification
         AuthoritiesNoting: pallet_cc_authorities_noting = 50,
@@ -1070,11 +1114,11 @@ impl_runtime_apis! {
                     Ok(Location::parent())
                 }
 
-                fn fee_asset() -> Result<Asset, BenchmarkError> {
-                    Ok(Asset {
+                fn worst_case_for_trader() -> Result<(Asset, WeightLimit), BenchmarkError> {
+                    Ok((Asset {
                         id: AssetId(SelfReserve::get()),
                         fun: Fungible(ExistentialDeposit::get()*100),
-                    })
+                    }, WeightLimit::Unlimited))
                 }
 
                 fn claimable_asset() -> Result<(Location, Location, Assets), BenchmarkError> {
@@ -1100,7 +1144,11 @@ impl_runtime_apis! {
 
             use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
             impl pallet_xcm::benchmarking::Config for Runtime {
-                type DeliveryHelper = ();
+                type DeliveryHelper = cumulus_primitives_utility::ToParentDeliveryHelper<
+                xcm_config::XcmConfig,
+                ExistentialDepositAsset,
+                xcm_config::PriceForParentDelivery,
+                >;
                 fn get_asset() -> Asset {
                     Asset {
                         id: AssetId(SelfReserve::get()),
@@ -1170,9 +1218,10 @@ impl_runtime_apis! {
                     let asset_amount = 10u128;
                     let initial_asset_amount = asset_amount * 10;
 
-                    let (asset_id, asset_location) = pallet_foreign_asset_creator::benchmarks::create_default_minted_asset::<Runtime>(
+                    let (asset_id, asset_location) = pallet_foreign_asset_creator::benchmarks::create_minted_asset::<Runtime>(
                         initial_asset_amount,
-                        who.clone()
+                        who.clone(),
+                        None,
                     );
 
                     let transfer_asset: Asset = (asset_location, asset_amount).into();

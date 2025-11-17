@@ -26,6 +26,7 @@ dp-impl-tanssi-pallets-config = { workspace = true }
 dp-slot-duration-runtime-api = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
 tanssi-runtime-common = { workspace = true }
+tp-xcm-commons = { workspace = true }
 
 # Moonkit
 async-backing-primitives = { workspace = true }
@@ -54,6 +55,7 @@ pallet-balances = { workspace = true }
 pallet-message-queue = { workspace = true }
 pallet-multiblock-migrations = { workspace = true }
 pallet-multisig = { workspace = true }
+pallet-parameters = { workspace = true }
 pallet-proxy = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-session = { workspace = true }
@@ -147,6 +149,7 @@ std = [
 	"pallet-multiblock-migrations/std",
 	"pallet-multisig/std",
 	"pallet-ocw-testing/std",
+	"pallet-parameters/std",
 	"pallet-proxy/std",
 	"pallet-root-testing/std",
 	"pallet-session/std",
@@ -182,6 +185,7 @@ std = [
 	"sp-version/std",
 	"tanssi-runtime-common/std",
 	"tp-container-chain/std",
+	"tp-xcm-commons/std",
 	"xcm-builder/std",
 	"xcm-executor/std",
 	"xcm-primitives/std",
@@ -214,6 +218,7 @@ runtime-benchmarks = [
 	"pallet-migrations/runtime-benchmarks",
 	"pallet-multiblock-migrations/runtime-benchmarks",
 	"pallet-multisig/runtime-benchmarks",
+	"pallet-parameters/runtime-benchmarks",
 	"pallet-proxy/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
@@ -260,6 +265,7 @@ try-runtime = [
 	"pallet-multiblock-migrations/try-runtime",
 	"pallet-multisig/try-runtime",
 	"pallet-ocw-testing/try-runtime",
+	"pallet-parameters/try-runtime",
 	"pallet-proxy/try-runtime",
 	"pallet-root-testing/try-runtime",
 	"pallet-session/try-runtime",
@@ -271,6 +277,7 @@ try-runtime = [
 	"pallet-xcm-executor-utils/try-runtime",
 	"pallet-xcm/try-runtime",
 	"parachain-info/try-runtime",
+	"parachains-common/try-runtime",
 	"polkadot-runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",

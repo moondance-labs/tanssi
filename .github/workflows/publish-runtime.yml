@@ -114,13 +114,13 @@ jobs:
         with:
           ref: ${{ github.event.inputs.to }}
       - name: Login to DockerHub
-        uses: docker/login-action@v3.5.0
+        uses: docker/login-action@v3.6.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           registry: index.docker.io
       - name: Download original scripts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: original-scripts
           path: original-scripts
@@ -185,16 +185,16 @@ jobs:
           ref: ${{ github.event.inputs.to }}
           fetch-depth: 0 
       - name: Use Node.js 22.x
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22.x  
       - name: Download Original Tools
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: original-tools
           path: original-tools 
       - name: Download runtime-info
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           pattern: runtime-info-*
           merge-multiple: true
@@ -241,7 +241,7 @@ jobs:
           ref: ${{ github.event.inputs.to }}
           fetch-depth: 0
       - name: Download ${{ matrix.chain }} runtime
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           pattern: runtime-info-*
           merge-multiple: true

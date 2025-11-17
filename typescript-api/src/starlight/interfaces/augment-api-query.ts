@@ -96,10 +96,10 @@ import type {
     PolkadotPrimitivesV8DisputeState,
     PolkadotPrimitivesV8ExecutorParams,
     PolkadotPrimitivesV8SessionInfo,
-    PolkadotPrimitivesV8SlashingPendingSlashes,
     PolkadotPrimitivesV8UpgradeGoAhead,
     PolkadotPrimitivesV8UpgradeRestriction,
     PolkadotPrimitivesV8ValidatorAppPublic,
+    PolkadotPrimitivesVstagingPendingSlashes,
     PolkadotPrimitivesVstagingScrapedOnChainVotes,
     PolkadotRuntimeCommonParasRegistrarParaInfo,
     PolkadotRuntimeParachainsConfigurationHostConfiguration,
@@ -110,6 +110,7 @@ import type {
     PolkadotRuntimeParachainsOnDemandTypesCoreAffinityCount,
     PolkadotRuntimeParachainsOnDemandTypesEnqueuedOrder,
     PolkadotRuntimeParachainsOnDemandTypesQueueStatusType,
+    PolkadotRuntimeParachainsParasAuthorizedCodeHashAndExpiry,
     PolkadotRuntimeParachainsParasParaGenesisArgs,
     PolkadotRuntimeParachainsParasParaLifecycle,
     PolkadotRuntimeParachainsParasParaPastCodeMeta,
@@ -137,11 +138,11 @@ import type {
     SpWeightsWeightV2Weight,
     StagingXcmV5Instruction,
     StagingXcmV5Location,
-    StarlightRuntimeAggregateMessageOrigin,
     StarlightRuntimeRuntimeHoldReason,
     StarlightRuntimeRuntimeParametersKey,
     StarlightRuntimeRuntimeParametersValue,
     StarlightRuntimeSessionKeys,
+    StarlightRuntimeTanssiAggregateMessageOrigin,
     TpBridgeChannelInfo,
     TpTraitsActiveEraInfo,
     TpTraitsContainerChainBlockInfo,
@@ -1759,16 +1760,16 @@ declare module "@polkadot/api-base/types/storage" {
                 ApiType,
                 (
                     arg:
-                        | StarlightRuntimeAggregateMessageOrigin
+                        | StarlightRuntimeTanssiAggregateMessageOrigin
                         | { Ump: any }
                         | { Snowbridge: any }
                         | { SnowbridgeTanssi: any }
                         | string
                         | Uint8Array
                 ) => Observable<PalletMessageQueueBookState>,
-                [StarlightRuntimeAggregateMessageOrigin]
+                [StarlightRuntimeTanssiAggregateMessageOrigin]
             > &
-                QueryableStorageEntry<ApiType, [StarlightRuntimeAggregateMessageOrigin]>;
+                QueryableStorageEntry<ApiType, [StarlightRuntimeTanssiAggregateMessageOrigin]>;
             /**
              * The map of page indices to pages.
              **/
@@ -1776,7 +1777,7 @@ declare module "@polkadot/api-base/types/storage" {
                 ApiType,
                 (
                     arg1:
-                        | StarlightRuntimeAggregateMessageOrigin
+                        | StarlightRuntimeTanssiAggregateMessageOrigin
                         | { Ump: any }
                         | { Snowbridge: any }
                         | { SnowbridgeTanssi: any }
@@ -1784,13 +1785,17 @@ declare module "@polkadot/api-base/types/storage" {
                         | Uint8Array,
                     arg2: u32 | AnyNumber | Uint8Array
                 ) => Observable<Option<PalletMessageQueuePage>>,
-                [StarlightRuntimeAggregateMessageOrigin, u32]
+                [StarlightRuntimeTanssiAggregateMessageOrigin, u32]
             > &
-                QueryableStorageEntry<ApiType, [StarlightRuntimeAggregateMessageOrigin, u32]>;
+                QueryableStorageEntry<ApiType, [StarlightRuntimeTanssiAggregateMessageOrigin, u32]>;
             /**
              * The origin at which we should begin servicing.
              **/
-            serviceHead: AugmentedQuery<ApiType, () => Observable<Option<StarlightRuntimeAggregateMessageOrigin>>, []> &
+            serviceHead: AugmentedQuery<
+                ApiType,
+                () => Observable<Option<StarlightRuntimeTanssiAggregateMessageOrigin>>,
+                []
+            > &
                 QueryableStorageEntry<ApiType, []>;
             /**
              * Generic query
@@ -2041,6 +2046,17 @@ declare module "@polkadot/api-base/types/storage" {
              * The actions to perform during the start of a specific session index.
              **/
             actionsQueue: AugmentedQuery<ApiType, (arg: u32 | AnyNumber | Uint8Array) => Observable<Vec<u32>>, [u32]> &
+                QueryableStorageEntry<ApiType, [u32]>;
+            /**
+             * The code hash authorizations for a para which will expire `expire_at` `BlockNumberFor<T>`.
+             **/
+            authorizedCodeHash: AugmentedQuery<
+                ApiType,
+                (
+                    arg: u32 | AnyNumber | Uint8Array
+                ) => Observable<Option<PolkadotRuntimeParachainsParasAuthorizedCodeHashAndExpiry>>,
+                [u32]
+            > &
                 QueryableStorageEntry<ApiType, [u32]>;
             /**
              * Validation code stored by its hash.
@@ -2447,7 +2463,7 @@ declare module "@polkadot/api-base/types/storage" {
                 (
                     arg1: u32 | AnyNumber | Uint8Array,
                     arg2: H256 | string | Uint8Array
-                ) => Observable<Option<PolkadotPrimitivesV8SlashingPendingSlashes>>,
+                ) => Observable<Option<PolkadotPrimitivesVstagingPendingSlashes>>,
                 [u32, H256]
             > &
                 QueryableStorageEntry<ApiType, [u32, H256]>;

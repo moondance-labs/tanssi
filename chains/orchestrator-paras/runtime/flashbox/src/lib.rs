@@ -242,7 +242,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("flashbox"),
     impl_name: Cow::Borrowed("flashbox"),
     authoring_version: 1,
-    spec_version: 1600,
+    spec_version: 1700,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -490,6 +490,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
     type ConsensusHook = ConsensusHook;
     type SelectCore = cumulus_pallet_parachain_system::DefaultCoreSelector<Runtime>;
+    type RelayParentOffset = ConstU32<0>;
 }
 
 pub struct ParaSlotProvider;
@@ -789,7 +790,6 @@ impl ShouldRotateAllCollators<u32> for NeverRotateCollators {
 }
 
 impl pallet_collator_assignment::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type HostConfiguration = Configuration;
     type ContainerChains = Registrar;
     type SessionIndex = u32;
@@ -835,7 +835,6 @@ parameter_types! {
 }
 
 impl pallet_services_payment::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     /// Handler for fees
     type OnChargeForBlock = ();
     type OnChargeForCollatorAssignment = ();
@@ -861,13 +860,14 @@ parameter_types! {
     #[derive(Clone)]
     pub const MaxAssignmentsPerParaId: u32 = 10;
     #[derive(Clone)]
-    pub const MaxNodeUrlLen: u32 = 200;
+    pub const MaxNodeUrlCount: u32 = 4;
+    #[derive(Clone)]
+    pub const MaxStringLen: u32 = 200;
 }
 
 pub type DataPreserversProfileId = u64;
 
 impl pallet_data_preservers::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type RuntimeHoldReason = RuntimeHoldReason;
     type Currency = Balances;
     type WeightInfo = weights::pallet_data_preservers::SubstrateWeight<Runtime>;
@@ -880,12 +880,12 @@ impl pallet_data_preservers::Config for Runtime {
     type ForceSetProfileOrigin = EnsureRoot<AccountId>;
 
     type MaxAssignmentsPerParaId = MaxAssignmentsPerParaId;
-    type MaxNodeUrlLen = MaxNodeUrlLen;
+    type MaxNodeUrlCount = MaxNodeUrlCount;
+    type MaxStringLen = MaxStringLen;
     type MaxParaIdsVecLen = MaxLengthParaIds;
 }
 
 impl pallet_author_noting::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type ContainerChains = CollatorAssignment;
     type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
@@ -907,7 +907,6 @@ parameter_types! {
 }
 
 impl pallet_invulnerables::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type UpdateOrigin = EnsureRoot<AccountId>;
     type MaxInvulnerables = MaxInvulnerables;
     type CollatorId = CollatorId;
@@ -978,17 +977,20 @@ impl RegistrarHooks for FlashboxRegistrarHooks {
     fn benchmarks_ensure_valid_for_collating(para_id: ParaId) {
         use {
             frame_support::traits::EnsureOriginWithArg,
-            pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode},
+            pallet_data_preservers::{NodeType, ParaIdsFilter, Profile},
         };
 
         let profile = Profile {
-            url: b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
+            bootnode_url: Some(b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
                     .to_vec()
                     .try_into()
-                    .expect("to fit in BoundedVec"),
+                    .expect("to fit in BoundedVec")) ,
+            direct_rpc_urls: Default::default(),
+            proxy_rpc_urls: Default::default(),
             para_ids: ParaIdsFilter::AnyParaId,
-            mode: ProfileMode::Bootnode,
+            node_type: NodeType::Substrate,
             assignment_request: tp_data_preservers_common::ProviderRequest::Free,
+            additional_info: Default::default(),
         };
 
         let profile_id = pallet_data_preservers::NextProfileId::<Runtime>::get();
@@ -1055,7 +1057,6 @@ impl RelayStorageRootProvider for PalletRelayStorageRootProvider {
 }
 
 impl pallet_registrar::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin =
         EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
@@ -1203,7 +1204,6 @@ impl pallet_proxy::Config for Runtime {
 }
 
 impl pallet_migrations::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type MigrationsList = (tanssi_runtime_common::migrations::FlashboxMigrations<Runtime>,);
     type XcmExecutionManager = ();
 }
@@ -1256,7 +1256,6 @@ impl Contains<RuntimeCall> for IsRegisterParathreads {
 type NormalFilter = EverythingBut<IsRegisterParathreads>;
 
 impl pallet_maintenance_mode::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
@@ -1321,7 +1320,6 @@ impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnba
 }
 
 impl pallet_inflation_rewards::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type ContainerChains = Registrar;
     type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
@@ -1348,7 +1346,6 @@ parameter_types! {
 }
 
 impl pallet_stream_payment::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type StreamId = StreamId;
     type TimeUnit = tp_stream_payment_common::TimeUnit;
     type Balance = Balance;
@@ -1395,6 +1392,8 @@ impl pallet_identity::Config for Runtime {
     type UsernameGracePeriod = ConstU32<{ 30 * DAYS }>;
     type MaxSuffixLength = ConstU32<7>;
     type MaxUsernameLength = ConstU32<32>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = ();
     type WeightInfo = weights::pallet_identity::SubstrateWeight<Runtime>;
 }
 
@@ -1823,8 +1822,7 @@ impl_runtime_apis! {
         /// Fetch boot_nodes for this para id
         fn boot_nodes(para_id: ParaId) -> Vec<Vec<u8>> {
             DataPreservers::assignments_profiles(para_id)
-                .filter(|profile| profile.mode == pallet_data_preservers::ProfileMode::Bootnode)
-                .map(|profile| profile.url.into())
+                .filter_map(|profile| profile.bootnode_url.map(Into::into))
                 .collect()
         }
     }

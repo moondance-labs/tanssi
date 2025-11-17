@@ -18,15 +18,15 @@ use {
     super::{
         currency::MICROUNIT,
         weights::{self, xcm::XcmWeight as XcmGenericWeights},
-        AccountId, AllPalletsWithSystem, AssetRate, Balance, Balances, ForeignAssetsCreator,
-        MaintenanceMode, MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime,
-        RuntimeBlockWeights, RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee,
-        WeightToFee, XcmpQueue,
+        AccountId, AllPalletsWithSystem, AssetRate, Balance, Balances, EthereumLocation,
+        EthereumNetwork, ForeignAssetsCreator, MaintenanceMode, MessageQueue, ParachainInfo,
+        ParachainSystem, PolkadotXcm, Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeEvent,
+        RuntimeOrigin, TransactionByteFee, WeightToFee, XcmpQueue,
     },
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
         parameter_types,
-        traits::{Disabled, Equals, Everything, Nothing, PalletInfoAccess, TransformOrigin},
+        traits::{Disabled, Equals, Everything, Get, Nothing, PalletInfoAccess, TransformOrigin},
         weights::Weight,
     },
     frame_system::EnsureRoot,
@@ -44,6 +44,7 @@ use {
         sovereign_paid_remote_exporter::SovereignPaidRemoteExporter,
         ContainerChainEthereumLocationConverter,
     },
+    tp_xcm_commons::EthereumAssetReserveFromParent,
     xcm::latest::prelude::*,
     xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
@@ -55,9 +56,6 @@ use {
     },
     xcm_executor::XcmExecutor,
 };
-
-pub const DANCELIGHT_GENESIS_HASH: [u8; 32] =
-    hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"];
 
 parameter_types! {
     // Self Reserve location, defines the multilocation identifying the self-reserve currency
@@ -73,11 +71,9 @@ parameter_types! {
 
     // One XCM operation is 1_000_000_000 weight - almost certainly a conservative estimate.
     pub UnitWeightCost: Weight = Weight::from_parts(1_000_000_000, 64 * 1024);
+}
 
-    // For now this is being unused for our use cases (e.g container token transfers).
-    // We might need to revisit this later and make it dynamic (through pallet params for instance).
-    pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(DANCELIGHT_GENESIS_HASH);
-
+parameter_types! {
     // The relay chain Origin type
     pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();
 
@@ -86,6 +82,9 @@ parameter_types! {
     /// Maximum number of instructions in a single XCM fragment. A sanity check against
     /// weight caculations getting too crazy.
     pub MaxInstructions: u32 = 100;
+
+    // Dynamic RelayNetwork parameter - configurable via pallet_parameters
+    pub RelayNetwork: NetworkId = crate::dynamic_params::xcm_config::RelayNetwork::get();
 
     // The universal location within the global consensus system
     pub UniversalLocation: InteriorLocation = [GlobalConsensus(RelayNetwork::get()), Parachain(ParachainInfo::parachain_id().into())].into();
@@ -195,7 +194,7 @@ pub type XcmRouter = WithUniqueTopic<(
     SovereignPaidRemoteExporter<
         UmpRouter,
         UniversalLocation,
-        crate::EthereumNetwork,
+        EthereumNetwork,
         ContainerToEthTransferFee,
         ParachainInfo,
     >,
@@ -207,7 +206,13 @@ impl xcm_executor::Config for XcmConfig {
     type XcmSender = XcmRouter;
     type AssetTransactor = AssetTransactors;
     type OriginConverter = XcmOriginToTransactDispatchOrigin;
-    type IsReserve = IsReserveFilter<Runtime>;
+    // We admit as reserves:
+    // - Native assets 'AllNative'
+    // - Ethereum assets with ethereum or relay origin
+    type IsReserve = (
+        IsReserveFilter<Runtime>,
+        EthereumAssetReserveFromParent<EthereumLocation, EthereumNetwork>,
+    );
     type IsTeleporter = IsTeleportFilter<Runtime>;
     type UniversalLocation = UniversalLocation;
     type Barrier = XcmBarrier;
@@ -379,7 +384,6 @@ impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
 }
 
 impl pallet_foreign_asset_creator::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type ForeignAsset = Location;
     type ForeignAssetCreatorOrigin = EnsureRoot<AccountId>;
     type ForeignAssetModifierOrigin = EnsureRoot<AccountId>;
@@ -439,7 +443,6 @@ parameter_types! {
     pub const AllNeverTrustPolicy: DefaultTrustPolicy = DefaultTrustPolicy::Never;
 }
 impl pallet_xcm_executor_utils::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type TrustPolicyMaxAssets = TrustPolicyMaxAssets;
     type ReserveDefaultTrustPolicy = AllNativeTrustPolicy;
     type SetReserveTrustOrigin = EnsureRoot<AccountId>;

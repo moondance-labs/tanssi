@@ -24,10 +24,10 @@ import type {
 import type { ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H160, H256, Perbill } from "@polkadot/types/interfaces/runtime";
 import type {
-    DancelightRuntimeAggregateMessageOrigin,
     DancelightRuntimeProxyType,
     DancelightRuntimeRuntimeParametersKey,
     DancelightRuntimeRuntimeParametersValue,
+    DancelightRuntimeTanssiAggregateMessageOrigin,
     FrameSupportDispatchPostDispatchInfo,
     FrameSupportMessagesProcessMessageError,
     FrameSupportPreimagesBounded,
@@ -229,6 +229,7 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         containerRegistrar: {
+            DepositUpdated: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
             /**
              * A para id has been deregistered. [para_id]
              **/
@@ -967,6 +968,20 @@ declare module "@polkadot/api-base/types/events" {
              **/
             [key: string]: AugmentedEvent<ApiType>;
         };
+        historical: {
+            /**
+             * The merkle roots of up to this session index were pruned
+             **/
+            RootsPruned: AugmentedEvent<ApiType, [upTo: u32], { upTo: u32 }>;
+            /**
+             * The merkle root of the validators of the said session were stored
+             **/
+            RootStored: AugmentedEvent<ApiType, [index: u32], { index: u32 }>;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         hrmp: {
             /**
              * HRMP channel closed.
@@ -1261,16 +1276,26 @@ declare module "@polkadot/api-base/types/events" {
              **/
             OverweightEnqueued: AugmentedEvent<
                 ApiType,
-                [id: U8aFixed, origin: DancelightRuntimeAggregateMessageOrigin, pageIndex: u32, messageIndex: u32],
-                { id: U8aFixed; origin: DancelightRuntimeAggregateMessageOrigin; pageIndex: u32; messageIndex: u32 }
+                [
+                    id: U8aFixed,
+                    origin: DancelightRuntimeTanssiAggregateMessageOrigin,
+                    pageIndex: u32,
+                    messageIndex: u32,
+                ],
+                {
+                    id: U8aFixed;
+                    origin: DancelightRuntimeTanssiAggregateMessageOrigin;
+                    pageIndex: u32;
+                    messageIndex: u32;
+                }
             >;
             /**
              * This page was reaped.
              **/
             PageReaped: AugmentedEvent<
                 ApiType,
-                [origin: DancelightRuntimeAggregateMessageOrigin, index: u32],
-                { origin: DancelightRuntimeAggregateMessageOrigin; index: u32 }
+                [origin: DancelightRuntimeTanssiAggregateMessageOrigin, index: u32],
+                { origin: DancelightRuntimeTanssiAggregateMessageOrigin; index: u32 }
             >;
             /**
              * Message is processed.
@@ -1279,13 +1304,13 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [
                     id: H256,
-                    origin: DancelightRuntimeAggregateMessageOrigin,
+                    origin: DancelightRuntimeTanssiAggregateMessageOrigin,
                     weightUsed: SpWeightsWeightV2Weight,
                     success: bool,
                 ],
                 {
                     id: H256;
-                    origin: DancelightRuntimeAggregateMessageOrigin;
+                    origin: DancelightRuntimeTanssiAggregateMessageOrigin;
                     weightUsed: SpWeightsWeightV2Weight;
                     success: bool;
                 }
@@ -1297,12 +1322,12 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [
                     id: H256,
-                    origin: DancelightRuntimeAggregateMessageOrigin,
+                    origin: DancelightRuntimeTanssiAggregateMessageOrigin,
                     error: FrameSupportMessagesProcessMessageError,
                 ],
                 {
                     id: H256;
-                    origin: DancelightRuntimeAggregateMessageOrigin;
+                    origin: DancelightRuntimeTanssiAggregateMessageOrigin;
                     error: FrameSupportMessagesProcessMessageError;
                 }
             >;
@@ -1514,6 +1539,82 @@ declare module "@polkadot/api-base/types/events" {
              **/
             [key: string]: AugmentedEvent<ApiType>;
         };
+        openTechCommitteeCollective: {
+            /**
+             * A motion was approved by the required threshold.
+             **/
+            Approved: AugmentedEvent<ApiType, [proposalHash: H256], { proposalHash: H256 }>;
+            /**
+             * A proposal was closed because its threshold was reached or after its duration was up.
+             **/
+            Closed: AugmentedEvent<
+                ApiType,
+                [proposalHash: H256, yes: u32, no: u32],
+                { proposalHash: H256; yes: u32; no: u32 }
+            >;
+            /**
+             * A motion was not approved by the required threshold.
+             **/
+            Disapproved: AugmentedEvent<ApiType, [proposalHash: H256], { proposalHash: H256 }>;
+            /**
+             * A motion was executed; result will be `Ok` if it returned without error.
+             **/
+            Executed: AugmentedEvent<
+                ApiType,
+                [proposalHash: H256, result: Result<Null, SpRuntimeDispatchError>],
+                { proposalHash: H256; result: Result<Null, SpRuntimeDispatchError> }
+            >;
+            /**
+             * A proposal was killed.
+             **/
+            Killed: AugmentedEvent<ApiType, [proposalHash: H256], { proposalHash: H256 }>;
+            /**
+             * A single member did some action; result will be `Ok` if it returned without error.
+             **/
+            MemberExecuted: AugmentedEvent<
+                ApiType,
+                [proposalHash: H256, result: Result<Null, SpRuntimeDispatchError>],
+                { proposalHash: H256; result: Result<Null, SpRuntimeDispatchError> }
+            >;
+            /**
+             * Some cost for storing a proposal was burned.
+             **/
+            ProposalCostBurned: AugmentedEvent<
+                ApiType,
+                [proposalHash: H256, who: AccountId32],
+                { proposalHash: H256; who: AccountId32 }
+            >;
+            /**
+             * Some cost for storing a proposal was released.
+             **/
+            ProposalCostReleased: AugmentedEvent<
+                ApiType,
+                [proposalHash: H256, who: AccountId32],
+                { proposalHash: H256; who: AccountId32 }
+            >;
+            /**
+             * A motion (given hash) has been proposed (by given account) with a threshold (given
+             * `MemberCount`).
+             **/
+            Proposed: AugmentedEvent<
+                ApiType,
+                [account: AccountId32, proposalIndex: u32, proposalHash: H256, threshold: u32],
+                { account: AccountId32; proposalIndex: u32; proposalHash: H256; threshold: u32 }
+            >;
+            /**
+             * A motion (given hash) has been voted on by given account, leaving
+             * a tally (yes votes and no votes given respectively as `MemberCount`).
+             **/
+            Voted: AugmentedEvent<
+                ApiType,
+                [account: AccountId32, proposalHash: H256, voted: bool, yes: u32, no: u32],
+                { account: AccountId32; proposalHash: H256; voted: bool; yes: u32; no: u32 }
+            >;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         outboundMessageCommitmentRecorder: {
             CommitmentRootRead: AugmentedEvent<ApiType, [commitment: H256], { commitment: H256 }>;
             NewCommitmentRootRecorded: AugmentedEvent<ApiType, [commitment: H256], { commitment: H256 }>;
@@ -1574,6 +1675,14 @@ declare module "@polkadot/api-base/types/events" {
              **/
             ActionQueued: AugmentedEvent<ApiType, [u32, u32]>;
             /**
+             * A new code hash has been authorized for a Para.
+             **/
+            CodeAuthorized: AugmentedEvent<
+                ApiType,
+                [paraId: u32, codeHash: H256, expireAt: u32],
+                { paraId: u32; codeHash: H256; expireAt: u32 }
+            >;
+            /**
              * A code upgrade has been scheduled for a Para. `para_id`
              **/
             CodeUpgradeScheduled: AugmentedEvent<ApiType, [u32]>;
@@ -1604,6 +1713,10 @@ declare module "@polkadot/api-base/types/events" {
              * code. `code_hash` `para_id`
              **/
             PvfCheckStarted: AugmentedEvent<ApiType, [H256, u32]>;
+            /**
+             * The upgrade cooldown was removed.
+             **/
+            UpgradeCooldownRemoved: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
             /**
              * Generic event
              **/
@@ -1886,6 +1999,24 @@ declare module "@polkadot/api-base/types/events" {
                 { pure: AccountId32; who: AccountId32; proxyType: DancelightRuntimeProxyType; disambiguationIndex: u16 }
             >;
             /**
+             * A pure proxy was killed by its spawner.
+             **/
+            PureKilled: AugmentedEvent<
+                ApiType,
+                [
+                    pure: AccountId32,
+                    spawner: AccountId32,
+                    proxyType: DancelightRuntimeProxyType,
+                    disambiguationIndex: u16,
+                ],
+                {
+                    pure: AccountId32;
+                    spawner: AccountId32;
+                    proxyType: DancelightRuntimeProxyType;
+                    disambiguationIndex: u16;
+                }
+            >;
+            /**
              * Generic event
              **/
             [key: string]: AugmentedEvent<ApiType>;
@@ -2144,6 +2275,11 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         session: {
+            /**
+             * The `NewSession` event in the current block also implies a new validator set to be
+             * queued.
+             **/
+            NewQueued: AugmentedEvent<ApiType, []>;
             /**
              * New session has happened. Note that the argument is the session index, not the
              * block number as the type might suggest.

@@ -211,3 +211,8 @@ mod impl_generate_rpc_builder {
         }
     }
 }
+
+/// Returns a dummy RPC Builder with no methods, useful to "turn off" RPC.
+pub fn dummy_rpc_builder() -> generate_rpc_builder::CompleteRpcBuilder {
+    Box::new(|_| Ok(RpcExtension::new(())))
+}

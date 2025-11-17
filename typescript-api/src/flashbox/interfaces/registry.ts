@@ -83,9 +83,9 @@ import type {
     PalletDataPreserversError,
     PalletDataPreserversEvent,
     PalletDataPreserversHoldReason,
+    PalletDataPreserversNodeType,
     PalletDataPreserversParaIdsFilter,
     PalletDataPreserversProfile,
-    PalletDataPreserversProfileMode,
     PalletDataPreserversRegisteredProfile,
     PalletIdentityAuthorityProperties,
     PalletIdentityCall,
@@ -179,6 +179,7 @@ import type {
     SpRuntimeDigest,
     SpRuntimeDigestDigestItem,
     SpRuntimeDispatchError,
+    SpRuntimeHeader,
     SpRuntimeModuleError,
     SpRuntimeMultiSignature,
     SpRuntimeProvingTrieTrieError,
@@ -281,9 +282,9 @@ declare module "@polkadot/types/types/registry" {
         PalletDataPreserversError: PalletDataPreserversError;
         PalletDataPreserversEvent: PalletDataPreserversEvent;
         PalletDataPreserversHoldReason: PalletDataPreserversHoldReason;
+        PalletDataPreserversNodeType: PalletDataPreserversNodeType;
         PalletDataPreserversParaIdsFilter: PalletDataPreserversParaIdsFilter;
         PalletDataPreserversProfile: PalletDataPreserversProfile;
-        PalletDataPreserversProfileMode: PalletDataPreserversProfileMode;
         PalletDataPreserversRegisteredProfile: PalletDataPreserversRegisteredProfile;
         PalletIdentityAuthorityProperties: PalletIdentityAuthorityProperties;
         PalletIdentityCall: PalletIdentityCall;
@@ -377,6 +378,7 @@ declare module "@polkadot/types/types/registry" {
         SpRuntimeDigest: SpRuntimeDigest;
         SpRuntimeDigestDigestItem: SpRuntimeDigestDigestItem;
         SpRuntimeDispatchError: SpRuntimeDispatchError;
+        SpRuntimeHeader: SpRuntimeHeader;
         SpRuntimeModuleError: SpRuntimeModuleError;
         SpRuntimeMultiSignature: SpRuntimeMultiSignature;
         SpRuntimeProvingTrieTrieError: SpRuntimeProvingTrieTrieError;

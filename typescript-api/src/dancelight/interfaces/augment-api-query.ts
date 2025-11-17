@@ -24,14 +24,14 @@ import type {
     u8,
 } from "@polkadot/types-codec";
 import type { AnyNumber, ITuple } from "@polkadot/types-codec/types";
-import type { AccountId32, H256, Perbill } from "@polkadot/types/interfaces/runtime";
+import type { AccountId32, Call, H256, Perbill } from "@polkadot/types/interfaces/runtime";
 import type {
     BinaryHeapEnqueuedOrder,
-    DancelightRuntimeAggregateMessageOrigin,
     DancelightRuntimeRuntimeHoldReason,
     DancelightRuntimeRuntimeParametersKey,
     DancelightRuntimeRuntimeParametersValue,
     DancelightRuntimeSessionKeys,
+    DancelightRuntimeTanssiAggregateMessageOrigin,
     DpCollatorAssignmentAssignedCollatorsAccountId32,
     DpCollatorAssignmentAssignedCollatorsPublic,
     DpContainerChainGenesisDataContainerChainGenesisData,
@@ -50,6 +50,7 @@ import type {
     PalletBalancesAccountData,
     PalletBalancesBalanceLock,
     PalletBalancesReserveData,
+    PalletCollectiveVotes,
     PalletConfigurationHostConfiguration,
     PalletConvictionVotingVoteVoting,
     PalletDataPreserversRegisteredProfile,
@@ -101,10 +102,10 @@ import type {
     PolkadotPrimitivesV8DisputeState,
     PolkadotPrimitivesV8ExecutorParams,
     PolkadotPrimitivesV8SessionInfo,
-    PolkadotPrimitivesV8SlashingPendingSlashes,
     PolkadotPrimitivesV8UpgradeGoAhead,
     PolkadotPrimitivesV8UpgradeRestriction,
     PolkadotPrimitivesV8ValidatorAppPublic,
+    PolkadotPrimitivesVstagingPendingSlashes,
     PolkadotPrimitivesVstagingScrapedOnChainVotes,
     PolkadotRuntimeCommonParasRegistrarParaInfo,
     PolkadotRuntimeParachainsConfigurationHostConfiguration,
@@ -115,6 +116,7 @@ import type {
     PolkadotRuntimeParachainsOnDemandTypesCoreAffinityCount,
     PolkadotRuntimeParachainsOnDemandTypesEnqueuedOrder,
     PolkadotRuntimeParachainsOnDemandTypesQueueStatusType,
+    PolkadotRuntimeParachainsParasAuthorizedCodeHashAndExpiry,
     PolkadotRuntimeParachainsParasParaGenesisArgs,
     PolkadotRuntimeParachainsParasParaLifecycle,
     PolkadotRuntimeParachainsParasParaPastCodeMeta,
@@ -1759,16 +1761,16 @@ declare module "@polkadot/api-base/types/storage" {
                 ApiType,
                 (
                     arg:
-                        | DancelightRuntimeAggregateMessageOrigin
+                        | DancelightRuntimeTanssiAggregateMessageOrigin
                         | { Ump: any }
                         | { Snowbridge: any }
                         | { SnowbridgeTanssi: any }
                         | string
                         | Uint8Array
                 ) => Observable<PalletMessageQueueBookState>,
-                [DancelightRuntimeAggregateMessageOrigin]
+                [DancelightRuntimeTanssiAggregateMessageOrigin]
             > &
-                QueryableStorageEntry<ApiType, [DancelightRuntimeAggregateMessageOrigin]>;
+                QueryableStorageEntry<ApiType, [DancelightRuntimeTanssiAggregateMessageOrigin]>;
             /**
              * The map of page indices to pages.
              **/
@@ -1776,7 +1778,7 @@ declare module "@polkadot/api-base/types/storage" {
                 ApiType,
                 (
                     arg1:
-                        | DancelightRuntimeAggregateMessageOrigin
+                        | DancelightRuntimeTanssiAggregateMessageOrigin
                         | { Ump: any }
                         | { Snowbridge: any }
                         | { SnowbridgeTanssi: any }
@@ -1784,15 +1786,15 @@ declare module "@polkadot/api-base/types/storage" {
                         | Uint8Array,
                     arg2: u32 | AnyNumber | Uint8Array
                 ) => Observable<Option<PalletMessageQueuePage>>,
-                [DancelightRuntimeAggregateMessageOrigin, u32]
+                [DancelightRuntimeTanssiAggregateMessageOrigin, u32]
             > &
-                QueryableStorageEntry<ApiType, [DancelightRuntimeAggregateMessageOrigin, u32]>;
+                QueryableStorageEntry<ApiType, [DancelightRuntimeTanssiAggregateMessageOrigin, u32]>;
             /**
              * The origin at which we should begin servicing.
              **/
             serviceHead: AugmentedQuery<
                 ApiType,
-                () => Observable<Option<DancelightRuntimeAggregateMessageOrigin>>,
+                () => Observable<Option<DancelightRuntimeTanssiAggregateMessageOrigin>>,
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
@@ -1966,6 +1968,56 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             [key: string]: QueryableStorageEntry<ApiType>;
         };
+        openTechCommitteeCollective: {
+            /**
+             * Consideration cost created for publishing and storing a proposal.
+             *
+             * Determined by [Config::Consideration] and may be not present for certain proposals (e.g. if
+             * the proposal count at the time of creation was below threshold N).
+             **/
+            costOf: AugmentedQuery<
+                ApiType,
+                (arg: H256 | string | Uint8Array) => Observable<Option<ITuple<[AccountId32, Null]>>>,
+                [H256]
+            > &
+                QueryableStorageEntry<ApiType, [H256]>;
+            /**
+             * The current members of the collective. This is stored sorted (just by value).
+             **/
+            members: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * The prime member that helps determine the default vote behavior in case of abstentions.
+             **/
+            prime: AugmentedQuery<ApiType, () => Observable<Option<AccountId32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Proposals so far.
+             **/
+            proposalCount: AugmentedQuery<ApiType, () => Observable<u32>, []> & QueryableStorageEntry<ApiType, []>;
+            /**
+             * Actual proposal for a given hash, if it's current.
+             **/
+            proposalOf: AugmentedQuery<ApiType, (arg: H256 | string | Uint8Array) => Observable<Option<Call>>, [H256]> &
+                QueryableStorageEntry<ApiType, [H256]>;
+            /**
+             * The hashes of the active proposals.
+             **/
+            proposals: AugmentedQuery<ApiType, () => Observable<Vec<H256>>, []> & QueryableStorageEntry<ApiType, []>;
+            /**
+             * Votes on a given proposal, if it is ongoing.
+             **/
+            voting: AugmentedQuery<
+                ApiType,
+                (arg: H256 | string | Uint8Array) => Observable<Option<PalletCollectiveVotes>>,
+                [H256]
+            > &
+                QueryableStorageEntry<ApiType, [H256]>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
         outboundMessageCommitmentRecorder: {
             /**
              * Message commitment from last block.
@@ -2045,6 +2097,17 @@ declare module "@polkadot/api-base/types/storage" {
              * The actions to perform during the start of a specific session index.
              **/
             actionsQueue: AugmentedQuery<ApiType, (arg: u32 | AnyNumber | Uint8Array) => Observable<Vec<u32>>, [u32]> &
+                QueryableStorageEntry<ApiType, [u32]>;
+            /**
+             * The code hash authorizations for a para which will expire `expire_at` `BlockNumberFor<T>`.
+             **/
+            authorizedCodeHash: AugmentedQuery<
+                ApiType,
+                (
+                    arg: u32 | AnyNumber | Uint8Array
+                ) => Observable<Option<PolkadotRuntimeParachainsParasAuthorizedCodeHashAndExpiry>>,
+                [u32]
+            > &
                 QueryableStorageEntry<ApiType, [u32]>;
             /**
              * Validation code stored by its hash.
@@ -2451,7 +2514,7 @@ declare module "@polkadot/api-base/types/storage" {
                 (
                     arg1: u32 | AnyNumber | Uint8Array,
                     arg2: H256 | string | Uint8Array
-                ) => Observable<Option<PolkadotPrimitivesV8SlashingPendingSlashes>>,
+                ) => Observable<Option<PolkadotPrimitivesVstagingPendingSlashes>>,
                 [u32, H256]
             > &
                 QueryableStorageEntry<ApiType, [u32, H256]>;

@@ -1249,6 +1249,60 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             [key: string]: AugmentedError<ApiType>;
         };
+        openTechCommitteeCollective: {
+            /**
+             * Members are already initialized!
+             **/
+            AlreadyInitialized: AugmentedError<ApiType>;
+            /**
+             * Duplicate proposals not allowed
+             **/
+            DuplicateProposal: AugmentedError<ApiType>;
+            /**
+             * Duplicate vote ignored
+             **/
+            DuplicateVote: AugmentedError<ApiType>;
+            /**
+             * Account is not a member
+             **/
+            NotMember: AugmentedError<ApiType>;
+            /**
+             * Prime account is not a member
+             **/
+            PrimeAccountNotMember: AugmentedError<ApiType>;
+            /**
+             * Proposal is still active.
+             **/
+            ProposalActive: AugmentedError<ApiType>;
+            /**
+             * Proposal must exist
+             **/
+            ProposalMissing: AugmentedError<ApiType>;
+            /**
+             * The close call was made too early, before the end of the voting.
+             **/
+            TooEarly: AugmentedError<ApiType>;
+            /**
+             * There can only be a maximum of `MaxProposals` active proposals.
+             **/
+            TooManyProposals: AugmentedError<ApiType>;
+            /**
+             * Mismatched index
+             **/
+            WrongIndex: AugmentedError<ApiType>;
+            /**
+             * The given length bound for the proposal was too low.
+             **/
+            WrongProposalLength: AugmentedError<ApiType>;
+            /**
+             * The given weight bound for the proposal was too low.
+             **/
+            WrongProposalWeight: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
         paraInclusion: {
             /**
              * The candidate's relay-parent was not allowed. Either it was
@@ -1372,9 +1426,17 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             CannotUpgradeCode: AugmentedError<ApiType>;
             /**
+             * Invalid block number.
+             **/
+            InvalidBlockNumber: AugmentedError<ApiType>;
+            /**
              * Invalid validation code size.
              **/
             InvalidCode: AugmentedError<ApiType>;
+            /**
+             * No upgrade authorized.
+             **/
+            NothingAuthorized: AugmentedError<ApiType>;
             /**
              * Para is not registered in our system.
              **/
@@ -1403,6 +1465,10 @@ declare module "@polkadot/api-base/types/errors" {
              * Claimed validator index is out of bounds.
              **/
             PvfCheckValidatorIndexOutOfBounds: AugmentedError<ApiType>;
+            /**
+             * The submitted code is not authorized.
+             **/
+            Unauthorized: AugmentedError<ApiType>;
             /**
              * Generic error
              **/
@@ -2078,6 +2144,11 @@ declare module "@polkadot/api-base/types/errors" {
              * Local XCM execution incomplete.
              **/
             LocalExecutionIncomplete: AugmentedError<ApiType>;
+            /**
+             * Local XCM execution incomplete with the actual XCM error and the index of the
+             * instruction that caused the error.
+             **/
+            LocalExecutionIncompleteWithError: AugmentedError<ApiType>;
             /**
              * A remote lock with the corresponding data could not be found.
              **/

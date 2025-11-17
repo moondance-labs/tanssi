@@ -9,7 +9,6 @@ import type {
     BinaryHeapEnqueuedOrder,
     BinaryHeapReverseQueueIndex,
     BitvecOrderLsb0,
-    DancelightRuntimeAggregateMessageOrigin,
     DancelightRuntimeDynamicParamsPreimageBaseDeposit,
     DancelightRuntimeDynamicParamsPreimageByteDeposit,
     DancelightRuntimeDynamicParamsPreimageParameters,
@@ -24,6 +23,7 @@ import type {
     DancelightRuntimeRuntimeParametersKey,
     DancelightRuntimeRuntimeParametersValue,
     DancelightRuntimeSessionKeys,
+    DancelightRuntimeTanssiAggregateMessageOrigin,
     DpCollatorAssignmentAssignedCollatorsAccountId32,
     DpCollatorAssignmentAssignedCollatorsPublic,
     DpContainerChainGenesisDataContainerChainGenesisData,
@@ -101,6 +101,12 @@ import type {
     PalletBeefyError,
     PalletCollatorAssignmentCall,
     PalletCollatorAssignmentEvent,
+    PalletCollectiveCall,
+    PalletCollectiveError,
+    PalletCollectiveEvent,
+    PalletCollectiveHoldReason,
+    PalletCollectiveRawOrigin,
+    PalletCollectiveVotes,
     PalletConfigurationCall,
     PalletConfigurationError,
     PalletConfigurationHostConfiguration,
@@ -119,9 +125,9 @@ import type {
     PalletDataPreserversError,
     PalletDataPreserversEvent,
     PalletDataPreserversHoldReason,
+    PalletDataPreserversNodeType,
     PalletDataPreserversParaIdsFilter,
     PalletDataPreserversProfile,
-    PalletDataPreserversProfileMode,
     PalletDataPreserversRegisteredProfile,
     PalletEthereumTokenTransfersCall,
     PalletEthereumTokenTransfersError,
@@ -248,6 +254,7 @@ import type {
     PalletSessionCall,
     PalletSessionError,
     PalletSessionEvent,
+    PalletSessionHistoricalPalletEvent,
     PalletStreamPaymentCall,
     PalletStreamPaymentChangeKind,
     PalletStreamPaymentChangeRequest,
@@ -280,6 +287,7 @@ import type {
     PalletXcmAuthorizedAliasesEntry,
     PalletXcmCall,
     PalletXcmError,
+    PalletXcmErrorsExecutionError,
     PalletXcmEvent,
     PalletXcmHoldReason,
     PalletXcmMaxAuthorizedAliases,
@@ -309,10 +317,7 @@ import type {
     PolkadotPrimitivesV8SchedulerParams,
     PolkadotPrimitivesV8SessionInfo,
     PolkadotPrimitivesV8SignedUncheckedSigned,
-    PolkadotPrimitivesV8SlashingDisputeProof,
     PolkadotPrimitivesV8SlashingDisputesTimeSlot,
-    PolkadotPrimitivesV8SlashingPendingSlashes,
-    PolkadotPrimitivesV8SlashingSlashingOffenceKind,
     PolkadotPrimitivesV8UpgradeGoAhead,
     PolkadotPrimitivesV8UpgradeRestriction,
     PolkadotPrimitivesV8ValidDisputeStatementKind,
@@ -323,7 +328,10 @@ import type {
     PolkadotPrimitivesVstagingCandidateDescriptorV2,
     PolkadotPrimitivesVstagingCandidateReceiptV2,
     PolkadotPrimitivesVstagingCommittedCandidateReceiptV2,
+    PolkadotPrimitivesVstagingDisputeOffenceKind,
+    PolkadotPrimitivesVstagingDisputeProof,
     PolkadotPrimitivesVstagingInherentData,
+    PolkadotPrimitivesVstagingPendingSlashes,
     PolkadotPrimitivesVstagingScrapedOnChainVotes,
     PolkadotRuntimeCommonParasRegistrarPalletCall,
     PolkadotRuntimeCommonParasRegistrarPalletError,
@@ -360,6 +368,7 @@ import type {
     PolkadotRuntimeParachainsOnDemandTypesEnqueuedOrder,
     PolkadotRuntimeParachainsOnDemandTypesQueueStatusType,
     PolkadotRuntimeParachainsOriginPalletOrigin,
+    PolkadotRuntimeParachainsParasAuthorizedCodeHashAndExpiry,
     PolkadotRuntimeParachainsParasInherentPalletCall,
     PolkadotRuntimeParachainsParasInherentPalletError,
     PolkadotRuntimeParachainsParasPalletCall,
@@ -507,6 +516,7 @@ import type {
     StagingXcmV5PalletInfo,
     StagingXcmV5QueryResponseInfo,
     StagingXcmV5Response,
+    StagingXcmV5TraitsInstructionError,
     StagingXcmV5TraitsOutcome,
     StagingXcmV5Xcm,
     TpBridgeChannelInfo,
@@ -561,7 +571,6 @@ declare module "@polkadot/types/types/registry" {
         BinaryHeapEnqueuedOrder: BinaryHeapEnqueuedOrder;
         BinaryHeapReverseQueueIndex: BinaryHeapReverseQueueIndex;
         BitvecOrderLsb0: BitvecOrderLsb0;
-        DancelightRuntimeAggregateMessageOrigin: DancelightRuntimeAggregateMessageOrigin;
         DancelightRuntimeDynamicParamsPreimageBaseDeposit: DancelightRuntimeDynamicParamsPreimageBaseDeposit;
         DancelightRuntimeDynamicParamsPreimageByteDeposit: DancelightRuntimeDynamicParamsPreimageByteDeposit;
         DancelightRuntimeDynamicParamsPreimageParameters: DancelightRuntimeDynamicParamsPreimageParameters;
@@ -576,6 +585,7 @@ declare module "@polkadot/types/types/registry" {
         DancelightRuntimeRuntimeParametersKey: DancelightRuntimeRuntimeParametersKey;
         DancelightRuntimeRuntimeParametersValue: DancelightRuntimeRuntimeParametersValue;
         DancelightRuntimeSessionKeys: DancelightRuntimeSessionKeys;
+        DancelightRuntimeTanssiAggregateMessageOrigin: DancelightRuntimeTanssiAggregateMessageOrigin;
         DpCollatorAssignmentAssignedCollatorsAccountId32: DpCollatorAssignmentAssignedCollatorsAccountId32;
         DpCollatorAssignmentAssignedCollatorsPublic: DpCollatorAssignmentAssignedCollatorsPublic;
         DpContainerChainGenesisDataContainerChainGenesisData: DpContainerChainGenesisDataContainerChainGenesisData;
@@ -653,6 +663,12 @@ declare module "@polkadot/types/types/registry" {
         PalletBeefyError: PalletBeefyError;
         PalletCollatorAssignmentCall: PalletCollatorAssignmentCall;
         PalletCollatorAssignmentEvent: PalletCollatorAssignmentEvent;
+        PalletCollectiveCall: PalletCollectiveCall;
+        PalletCollectiveError: PalletCollectiveError;
+        PalletCollectiveEvent: PalletCollectiveEvent;
+        PalletCollectiveHoldReason: PalletCollectiveHoldReason;
+        PalletCollectiveRawOrigin: PalletCollectiveRawOrigin;
+        PalletCollectiveVotes: PalletCollectiveVotes;
         PalletConfigurationCall: PalletConfigurationCall;
         PalletConfigurationError: PalletConfigurationError;
         PalletConfigurationHostConfiguration: PalletConfigurationHostConfiguration;
@@ -671,9 +687,9 @@ declare module "@polkadot/types/types/registry" {
         PalletDataPreserversError: PalletDataPreserversError;
         PalletDataPreserversEvent: PalletDataPreserversEvent;
         PalletDataPreserversHoldReason: PalletDataPreserversHoldReason;
+        PalletDataPreserversNodeType: PalletDataPreserversNodeType;
         PalletDataPreserversParaIdsFilter: PalletDataPreserversParaIdsFilter;
         PalletDataPreserversProfile: PalletDataPreserversProfile;
-        PalletDataPreserversProfileMode: PalletDataPreserversProfileMode;
         PalletDataPreserversRegisteredProfile: PalletDataPreserversRegisteredProfile;
         PalletEthereumTokenTransfersCall: PalletEthereumTokenTransfersCall;
         PalletEthereumTokenTransfersError: PalletEthereumTokenTransfersError;
@@ -800,6 +816,7 @@ declare module "@polkadot/types/types/registry" {
         PalletSessionCall: PalletSessionCall;
         PalletSessionError: PalletSessionError;
         PalletSessionEvent: PalletSessionEvent;
+        PalletSessionHistoricalPalletEvent: PalletSessionHistoricalPalletEvent;
         PalletStreamPaymentCall: PalletStreamPaymentCall;
         PalletStreamPaymentChangeKind: PalletStreamPaymentChangeKind;
         PalletStreamPaymentChangeRequest: PalletStreamPaymentChangeRequest;
@@ -832,6 +849,7 @@ declare module "@polkadot/types/types/registry" {
         PalletXcmAuthorizedAliasesEntry: PalletXcmAuthorizedAliasesEntry;
         PalletXcmCall: PalletXcmCall;
         PalletXcmError: PalletXcmError;
+        PalletXcmErrorsExecutionError: PalletXcmErrorsExecutionError;
         PalletXcmEvent: PalletXcmEvent;
         PalletXcmHoldReason: PalletXcmHoldReason;
         PalletXcmMaxAuthorizedAliases: PalletXcmMaxAuthorizedAliases;
@@ -861,10 +879,7 @@ declare module "@polkadot/types/types/registry" {
         PolkadotPrimitivesV8SchedulerParams: PolkadotPrimitivesV8SchedulerParams;
         PolkadotPrimitivesV8SessionInfo: PolkadotPrimitivesV8SessionInfo;
         PolkadotPrimitivesV8SignedUncheckedSigned: PolkadotPrimitivesV8SignedUncheckedSigned;
-        PolkadotPrimitivesV8SlashingDisputeProof: PolkadotPrimitivesV8SlashingDisputeProof;
         PolkadotPrimitivesV8SlashingDisputesTimeSlot: PolkadotPrimitivesV8SlashingDisputesTimeSlot;
-        PolkadotPrimitivesV8SlashingPendingSlashes: PolkadotPrimitivesV8SlashingPendingSlashes;
-        PolkadotPrimitivesV8SlashingSlashingOffenceKind: PolkadotPrimitivesV8SlashingSlashingOffenceKind;
         PolkadotPrimitivesV8UpgradeGoAhead: PolkadotPrimitivesV8UpgradeGoAhead;
         PolkadotPrimitivesV8UpgradeRestriction: PolkadotPrimitivesV8UpgradeRestriction;
         PolkadotPrimitivesV8ValidDisputeStatementKind: PolkadotPrimitivesV8ValidDisputeStatementKind;
@@ -875,7 +890,10 @@ declare module "@polkadot/types/types/registry" {
         PolkadotPrimitivesVstagingCandidateDescriptorV2: PolkadotPrimitivesVstagingCandidateDescriptorV2;
         PolkadotPrimitivesVstagingCandidateReceiptV2: PolkadotPrimitivesVstagingCandidateReceiptV2;
         PolkadotPrimitivesVstagingCommittedCandidateReceiptV2: PolkadotPrimitivesVstagingCommittedCandidateReceiptV2;
+        PolkadotPrimitivesVstagingDisputeOffenceKind: PolkadotPrimitivesVstagingDisputeOffenceKind;
+        PolkadotPrimitivesVstagingDisputeProof: PolkadotPrimitivesVstagingDisputeProof;
         PolkadotPrimitivesVstagingInherentData: PolkadotPrimitivesVstagingInherentData;
+        PolkadotPrimitivesVstagingPendingSlashes: PolkadotPrimitivesVstagingPendingSlashes;
         PolkadotPrimitivesVstagingScrapedOnChainVotes: PolkadotPrimitivesVstagingScrapedOnChainVotes;
         PolkadotRuntimeCommonParasRegistrarPalletCall: PolkadotRuntimeCommonParasRegistrarPalletCall;
         PolkadotRuntimeCommonParasRegistrarPalletError: PolkadotRuntimeCommonParasRegistrarPalletError;
@@ -912,6 +930,7 @@ declare module "@polkadot/types/types/registry" {
         PolkadotRuntimeParachainsOnDemandTypesEnqueuedOrder: PolkadotRuntimeParachainsOnDemandTypesEnqueuedOrder;
         PolkadotRuntimeParachainsOnDemandTypesQueueStatusType: PolkadotRuntimeParachainsOnDemandTypesQueueStatusType;
         PolkadotRuntimeParachainsOriginPalletOrigin: PolkadotRuntimeParachainsOriginPalletOrigin;
+        PolkadotRuntimeParachainsParasAuthorizedCodeHashAndExpiry: PolkadotRuntimeParachainsParasAuthorizedCodeHashAndExpiry;
         PolkadotRuntimeParachainsParasInherentPalletCall: PolkadotRuntimeParachainsParasInherentPalletCall;
         PolkadotRuntimeParachainsParasInherentPalletError: PolkadotRuntimeParachainsParasInherentPalletError;
         PolkadotRuntimeParachainsParasPalletCall: PolkadotRuntimeParachainsParasPalletCall;
@@ -1059,6 +1078,7 @@ declare module "@polkadot/types/types/registry" {
         StagingXcmV5PalletInfo: StagingXcmV5PalletInfo;
         StagingXcmV5QueryResponseInfo: StagingXcmV5QueryResponseInfo;
         StagingXcmV5Response: StagingXcmV5Response;
+        StagingXcmV5TraitsInstructionError: StagingXcmV5TraitsInstructionError;
         StagingXcmV5TraitsOutcome: StagingXcmV5TraitsOutcome;
         StagingXcmV5Xcm: StagingXcmV5Xcm;
         TpBridgeChannelInfo: TpBridgeChannelInfo;

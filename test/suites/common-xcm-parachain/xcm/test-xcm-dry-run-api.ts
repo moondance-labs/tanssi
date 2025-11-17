@@ -2,97 +2,21 @@
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith, generateKeyringPair } from "@moonwall/util";
-import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 import { XcmFragment } from "utils";
-
-const runtimeApi = {
-    runtime: {
-        DryRunApi: [
-            {
-                methods: {
-                    dry_run_call: {
-                        description: "Dry run call",
-                        params: [
-                            {
-                                name: "origin",
-                                type: "OriginCaller",
-                            },
-                            {
-                                name: "call",
-                                type: "Call",
-                            },
-                        ],
-                        type: "Result<CallDryRunEffects<Event>, XcmDryRunError>",
-                    },
-                    dry_run_xcm: {
-                        description: "Dry run XCM program",
-                        params: [
-                            {
-                                name: "origin_location",
-                                type: "XcmVersionedLocation",
-                            },
-                            {
-                                name: "xcm",
-                                type: "XcmVersionedXcm",
-                            },
-                        ],
-                        type: "Result<XcmDryRunEffects, XcmDryRunError>",
-                    },
-                },
-                version: 1,
-            },
-        ],
-    },
-    types: {
-        CallDryRunEffects: {
-            ExecutionResult: "DispatchResultWithPostInfo",
-            EmittedEvents: "Vec<Event>",
-            LocalXcm: "Option<VersionedXcm>",
-            ForwardedXcms: "Vec<(XcmVersionedLocation, Vec<XcmVersionedXcm>)>",
-        },
-        DispatchErrorWithPostInfoTPostDispatchInfo: {
-            postInfo: "PostDispatchInfo",
-            error: "DispatchError",
-        },
-        DispatchResultWithPostInfo: {
-            _enum: {
-                Ok: "PostDispatchInfo",
-                Err: "DispatchErrorWithPostInfoTPostDispatchInfo",
-            },
-        },
-        PostDispatchInfo: {
-            actualWeight: "Option<Weight>",
-            paysFee: "Pays",
-        },
-        XcmDryRunEffects: {
-            ExecutionResult: "StagingXcmV4TraitsOutcome",
-            EmittedEvents: "Vec<Event>",
-            ForwardedXcms: "Vec<(XcmVersionedLocation, Vec<XcmVersionedXcm>)>",
-        },
-        XcmDryRunError: {
-            _enum: {
-                Unimplemented: "Null",
-                VersionedConversionFailed: "Null",
-            },
-        },
-    },
-};
 
 describeSuite({
     id: "COMMON0305",
     title: "XCM - DryRunApi",
     foundationMethods: "dev",
-    testCases: ({ it }) => {
+    testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let chain: any;
 
         beforeAll(async () => {
-            polkadotJs = await ApiPromise.create({
-                provider: new WsProvider(`ws://localhost:${process.env.MOONWALL_RPC_PORT}/`),
-                ...runtimeApi,
-            });
+            polkadotJs = context.polkadotJs();
             chain = polkadotJs.consts.system.version.specName.toString();
             alice =
                 chain === "frontier-template"
@@ -100,6 +24,10 @@ describeSuite({
                     : new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
                           name: "Alice default",
                       });
+            // In stable2506 the dry run call breaks if the current block is still 0, returning error
+            // dryRunCall.asOk.executionResult.err.error.module { index: 53, error: '0x01000000' }
+            // The fix is to create 1 block, so the current block is 1 in tests.
+            await context.createBlock();
         });
 
         it({
@@ -159,6 +87,13 @@ describeSuite({
                     "Unlimited"
                 );
 
+                // If this test fails, uncomment this to check if actually sending the tx works.
+                /*
+                const result = await context.createBlock(await tx.signAsync(alice));
+                console.log(result);
+                return;
+                 */
+
                 const XCM_VERSION = 3;
                 const dryRunCall = await polkadotJs.call.dryRunApi.dryRunCall(
                     { System: { signed: alice.address } },
@@ -167,6 +102,15 @@ describeSuite({
                 );
 
                 expect(dryRunCall.isOk).to.be.true;
+
+                // Log error in case of failure
+                if (dryRunCall.asOk.executionResult.toJSON().err) {
+                    console.log(
+                        "dryRunCall.asOk.executionResult.err.error.module",
+                        dryRunCall.asOk.executionResult.toJSON().err.error.module
+                    );
+                }
+
                 expect(dryRunCall.asOk.executionResult.isOk).be.true;
             },
         });

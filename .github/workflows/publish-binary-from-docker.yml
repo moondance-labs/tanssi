@@ -53,11 +53,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
       - name: Use Node.js 22.x
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22.x
       - name: Download Original Tools
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: original-tools
           path: original-tools
@@ -76,7 +76,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: ["download-binaries", "publish-draft-release"]
     steps:
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           name: binaries
           path: build

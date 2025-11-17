@@ -17,7 +17,7 @@ runs:
         version: 9
 
     - name: Setup Node
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v6
       with:
         node-version: 22.x
         cache: "pnpm"
@@ -37,11 +37,30 @@ runs:
       if: failure()
       shell: bash
       run: |
-        ls -ltr /tmp
-        latest_zombie_dir=$(find /tmp -type d -iname "*zombie*" -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -1 | cut -f2- -d" " || true)
+        # Print collapsed output of /tmp for debugging
+        echo "::group::ls -ltr /tmp"
+        ls -ltr /tmp || true
+        echo "::endgroup::"
+
+        # Get name of most recent zombienet folder in /tmp
+        latest_zombie_dir=$(find /tmp -type d -iname "*zombie*" -printf '%T@ %p\n' 2>/dev/null \
+                            | sort -n | tail -1 | cut -f2- -d" " || true)
+    
         logs_dir="logs"
         mkdir -p "$logs_dir"
-        find "$latest_zombie_dir" -type f -name "*.log" -exec cp {} "$logs_dir" \;
+    
+        # Find *.yaml files; copy each, and also copy a same-named *.log if it exists
+        # This avoids accidentally copying unrelated rocksdb files that also end with *.log,
+        # and the yaml files include the command args and rpc ports, which can be helpful.
+        if [[ -n "$latest_zombie_dir" ]]; then
+          while IFS= read -r -d '' yaml; do
+            cp "$yaml" "$logs_dir"/ || true
+            log="${yaml%.yaml}.log"
+            if [[ -f "$log" ]]; then
+              cp "$log" "$logs_dir"/ || true
+            fi
+          done < <(find "$latest_zombie_dir" -type f -name "*.yaml" -print0)
+        fi
 
     - name: "Upload zombie logs"
       if: failure()

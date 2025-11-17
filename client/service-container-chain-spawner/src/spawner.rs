@@ -39,13 +39,11 @@ use {
     fs2::FileExt,
     futures::FutureExt,
     node_common::command::generate_genesis_block,
-    pallet_author_noting_runtime_api::AuthorNotingApi,
     polkadot_primitives::CollatorPair,
     sc_cli::{Database, SyncMode},
     sc_network::config::MultiaddrWithPeerId,
     sc_service::SpawnTaskHandle,
     sc_transaction_pool::TransactionPoolHandle,
-    sp_api::ProvideRuntimeApi,
     sp_core::H256,
     sp_keystore::KeystorePtr,
     sp_runtime::traits::Block as BlockT,
@@ -399,11 +397,7 @@ async fn try_spawn<
             container_chain_cli_config.database.set_path(&db_path);
 
             let (container_chain_task_manager, container_chain_client, container_chain_db) =
-                match container_chain_cli_config
-                    .network
-                    .network_backend
-                    .unwrap_or(sc_network::config::NetworkBackendType::Libp2p)
-                {
+                match container_chain_cli_config.network.network_backend {
                     sc_network::config::NetworkBackendType::Libp2p => {
                         start_node_impl_container::<_, _, sc_network::NetworkWorker<_, _>>(
                             container_chain_cli_config,
@@ -749,14 +743,14 @@ impl<
         // then the real assignment is used.
         // Except in solochain mode, then the initial assignment is None.
         if validator && !solochain {
-            self.handle_update_assignment(Some(orchestrator_para_id), None)
+            self.handle_update_assignment(Some(orchestrator_para_id), None, true)
                 .await;
         }
 
         while let Some(msg) = rx.recv().await {
             match msg {
                 CcSpawnMsg::UpdateAssignment { current, next } => {
-                    self.handle_update_assignment(current, next).await;
+                    self.handle_update_assignment(current, next, false).await;
                 }
             }
         }
@@ -770,8 +764,13 @@ impl<
     }
 
     /// Handle `CcSpawnMsg::UpdateAssignment`
-    async fn handle_update_assignment(&mut self, current: Option<ParaId>, next: Option<ParaId>) {
-        if !self.db_folder_cleanup_done {
+    async fn handle_update_assignment(
+        &mut self,
+        current: Option<ParaId>,
+        next: Option<ParaId>,
+        disable_db_folder_cleanup: bool,
+    ) {
+        if !disable_db_folder_cleanup && !self.db_folder_cleanup_done {
             self.db_folder_cleanup_done = true;
 
             // Disabled when running with --keep-db
@@ -1023,44 +1022,6 @@ fn handle_update_assignment_state_change(
         chains_to_stop,
         chains_to_start,
         need_to_restart: need_to_restart_current || need_to_restart_next,
-    }
-}
-
-/// Select [SyncMode] to use for a container chain.
-/// We want to use warp sync unless the db still exists, or the container chain is
-/// still at genesis block (because of a warp sync bug in that case).
-///
-/// Remember that warp sync doesn't work if a partially synced database already exists, it falls
-/// back to full sync instead. The only exception is if the previous instance of the database was
-/// interrupted before it finished downloading the state, in that case the node will use warp sync.
-/// If it was interrupted during the block history download, the node will use full sync but also
-/// finish the block history download in the background, even if sync mode is set to full sync.
-pub fn select_sync_mode_using_client(
-    db_exists: bool,
-    orchestrator_client: &Arc<ParachainClient>,
-    container_chain_para_id: ParaId,
-) -> sc_service::error::Result<SyncMode> {
-    if db_exists {
-        // If the user wants to use warp sync, they should have already removed the database
-        return Ok(SyncMode::Full);
-    }
-
-    // The following check is only needed because of this bug:
-    // https://github.com/paritytech/polkadot-sdk/issues/1930
-
-    let orchestrator_runtime_api = orchestrator_client.runtime_api();
-    let orchestrator_chain_info = orchestrator_client.chain_info();
-
-    // If the container chain is still at genesis block, use full sync because warp sync is broken
-    let full_sync_needed = orchestrator_runtime_api
-        .latest_author(orchestrator_chain_info.best_hash, container_chain_para_id)
-        .map_err(|e| format!("Failed to read latest author: {}", e))?
-        .is_none();
-
-    if full_sync_needed {
-        Ok(SyncMode::Full)
-    } else {
-        Ok(SyncMode::Warp)
     }
 }
 

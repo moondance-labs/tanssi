@@ -6,7 +6,7 @@ import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 import { WebSocketProvider, ethers, parseUnits } from "ethers";
-import { getHeaderFromRelay, getTmpZombiePath, signAndSendAndInclude, waitForLogs } from "utils";
+import { getHeaderFromRelay, getTmpZombiePath, signAndSendAndInclude, sleep, waitForLogs } from "utils";
 
 // Checks every second the log file to find the watcher best block notification until it is found or
 // timeout is reached. If timeout is reached, throws an error.
@@ -93,10 +93,10 @@ describeSuite({
                 const logFilePath = `${getTmpZombiePath()}/DataPreserver-2000.log`;
 
                 const profile = {
-                    url: "exemple",
                     paraIds: "AnyParaId",
-                    mode: { rpc: { supportsEthereumRpc: false } },
                     assignmentRequest: "Free",
+                    nodeType: "Substrate",
+                    additionalInfo: "",
                 };
 
                 profile1 = Number(await relayApi.query.dataPreservers.nextProfileId());
@@ -158,10 +158,10 @@ describeSuite({
                 const logFilePath = `${getTmpZombiePath()}/DataPreserver-2001.log`;
 
                 const profile = {
-                    url: "exemple",
                     paraIds: "AnyParaId",
-                    mode: { rpc: { supportsEthereumRpc: true } },
                     assignmentRequest: "Free",
+                    nodeType: "Frontier",
+                    additionalInfo: "",
                 };
 
                 profile2 = Number(await relayApi.query.dataPreservers.nextProfileId());
@@ -205,7 +205,25 @@ describeSuite({
         });
 
         it({
+            id: "T07b",
+            title: "RPC endpoint 2001 is synced to latest block",
+            test: async () => {
+                const wsProvider = new WsProvider("ws://127.0.0.1:9952");
+                dataProvider2001Api = await ApiPromise.create({ provider: wsProvider });
+
+                while (true) {
+                    const blockNum = (await dataProvider2001Api.rpc.chain.getBlock()).block.header.number.toNumber();
+                    if (blockNum > 0) {
+                        break;
+                    }
+                    await sleep(1000);
+                }
+            },
+        });
+
+        it({
             id: "T08",
+            timeout: 120_000,
             title: "RPC endpoint 2001 is Ethereum compatible",
             test: async () => {
                 const url = "ws://127.0.0.1:9952";
@@ -214,31 +232,17 @@ describeSuite({
 
                 const signer = new ethers.Wallet(BALTATHAR_PRIVATE_KEY, customHttpProvider);
 
+                const balanceBefore = await customHttpProvider.getBalance(CHARLETH_ADDRESS);
                 // Try to send a test transaction.
-                // Ideally this could be done in one line, but there is a strange bug somewhere
-                // that causes transactions to never be included. As a workaround, we set a 60
-                // second timeout and retry sending the same transaction, and for some reason that
-                // fixes the bug.
-                for (let i = 0; i <= 5; i++) {
-                    if (i === 5) {
-                        expect.fail("failed to send tx");
-                    }
-                    try {
-                        const nonce = await customHttpProvider.getTransactionCount(BALTATHAR_ADDRESS);
-                        const tx = await signer.sendTransaction({
-                            to: CHARLETH_ADDRESS,
-                            value: parseUnits("0.001", "ether"),
-                            nonce,
-                        });
-
-                        await customHttpProvider.waitForTransaction(tx.hash, 1, 60_000);
-                        // Transaction included, don't need to try again
-                        break;
-                    } catch (e) {
-                        console.log("tx inclusion failed: ", e);
-                    }
-                }
-                expect(Number(await customHttpProvider.getBalance(CHARLETH_ADDRESS))).to.be.greaterThan(0);
+                const nonce = await customHttpProvider.getTransactionCount(BALTATHAR_ADDRESS);
+                const tx = await signer.sendTransaction({
+                    to: CHARLETH_ADDRESS,
+                    value: parseUnits("0.001", "ether"),
+                    nonce,
+                });
+                await customHttpProvider.waitForTransaction(tx.hash, 1, 119_000);
+                const balanceAfter = await customHttpProvider.getBalance(CHARLETH_ADDRESS);
+                expect(Number(balanceAfter - balanceBefore)).to.be.greaterThan(0);
             },
         });
 
@@ -271,9 +275,7 @@ describeSuite({
             timeout: 180000,
             test: async () => {
                 const newProfile = {
-                    url: "exemple",
                     paraIds: "AnyParaId",
-                    mode: { rpc: { supportsEthereumRpc: true } },
                     assignmentRequest: {
                         StreamPayment: {
                             config: {
@@ -283,6 +285,8 @@ describeSuite({
                             },
                         },
                     },
+                    nodeType: "Frontier",
+                    additionalInfo: "",
                 };
 
                 {
@@ -398,6 +402,58 @@ describeSuite({
                 expect(balanceAfter).to.be.eq(balanceBeforeAssignment + BigInt(10000000));
 
                 await context.waitBlock(1, "Relay");
+            },
+        });
+
+        it({
+            id: "T13",
+            title: "Assign bootnode to 2001 with RPC disabled",
+            test: async () => {
+                const logFilePath = `${getTmpZombiePath()}/Bootnode-2001.log`;
+
+                const profile = {
+                    paraIds: "AnyParaId",
+                    assignmentRequest: "Free",
+                    bootnodeUrl: "dummy",
+                    nodeType: "Frontier",
+                    additionalInfo: "0x",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
+                };
+
+                profile2 = Number(await relayApi.query.dataPreservers.nextProfileId());
+                expect(profile2).to.be.eq(4);
+
+                {
+                    const tx = relayApi.tx.dataPreservers.forceCreateProfile(profile, bob.address);
+                    await signAndSendAndInclude(relayApi.tx.sudo.sudo(tx), alice);
+                    await context.waitBlock(1, "Relay");
+                }
+
+                {
+                    const tx = relayApi.tx.dataPreservers.forceStartAssignment(profile2, 2001, "Free");
+                    await signAndSendAndInclude(relayApi.tx.sudo.sudo(tx), alice);
+                    await context.waitBlock(1, "Relay");
+                }
+
+                const onChainProfile = (await relayApi.query.dataPreservers.profiles(profile2)).unwrap();
+                const onChainProfileAccount = u8aToHex(decodeAddress(onChainProfile.account.toString()));
+                const bobAccount = u8aToHex(bob.addressRaw);
+
+                expect(onChainProfileAccount).to.be.eq(bobAccount);
+                expect(onChainProfile.assignment.toHuman().toString()).to.be.eq(["2,001", "Free"].toString());
+
+                await expectLogs(logFilePath, 300, ["NotAssigned => Active(Id(2001))"]);
+                await expectLogs(logFilePath, 300, ["RPC service disabled for bootnode-only node"]);
+
+                const url = "ws://127.0.0.1:9954";
+                try {
+                    const customHttpProvider = new WebSocketProvider(url);
+                    const res = (await customHttpProvider.getNetwork()).chainId;
+                    expect.fail("expected for an error to occur while connecting to RPC");
+                } catch (err) {
+                    expect(err.message).to.contain("Method not found");
+                }
             },
         });
     },

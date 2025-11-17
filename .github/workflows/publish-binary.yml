@@ -71,11 +71,11 @@ jobs:
           ref: ${{ github.event.inputs.to }}
           fetch-depth: 0
       - name: Use Node.js 22.x
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22.x
       - name: Download Original Tools
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: original-tools
           path: original-tools
@@ -108,7 +108,7 @@ jobs:
         cpu: ["", "skylake", "znver3"]
         node: ["tanssi-node", "container-chain-frontier-node", "container-chain-simple-node"]
     steps:
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           pattern: binaries-*
           merge-multiple: true

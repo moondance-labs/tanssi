@@ -1,13 +1,13 @@
 import { Keyring } from "@polkadot/api";
-import fs from "node:fs/promises";
+import type { SubmittableExtrinsic } from "@polkadot/api/types";
+import type { U64 } from "@polkadot/types";
 import jsonBg from "json-bigint";
+import assert from "node:assert";
+import fs from "node:fs/promises";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { chainSpecToContainerChainGenesisData } from "../util/genesis_data";
 import { NETWORK_YARGS_OPTIONS, getApiFor } from "./utils/network";
-import type { SubmittableExtrinsic } from "@polkadot/api/types";
-import type { U64 } from "@polkadot/types";
-import assert from "node:assert";
 const JSONbig = jsonBg({ useNativeBigInt: true });
 
 yargs(hideBin(process.argv))
@@ -79,9 +79,9 @@ yargs(hideBin(process.argv))
                     let profileId = ((await api.query.dataPreservers.nextProfileId()) as U64).toNumber();
                     for (const bootnode of rawSpec.bootNodes) {
                         const profileTx = api.tx.dataPreservers.createProfile({
-                            url: bootnode,
+                            bootnodeUrl: bootnode,
                             paraIds: "AnyParaId",
-                            mode: "Bootnode",
+                            nodeType: "Substrate",
                             assignmentRequest: "Free",
                         });
                         txs.push(profileTx);
@@ -200,9 +200,9 @@ yargs(hideBin(process.argv))
                 let profileId = ((await api.query.dataPreservers.nextProfileId()) as U64).toNumber();
                 for (const bootnode of bootnodes) {
                     const profileTx = api.tx.dataPreservers.createProfile({
-                        url: bootnode,
+                        bootnodeUrl: bootnode,
                         paraIds: "AnyParaId",
-                        mode: "Bootnode",
+                        nodeType: "Substrate",
                         assignmentRequest: "Free",
                     });
                     txs.push(profileTx);

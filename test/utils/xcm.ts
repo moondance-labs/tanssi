@@ -289,7 +289,12 @@ export interface XcmFragmentConfig {
         multilocation: MultiLocation;
         fungible: bigint;
     }[];
-    weight_limit?: BN;
+    weight_limit?:
+        | BN
+        | {
+              refTime: BN | number | bigint;
+              proofSize: BN | number | bigint;
+          };
     descend_origin?: string;
     beneficiary?: string;
 }
@@ -556,7 +561,7 @@ export class XcmFragment {
                     },
                     beneficiary: {
                         parents: 0,
-                        interior: { X1: { AccountId32: { network, key: beneficiary } } },
+                        interior: { X1: { AccountId32: { network, id: beneficiary } } },
                     },
                 },
             });
@@ -797,8 +802,8 @@ export class XcmFragment {
 
     // Add a `ExportMessage` instruction
     export_message(
-        xcm: Array = [],
-        network: "Any" | XcmV3JunctionNetworkId["type"] = "Ethereum",
+        xcm: Array,
+        network: { Ethereum: { chainId: number } },
         destination: Junctions = { X1: { Parachain: 1000 } }
     ): this {
         this.instructions.push({

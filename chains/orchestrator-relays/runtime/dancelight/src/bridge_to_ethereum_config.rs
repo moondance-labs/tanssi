@@ -25,17 +25,17 @@ use {
         NativeContainerTokensProcessor, NativeTokenTransferMessageProcessor,
     },
     tp_bridge::{
-        generic_token_message_processor::GenericTokenMessageProcessor,
-        symbiotic_message_processor::SymbioticMessageProcessor,
+        symbiotic_message_processor::SymbioticInboundMessageProcessorV1,
+        GenericTokenInboundMessageProcessor,
     },
 };
 
 use {
     crate::{
-        parameter_types, weights, xcm_config, AggregateMessageOrigin, Balance, Balances,
-        EthereumInboundQueue, EthereumOutboundQueue, EthereumSovereignAccount, EthereumSystem,
-        FixedU128, GetAggregateMessageOrigin, Keccak256, MessageQueue,
-        OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, SnowbridgeFeesAccount,
+        parameter_types, weights, xcm_config, Balance, Balances, EthereumInboundQueue,
+        EthereumOutboundQueue, EthereumSovereignAccount, EthereumSystem, FixedU128,
+        GetAggregateMessageOrigin, Keccak256, MessageQueue, OutboundMessageCommitmentRecorder,
+        Runtime, RuntimeEvent, SnowbridgeFeesAccount, TanssiAggregateMessageOrigin,
         TokenLocationReanchored, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
     frame_support::{traits::PalletInfoAccess, weights::ConstantMultiplier},
@@ -72,15 +72,13 @@ impl OnNewCommitment for CommitmentRecorder {
     }
 }
 
-impl pallet_outbound_message_commitment_recorder::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-}
+impl pallet_outbound_message_commitment_recorder::Config for Runtime {}
 
 // https://github.com/paritytech/polkadot-sdk/blob/2ae79be8e028a995b850621ee55f46c041eceefe/cumulus/parachains/runtimes/bridge-hubs/bridge-hub-westend/src/bridge_to_ethereum_config.rs#L105
 impl snowbridge_pallet_outbound_queue::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Hashing = Keccak256;
-    type AggregateMessageOrigin = AggregateMessageOrigin;
+    type AggregateMessageOrigin = TanssiAggregateMessageOrigin;
     type GetAggregateMessageOrigin = GetAggregateMessageOrigin;
     type MessageQueue = MessageQueue;
     type Decimals = ConstU8<12>;
@@ -134,7 +132,6 @@ impl snowbridge_pallet_system::Config for Runtime {
 }
 
 impl pallet_ethereum_token_transfers::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type OutboundQueue = EthereumOutboundQueue;
     type EthereumSystemHandler = EthereumSystemHandler<Runtime>;
@@ -251,12 +248,16 @@ parameter_types! {
     pub InboundQueuePalletInstance: u8 = <EthereumInboundQueue as PalletInfoAccess>::index() as u8;
 }
 
+pub type AssetTransactor = <xcm_config::XcmConfig as xcm_executor::Config>::AssetTransactor;
+
 pub type EthTokensProcessor = EthTokensLocalProcessor<
     Runtime,
     xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
     <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+    AssetTransactor,
     dancelight_runtime_constants::snowbridge::EthereumLocation,
     dancelight_runtime_constants::snowbridge::EthereumNetwork,
+    frame_support::traits::ConstBool<true>,
 >;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
@@ -265,6 +266,7 @@ pub type NativeTokensProcessor = NativeTokenTransferMessageProcessor<Runtime>;
 #[cfg(not(feature = "runtime-benchmarks"))]
 pub type NativeContainerProcessor = NativeContainerTokensProcessor<
     Runtime,
+    AssetTransactor,
     dancelight_runtime_constants::snowbridge::EthereumLocation,
     dancelight_runtime_constants::snowbridge::EthereumNetwork,
     InboundQueuePalletInstance,
@@ -292,11 +294,11 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     // TODO: Revisit this when we enable xcmp messages
     type MaxMessageSize = ConstU32<2048>;
-    type AssetTransactor = <xcm_config::XcmConfig as xcm_executor::Config>::AssetTransactor;
+    type AssetTransactor = AssetTransactor;
     #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (
-        SymbioticMessageProcessor<Self>,
-        GenericTokenMessageProcessor<
+        SymbioticInboundMessageProcessorV1<Self>,
+        GenericTokenInboundMessageProcessor<
             Self,
             (NativeTokensProcessor, NativeContainerProcessor),
             EthTokensProcessor,

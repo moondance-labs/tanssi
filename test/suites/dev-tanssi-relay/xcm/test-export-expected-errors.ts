@@ -4,14 +4,13 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
-import { XcmFragment, TESTNET_ETHEREUM_NETWORK_ID } from "utils";
+import { isStarlightRuntime, XcmFragment, TESTNET_ETHEREUM_NETWORK_ID } from "utils";
 import {
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_EXPORTS,
     retrieveDispatchErrors,
     retrieveSudoDispatchErrors,
     retrieveBatchDispatchErrors,
 } from "helpers";
-import { isStarlightRuntime } from "../../../utils/runtime.ts";
 
 describeSuite({
     id: "DEVT1906",
@@ -197,7 +196,7 @@ describeSuite({
 
                 const errorEvents = await retrieveDispatchErrors(context.polkadotJs());
                 expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
-                expect(errorEvents[0]).to.be.eq("LocalExecutionIncomplete");
+                expect(errorEvents[0]).to.be.eq("LocalExecutionIncompleteWithError");
             },
         });
 
@@ -258,7 +257,7 @@ describeSuite({
 
                 const errorEvents = await retrieveSudoDispatchErrors(context.polkadotJs());
                 expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
-                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncomplete");
+                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncompleteWithError");
             },
         });
 
@@ -318,7 +317,7 @@ describeSuite({
                 await context.createBlock(polkadotJs.tx.sudo.sudo(executeMessageTx).signAsync(alice));
                 const errorEvents = await retrieveSudoDispatchErrors(context.polkadotJs());
                 expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
-                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncomplete");
+                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncompleteWithError");
             },
         });
 
@@ -380,7 +379,7 @@ describeSuite({
                 await context.createBlock(polkadotJs.tx.sudo.sudo(executeMessageTx).signAsync(alice));
                 const errorEvents = await retrieveSudoDispatchErrors(context.polkadotJs());
                 expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
-                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncomplete");
+                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncompleteWithError");
             },
         });
 
@@ -441,7 +440,7 @@ describeSuite({
 
                 const errorEvents = await retrieveSudoDispatchErrors(context.polkadotJs());
                 expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
-                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncomplete");
+                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncompleteWithError");
             },
         });
 
@@ -498,7 +497,7 @@ describeSuite({
 
                 const errorEvents = await retrieveSudoDispatchErrors(context.polkadotJs());
                 expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
-                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncomplete");
+                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncompleteWithError");
             },
         });
 
@@ -584,7 +583,7 @@ describeSuite({
 
                 const errorEvents = await retrieveSudoDispatchErrors(context.polkadotJs());
                 expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
-                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncomplete");
+                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncompleteWithError");
             },
         });
 
@@ -701,7 +700,7 @@ describeSuite({
 
                 const errorEvents = await retrieveBatchDispatchErrors(context.polkadotJs());
                 expect(errorEvents.length, "Amount of retrieveBatchDispatchErrorsf error events should be 1").toBe(1);
-                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncomplete");
+                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncompleteWithError");
             },
         });
 
@@ -790,7 +789,7 @@ describeSuite({
 
                 const errorEvents = await retrieveSudoDispatchErrors(context.polkadotJs());
                 expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
-                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncomplete");
+                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncompleteWithError");
             },
         });
     },

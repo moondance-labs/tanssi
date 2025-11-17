@@ -27,8 +27,3 @@ pushd $relayer_root_dir
 mage build
 popd
 
-
-pushd $test_helpers_dir
-pnpm install node-gyp
-pnpm install
-popd
