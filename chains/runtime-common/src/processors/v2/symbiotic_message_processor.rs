@@ -90,6 +90,10 @@ pub fn process_message<T: pallet_external_validators::Config>(
                 external_index,
             },
         ) => {
+            // It is fine to return an error here as we know that a valid symbiotic message
+            // does not contain any asset so there is no need to return success here to trap assets.
+            // Moreover, the failure here might indicate critical issue within runtime, so it is crucial
+            // that we do not ignore it.
             pallet_external_validators::Pallet::<T>::set_external_validators_inner(
                 validators,
                 external_index,

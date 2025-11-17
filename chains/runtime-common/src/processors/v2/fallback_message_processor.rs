@@ -102,7 +102,9 @@ where
         })?
         .into();
 
-        // We are not returning error here as otherwise the tx will be reverted and assets will be in limbo in ethereum.
+        // Depending upon the content of raw xcm, it might be the case that it is not fully revertible
+        // (i.e xcm that sends a message in another container chain and then return an error).
+        // Another reason we are not returning error here as otherwise the tx will be reverted and assets will be in limbo in ethereum.
         // By returning success here, the assets will be trapped here and claimable by the claimer.
         if let Err(instruction_error) = execute_xcm::<T, XcmProcessor, XcmWeigher>(
             EthereumUniversalLocation::get(),
