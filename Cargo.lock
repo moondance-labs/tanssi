@@ -21361,9 +21361,13 @@ dependencies = [
 name = "v2_processor_proc_macro"
 version = "0.1.0"
 dependencies = [
+ "prettyplease",
  "proc-macro2",
  "quote",
+ "snowbridge-inbound-queue-primitives",
+ "sp-runtime",
  "syn 2.0.104",
+ "tanssi-runtime-common",
 ]
 
 [[package]]

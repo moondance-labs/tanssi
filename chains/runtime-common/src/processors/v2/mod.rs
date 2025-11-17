@@ -335,7 +335,7 @@ pub trait FallbackMessageProcessor<AccountId> {
     fn handle_message(who: AccountId, message: Message) -> Result<[u8; 32], MessageProcessorError>;
 }
 
-trait MessageProcessorWithFallback<AccountId> {
+pub trait MessageProcessorWithFallback<AccountId> {
     type Fallback: FallbackMessageProcessor<AccountId>;
     type ExtractedMessage;
 

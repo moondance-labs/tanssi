@@ -102,11 +102,16 @@ where
         })?
         .into();
 
+        // We are not returning error here as otherwise the tx will be reverted and assets will be in limbo in ethereum.
+        // By returning success here, the assets will be trapped here and claimable by the claimer.
         if let Err(instruction_error) = execute_xcm::<T, XcmProcessor, XcmWeigher>(
             EthereumUniversalLocation::get(),
             prepared_xcm,
         ) {
-            // TODO: Print an error
+            log::error!(
+                "Error while executing xcm in fallback message processor: {:?}",
+                instruction_error
+            );
         }
 
         Ok([0; 32])
