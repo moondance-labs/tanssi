@@ -16,15 +16,15 @@
 
 use {
     crate as dancelight_runtime,
-    core::marker::PhantomData,
     dancelight_runtime::{xcm_config, AccountId, Runtime},
     frame_support::{parameter_types, BoundedVec},
-    hex_literal::hex,
     parity_scale_codec::Encode,
     snowbridge_core::{AgentId, ChannelId},
     snowbridge_inbound_queue_primitives::v2::{message::Message, EthereumAsset, Payload},
     sp_core::{H160, H256},
-    tanssi_runtime_common::processors::v2::{MessageProcessorWithFallback, RawMessageProcessor},
+    tanssi_runtime_common::processors::v2::{
+        MessageProcessorWithFallback, RawMessageProcessor, RawPayload,
+    },
     xcm::{
         latest::{prelude::*, Location},
         opaque::latest::AssetTransferFilter::ReserveDeposit,
@@ -47,10 +47,9 @@ parameter_types! {
 fn raw_message_processor_works() {
     let origin = GatewayAddress::get();
 
-    const TOKEN_ID: [u8; 20] = hex!("c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
     let token_transfer_value = 2_000_000_000_000u128;
 
-    let token: H160 = TOKEN_ID.into();
+    let token: H160 = H160::random();
     let assets = vec![EthereumAsset::NativeTokenERC20 {
         token_id: token.into(),
         value: token_transfer_value,
@@ -105,13 +104,13 @@ fn raw_message_processor_works() {
 
     let xcm: Xcm<()> = instructions.into();
     let versioned_message_xcm = VersionedXcm::V5(xcm);
-
+    let raw_payload = RawPayload::Xcm(versioned_message_xcm.encode());
     let message = Message {
         gateway: origin,
         nonce: 1,
         origin,
         assets,
-        payload: Payload::Raw(versioned_message_xcm.encode()),
+        payload: Payload::Raw(raw_payload.encode()),
         claimer: Some(claimer_bytes),
         value: 3_500_000_000_000u128,
         execution_fee: 1_500_000_000_000u128,
