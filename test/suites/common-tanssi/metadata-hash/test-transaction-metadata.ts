@@ -5,7 +5,6 @@ import { merkleizeMetadata } from "@polkadot-api/merkleize-metadata";
 import { u8aToHex } from "@polkadot/util";
 import type { ApiPromise } from "@polkadot/api";
 import type { KeyringPair } from "@moonwall/util";
-import { isDancebox } from "../../../utils/runtime.ts";
 
 async function getMetadataHash(api: ApiPromise) {
     const metadata = await api.call.metadata.metadataAtVersion(15);
