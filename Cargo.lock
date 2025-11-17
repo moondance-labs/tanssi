@@ -17691,7 +17691,7 @@ dependencies = [
 [[package]]
 name = "snowbridge-pallet-outbound-queue-v2"
 version = "0.2.0"
-source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2506-with-generic-message-processing#8b76c79b6bc5986ffa9a9ac1864a2a1f74aafd54"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2506-with-generic-message-processing#f01c39fbd1f641e3e771c83c6d882445f27e2a3c"
 dependencies = [
  "alloy-core",
  "bp-relayers",

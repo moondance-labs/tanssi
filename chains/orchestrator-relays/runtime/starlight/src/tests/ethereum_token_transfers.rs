@@ -1390,7 +1390,7 @@ fn test_add_tip_should_fail() {
                 ),
                 Module(ModuleError {
                     index: 27,
-                    error: [4, 0, 0, 0],
+                    error: [10, 0, 0, 0],
                     message: Some("TipFailed")
                 })
             );

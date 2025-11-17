@@ -516,10 +516,15 @@ impl snowbridge_pallet_inbound_queue_v2::Config for Runtime {
     type Verifier = test_helpers::MockVerifier;
     // TODO: Revisit this when we enable xcmp messages
     type GatewayAddress = EthereumGatewayAddress;
+    #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (SymbioticMessageProcessor<Self>,);
+     #[cfg(feature = "runtime-benchmarks")]
+    type MessageProcessor = (benchmark_helper::WorstCaseMessageProcessor<EthTokensProcessor>,);
     type RewardKind = BridgeReward;
     type DefaultRewardKind = SnowbridgeRewardInbound;
     type RewardPayment = BridgeRelayers;
+    #[cfg(feature = "runtime-benchmarks")]
+	type Helper = ();
     type WeightInfo = ();
 }
 
