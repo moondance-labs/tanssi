@@ -1,13 +1,16 @@
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
-use syn::{parse_macro_input, parse_quote, DeriveInput, GenericParam, WhereClause};
+use syn::{DeriveInput, GenericParam, WhereClause, parse_macro_input, parse_quote};
 
 #[proc_macro_derive(MessageProcessor)]
 pub fn message_processor_trait_derive(input: TokenStream) -> TokenStream {
     // Parse the input tokens into a DeriveInput struct
     let ast = parse_macro_input!(input as DeriveInput);
+    message_processor_trait_derive_impl(ast).into()
+}
 
+fn message_processor_trait_derive_impl(ast: DeriveInput) -> proc_macro2::TokenStream {
     // Get the name of the struct/enum
     let name = &ast.ident;
     let mut generics_for_impl = ast.generics.clone();
@@ -64,4 +67,81 @@ pub fn message_processor_trait_derive(input: TokenStream) -> TokenStream {
 
     // Return the generated code as a TokenStream
     expanded.into()
+}
+
+#[cfg(test)]
+fn derive_macro_for_test(
+    item: proc_macro2::TokenStream,
+) -> Result<proc_macro2::TokenStream, syn::Error> {
+    let item = syn::parse2::<DeriveInput>(item)?;
+    Ok(message_processor_trait_derive_impl(item))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::derive_macro_for_test;
+    use quote::quote;
+
+    #[test]
+    fn test_macro_expansion() {
+        let input = quote! {
+            #[derive(MessageProcessorDerive)]
+            struct TestProcessor<T, U, V>(PhantomData<T, U, V>);
+        };
+
+        let expected_output = r##"
+impl<
+    T,
+    U,
+    V,
+    AccountId,
+> snowbridge_inbound_queue_primitives::v2::MessageProcessor<AccountId>
+for TestProcessor<T, U, V>
+where
+    TestProcessor<T, U, V>: MessageProcessorWithFallback<AccountId>,
+{
+    fn can_process_message(who: &AccountId, message: &Message) -> bool {
+        let result = TestProcessor::try_extract_message(who, message);
+        match result {
+            Ok(_) => true,
+            Err(MessageExtractionError::InvalidMessage { .. }) => true,
+            Err(MessageExtractionError::UnsupportedMessage { .. }) => false,
+            Err(MessageExtractionError::Other { .. }) => false,
+        }
+    }
+    fn process_message(
+        who: AccountId,
+        message: Message,
+    ) -> Result<
+        [u8; 32],
+        snowbridge_inbound_queue_primitives::v2::MessageProcessorError,
+    > {
+        let result = TestProcessor::try_extract_message(&who, &message);
+        match result {
+            Ok(extracted_message) => {
+                TestProcessor::process_extracted_message(who, extracted_message)
+            }
+            Err(MessageExtractionError::InvalidMessage { .. }) => {
+                <TestProcessor<
+                    T,
+                    U,
+                    V,
+                > as MessageProcessorWithFallback<
+                    AccountId,
+                >>::Fallback::handle_message(who, message)
+            }
+            Err(message_extraction_error) => Err(message_extraction_error.into()),
+        }
+    }
+}
+"##;
+        let out = derive_macro_for_test(input.into()).unwrap();
+
+        let as_file = syn::parse_file(&out.to_string()).unwrap();
+
+        // format it in a pretty way
+        let formatted = prettyplease::unparse(&as_file);
+
+        assert_eq!(expected_output.strip_prefix('\n').unwrap(), formatted);
+    }
 }
