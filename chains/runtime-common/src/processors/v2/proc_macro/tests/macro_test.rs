@@ -4,6 +4,26 @@ use sp_runtime::DispatchError;
 use tanssi_runtime_common::processors::v2::*;
 use v2_processor_proc_macro::MessageProcessor as MessageProcessorDerive;
 
+/// This test checks semantics of generated snowbridge MessageProcessor trait.
+///
+/// How this test works?
+/// There are two test implementation of `MessageProcessorWithFallback` with two test implementation of
+/// `FallbackMessageProcessor` integrated with each.
+///
+/// For each MessageProcessorWithFallback:
+/// 1. `try_process_message`: Returns either Ok, InvalidMessage or UnsupportedMessage based on message.value
+/// 2. `process_extracted_message`: Returns Ok for message.value for which `try_process_message` also return Ok, Return Err otherwise
+///
+/// For each FallbackMessageProcessor:
+/// 1. `handle_message`: Returns Err for specific value of message.execution_fee, Ok otherwise
+///
+/// To test macro implementation semantics, we define test table for each method implemented by macro (For both implementation individually and combined using tuple implementation):
+/// 1. `can_process_message`: Each row in table consists of two elements, first element contains the message.value and second element consist of boolean expected return value
+/// 2. `process_message`: Each row in table consists of three element, the first two elements contain message.value and message.execution_fee respectively and the last element contains expected return value
+///
+/// The test will pass when the macro implementation behaves consistently as per tables.
+///
+
 struct TestFallback1;
 
 impl<AccountId> FallbackMessageProcessor<AccountId> for TestFallback1 {
@@ -15,7 +35,7 @@ impl<AccountId> FallbackMessageProcessor<AccountId> for TestFallback1 {
             1 => Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
                 "TestFallback1ProcessorError",
             ))),
-            _ => Ok([1u8; 32]),
+            _ => Ok([10u8; 32]),
         }
     }
 }
@@ -33,7 +53,7 @@ impl<AccountId> MessageProcessorWithFallback<AccountId> for TestImpl1 {
     ) -> Result<Self::ExtractedMessage, MessageExtractionError> {
         match message.value {
             1 => Err(MessageExtractionError::InvalidMessage {
-                context: "TestImpl1ExtractionError2".to_string(),
+                context: "TestImpl1ExtractionError1".to_string(),
                 source: None,
             }),
             2 => Ok(message.value),
@@ -72,7 +92,7 @@ impl<AccountId> FallbackMessageProcessor<AccountId> for TestFallback2 {
             2 => Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
                 "TestFallback1ProcessorError",
             ))),
-            _ => Ok([1u8; 32]),
+            _ => Ok([11u8; 32]),
         }
     }
 }
@@ -110,7 +130,7 @@ impl<AccountId> MessageProcessorWithFallback<AccountId> for TestImpl2 {
         extracted_message: Self::ExtractedMessage,
     ) -> Result<[u8; 32], MessageProcessorError> {
         match extracted_message {
-            4 => Ok([0u8; 32]),
+            4 => Ok([1u8; 32]),
             _ => Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
                 "TestImpl2MainProcessorError",
             ))),
@@ -122,8 +142,8 @@ type Processors = (TestImpl1, TestImpl2);
 
 #[test]
 fn test_macro_can_process_semantics() {
-    let can_process_table_1 = [false, true, true, false, false, false];
-    let can_process_table_2 = [false, false, false, true, true, false];
+    let can_process_table_1 = [true, true, true, false, false, true];
+    let can_process_table_2 = [true, false, false, true, true, true];
 
     let combined_can_process_table = can_process_table_1
         .iter()
@@ -201,27 +221,105 @@ fn test_macro_can_process_semantics() {
 #[test]
 fn test_macro_process_message_semantics() {
     let process_message_table_1 = [
-        (0, 0, false),
-        (0, 1, false),
-        (0, 2, false),
-        (1, 0, true),
-        (1, 1, false),
-        (1, 2, true),
-        (2, 0, true),
-        (2, 1, true),
-        (2, 2, true),
-        (3, 0, false),
-        (3, 1, false),
-        (3, 2, false),
-        (4, 0, false),
-        (4, 1, false),
-        (4, 2, false),
-        (5, 0, false),
-        (5, 1, false),
-        (5, 2, false),
+        (
+            0,
+            0,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Other error: TestImpl1ExtractionError. due to None",
+            ))),
+        ),
+        (
+            0,
+            1,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Other error: TestImpl1ExtractionError. due to None",
+            ))),
+        ),
+        (
+            0,
+            2,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Other error: TestImpl1ExtractionError. due to None",
+            ))),
+        ),
+        (1, 0, Ok([10u8; 32])),
+        (
+            1,
+            1,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "TestFallback1ProcessorError",
+            ))),
+        ),
+        (1, 2, Ok([10u8; 32])),
+        (2, 0, Ok([0u8; 32])),
+        (2, 1, Ok([0u8; 32])),
+        (2, 2, Ok([0u8; 32])),
+        (
+            3,
+            0,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Unsupported Message: TestImpl1ExtractionError34 due to None",
+            ))),
+        ),
+        (
+            3,
+            1,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Unsupported Message: TestImpl1ExtractionError34 due to None",
+            ))),
+        ),
+        (
+            3,
+            2,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Unsupported Message: TestImpl1ExtractionError34 due to None",
+            ))),
+        ),
+        (
+            4,
+            0,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Unsupported Message: TestImpl1ExtractionError34 due to None",
+            ))),
+        ),
+        (
+            4,
+            1,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Unsupported Message: TestImpl1ExtractionError34 due to None",
+            ))),
+        ),
+        (
+            4,
+            2,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Unsupported Message: TestImpl1ExtractionError34 due to None",
+            ))),
+        ),
+        (
+            5,
+            0,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Other error: TestImpl1ExtractionError. due to None",
+            ))),
+        ),
+        (
+            5,
+            1,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Other error: TestImpl1ExtractionError. due to None",
+            ))),
+        ),
+        (
+            5,
+            2,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Other error: TestImpl1ExtractionError. due to None",
+            ))),
+        ),
     ];
 
-    for (eth_value, execution_fee, is_ok) in process_message_table_1 {
+    for (eth_value, execution_fee, expected_response) in &process_message_table_1 {
         let message = Message {
             gateway: Default::default(),
             nonce: 0,
@@ -229,44 +327,120 @@ fn test_macro_process_message_semantics() {
             assets: vec![],
             payload: Payload::Raw(Vec::new()),
             claimer: None,
-            value: eth_value,
-            execution_fee,
+            value: *eth_value,
+            execution_fee: *execution_fee,
             relayer_fee: 0,
         };
 
+        let response = TestImpl1::process_message(AccountId32::new([0; 32]), message);
+
         assert_eq!(
-            TestImpl1::process_message(AccountId32::new([0; 32]), message).is_ok(),
-            is_ok,
-            "For TestImpl1 expected is_ok: {} for value ({}, {}) but found {}",
-            is_ok,
-            eth_value,
-            execution_fee,
-            !is_ok
+            response, *expected_response,
+            "For TestImpl1 expected response {:?} for value ({}, {}) but found {:?}",
+            expected_response, eth_value, execution_fee, response
         );
     }
 
     let process_message_table_2 = [
-        (0, 0, false),
-        (0, 1, false),
-        (0, 2, false),
-        (1, 0, false),
-        (1, 1, false),
-        (1, 2, false),
-        (2, 0, false),
-        (2, 1, false),
-        (2, 2, false),
-        (3, 0, true),
-        (3, 1, true),
-        (3, 2, false),
-        (4, 0, true),
-        (4, 1, true),
-        (4, 2, true),
-        (5, 0, false),
-        (5, 1, false),
-        (5, 2, false),
+        (
+            0,
+            0,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Other error: TestImpl2ExtractionError. due to None",
+            ))),
+        ),
+        (
+            0,
+            1,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Other error: TestImpl2ExtractionError. due to None",
+            ))),
+        ),
+        (
+            0,
+            2,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Other error: TestImpl2ExtractionError. due to None",
+            ))),
+        ),
+        (
+            1,
+            0,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Unsupported Message: TestImpl2ExtractionError12 due to None",
+            ))),
+        ),
+        (
+            1,
+            1,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Unsupported Message: TestImpl2ExtractionError12 due to None",
+            ))),
+        ),
+        (
+            1,
+            2,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Unsupported Message: TestImpl2ExtractionError12 due to None",
+            ))),
+        ),
+        (
+            2,
+            0,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Unsupported Message: TestImpl2ExtractionError12 due to None",
+            ))),
+        ),
+        (
+            2,
+            1,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Unsupported Message: TestImpl2ExtractionError12 due to None",
+            ))),
+        ),
+        (
+            2,
+            2,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Unsupported Message: TestImpl2ExtractionError12 due to None",
+            ))),
+        ),
+        (3, 0, Ok([11u8; 32])),
+        (3, 1, Ok([11u8; 32])),
+        (
+            3,
+            2,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "TestFallback1ProcessorError",
+            ))),
+        ),
+        (4, 0, Ok([1u8; 32])),
+        (4, 1, Ok([1u8; 32])),
+        (4, 2, Ok([1u8; 32])),
+        (
+            5,
+            0,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Other error: TestImpl2ExtractionError. due to None",
+            ))),
+        ),
+        (
+            5,
+            1,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Other error: TestImpl2ExtractionError. due to None",
+            ))),
+        ),
+        (
+            5,
+            2,
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Other error: TestImpl2ExtractionError. due to None",
+            ))),
+        ),
     ];
 
-    for (eth_value, execution_fee, is_ok) in process_message_table_2 {
+    for (eth_value, execution_fee, expected_response) in &process_message_table_2 {
         let message = Message {
             gateway: Default::default(),
             nonce: 0,
@@ -274,19 +448,17 @@ fn test_macro_process_message_semantics() {
             assets: vec![],
             payload: Payload::Raw(Vec::new()),
             claimer: None,
-            value: eth_value,
-            execution_fee,
+            value: *eth_value,
+            execution_fee: *execution_fee,
             relayer_fee: 0,
         };
 
+        let response = TestImpl2::process_message(AccountId32::new([0; 32]), message);
+
         assert_eq!(
-            TestImpl2::process_message(AccountId32::new([0; 32]), message).is_ok(),
-            is_ok,
-            "For TestImpl2 expected is_ok: {} for value ({}, {}) but found {}",
-            is_ok,
-            eth_value,
-            execution_fee,
-            !is_ok
+            response, *expected_response,
+            "For TestImpl2 expected response {:?} for value ({}, {}) but found {:?}",
+            expected_response, eth_value, execution_fee, response
         );
     }
 
@@ -296,14 +468,41 @@ fn test_macro_process_message_semantics() {
         .map(|(impl_1_table, impl_2_table)| {
             assert_eq!(impl_1_table.0, impl_2_table.0);
             assert_eq!(impl_1_table.1, impl_2_table.1);
-            (
-                impl_2_table.0,
-                impl_2_table.1,
-                impl_1_table.2 || impl_2_table.2,
-            )
-        });
 
-    for (eth_value, execution_fee, is_ok) in combined_process_message_table {
+            let combined_result = if impl_1_table.2.is_ok() {
+                impl_1_table.2.clone()
+            } else {
+                match &impl_1_table.2 {
+                    Err(MessageProcessorError::ProcessMessage(DispatchError::Other(error))) => {
+                        if error.contains("Unsupported Message") {
+                            match &impl_2_table.2 {
+                                Ok(_) => impl_2_table.2.clone(),
+                                Err(MessageProcessorError::ProcessMessage(
+                                    DispatchError::Other(error),
+                                )) => {
+                                    if error.contains("Unsupported Message") {
+                                        Err(MessageProcessorError::ProcessMessage(
+                                            DispatchError::Other("No handler found for message!"),
+                                        ))
+                                    } else {
+                                        impl_2_table.2
+                                    }
+                                }
+                                _ => panic!("Unexpected error type"),
+                            }
+                        } else {
+                            impl_1_table.2.clone()
+                        }
+                    }
+                    _ => panic!("Unexpected error type"),
+                }
+            };
+
+            (impl_2_table.0, impl_2_table.1, combined_result)
+        })
+        .collect::<Vec<_>>();
+
+    for (eth_value, execution_fee, expected_response) in &combined_process_message_table {
         let message = Message {
             gateway: Default::default(),
             nonce: 0,
@@ -311,19 +510,17 @@ fn test_macro_process_message_semantics() {
             assets: vec![],
             payload: Payload::Raw(Vec::new()),
             claimer: None,
-            value: eth_value,
-            execution_fee,
+            value: *eth_value,
+            execution_fee: *execution_fee,
             relayer_fee: 0,
         };
 
+        let response = Processors::process_message(AccountId32::new([0; 32]), message);
+
         assert_eq!(
-            Processors::process_message(AccountId32::new([0; 32]), message).is_ok(),
-            is_ok,
-            "For Combined processor expected is_ok: {} for value ({}, {}) but found {}",
-            is_ok,
-            eth_value,
-            execution_fee,
-            !is_ok
+            response, *expected_response,
+            "For Combined processors expected response {:?} for value ({}, {}) but found {:?}",
+            expected_response, eth_value, execution_fee, response
         );
     }
 }
