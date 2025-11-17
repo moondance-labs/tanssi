@@ -33,7 +33,7 @@ use parity_scale_codec::{Decode, Encode};
 use snowbridge_core::TokenId;
 use snowbridge_outbound_queue_primitives::v2::message::{Command, Message, SendMessage};
 use sp_core::H160;
-use sp_runtime::traits::{MaybeEquivalence, Zero};
+use sp_runtime::traits::MaybeEquivalence;
 use xcm::prelude::*;
 use xcm_builder::{CreateMatcher, HandleFee, MatchXcm};
 use xcm_executor::traits::{ConvertLocation, ExportXcm, FeeReason};
