@@ -17,23 +17,25 @@
 //! The bridge to ethereum config
 
 #[cfg(all(not(test), not(feature = "testing-helpers")))]
-use crate::EthereumBeaconClient;
-use crate::EthereumInboundQueueV2;
+use crate::{EthereumBeaconClient, EthereumInboundQueueV2};
 use cumulus_primitives_core::Location;
-use frame_support::dispatch::DispatchResult;
-use frame_support::pallet_prelude::{DecodeWithMemTracking, Encode, TypeInfo};
-use frame_support::traits::{fungible::Mutate, tokens::Preservation, EnqueueMessage, EnsureOrigin};
-use frame_support::BoundedSlice;
-use frame_system::EnsureRoot;
-use frame_system::EnsureRootWithSuccess;
+use frame_support::{
+    dispatch::DispatchResult,
+    pallet_prelude::{DecodeWithMemTracking, Encode, TypeInfo},
+    traits::{fungible::Mutate, tokens::Preservation, EnqueueMessage, EnsureOrigin},
+    BoundedSlice,
+};
+use frame_system::{EnsureRoot, EnsureRootWithSuccess};
 use pallet_ethereum_token_transfers::{
     origins::{ConvertAccountIdTo, ConvertUnitTo, EnsureEthereumTokenTransfersOrigin},
     pallet::TipHandler,
 };
 use parity_scale_codec::{Decode, MaxEncodedLen};
 use snowbridge_core::reward::{AddTip, AddTipError, MessageId};
-use snowbridge_outbound_queue_primitives::v2::{Message, SendMessage};
-use snowbridge_outbound_queue_primitives::SendError;
+use snowbridge_outbound_queue_primitives::{
+    v2::{Message, SendMessage},
+    SendError,
+};
 
 #[cfg(not(feature = "runtime-benchmarks"))]
 use {
@@ -354,6 +356,7 @@ mod benchmark_helper {
             SnowbridgeFeesAccount, UNITS,
         },
         frame_support::traits::fungible::Mutate,
+        snowbridge_beacon_primitives::BeaconHeader,
         snowbridge_core::Channel,
         snowbridge_inbound_queue_primitives::{
             v1::{Envelope, MessageProcessor},
@@ -362,6 +365,7 @@ mod benchmark_helper {
         snowbridge_pallet_inbound_queue::Nonce,
         snowbridge_pallet_inbound_queue_v2::BenchmarkHelper as InboundQueueBenchmarkHelperV2,
         snowbridge_pallet_system::Channels,
+        sp_core::H256,
         sp_runtime::DispatchResult,
         xcm::latest::Location,
     };
@@ -418,8 +422,14 @@ mod benchmark_helper {
         }
     }
 
+    impl snowbridge_pallet_system_v2::BenchmarkHelper<RuntimeOrigin> for () {
+        fn make_xcm_origin(_location: Location) -> RuntimeOrigin {
+            RuntimeOrigin::root()
+        }
+    }
+
     impl<T: snowbridge_pallet_inbound_queue_v2::Config> InboundQueueBenchmarkHelperV2<T> for Runtime {
-        fn initialize_storage(beacon_header: BeaconHeader, block_roots_root: H256) {
+        fn initialize_storage(_beacon_header: BeaconHeader, _block_roots_root: H256) {
             // TODO: fill this by inbound people
         }
     }
