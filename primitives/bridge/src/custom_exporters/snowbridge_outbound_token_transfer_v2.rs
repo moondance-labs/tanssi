@@ -93,9 +93,7 @@ where
         }
 
         // Cloning destination to avoid modifying the value so subsequent exporters can use it.
-        let dest = destination
-            .clone()
-            .ok_or(SendError::MissingArgument)?;
+        let dest = destination.clone().ok_or(SendError::MissingArgument)?;
         if dest != Here {
             log::trace!(target: "xcm::ethereum_blob_exporterv2", "skipped due to unmatched remote destination {dest:?}.");
             return Err(SendError::NotApplicable);
