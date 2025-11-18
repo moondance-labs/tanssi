@@ -17,7 +17,7 @@
 //! The bridge to ethereum config
 
 #[cfg(all(not(test), not(feature = "testing-helpers")))]
-use crate::{EthereumBeaconClient, EthereumInboundQueueV2};
+use crate::EthereumBeaconClient;
 use cumulus_primitives_core::Location;
 use frame_support::{
     dispatch::DispatchResult,
@@ -47,7 +47,7 @@ use {
     },
 };
 
-use crate::{AccountId, BridgeRelayers};
+use crate::{AccountId, BridgeRelayers, EthereumInboundQueueV2};
 use dancelight_runtime_constants::snowbridge::EthereumLocation;
 use tp_traits::BlockNumber;
 use {
