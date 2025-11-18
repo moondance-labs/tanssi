@@ -34,6 +34,7 @@ mod external_validator_rewards_tests;
 mod external_validators_tests;
 mod inactivity_tracking;
 mod inbound_queue_tests;
+mod inbound_queue_v2_tests;
 mod inflation_rates;
 mod inflation_rewards;
 mod integration_test;
