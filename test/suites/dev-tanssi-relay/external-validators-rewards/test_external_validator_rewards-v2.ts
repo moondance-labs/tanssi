@@ -39,9 +39,15 @@ describeSuite({
             }
 
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            isStarlight = runtimeName === "starlight";
+
             shouldSkipStarlightETT =
                 isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2.includes(specVersion);
 
+            if (shouldSkipStarlightETT) {
+                console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                return;
+            }
             // TRUE is defined as 0x01
             await context.createBlock(
                 await polkadotJs.tx.sudo
