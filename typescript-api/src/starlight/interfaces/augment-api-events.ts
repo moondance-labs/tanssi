@@ -58,10 +58,10 @@ import type {
     StagingXcmV5Response,
     StagingXcmV5TraitsOutcome,
     StagingXcmV5Xcm,
-    StarlightRuntimeAggregateMessageOrigin,
     StarlightRuntimeProxyType,
     StarlightRuntimeRuntimeParametersKey,
     StarlightRuntimeRuntimeParametersValue,
+    StarlightRuntimeTanssiAggregateMessageOrigin,
     TpBridgeChannelInfo,
     TpBridgeCommand,
     TpTraitsFullRotationModes,
@@ -1276,16 +1276,21 @@ declare module "@polkadot/api-base/types/events" {
              **/
             OverweightEnqueued: AugmentedEvent<
                 ApiType,
-                [id: U8aFixed, origin: StarlightRuntimeAggregateMessageOrigin, pageIndex: u32, messageIndex: u32],
-                { id: U8aFixed; origin: StarlightRuntimeAggregateMessageOrigin; pageIndex: u32; messageIndex: u32 }
+                [id: U8aFixed, origin: StarlightRuntimeTanssiAggregateMessageOrigin, pageIndex: u32, messageIndex: u32],
+                {
+                    id: U8aFixed;
+                    origin: StarlightRuntimeTanssiAggregateMessageOrigin;
+                    pageIndex: u32;
+                    messageIndex: u32;
+                }
             >;
             /**
              * This page was reaped.
              **/
             PageReaped: AugmentedEvent<
                 ApiType,
-                [origin: StarlightRuntimeAggregateMessageOrigin, index: u32],
-                { origin: StarlightRuntimeAggregateMessageOrigin; index: u32 }
+                [origin: StarlightRuntimeTanssiAggregateMessageOrigin, index: u32],
+                { origin: StarlightRuntimeTanssiAggregateMessageOrigin; index: u32 }
             >;
             /**
              * Message is processed.
@@ -1294,13 +1299,13 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [
                     id: H256,
-                    origin: StarlightRuntimeAggregateMessageOrigin,
+                    origin: StarlightRuntimeTanssiAggregateMessageOrigin,
                     weightUsed: SpWeightsWeightV2Weight,
                     success: bool,
                 ],
                 {
                     id: H256;
-                    origin: StarlightRuntimeAggregateMessageOrigin;
+                    origin: StarlightRuntimeTanssiAggregateMessageOrigin;
                     weightUsed: SpWeightsWeightV2Weight;
                     success: bool;
                 }
@@ -1312,12 +1317,12 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [
                     id: H256,
-                    origin: StarlightRuntimeAggregateMessageOrigin,
+                    origin: StarlightRuntimeTanssiAggregateMessageOrigin,
                     error: FrameSupportMessagesProcessMessageError,
                 ],
                 {
                     id: H256;
-                    origin: StarlightRuntimeAggregateMessageOrigin;
+                    origin: StarlightRuntimeTanssiAggregateMessageOrigin;
                     error: FrameSupportMessagesProcessMessageError;
                 }
             >;

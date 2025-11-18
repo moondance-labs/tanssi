@@ -94,7 +94,10 @@ use {
         configuration as parachains_configuration,
         disputes::{self as parachains_disputes, slashing as parachains_slashing},
         dmp as parachains_dmp, hrmp as parachains_hrmp,
-        inclusion::{self as parachains_inclusion, UmpQueueId},
+        inclusion::{
+            self as parachains_inclusion,
+            AggregateMessageOrigin as ParaInclusionAggregateMessageOrigin, UmpQueueId,
+        },
         initializer as parachains_initializer, on_demand as parachains_assigner_on_demand,
         origin as parachains_origin, paras as parachains_paras,
         paras_inherent as parachains_paras_inherent,
@@ -129,6 +132,7 @@ use {
         SessionTimer,
     },
     tp_bridge::ConvertLocation,
+    tp_message_queue::{MessageQueueWrapper, OnQueueChangedWrapper},
     tp_stream_payment_common::StreamId,
     tp_traits::{
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
@@ -235,7 +239,7 @@ pub fn native_version() -> NativeVersion {
     TypeInfo,
     DecodeWithMemTracking,
 )]
-pub enum AggregateMessageOrigin {
+pub enum TanssiAggregateMessageOrigin {
     /// Inbound upward message.
     #[codec(index = 0)]
     Ump(UmpQueueId),
@@ -251,58 +255,57 @@ pub enum AggregateMessageOrigin {
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-impl From<u32> for AggregateMessageOrigin {
+impl From<u32> for TanssiAggregateMessageOrigin {
     fn from(n: u32) -> Self {
         // Some dummy for the benchmarks.
         Self::Ump(UmpQueueId::Para(n.into()))
     }
 }
 
-pub struct GetAggregateMessageOrigin;
-
-impl Convert<ChannelId, AggregateMessageOrigin> for GetAggregateMessageOrigin {
-    fn convert(channel_id: ChannelId) -> AggregateMessageOrigin {
-        AggregateMessageOrigin::Snowbridge(channel_id)
+impl From<ParaInclusionAggregateMessageOrigin> for TanssiAggregateMessageOrigin {
+    fn from(origin: ParaInclusionAggregateMessageOrigin) -> Self {
+        let para = match origin {
+            ParaInclusionAggregateMessageOrigin::Ump(UmpQueueId::Para(p)) => p,
+        };
+        Self::Ump(UmpQueueId::Para(para))
     }
 }
 
-impl Convert<UmpQueueId, AggregateMessageOrigin> for GetAggregateMessageOrigin {
-    fn convert(queue_id: UmpQueueId) -> AggregateMessageOrigin {
-        AggregateMessageOrigin::Ump(queue_id)
+impl TryFrom<TanssiAggregateMessageOrigin> for ParaInclusionAggregateMessageOrigin {
+    type Error = ();
+    fn try_from(origin: TanssiAggregateMessageOrigin) -> Result<Self, ()> {
+        // Before this change we had a bug in which we entered parachains_inclusion pallet
+        // OnQueueChanged hook with origins that where not UMP. using the OnQueueChangedWrapper
+        // and erroring for origins that are not UMP will allow us to NOT DO ANYTHING and therefore
+        // not enter the hook for non-desired origins
+        match origin {
+            TanssiAggregateMessageOrigin::Ump(UmpQueueId::Para(p)) => Ok(
+                ParaInclusionAggregateMessageOrigin::Ump(UmpQueueId::Para(p)),
+            ),
+            _ => Err(()),
+        }
+    }
+}
+
+pub struct GetAggregateMessageOrigin;
+
+impl Convert<ChannelId, TanssiAggregateMessageOrigin> for GetAggregateMessageOrigin {
+    fn convert(channel_id: ChannelId) -> TanssiAggregateMessageOrigin {
+        TanssiAggregateMessageOrigin::Snowbridge(channel_id)
+    }
+}
+
+impl Convert<UmpQueueId, TanssiAggregateMessageOrigin> for GetAggregateMessageOrigin {
+    fn convert(queue_id: UmpQueueId) -> TanssiAggregateMessageOrigin {
+        TanssiAggregateMessageOrigin::Ump(queue_id)
     }
 }
 
 pub struct GetAggregateMessageOriginTanssi;
 
-impl Convert<ChannelId, AggregateMessageOrigin> for GetAggregateMessageOriginTanssi {
-    fn convert(channel_id: ChannelId) -> AggregateMessageOrigin {
-        AggregateMessageOrigin::SnowbridgeTanssi(channel_id)
-    }
-}
-
-/// This is used by [parachains_inclusion::Pallet::on_queue_changed]
-pub struct GetParaFromAggregateMessageOrigin;
-
-impl Convert<AggregateMessageOrigin, ParaId> for GetParaFromAggregateMessageOrigin {
-    fn convert(x: AggregateMessageOrigin) -> ParaId {
-        match x {
-            AggregateMessageOrigin::Ump(UmpQueueId::Para(para_id)) => para_id,
-            AggregateMessageOrigin::Snowbridge(channel_id)
-            | AggregateMessageOrigin::SnowbridgeTanssi(channel_id) => {
-                // Read para id from EthereumSystem::channels storage map
-                match EthereumSystem::channels(channel_id) {
-                    Some(x) => x.para_id,
-                    None => {
-                        // This should be unreachable, but return para id 0 if channel does not exist
-                        log::warn!(
-                            "Got snowbridge message from channel that does not exist: {:?}",
-                            channel_id
-                        );
-                        ParaId::from(0)
-                    }
-                }
-            }
-        }
+impl Convert<ChannelId, TanssiAggregateMessageOrigin> for GetAggregateMessageOriginTanssi {
+    fn convert(channel_id: ChannelId) -> TanssiAggregateMessageOrigin {
+        TanssiAggregateMessageOrigin::SnowbridgeTanssi(channel_id)
     }
 }
 
@@ -1051,10 +1054,11 @@ impl parachains_inclusion::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type DisputesHandler = ParasDisputes;
     type RewardValidators = RewardValidators;
-    type AggregateMessageOrigin = AggregateMessageOrigin;
-    type GetAggregateMessageOrigin = GetAggregateMessageOrigin;
-    type GetParaFromAggregateMessageOrigin = GetParaFromAggregateMessageOrigin;
-    type MessageQueue = MessageQueue;
+    type MessageQueue = MessageQueueWrapper<
+        ParaInclusionAggregateMessageOrigin,
+        TanssiAggregateMessageOrigin,
+        MessageQueue,
+    >;
     type WeightInfo = weights::runtime_parachains_inclusion::SubstrateWeight<Runtime>;
 }
 
@@ -1091,7 +1095,7 @@ parameter_types! {
 /// Message processor to handle any messages that were enqueued into the `MessageQueue` pallet.
 pub struct MessageProcessor;
 impl ProcessMessage for MessageProcessor {
-    type Origin = AggregateMessageOrigin;
+    type Origin = TanssiAggregateMessageOrigin;
 
     fn process_message(
         message: &[u8],
@@ -1100,7 +1104,7 @@ impl ProcessMessage for MessageProcessor {
         id: &mut [u8; 32],
     ) -> Result<bool, ProcessMessageError> {
         match origin {
-            AggregateMessageOrigin::Ump(UmpQueueId::Para(para)) => {
+            TanssiAggregateMessageOrigin::Ump(UmpQueueId::Para(para)) => {
                 xcm_builder::ProcessXcmMessage::<
                     Junction,
                     xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
@@ -1109,12 +1113,12 @@ impl ProcessMessage for MessageProcessor {
                     message, Junction::Parachain(para.into()), meter, id
                 )
             }
-            AggregateMessageOrigin::Snowbridge(_) => {
+            TanssiAggregateMessageOrigin::Snowbridge(_) => {
                 snowbridge_pallet_outbound_queue::Pallet::<Runtime>::process_message(
                     message, origin, meter, id,
                 )
             }
-            AggregateMessageOrigin::SnowbridgeTanssi(_) => {
+            TanssiAggregateMessageOrigin::SnowbridgeTanssi(_) => {
                 tp_bridge::TanssiOutboundEthMessageProcessorV1::<Runtime>::process_message(
                     message, origin, meter, id,
                 )
@@ -1134,8 +1138,12 @@ impl pallet_message_queue::Config for Runtime {
     type MessageProcessor = MessageProcessor;
     #[cfg(feature = "runtime-benchmarks")]
     type MessageProcessor =
-        pallet_message_queue::mock_helpers::NoopMessageProcessor<AggregateMessageOrigin>;
-    type QueueChangeHandler = ParaInclusion;
+        pallet_message_queue::mock_helpers::NoopMessageProcessor<TanssiAggregateMessageOrigin>;
+    type QueueChangeHandler = OnQueueChangedWrapper<
+        TanssiAggregateMessageOrigin,
+        ParaInclusionAggregateMessageOrigin,
+        ParaInclusion,
+    >;
     type QueuePausedQuery = MaintenanceMode;
     type WeightInfo = weights::pallet_message_queue::SubstrateWeight<Runtime>;
 }

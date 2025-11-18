@@ -4057,6 +4057,7 @@ dependencies = [
  "tp-bridge",
  "tp-data-preservers-common",
  "tp-invulnerables-filter-common",
+ "tp-message-queue",
  "tp-parathread-filter-common",
  "tp-stream-payment-common",
  "tp-traits",
@@ -19031,6 +19032,7 @@ dependencies = [
  "tp-bridge",
  "tp-data-preservers-common",
  "tp-invulnerables-filter-common",
+ "tp-message-queue",
  "tp-parathread-filter-common",
  "tp-stream-payment-common",
  "tp-traits",
@@ -20996,6 +20998,16 @@ dependencies = [
 name = "tp-maths"
 version = "0.1.0"
 dependencies = [
+ "sp-core",
+ "sp-runtime",
+]
+
+[[package]]
+name = "tp-message-queue"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "pallet-message-queue",
  "sp-core",
  "sp-runtime",
 ]
