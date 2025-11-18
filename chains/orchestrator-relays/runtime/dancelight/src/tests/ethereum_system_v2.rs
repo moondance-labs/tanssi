@@ -269,7 +269,7 @@ fn test_add_tip_for_ethereum_system_v2_succeeded_with_correct_pallet_origin() {
                 origin,
                 sender,
                 message_id.clone(),
-                amount.clone(),
+                amount,
             ));
         });
 }
