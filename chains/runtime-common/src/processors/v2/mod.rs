@@ -126,7 +126,7 @@ pub fn derive_asset_transfer_eth_asset<T>(
 where
     T: snowbridge_pallet_system::Config,
 {
-    return match asset {
+    match asset {
         // Native to eth
         EthereumAsset::NativeTokenERC20 { token_id, value } => {
             let asset_location = reanchor_location_to_tanssi(
@@ -157,7 +157,7 @@ where
             let asset: Asset = (asset_location, *value).into();
             Ok(AssetTransfer::ReserveWithdraw(asset))
         }
-    };
+    }
 }
 
 pub fn derive_asset_for_native_eth(
@@ -260,13 +260,13 @@ where
     )?;
 
     let mut instructions = vec![
-        Instruction::SetHints {
+        SetHints {
             hints: vec![AssetClaimer { location: claimer }]
                 .try_into()
                 .expect("checked statically, qed"),
         },
-        Instruction::ReserveAssetDeposited(execution_fee_asset.clone().into()),
-        Instruction::PayFees {
+        ReserveAssetDeposited(execution_fee_asset.clone().into()),
+        PayFees {
             asset: execution_fee_asset.clone(),
         },
     ];
@@ -282,17 +282,15 @@ where
     }
 
     if !reserve_deposit_assets.is_empty() {
-        instructions.push(Instruction::ReserveAssetDeposited(
-            reserve_deposit_assets.into(),
-        ));
+        instructions.push(ReserveAssetDeposited(reserve_deposit_assets.into()));
     }
     if !reserve_withdraw_assets.is_empty() {
-        instructions.push(Instruction::WithdrawAsset(reserve_withdraw_assets.into()));
+        instructions.push(WithdrawAsset(reserve_withdraw_assets.into()));
     }
 
     // Append DescendOrigin
     if origin != gateway_proxy_address {
-        instructions.push(Instruction::DescendOrigin(
+        instructions.push(DescendOrigin(
             AccountKey20 {
                 key: origin.into(),
                 network: None,
@@ -325,7 +323,7 @@ where
     // Using Weight::MAX here because we don't have a limit, same as they do in pallet-xcm
     let weight = XcmWeigher::weight(&mut xcm, Weight::MAX)?;
 
-    let mut message_id = xcm.using_encoded(sp_io::hashing::blake2_256);
+    let mut message_id = xcm.using_encoded(blake2_256);
 
     XcmProcessor::prepare_and_execute(origin, xcm, &mut message_id, weight, weight)
         .ensure_complete()
@@ -362,8 +360,8 @@ mod tests {
     }
 
     fn tanssi_interior_reanchor_test(should_reanchor_tanssi_location: bool) {
-        let context: InteriorLocation = GlobalConsensus(NetworkId::Ethereum { chain_id: 4 }).into();
-        let mut tanssi_location: Location = GlobalConsensus(NetworkId::ByGenesis([2; 32])).into();
+        let context: InteriorLocation = GlobalConsensus(Ethereum { chain_id: 4 }).into();
+        let mut tanssi_location: Location = GlobalConsensus(ByGenesis([2; 32])).into();
         let mut tanssi_interior_anchored_to_eth: Location = (
             Parent,
             GlobalConsensus(ByGenesis([2; 32])),
@@ -410,18 +408,18 @@ mod tests {
     }
 
     fn eth_interior_reanchor_test(should_reanchor_tanssi_location: bool) {
-        let context: InteriorLocation = GlobalConsensus(NetworkId::Ethereum { chain_id: 4 }).into();
-        let mut tanssi_location: Location = GlobalConsensus(NetworkId::ByGenesis([2; 32])).into();
+        let context: InteriorLocation = GlobalConsensus(Ethereum { chain_id: 4 }).into();
+        let mut tanssi_location: Location = GlobalConsensus(ByGenesis([2; 32])).into();
         let mut eth_interior: Location = (AccountKey20 {
-            network: Some(NetworkId::Ethereum { chain_id: 4 }),
+            network: Some(Ethereum { chain_id: 4 }),
             key: [5; 20],
         })
         .into();
         let expected = (
             Parent,
-            GlobalConsensus(NetworkId::Ethereum { chain_id: 4 }),
+            GlobalConsensus(Ethereum { chain_id: 4 }),
             AccountKey20 {
-                network: Some(NetworkId::Ethereum { chain_id: 4 }),
+                network: Some(Ethereum { chain_id: 4 }),
                 key: [5; 20],
             },
         )

@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
-use syn::{parse_macro_input, parse_quote, DeriveInput, GenericParam, WhereClause};
+use syn::{DeriveInput, GenericParam, WhereClause, parse_macro_input, parse_quote};
 
 #[proc_macro_derive(MessageProcessor)]
 pub fn message_processor_trait_derive(input: TokenStream) -> TokenStream {
