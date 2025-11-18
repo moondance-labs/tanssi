@@ -30,11 +30,11 @@ describeSuite({
         let shouldSkipStarlightContainerExport: boolean;
         let containerAsset: any;
         let tokenTransferChannel: any;
-        let ethTokenLocation;
-        let ethLocation;
-        let ethereumNetwork;
-        let tokenAddress;
-        let sovAddress;
+        let ethTokenLocation: any;
+        let ethLocation: any;
+        let ethereumNetwork: any;
+        let tokenAddress: any;
+        let sovAddress: any;
         let assetId: number;
 
         beforeAll(async () => {

@@ -38,6 +38,10 @@ describeSuite({
                 sovereignAccountToCheck = SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS;
             }
 
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightETT =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2.includes(specVersion);
+
             // TRUE is defined as 0x01
             await context.createBlock(
                 await polkadotJs.tx.sudo
@@ -60,12 +64,6 @@ describeSuite({
                 symbol: "dance",
                 decimals: 12,
             };
-
-            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
-            isStarlight = runtimeName === "starlight";
-            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
-            shouldSkipStarlightETT =
-                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2.includes(specVersion);
 
             // Register Alice as an external validator, because it starts as a whitelisted validator and whitelisted
             // validators don't get rewards.
