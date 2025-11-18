@@ -305,6 +305,8 @@ impl snowbridge_pallet_system_v2::Config for Runtime {
     >;
     type GovernanceOrigin = EnsureRootWithSuccess<AccountId, EthereumLocation>;
     type WeightInfo = ();
+    #[cfg(feature = "runtime-benchmarks")]
+    type Helper = ();
 }
 
 pub struct EthereumTipForwarder<T>(core::marker::PhantomData<T>);
@@ -358,6 +360,7 @@ mod benchmark_helper {
             EventFixture,
         },
         snowbridge_pallet_inbound_queue::Nonce,
+        snowbridge_pallet_inbound_queue_v2::BenchmarkHelper as InboundQueueBenchmarkHelperV2,
         snowbridge_pallet_system::Channels,
         sp_runtime::DispatchResult,
         xcm::latest::Location,
@@ -412,6 +415,12 @@ mod benchmark_helper {
                 .expect("minting fees_account balance");
 
             submit_message
+        }
+    }
+
+    impl<T: snowbridge_pallet_inbound_queue_v2::Config> InboundQueueBenchmarkHelperV2<T> for Runtime {
+        fn initialize_storage(beacon_header: BeaconHeader, block_roots_root: H256) {
+            // TODO: fill this by inbound people
         }
     }
 
@@ -516,9 +525,11 @@ impl snowbridge_pallet_inbound_queue_v2::Config for Runtime {
     type Verifier = test_helpers::MockVerifier;
     // TODO: Revisit this when we enable xcmp messages
     type GatewayAddress = EthereumGatewayAddress;
-    type MessageProcessor = (SymbioticMessageProcessor<Self>,);
+    type MessageProcessor = (tp_bridge::SymbioticMessageProcessor<Self>,);
     type RewardKind = BridgeReward;
     type DefaultRewardKind = SnowbridgeRewardInbound;
     type RewardPayment = BridgeRelayers;
     type WeightInfo = ();
+    #[cfg(feature = "runtime-benchmarks")]
+    type Helper = Runtime;
 }
