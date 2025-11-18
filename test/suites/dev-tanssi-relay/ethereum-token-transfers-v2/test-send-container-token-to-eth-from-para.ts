@@ -12,6 +12,7 @@ import {
     TESTNET_ETHEREUM_NETWORK_ID,
     SNOWBRIDGE_FEES_ACCOUNT,
     sleep,
+    DANCELIGHT_GENESIS_HASH,
 } from "utils";
 import {
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_EXPORTS,
@@ -21,8 +22,8 @@ import type { EventRecord } from "@polkadot/types/interfaces";
 import { hexToU8a, u8aToHex } from "@polkadot/util";
 
 describeSuite({
-    id: "DTR2003",
-    title: "XCM - Succeeds sending XCM",
+    id: "DTR2004",
+    title: "Snowbridge V2 - Succeeds sending container token to eth from para",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
@@ -34,11 +35,12 @@ describeSuite({
         let shouldSkipStarlightContainerExport: boolean;
         let containerAsset: any;
         let tokenTransferChannel: any;
-        let ethTokenLocation;
+        let containerTokenLocation;
         let ethLocation;
         let ethereumNetwork;
         let tokenAddress;
         let sovAddress;
+        let sovAddressHex;
         let assetId: number;
 
         beforeAll(async () => {
@@ -76,6 +78,9 @@ describeSuite({
             expect(locationToAccountResult.isOk);
 
             sovAddress = locationToAccountResult.asOk.toJSON();
+            sovAddressHex = "0x70617261d0070000000000000000000000000000000000000000000000000000";
+
+            console.log("sovAddress: ", sovAddress);
 
             let aliceNonce = (await polkadotJs.query.system.account(alice.address)).nonce.toNumber();
 
@@ -101,72 +106,60 @@ describeSuite({
                     ],
                 },
             };
-            // Create token on ForeignAssetsCreator to be validated when receiving the tokens.
-            ethTokenLocation = {
-                parents: 1,
-                interior: {
-                    X2: [
-                        {
-                            GlobalConsensus: ethereumNetwork,
-                        },
-                        {
-                            AccountKey20: {
-                                network: ethereumNetwork,
-                                key: tokenAddress,
+            // Register container token on EthereumSystem.
+            containerTokenLocation = {
+                V5: {
+                    parents: 1,
+                    interior: {
+                        X3: [
+                            {
+                                GlobalConsensus: {
+                                    ByGenesis: DANCELIGHT_GENESIS_HASH,
+                                },
                             },
-                        },
-                    ],
+                            {
+                                Parachain: 2000,
+                            },
+                            {
+                                PalletInstance: 10,
+                            },
+                        ],
+                    },
                 },
             };
-            const initialBalance = BigInt(100_000);
+            const initialBalance = 100_000_000_000_000n;
 
-            // Register token on ForeignAssetsCreator.
-            const createAssetTx = await polkadotJs.tx.sudo
-                .sudo(
-                    polkadotJs.tx.foreignAssetsCreator.createForeignAsset(
-                        ethTokenLocation,
-                        assetId,
-                        alice.address,
-                        true,
-                        1
-                    )
-                )
+            const containerTokenMetadata = {
+                name: "para2001",
+                symbol: "para2001",
+                decimals: 12,
+            };
+
+            // Register container token on EthereumSystem.
+            const registerContainerTokenTx = await polkadotJs.tx.sudo
+                .sudo(polkadotJs.tx.ethereumSystem.registerToken(containerTokenLocation, containerTokenMetadata))
                 .signAsync(alice);
 
-            await context.createBlock([createAssetTx], { allowFailures: false });
+            await context.createBlock([registerContainerTokenTx], { allowFailures: false });
 
-            await context.createBlock(
-                context.polkadotJs().tx.foreignAssets.mint(assetId, sovAddress, initialBalance).signAsync(alice)
-            );
+            const setBalanceTx = await polkadotJs.tx.sudo
+                .sudo(polkadotJs.tx.balances.forceSetBalance(sovAddress, initialBalance))
+                .signAsync(alice);
 
-            // Create EthereumTokenTransfers channel to validate when receiving the tokens.
-            tokenTransferChannel = "0x0000000000000000000000000000000000000000000000000000000000000004";
-            const newAgentId = "0x0000000000000000000000000000000000000000000000000000000000000005";
-            const newParaId = 500;
-
-            const setChannelTx = await polkadotJs.tx.sudo.sudo(
-                polkadotJs.tx.ethereumTokenTransfers.setTokenTransferChannel(
-                    tokenTransferChannel,
-                    newAgentId,
-                    newParaId
-                )
-            );
-            await context.createBlock(await setChannelTx.signAsync(alice), {
-                allowFailures: false,
-            });
+            await context.createBlock([setBalanceTx], { allowFailures: false });
         });
 
         it({
             id: "T01",
-            title: "Should succeed sending back eth token from container v2",
+            title: "Should succeed sending container token to eth from container 2001",
             test: async () => {
                 if (shouldSkipStarlightContainerExport) {
                     console.log(`Skipping XCM tests for Starlight version ${specVersion}`);
                     return;
                 }
 
-                const transferAmount = BigInt(10_000);
-                const feeAmount = BigInt(1_000_000_000_000);
+                const transferAmount = 100_000n;
+                const exportFeeAmount = 500_000_000n;
                 const beneficiaryOnDest = {
                     parents: 0,
                     interior: {
@@ -180,72 +173,132 @@ describeSuite({
                         ],
                     },
                 };
+
+                const exportFeeTokenLocation = {
+                    parents: 1,
+                    interior: {
+                        X1: [
+                            {
+                                GlobalConsensus: {
+                                    ByGenesis: DANCELIGHT_GENESIS_HASH,
+                                },
+                            },
+                        ],
+                    },
+                };
+
+                const exportFeeAssetToWithdraw = {
+                    id: exportFeeTokenLocation,
+                    fun: { Fungible: exportFeeAmount },
+                };
+
+                const containerTokenLocationFromParent = {
+                    parents: 0,
+                    interior: { X2: [{ Parachain: 2000 }, { PalletInstance: 10 }] },
+                };
+
+                const containerTokenToDeposit = {
+                    id: {
+                        parents: 1,
+                        interior: {
+                            X3: [
+                                {
+                                    GlobalConsensus: {
+                                        ByGenesis: DANCELIGHT_GENESIS_HASH,
+                                    },
+                                },
+                                {
+                                    Parachain: 2000,
+                                },
+                                { PalletInstance: 10 },
+                            ],
+                        },
+                    },
+                    fun: { Fungible: transferAmount },
+                };
+
+                const aliceContainerOrigin = {
+                    parents: 0,
+                    interior: { X2: [{ Parachain: 2000 }, { AccountId32: { id: u8aToHex(alice.addressRaw) } }] },
+                };
+
+                const exportMessage = [
+                    {
+                        WithdrawAsset: [exportFeeAssetToWithdraw],
+                    },
+                    {
+                        PayFees: {
+                            asset: exportFeeAssetToWithdraw,
+                        },
+                    },
+                    {
+                        ReserveAssetDeposited: [containerTokenToDeposit],
+                    },
+                    {
+                        AliasOrigin: aliceContainerOrigin,
+                    },
+                    {
+                        DepositAsset: {
+                            assets: { Definite: [containerTokenToDeposit] },
+                            beneficiary: beneficiaryOnDest,
+                        },
+                    },
+                    {
+                        SetTopic: [
+                            57, 238, 159, 80, 83, 113, 184, 105, 108, 164, 73, 6, 134, 160, 7, 234, 121, 88, 234, 173,
+                            250, 136, 18, 29, 1, 204, 109, 70, 45, 3, 160, 251,
+                        ],
+                    },
+                ];
+
                 const feeTokenLocation = {
                     parents: 0,
                     interior: { Here: null },
                 };
+                const overalFeeAmount = 2_700_000_000_000n;
+
                 const feeAssetToWithdraw = {
                     id: feeTokenLocation,
-                    fun: { Fungible: feeAmount * 2n },
-                };
-                const feeAssetToBuyExec = {
-                    id: feeTokenLocation,
-                    fun: { Fungible: feeAmount },
-                };
-
-                const ethAssetToWithdraw = {
-                    id: ethTokenLocation,
-                    fun: { Fungible: transferAmount },
+                    fun: { Fungible: overalFeeAmount },
                 };
 
                 const xcmMessage = {
                     V5: [
                         {
-                            WithdrawAsset: [feeAssetToWithdraw, ethAssetToWithdraw],
+                            WithdrawAsset: [feeAssetToWithdraw],
                         },
                         {
                             BuyExecution: {
-                                fees: feeAssetToBuyExec,
+                                fees: feeAssetToWithdraw,
                                 weight_limit: "Unlimited",
                             },
                         },
                         {
-                            InitiateTransfer: {
-                                destination: ethLocation,
-                                remoteFees: {
-                                    ReserveDeposit: {
-                                        Definite: [
-                                            {
-                                                id: feeTokenLocation,
-                                                fun: { Fungible: feeAmount },
-                                            },
-                                        ],
+                            SetAppendix: [
+                                {
+                                    DepositAsset: {
+                                        assets: { Wild: { AllCounted: 1 } },
+                                        beneficiary: {
+                                            parents: 0,
+                                            interior: { X1: [{ AccountId32: { id: sovAddressHex } }] },
+                                        },
                                     },
                                 },
-                                preserveOrigin: true,
-                                assets: [
-                                    {
-                                        ReserveWithdraw: {
-                                            Definite: [ethAssetToWithdraw],
-                                        },
-                                    },
-                                ],
-                                remoteXcm: [
-                                    {
-                                        DepositAsset: {
-                                            assets: { Wild: { AllCounted: 1 } },
-                                            beneficiary: beneficiaryOnDest,
-                                        },
-                                    },
-                                ],
+                            ],
+                        },
+                        {
+                            ExportMessage: {
+                                network: ethereumNetwork,
+                                destination: "Here",
+                                xcm: exportMessage,
                             },
                         },
                     ],
                 };
 
                 await context.createBlock();
-                // Send RPC call to enable para inherent candidate generation
 
+                // Send RPC call to enable para inherent candidate generation
                 await customDevRpcRequest("mock_enableParaInherentCandidate", []);
 
                 const tokenTransferNonceBefore = await polkadotJs.query.ethereumOutboundQueueV2.nonce();
@@ -253,9 +306,9 @@ describeSuite({
                     await polkadotJs.query.system.account(SNOWBRIDGE_FEES_ACCOUNT)
                 ).data.free.toBigInt();
 
-                const sovEthBalanceBefore = (await polkadotJs.query.foreignAssets.account(assetId, sovAddress))
-                    .unwrap()
-                    .balance.toBigInt();
+                const containerSovereignAccountBalanceBefore = (
+                    await polkadotJs.query.system.account(sovAddress)
+                ).data.free.toBigInt();
 
                 // Wait until message is processed
                 // we need to wait until session 3 for sure so that paras produce blocks
@@ -273,24 +326,29 @@ describeSuite({
                 // Things to verify:
                 // 1. ethereumOutboundQueueV2 increases the nonce
                 // 2. reward goes to snowbridge fees account
-                // 3. sent tokens are burnt from alice
+                // 3. container sov account pays all the fees (export fee + execution fee on Tanssi)
                 // 4. a pending order exists for such nonce, with the fee=reward
                 const tokenTransferNonceAfter = await polkadotJs.query.ethereumOutboundQueueV2.nonce();
                 const snowbridgeFeesAccountBalanceAfter = (
                     await polkadotJs.query.system.account(SNOWBRIDGE_FEES_ACCOUNT)
                 ).data.free.toBigInt();
 
-                const sovEthBalanceAfter = (await polkadotJs.query.foreignAssets.account(assetId, sovAddress))
-                    .unwrap()
-                    .balance.toBigInt();
+                const containerSovereignAccountBalanceAfter = (
+                    await polkadotJs.query.system.account(sovAddress)
+                ).data.free.toBigInt();
+
                 const pendingOrder =
                     await polkadotJs.query.ethereumOutboundQueueV2.pendingOrders(tokenTransferNonceAfter);
 
                 expect(tokenTransferNonceAfter.toNumber()).to.be.equal(tokenTransferNonceBefore.toNumber() + 1);
-                expect(snowbridgeFeesAccountBalanceAfter).to.be.eq(snowbridgeFeesAccountBalanceBefore + feeAmount);
-                expect(sovEthBalanceAfter).to.be.eq(sovEthBalanceBefore - transferAmount);
-                expect(pendingOrder.unwrap().fee.toBigInt()).to.be.equal(feeAmount);
-                expect(tokenTransferNonceAfter.toBigInt()).toBe(tokenTransferNonceBefore.toBigInt() + 1n);
+                expect(snowbridgeFeesAccountBalanceAfter).to.be.eq(
+                    snowbridgeFeesAccountBalanceBefore + exportFeeAmount
+                );
+                const roundingNonExporterFees = 80_000_000n;
+                expect(containerSovereignAccountBalanceAfter).toBeGreaterThan(
+                    containerSovereignAccountBalanceBefore - exportFeeAmount - roundingNonExporterFees
+                );
+                expect(pendingOrder.unwrap().fee.toBigInt()).to.be.equal(exportFeeAmount);
             },
         });
     },
