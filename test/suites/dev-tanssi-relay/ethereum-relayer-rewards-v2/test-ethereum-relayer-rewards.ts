@@ -2,22 +2,16 @@
 
 import "@tanssi/api-augment";
 
-import { type DevModeContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { hexToU8a, u8aToHex } from "@polkadot/util";
-import { encodeAddress, xxhashAsU8a } from "@polkadot/util-crypto";
 import {
     generateOutboundEventLogV2,
     generateUpdate,
     SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
     type MultiLocation,
     ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS,
-    SNOWBRIDGE_FEES_ACCOUNT,
-    sleep,
 } from "utils";
-import { expectEventCount } from "../../../helpers/events";
-import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2, checkCallIsFiltered } from "helpers";
-import type { KeyringPair } from "@moonwall/util";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2 } from "helpers";
 import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 
 describeSuite({
@@ -32,7 +26,7 @@ describeSuite({
         let specVersion: number;
         let shouldSkipStarlightETT: boolean;
         let sovereignAccount: string;
-        let relayerReward: BigInt;
+        let relayerReward: bigint;
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             const keyring = new Keyring({ type: "sr25519" });

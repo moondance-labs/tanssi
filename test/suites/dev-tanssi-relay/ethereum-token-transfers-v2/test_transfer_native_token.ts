@@ -2,20 +2,16 @@
 
 import "@tanssi/api-augment";
 
-import { type DevModeContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { hexToU8a, u8aToHex } from "@polkadot/util";
-import { encodeAddress, xxhashAsU8a } from "@polkadot/util-crypto";
 import {
-    generateEventLog,
-    generateUpdate,
     SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
     type MultiLocation,
     ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS,
     SNOWBRIDGE_FEES_ACCOUNT,
 } from "utils";
 import { expectEventCount } from "../../../helpers/events";
-import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2, checkCallIsFiltered } from "helpers";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2 } from "helpers";
 import type { KeyringPair } from "@moonwall/util";
 
 describeSuite({

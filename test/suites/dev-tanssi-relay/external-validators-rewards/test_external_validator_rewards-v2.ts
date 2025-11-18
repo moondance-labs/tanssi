@@ -10,9 +10,7 @@ import {
     ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS,
     type MultiLocation,
     jumpToSession,
-    PRIMARY_GOVERNANCE_CHANNEL_ID,
     USE_V2_STORAGE_KEY,
-    sleep,
 } from "utils";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2 } from "helpers";
 
