@@ -290,6 +290,13 @@ impl<T: snowbridge_pallet_outbound_queue::Config> TicketInfo for Ticket<T> {
 }
 
 #[cfg(not(feature = "runtime-benchmarks"))]
+impl<T: snowbridge_pallet_outbound_queue::Config> TicketInfo for Ticket<T> {
+    fn message_id(&self) -> H256 {
+        self.message_id
+    }
+}
+
+#[cfg(not(feature = "runtime-benchmarks"))]
 impl<T: snowbridge_pallet_outbound_queue_v2::Config> TicketInfo for TanssiTicketV2<T> {
     fn message_id(&self) -> H256 {
         self.id
@@ -312,6 +319,13 @@ impl<T: snowbridge_pallet_outbound_queue::Config + snowbridge_pallet_outbound_qu
 impl TicketInfo for SnowbridgeMessageV2 {
     fn message_id(&self) -> H256 {
         self.id
+    }
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl TicketInfo for SnowbridgeMessageV2 {
+    fn message_id(&self) -> H256 {
+        H256::default()
     }
 }
 
