@@ -27,7 +27,9 @@ import type { AnyNumber, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, Call, H256, Perbill } from "@polkadot/types/interfaces/runtime";
 import type {
     BinaryHeapEnqueuedOrder,
+    BpRelayersRegistration,
     DancelightRuntimeAggregateMessageOrigin,
+    DancelightRuntimeBridgeToEthereumConfigBridgeReward,
     DancelightRuntimeRuntimeHoldReason,
     DancelightRuntimeRuntimeParametersKey,
     DancelightRuntimeRuntimeParametersValue,
@@ -129,7 +131,9 @@ import type {
     SnowbridgeCoreChannelId,
     SnowbridgeCoreOperatingModeBasicOperatingMode,
     SnowbridgeCorePricingPricingParameters,
+    SnowbridgeOutboundQueuePrimitivesV2MessageOutboundMessage,
     SnowbridgePalletOutboundQueueCommittedMessage,
+    SnowbridgePalletOutboundQueueV2PendingOrder,
     SpAuthorityDiscoveryAppPublic,
     SpConsensusBabeAppPublic,
     SpConsensusBabeBabeEpochConfiguration,
@@ -516,6 +520,43 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             [key: string]: QueryableStorageEntry<ApiType>;
         };
+        bridgeRelayers: {
+            /**
+             * Relayers that have reserved some of their balance to get free priority boost
+             * for their message delivery transactions.
+             *
+             * Other relayers may submit transactions as well, but they will have default
+             * priority and will be rejected (without significant tip) in case if registered
+             * relayer is present.
+             **/
+            registeredRelayers: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<Option<BpRelayersRegistration>>,
+                [AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32]>;
+            /**
+             * Map of the relayer => accumulated reward.
+             **/
+            relayerRewards: AugmentedQuery<
+                ApiType,
+                (
+                    arg1: AccountId32 | string | Uint8Array,
+                    arg2:
+                        | DancelightRuntimeBridgeToEthereumConfigBridgeReward
+                        | "SnowbridgeRewardOutbound"
+                        | "SnowbridgeRewardInbound"
+                        | number
+                        | Uint8Array
+                ) => Observable<Option<u128>>,
+                [AccountId32, DancelightRuntimeBridgeToEthereumConfigBridgeReward]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32, DancelightRuntimeBridgeToEthereumConfigBridgeReward]>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
         collatorConfiguration: {
             /**
              * The active configuration for the current session.
@@ -843,6 +884,34 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             [key: string]: QueryableStorageEntry<ApiType>;
         };
+        ethereumInboundQueueV2: {
+            /**
+             * StorageMap used for encoding a SparseBitmapImpl that tracks whether a specific nonce has
+             * been processed or not. Message nonces are unique and never repeated.
+             **/
+            nonceBitmap: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<u128>, [u64]> &
+                QueryableStorageEntry<ApiType, [u64]>;
+            /**
+             * The current operating mode of the pallet.
+             **/
+            operatingMode: AugmentedQuery<
+                ApiType,
+                () => Observable<SnowbridgeCoreOperatingModeBasicOperatingMode>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Keep track of tips added for a message as an additional relayer incentivization. The
+             * key for the storage map is the nonce of the message to which the tip should be added.
+             * The value is the tip amount, in Ether.
+             **/
+            tips: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<u128>>, [u64]> &
+                QueryableStorageEntry<ApiType, [u64]>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
         ethereumOutboundQueue: {
             /**
              * Hashes of the ABI-encoded messages in the [`Messages`] storage value. Used to generate a
@@ -888,6 +957,48 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             [key: string]: QueryableStorageEntry<ApiType>;
         };
+        ethereumOutboundQueueV2: {
+            /**
+             * Hashes of the ABI-encoded messages in the [`Messages`] storage value. Used to generate a
+             * merkle root during `on_finalize`. This storage value is killed in `on_initialize`, so state
+             * at each block contains only root hash of messages processed in that block. This also means
+             * it doesn't have to be included in PoV.
+             **/
+            messageLeaves: AugmentedQuery<ApiType, () => Observable<Vec<H256>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Messages to be committed in the current block. This storage value is killed in
+             * `on_initialize`, so will not end up bloating state.
+             *
+             * Is never read in the runtime, only by offchain message relayers.
+             * Because of this, it will never go into the PoV of a block.
+             *
+             * Inspired by the `frame_system::Pallet::Events` storage value
+             **/
+            messages: AugmentedQuery<
+                ApiType,
+                () => Observable<Vec<SnowbridgeOutboundQueuePrimitivesV2MessageOutboundMessage>>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * The current nonce for the messages
+             **/
+            nonce: AugmentedQuery<ApiType, () => Observable<u64>, []> & QueryableStorageEntry<ApiType, []>;
+            /**
+             * Pending orders to relay
+             **/
+            pendingOrders: AugmentedQuery<
+                ApiType,
+                (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<SnowbridgePalletOutboundQueueV2PendingOrder>>,
+                [u64]
+            > &
+                QueryableStorageEntry<ApiType, [u64]>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
         ethereumSystem: {
             /**
              * The set of registered agents
@@ -925,6 +1036,24 @@ declare module "@polkadot/api-base/types/storage" {
                 QueryableStorageEntry<ApiType, [StagingXcmV5Location]>;
             pricingParameters: AugmentedQuery<ApiType, () => Observable<SnowbridgeCorePricingPricingParameters>, []> &
                 QueryableStorageEntry<ApiType, []>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        ethereumSystemV2: {
+            /**
+             * Relayer reward tips that were paid by the user to incentivize the processing of their
+             * message, but then could not be added to their message reward (e.g. the nonce was already
+             * processed or their order could not be found). Capturing the lost tips here supports
+             * implementing a recovery method in the future.
+             **/
+            lostTips: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<u128>,
+                [AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32]>;
             /**
              * Generic query
              **/
@@ -1765,6 +1894,8 @@ declare module "@polkadot/api-base/types/storage" {
                         | { Ump: any }
                         | { Snowbridge: any }
                         | { SnowbridgeTanssi: any }
+                        | { SnowbridgeV2: any }
+                        | { SnowbridgeTanssiV2: any }
                         | string
                         | Uint8Array
                 ) => Observable<PalletMessageQueueBookState>,
@@ -1782,6 +1913,8 @@ declare module "@polkadot/api-base/types/storage" {
                         | { Ump: any }
                         | { Snowbridge: any }
                         | { SnowbridgeTanssi: any }
+                        | { SnowbridgeV2: any }
+                        | { SnowbridgeTanssiV2: any }
                         | string
                         | Uint8Array,
                     arg2: u32 | AnyNumber | Uint8Array
