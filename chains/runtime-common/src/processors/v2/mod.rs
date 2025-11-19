@@ -281,6 +281,8 @@ where
         };
     }
 
+    // panic!("reserve_withdraw_assets: {:?}", reserve_withdraw_assets);
+
     if !reserve_deposit_assets.is_empty() {
         instructions.push(Instruction::ReserveAssetDeposited(
             reserve_deposit_assets.into(),

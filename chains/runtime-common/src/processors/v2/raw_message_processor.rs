@@ -59,6 +59,8 @@ where
 {
     match message.payload {
         Payload::Raw(ref payload) => {
+            // panic!("message: {:?}", message);
+
             let raw_payload =
                 RawPayload::decode(&mut payload.as_slice()).map_err(|decode_error| {
                     MessageExtractionError::InvalidMessage {
@@ -192,6 +194,8 @@ where
             ))
         })?
         .into();
+
+        // panic!("prepared_xcm: {:?}", prepared_xcm);
 
         // We are not returning error here as otherwise the tx will be reverted and assets will be in limbo in ethereum.
         // By returning success here, the assets will be trapped here and claimable by the claimer.
