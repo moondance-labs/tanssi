@@ -266,9 +266,6 @@ where
                 .expect("checked statically, qed"),
         },
         ReserveAssetDeposited(execution_fee_asset.clone().into()),
-        PayFees {
-            asset: execution_fee_asset.clone(),
-        },
     ];
 
     let mut reserve_deposit_assets = vec![];
@@ -280,8 +277,6 @@ where
             AssetTransfer::ReserveWithdraw(asset) => reserve_withdraw_assets.push(asset),
         };
     }
-
-    // panic!("reserve_withdraw_assets: {:?}", reserve_withdraw_assets);
 
     if !reserve_deposit_assets.is_empty() {
         instructions.push(ReserveAssetDeposited(reserve_deposit_assets.into()));
