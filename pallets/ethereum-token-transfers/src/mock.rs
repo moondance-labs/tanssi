@@ -258,7 +258,7 @@ impl pallet_ethereum_token_transfers::TipHandler<pallet_ethereum_token_transfers
             Test,
         >::ensure_origin(origin)?;
 
-        Balances::transfer(&sender, &BOB, amount.into(), Preservation::Preserve)?;
+        Balances::transfer(&sender, &BOB, amount, Preservation::Preserve)?;
 
         Ok(())
     }
