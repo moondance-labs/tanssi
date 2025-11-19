@@ -255,7 +255,6 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type Helper = benchmark_helper::EthSystemBenchHelper;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
-    // TODO: Revisit this when we enable xcmp messages
     type MaxMessageSize = ConstU32<2048>;
     type AssetTransactor = AssetTransactor;
     #[cfg(not(feature = "runtime-benchmarks"))]
