@@ -17,7 +17,9 @@
 use {
     crate as dancelight_runtime,
     crate::tests::common::{root_origin, ExtBuilder},
+    dancelight_runtime::bridge_to_ethereum_config::EthereumGatewayAddress,
     dancelight_runtime::{AccountId, Runtime},
+    dancelight_runtime_constants::snowbridge::{EthereumLocation, EthereumNetwork},
     dancelight_runtime_constants::DANCELIGHT_GENESIS_HASH,
     frame_support::{assert_ok, parameter_types, BoundedVec},
     parity_scale_codec::Encode,
@@ -37,13 +39,9 @@ mod raw_message_processor;
 pub const ALICE: [u8; 32] = [4u8; 32];
 pub const BOB: [u8; 32] = [5u8; 32];
 
-// TODO: Get from runtime once wired
 parameter_types! {
-    const EthereumNetwork: NetworkId = Ethereum { chain_id: 11155111 };
-    const BridgeChannelInfo: Option<(ChannelId, AgentId)> = Some((ChannelId::new([1u8; 32]), H256([2u8; 32])));
     pub EthereumUniversalLocation: InteriorLocation = GlobalConsensus(EthereumNetwork::get()).into();
     pub TanssiUniversalLocation: InteriorLocation = GlobalConsensus(ByGenesis(dancelight_runtime_constants::DANCELIGHT_GENESIS_HASH)).into();
-    pub GatewayAddress: H160 = H160::random();
     pub DefaultClaimer: AccountId = AccountId::from(ALICE);
 }
 
@@ -68,7 +66,7 @@ fn prepare_raw_message_xcm_instructions_without_claimer_works() {
         EthereumNetwork::get(),
         &EthereumUniversalLocation::get(),
         &TanssiUniversalLocation::get(),
-        GatewayAddress::get(),
+        EthereumGatewayAddress::get(),
         DefaultClaimer::get(),
         RAW_MESSAGE_PROCESSOR_TOPIC_PREFIX,
         extracted_message,
@@ -148,7 +146,7 @@ fn prepare_raw_message_xcm_instructions_with_claimer_works() {
         EthereumNetwork::get(),
         &EthereumUniversalLocation::get(),
         &TanssiUniversalLocation::get(),
-        GatewayAddress::get(),
+        EthereumGatewayAddress::get(),
         DefaultClaimer::get(),
         RAW_MESSAGE_PROCESSOR_TOPIC_PREFIX,
         extracted_message,
@@ -253,7 +251,7 @@ fn prepare_raw_message_xcm_instructions_with_foreign_asset_works() {
             EthereumNetwork::get(),
             &EthereumUniversalLocation::get(),
             &TanssiUniversalLocation::get(),
-            GatewayAddress::get(),
+            EthereumGatewayAddress::get(),
             DefaultClaimer::get(),
             RAW_MESSAGE_PROCESSOR_TOPIC_PREFIX,
             extracted_message,
@@ -312,3 +310,79 @@ fn prepare_raw_message_xcm_instructions_with_foreign_asset_works() {
         }
     });
 }
+
+#[test]
+fn prepare_raw_message_xcm_instructions_eth_transfer_works() {
+    ExtBuilder::default().build().execute_with(|| {
+        let extracted_message: ExtractedXcmConstructionInfo<dancelight_runtime::RuntimeCall> =
+            ExtractedXcmConstructionInfo {
+                origin: EthereumGatewayAddress::get(),
+                maybe_claimer: None,
+                assets: vec![],
+                eth_value: 1_000_000_000_000u128,
+                execution_fee_in_eth: 0u128,
+                nonce: 1u64,
+                user_xcm: vec![DepositAsset {
+                    assets: Wild(AllCounted(1)),
+                    beneficiary: Location::new(
+                        0,
+                        AccountId32 {
+                            network: None,
+                            id: H256::random().into(),
+                        },
+                    ),
+                }]
+                .into(),
+            };
+
+        let res = prepare_raw_message_xcm_instructions::<Runtime>(
+            EthereumNetwork::get(),
+            &EthereumUniversalLocation::get(),
+            &TanssiUniversalLocation::get(),
+            EthereumGatewayAddress::get(),
+            DefaultClaimer::get(),
+            RAW_MESSAGE_PROCESSOR_TOPIC_PREFIX,
+            extracted_message.clone(),
+        );
+
+        let instructions = res.expect("instructions should be Ok");
+
+        assert_eq!(instructions.len(), 4);
+
+        assert!(matches!(instructions.get(0), Some(SetHints { hints: _ })));
+
+        match &instructions[1] {
+            ReserveAssetDeposited(assets) => {
+                assert_eq!(assets.len(), 1);
+
+                let asset = assets.get(0).expect("one asset expected");
+
+                assert_eq!(asset.id, AssetId(EthereumLocation::get()));
+                assert_eq!(asset.fun, Fungible(1_000_000_000_000u128));
+            }
+            _ => panic!("Expected ReserveAssetDeposited"),
+        }
+
+        match &instructions[2] {
+            DepositAsset {
+                assets,
+                beneficiary,
+            } => {
+                assert!(matches!(assets, Wild(AllCounted(1))));
+                let expected_beneficiary = match &extracted_message.user_xcm.0[0] {
+                    DepositAsset { beneficiary, .. } => beneficiary.clone(),
+                    _ => panic!("Bad user_xcm construction"),
+                };
+                assert_eq!(*beneficiary, expected_beneficiary);
+            }
+            _ => panic!("Expected DepositAsset"),
+        }
+
+        assert!(matches!(instructions.get(3), Some(SetTopic(_))));
+    });
+}
+#[test]
+fn prepare_raw_message_xcm_instructions_tanssi_transfer_works() {}
+
+#[test]
+fn prepare_raw_message_xcm_instructions_tanssi_and_eth_transfer_works() {}

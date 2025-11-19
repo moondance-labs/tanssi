@@ -87,7 +87,7 @@ pub enum RawPayload {
     Symbiotic(Vec<u8>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ExtractedXcmConstructionInfo<Call> {
     pub origin: H160,
     pub maybe_claimer: Option<Vec<u8>>,
@@ -259,14 +259,17 @@ where
         execution_fee_in_eth,
     )?;
 
-    let mut instructions = vec![
-        SetHints {
-            hints: vec![AssetClaimer { location: claimer }]
-                .try_into()
-                .expect("checked statically, qed"),
-        },
-        ReserveAssetDeposited(execution_fee_asset.clone().into()),
-    ];
+    let mut instructions = vec![SetHints {
+        hints: vec![AssetClaimer { location: claimer }]
+            .try_into()
+            .expect("checked statically, qed"),
+    }];
+
+    if let Fungible(amount) = execution_fee_asset.fun {
+        if amount > 0 {
+            instructions.push(ReserveAssetDeposited(execution_fee_asset.clone().into()));
+        }
+    }
 
     let mut reserve_deposit_assets = vec![];
     let mut reserve_withdraw_assets = vec![];
