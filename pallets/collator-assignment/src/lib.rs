@@ -453,6 +453,11 @@ pub mod pallet {
                 need_to_charge_tip,
             );
 
+            log::trace!(
+                target: LOG_TARGET,
+                "ordered chains: {chains:?}",
+            );
+
             // We assign new collators
             // we use the config scheduled at the target_session_index
             let full_rotation =
@@ -536,9 +541,23 @@ pub mod pallet {
             } else {
                 assigned_containers
                     .into_keys()
-                    .filter_map(T::CollatorAssignmentTip::get_para_max_tip)
+                    .filter_map(|para_id| {
+                        let tip = T::CollatorAssignmentTip::get_para_max_tip(para_id);
+
+                        log::trace!(
+                            target: LOG_TARGET,
+                            "tip: {para_id:?} => {tip:?}",
+                        );
+
+                        tip
+                    })
                     .min()
             };
+
+            log::trace!(
+                target: LOG_TARGET,
+                "congestion tip: {maybe_tip:?}",
+            );
 
             // TODO: this probably is asking for a refactor
             // only apply the onCollatorAssignedHook if sufficient collators
@@ -887,13 +906,15 @@ fn order_old_assigned_first_then_by_max_tip<T: Config>(
 ) -> core::cmp::Ordering {
     // old assigned comes first
     let old_assigned_first = old_assigned_para_ids
-        .contains(&b)
-        .cmp(&old_assigned_para_ids.contains(&a));
+        .contains(&a)
+        .cmp(&old_assigned_para_ids.contains(&b))
+        .reverse();
 
     // higher tip comes first
     let higher_tip_first = || {
-        T::CollatorAssignmentTip::get_para_max_tip(b)
-            .cmp(&T::CollatorAssignmentTip::get_para_max_tip(a))
+        T::CollatorAssignmentTip::get_para_max_tip(a)
+            .cmp(&T::CollatorAssignmentTip::get_para_max_tip(b))
+            .reverse()
     };
 
     // order first by old assigned, if equal order by higher tip
