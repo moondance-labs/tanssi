@@ -111,6 +111,9 @@ where
                 validators,
                 external_index,
             }) => {
+                // Process message for v2 does not contain a channel-id whatsoever.
+                // We could possibly check the origin as v2 has an origin, or convert the origin into a channle or viceversa
+                // TODO for the inbound queue people
                 if let Some(channel_id) = channel_id {
                     if channel_id != PRIMARY_GOVERNANCE_CHANNEL {
                         return Err(DispatchError::Other(

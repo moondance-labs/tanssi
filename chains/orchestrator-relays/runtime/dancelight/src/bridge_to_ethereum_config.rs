@@ -69,6 +69,8 @@ use {
     sp_core::{ConstU32, ConstU8, H160, H256},
     tanssi_runtime_common::relay::{EthTokensLocalProcessor, RewardThroughFeesAccount},
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
+    xcm::latest::{Asset, XcmContext},
+    xcm_executor::traits::TransactAsset,
 };
 
 pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOTS_PER_EPOCH as u32;
@@ -322,13 +324,48 @@ impl TipHandler<crate::RuntimeOrigin> for EthereumTipForwarder<Runtime> {
             Runtime,
         >::ensure_origin(origin.clone())?;
 
-        Balances::transfer(
-            &sender,
-            &<Runtime as pallet_ethereum_token_transfers::Config>::FeesAccount::get(),
-            amount.into(),
-            Preservation::Preserve,
-        )?;
-
+        // Tip handling depends on the queue type
+        // Inbound: tip in ETH
+        // Outbound: tip in Tanssi
+        match message_id {
+            MessageId::Inbound(_) => {
+                let dummy_context = XcmContext {
+                    origin: None,
+                    message_id: Default::default(),
+                    topic: None,
+                };
+                let asset: Asset = (EthereumLocation::get(), amount).into();
+                // Here I am not sure I can work with any other thing than this.
+                // In theory I could call foreignAssets directly, but I prefer not to.
+                // In theory also, I could work with assetTransactor only for both cases
+                // changing the token
+                // TODO: revisit
+                AssetTransactor::transfer_asset(
+                    &asset,
+                    &sender.clone().into(),
+                    &<Runtime as pallet_ethereum_token_transfers::Config>::FeesAccount::get()
+                        .into(),
+                    &dummy_context,
+                )
+                .map_err(|e| {
+                    log::debug!("Inbound tip addition failed with error {:?}", e);
+                    sp_runtime::DispatchError::Other("TransferAsset failed for Inbound Fee")
+                })?;
+            }
+            MessageId::Outbound(_) => {
+                Balances::transfer(
+                    &sender.clone().into(),
+                    &<Runtime as pallet_ethereum_token_transfers::Config>::FeesAccount::get()
+                        .into(),
+                    amount.into(),
+                    Preservation::Expendable,
+                )
+                .map_err(|e| {
+                    log::debug!("Outbound tip addition failed with error {:?}", e);
+                    e
+                })?;
+            }
+        };
         snowbridge_pallet_system_v2::Pallet::<Runtime>::add_tip(origin, sender, message_id, amount)
     }
 }

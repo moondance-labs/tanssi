@@ -3206,7 +3206,7 @@ fn receive_erc20_tokens_does_not_fail_if_not_sufficient_and_random_address() {
 }
 
 #[test]
-fn test_add_tip_for_ethereum_token_transfers_succeeded() {
+fn test_add_tip_for_ethereum_token_transfers_succeeded_outbound() {
     ExtBuilder::default()
         .with_balances(vec![
             (AccountId::from(ALICE), 210_000 * UNIT),
@@ -3218,11 +3218,11 @@ fn test_add_tip_for_ethereum_token_transfers_succeeded() {
         .execute_with(|| {
             run_to_block(2);
 
-            let message_id = MessageId::Inbound(1);
+            let message_id = MessageId::Outbound(1);
             let amount = 100000000;
 
             let origin =
-                <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(BOB));
+                <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(CHARLIE));
 
             assert_ok!(EthereumTokenTransfers::add_tip(
                 origin,
@@ -3237,6 +3237,189 @@ fn test_add_tip_for_ethereum_token_transfers_succeeded() {
                 .count(),
                 1,
                 "TipProcessed event should be emitted!"
+            );
+        });
+}
+
+#[test]
+fn test_add_tip_for_ethereum_token_transfers_succeeds_when_account_ripped_outbound() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            sp_tracing::try_init_simple();
+
+            run_to_block(2);
+
+            let message_id = MessageId::Outbound(1);
+            let amount = 100_000 * UNIT;
+
+            let origin =
+                <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(CHARLIE));
+
+            assert_ok!(EthereumTokenTransfers::add_tip(
+                origin,
+                message_id.clone(),
+                amount.clone(),
+            ));
+        });
+}
+
+#[test]
+fn test_add_tip_for_ethereum_token_transfers_does_not_succeed_if_insufficient_money_outbound() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let message_id = MessageId::Outbound(1);
+            let amount = 100_000 * UNIT;
+
+            let origin =
+                <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(CHARLIE));
+
+            assert_noop!(
+                EthereumTokenTransfers::add_tip(origin, message_id.clone(), amount.clone() + 1,),
+                pallet_ethereum_token_transfers::Error::<Runtime>::TipFailed
+            );
+        });
+}
+
+#[test]
+fn test_add_tip_for_ethereum_token_transfers_succeeded_inbound() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let message_id = MessageId::Inbound(1);
+            let amount = 100000000;
+            let asset_id = 1;
+
+            assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+                root_origin(),
+                EthereumLocation::get(),
+                asset_id,
+                AccountId::from(ALICE),
+                true,
+                1
+            ));
+
+            // Give tokens to BOB so that it does not dissappear his account
+            ForeignAssets::mint_into(asset_id, &AccountId::from(CHARLIE), amount + 10)
+                .expect("to mint amount");
+
+            let origin =
+                <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(CHARLIE));
+
+            assert_ok!(EthereumTokenTransfers::add_tip(
+                origin,
+                message_id.clone(),
+                amount.clone(),
+            ));
+
+            assert_eq!(
+                filter_events!(RuntimeEvent::EthereumSystemV2(
+                    snowbridge_pallet_system_v2::Event::TipProcessed { .. },
+                ))
+                .count(),
+                1,
+                "TipProcessed event should be emitted!"
+            );
+        });
+}
+
+#[test]
+fn test_add_tip_for_ethereum_token_transfers_succeeds_when_account_ripped_inbound() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let message_id = MessageId::Inbound(1);
+            let amount = 100000000;
+            let asset_id = 1;
+
+            assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+                root_origin(),
+                EthereumLocation::get(),
+                asset_id,
+                AccountId::from(ALICE),
+                true,
+                1
+            ));
+
+            // Give tokens to BOB so that his account is destroyed after paying tip
+            ForeignAssets::mint_into(asset_id, &AccountId::from(CHARLIE), amount)
+                .expect("to mint amount");
+
+            let origin =
+                <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(CHARLIE));
+
+            assert_ok!(EthereumTokenTransfers::add_tip(
+                origin,
+                message_id.clone(),
+                amount.clone(),
+            ));
+        });
+}
+
+#[test]
+fn test_add_tip_for_ethereum_token_transfers_does_not_succeed_if_insufficient_money_inbound() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let message_id = MessageId::Inbound(1);
+            let amount = 100000000;
+            let asset_id = 1;
+
+            assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+                root_origin(),
+                EthereumLocation::get(),
+                asset_id,
+                AccountId::from(ALICE),
+                true,
+                1
+            ));
+
+            // Give tokens to BOB so that his account is destroyed after paying tip
+            ForeignAssets::mint_into(asset_id, &AccountId::from(CHARLIE), amount)
+                .expect("to mint amount");
+
+            let origin =
+                <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(CHARLIE));
+
+            assert_noop!(
+                EthereumTokenTransfers::add_tip(origin, message_id.clone(), amount.clone() + 1,),
+                pallet_ethereum_token_transfers::Error::<Runtime>::TipFailed
             );
         });
 }
