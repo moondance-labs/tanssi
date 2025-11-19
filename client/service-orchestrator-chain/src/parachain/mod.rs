@@ -94,6 +94,7 @@ pub struct ParachainNodeStarted {
     pub relay_chain_interface: Arc<dyn RelayChainInterface>,
     pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     pub keystore: KeystorePtr,
+    pub start_bootnode_params: StartBootnodeParams,
 }
 
 /// Start a parachain node.
@@ -560,7 +561,7 @@ where
                         dancebox_runtime::RuntimeApi,
                     >::new(),
                 override_sync_mode: Some(sc_cli::SyncMode::Warp),
-                start_bootnode_params,
+                start_bootnode_params: start_bootnode_params.clone(),
                 phantom: PhantomData,
             },
             state: Default::default(),
@@ -589,6 +590,7 @@ where
         relay_chain_interface,
         orchestrator_chain_interface,
         keystore: node_builder.keystore_container.keystore(),
+        start_bootnode_params,
     })
 }
 

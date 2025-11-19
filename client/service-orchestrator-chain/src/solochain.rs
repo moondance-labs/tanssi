@@ -60,6 +60,7 @@ pub struct SolochainNodeStarted {
     pub relay_chain_interface: Arc<dyn RelayChainInterface>,
     pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     pub keystore: KeystorePtr,
+    pub start_bootnode_params: StartBootnodeParams,
 }
 
 /// Same as `NodeBuilder::build_relay_chain_interface`
@@ -277,7 +278,7 @@ pub async fn start_solochain_node(
                     >::new(),
                 override_sync_mode: Some(sc_cli::SyncMode::Warp),
                 phantom: PhantomData,
-                start_bootnode_params,
+                start_bootnode_params: start_bootnode_params.clone(),
             },
             state: Default::default(),
             db_folder_cleanup_done: false,
@@ -304,6 +305,7 @@ pub async fn start_solochain_node(
         relay_chain_interface,
         orchestrator_chain_interface,
         keystore: keystore_container.keystore(),
+        start_bootnode_params,
     })
 }
 

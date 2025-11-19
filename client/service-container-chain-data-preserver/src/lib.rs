@@ -17,10 +17,8 @@
 mod cli;
 pub mod watch_assignment;
 
-use node_common::service::node_builder::StartBootnodeParams;
 use {
     cumulus_client_cli::CollatorOptions,
-    cumulus_client_service::build_relay_chain_interface,
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
     dc_orchestrator_chain_interface::OrchestratorChainInterface,
@@ -34,7 +32,9 @@ use {
         service::MinimalContainerRuntimeApi,
         spawner::{ContainerChainSpawnParams, ContainerChainSpawner},
     },
-    tc_service_orchestrator_chain::solochain::EnableContainerChainSpawner,
+    tc_service_orchestrator_chain::solochain::{
+        build_relay_chain_interface_solochain, EnableContainerChainSpawner,
+    },
     url::Url,
 };
 
@@ -132,7 +132,7 @@ where
         let orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>;
         let relay_chain_interface: Arc<dyn RelayChainInterface>;
         let keystore;
-        let start_bootnode_params = todo!();
+        let start_bootnode_params;
 
         if self.orchestrator_endpoints.is_empty() {
             // Embeded node
@@ -199,6 +199,7 @@ where
                 relay_chain_interface = started.relay_chain_interface;
                 orchestrator_chain_interface = started.orchestrator_chain_interface;
                 keystore = started.keystore;
+                start_bootnode_params = started.start_bootnode_params;
             } else {
                 log::info!("Starting embeded orchestrator solochain node ...");
 
@@ -224,6 +225,7 @@ where
                 relay_chain_interface = started.relay_chain_interface;
                 orchestrator_chain_interface = started.orchestrator_chain_interface;
                 keystore = started.keystore;
+                start_bootnode_params = started.start_bootnode_params;
             }
         } else {
             log::info!("Connecting to remote orchestrator node(s) ...");
@@ -268,20 +270,22 @@ where
 
             let telemetry_worker_handle = telemetry.as_ref().map(|(worker, _)| worker.handle());
 
-            relay_chain_interface = build_relay_chain_interface(
-                polkadot_config,
+            // This is not solochain mode but this function is just to return the start_bootnode_params
+            let relay_chain_interface_parts = build_relay_chain_interface_solochain(
                 &self.config,
+                polkadot_config,
+                collator_options,
                 telemetry_worker_handle,
                 &mut task_manager,
-                collator_options,
                 None,
             )
             .await
-            .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?
-            .0;
+            .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
+            relay_chain_interface = relay_chain_interface_parts.0;
 
             let keystore_container = KeystoreContainer::new(&self.config.keystore)?;
             keystore = keystore_container.keystore();
+            start_bootnode_params = relay_chain_interface_parts.2;
         }
 
         log::info!("Starting container chain spawner and assignment watcher ...");

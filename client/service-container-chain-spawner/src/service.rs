@@ -319,11 +319,11 @@ pub fn start_node_impl_container<
                 parachain_public_addresses,
                 relay_chain_network,
                 paranode_rx,
-                mut embedded_dht_bootnode,
                 dht_bootnode_discovery,
+                embedded_dht_bootnode: _,
             } = start_bootnode_params;
 
-            embedded_dht_bootnode = false;
+            let embedded_dht_bootnode = false;
 
             // Advertise parachain bootnode address in relay chain DHT
             start_bootnode_tasks(StartBootnodeTasksParams {
