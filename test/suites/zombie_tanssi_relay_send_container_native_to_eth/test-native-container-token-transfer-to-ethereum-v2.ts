@@ -7,13 +7,13 @@ import {
     SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
     sleep,
     TESTNET_ETHEREUM_NETWORK_ID,
-    waitEventUntilTimeout,
     SNOWBRIDGE_FEES_ACCOUNT,
     DANCELIGHT_GENESIS_HASH,
+    waitUntilSnowbridgeV2OutboundNonceChange,
 } from "utils";
 
 describeSuite({
-    id: "ZOMBIETANSS05",
+    id: "ZOMBIETANSSCONTFROMETH02",
     title: "XCM transfer to Ethereum (Snowbridge V2)",
     foundationMethods: "zombie",
     testCases: ({ context, it }) => {
@@ -263,10 +263,7 @@ describeSuite({
                     ],
                 };
 
-                await sleep(24000);
-
-                const weight = await containerChainPolkadotJs.call.xcmPaymentApi.queryXcmWeight(xcmMessage as any);
-                console.log("Weight: ", weight.toHuman());
+                await sleep(6000);
 
                 await containerChainPolkadotJs.tx.polkadotXcm
                     .execute(xcmMessage as any, {
@@ -275,10 +272,8 @@ describeSuite({
                     })
                     .signAndSend(alice);
 
-                await waitEventUntilTimeout(relayChainPolkadotJs, "ethereumOutboundQueueV2.MessageAccepted", 90000);
-
                 // Wait a few blocks until nonce has been increased
-                await sleep(24000);
+                await waitUntilSnowbridgeV2OutboundNonceChange(relayChainPolkadotJs);
 
                 const ethereumSovereignAccountBalanceAfter = (
                     await containerChainPolkadotJs.query.system.account(ethereumSovereignAccountAddress)
