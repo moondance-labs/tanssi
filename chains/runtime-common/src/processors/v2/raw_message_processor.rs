@@ -1,11 +1,11 @@
 extern crate alloc;
 
-use crate::processors::v2::RAW_MESSAGE_PROCESSOR_TOPIC_PREFIX;
 use crate::processors::v2::{
     execute_xcm, fallback_message_processor::AssetTrapFallbackProcessor,
     prepare_raw_message_xcm_instructions, CodecError, ExtractedXcmConstructionInfo,
     FallbackMessageProcessor, MessageExtractionError, MessageProcessorWithFallback, RawPayload,
 };
+use crate::processors::v2::{reanchor_location_to_tanssi, RAW_MESSAGE_PROCESSOR_TOPIC_PREFIX};
 use alloc::boxed::Box;
 use alloc::format;
 use alloc::string::ToString;
@@ -193,12 +193,27 @@ where
         })?
         .into();
 
+        let eth_location_reanchored_to_tanssi = reanchor_location_to_tanssi(
+            &EthereumUniversalLocation::get(),
+            &TanssiUniversalLocation::get(),
+            ().into(),
+        )
+        .map_err(|asset_derivation_error| {
+            MessageProcessorError::ProcessMessage(DispatchError::Other(
+                format!(
+                    "Unable to reanchor eth location to tanssi: {:?}",
+                    asset_derivation_error
+                )
+                .leak(),
+            ))
+        })?;
+
         // Depending upon the content of raw xcm, it might be the case that it is not fully revertible
         // (i.e xcm that sends a message in another container chain and then return an error).
         // Another reason we are not returning error here as otherwise the tx will be reverted and assets will be in limbo in ethereum.
         // By returning success here, the assets will be trapped here and claimable by the claimer.
         if let Err(instruction_error) = execute_xcm::<T, XcmProcessor, XcmWeigher>(
-            EthereumUniversalLocation::get(),
+            eth_location_reanchored_to_tanssi,
             prepared_xcm,
         ) {
             log::error!(
