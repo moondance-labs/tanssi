@@ -414,7 +414,7 @@ where
             paranode_rx,
             embedded_dht_bootnode,
             dht_bootnode_discovery,
-        } = start_bootnode_params;
+        } = start_bootnode_params.clone();
 
         // Advertise parachain bootnode address in relay chain DHT
         start_bootnode_tasks(StartBootnodeTasksParams {
@@ -560,6 +560,7 @@ where
                         dancebox_runtime::RuntimeApi,
                     >::new(),
                 override_sync_mode: Some(sc_cli::SyncMode::Warp),
+                start_bootnode_params,
                 phantom: PhantomData,
             },
             state: Default::default(),

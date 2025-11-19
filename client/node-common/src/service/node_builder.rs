@@ -322,6 +322,7 @@ where
     }
 }
 
+#[derive(Clone)]
 pub struct StartBootnodeParams {
     pub relay_chain_fork_id: Option<String>,
     pub parachain_fork_id: Option<String>,

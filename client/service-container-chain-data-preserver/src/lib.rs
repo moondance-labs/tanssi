@@ -17,6 +17,7 @@
 mod cli;
 pub mod watch_assignment;
 
+use node_common::service::node_builder::StartBootnodeParams;
 use {
     cumulus_client_cli::CollatorOptions,
     cumulus_client_service::build_relay_chain_interface,
@@ -131,6 +132,7 @@ where
         let orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>;
         let relay_chain_interface: Arc<dyn RelayChainInterface>;
         let keystore;
+        let start_bootnode_params = todo!();
 
         if self.orchestrator_endpoints.is_empty() {
             // Embeded node
@@ -300,9 +302,10 @@ where
                 sync_keystore: keystore,
                 collation_params: None,
                 spawn_handle: task_manager.spawn_handle().clone(),
-                data_preserver: true,
                 generate_rpc_builder: self.generate_rpc_builder,
                 override_sync_mode: None,
+                start_bootnode_params,
+                data_preserver: true,
                 phantom: PhantomData,
             },
             state: Default::default(),
