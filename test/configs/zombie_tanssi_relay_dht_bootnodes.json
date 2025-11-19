@@ -4,7 +4,7 @@
         "provider": "native"
     },
     "relaychain": {
-        "chain_spec_path": "specs/tanssi-relay.json",
+        "chain_spec_path": "specs/tanssi-relay-no-bootnodes.json",
         "default_command": "../target/release/tanssi-relay",
         "default_args": [
             "--no-hardware-benchmarks",
@@ -55,7 +55,7 @@
     "parachains": [
         {
             "id": 2000,
-            "chain_spec_path": "specs/single-container-template-container-2000.json",
+            "chain_spec_path": "specs/single-container-template-container-2000-no-bootnodes.json",
             "collators": [
                 {
                     "name": "FullNode-2000",
@@ -177,7 +177,7 @@
         },
         {
             "id": 2001,
-            "chain_spec_path": "specs/single-container-template-container-2001.json",
+            "chain_spec_path": "specs/single-container-template-container-2001-no-bootnodes.json",
             "collators": [
                 {
                     "name": "FullNode-2001",
@@ -201,7 +201,7 @@
         },
         {
             "id": 2002,
-            "chain_spec_path": "specs/single-container-template-container-2002.json",
+            "chain_spec_path": "specs/single-container-template-container-2002-no-bootnodes.json",
             "add_to_genesis": false,
             "register_para": false,
             "onboard_as_parachain": false,
