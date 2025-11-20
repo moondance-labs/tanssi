@@ -155,6 +155,7 @@ tp-container-chain = { path = "primitives/container-chain", default-features = f
 tp-data-preservers-common = { path = "primitives/data-preservers-common", default-features = false }
 tp-invulnerables-filter-common = { path = "primitives/invulnerables-filter-common", default-features = false }
 tp-maths = { path = "primitives/maths", default-features = false }
+tp-message-queue = { path = "primitives/message-queue", default-features = false }
 tp-parathread-filter-common = { path = "primitives/parathread-filter-common", default-features = false }
 tp-stream-payment-common = { path = "primitives/stream-payment-common", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
