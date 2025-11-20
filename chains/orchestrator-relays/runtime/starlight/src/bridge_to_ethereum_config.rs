@@ -36,13 +36,15 @@ use {
         Runtime, RuntimeEvent, SnowbridgeFeesAccount, TanssiAggregateMessageOrigin,
         TokenLocationReanchored, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
-    frame_support::weights::ConstantMultiplier,
+    frame_support::{traits::PalletInfoAccess, weights::ConstantMultiplier},
     pallet_xcm::EnsureXcm,
     snowbridge_beacon_primitives::ForkVersions,
     snowbridge_core::{gwei, meth, PricingParameters, Rewards},
     snowbridge_pallet_outbound_queue::OnNewCommitment,
     sp_core::{ConstU32, ConstU8, H160, H256},
-    tanssi_runtime_common::relay::{EthTokensLocalProcessor, RewardThroughFeesAccount},
+    tanssi_runtime_common::relay::{
+        EthTokensLocalProcessor, NativeContainerTokensProcessor, RewardThroughFeesAccount,
+    },
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
 };
 
@@ -219,6 +221,10 @@ mod test_helpers {
     }
 }
 
+parameter_types! {
+    pub InboundQueuePalletInstance: u8 = <EthereumInboundQueue as PalletInfoAccess>::index() as u8;
+}
+
 type AssetTransactor = <xcm_config::XcmConfig as xcm_executor::Config>::AssetTransactor;
 
 pub type EthTokensProcessor = EthTokensLocalProcessor<
@@ -233,6 +239,16 @@ pub type EthTokensProcessor = EthTokensLocalProcessor<
 
 #[cfg(not(feature = "runtime-benchmarks"))]
 pub type NativeTokensProcessor = NativeTokenTransferMessageProcessor<Runtime>;
+
+#[cfg(not(feature = "runtime-benchmarks"))]
+pub type NativeContainerProcessor = NativeContainerTokensProcessor<
+    Runtime,
+    AssetTransactor,
+    starlight_runtime_constants::snowbridge::EthereumLocation,
+    starlight_runtime_constants::snowbridge::EthereumNetwork,
+    InboundQueuePalletInstance,
+    TokenLocationReanchored,
+>;
 
 impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
