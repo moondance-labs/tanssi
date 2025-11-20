@@ -24,14 +24,16 @@ use {
     },
     parity_scale_codec::{Decode, Encode},
     snowbridge_core::{AgentId, ChannelId, TokenId},
-    snowbridge_outbound_queue_primitives::v2::message::{Command, Message, SendMessage},
-    sp_core::H160,
+    snowbridge_outbound_queue_primitives::v2::message::{Message, SendMessage},
     sp_runtime::traits::MaybeEquivalence,
     xcm::latest::SendError::{MissingArgument, NotApplicable, Unroutable},
     xcm::prelude::*,
     xcm_builder::{CreateMatcher, MatchXcm},
-    xcm_executor::traits::{ConvertLocation, ExportXcm},
+    xcm_executor::traits::ExportXcm,
 };
+
+#[cfg(not(feature = "runtime-benchmarks"))]
+use {sp_core::H160, snowbridge_outbound_queue_primitives::v2::message::Command, xcm_executor::traits::ConvertLocation};
 
 pub struct ContainerEthereumBlobExporterV2<
     UniversalLocation,

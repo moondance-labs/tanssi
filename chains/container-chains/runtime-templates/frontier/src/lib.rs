@@ -1368,7 +1368,7 @@ impl_runtime_apis! {
                 type TrustedReserve = TrustedReserve;
 
                 fn get_asset() -> Asset {
-                    use frame_support::{assert_ok, traits::tokens::fungible::{Inspect, Mutate}};
+                    use frame_support::{assert_ok, traits::tokens::fungible::Mutate};
                     let (account, _) = pallet_xcm_benchmarks::account_and_location::<Runtime>(1);
 
                     assert_ok!(<Balances as Mutate<_>>::mint_into(

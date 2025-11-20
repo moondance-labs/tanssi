@@ -1666,7 +1666,7 @@ fn send_eth_native_token_works_v2() {
             let xcm = VersionedXcm::from(Xcm(vec![
                 WithdrawAsset(assets.clone().into()),
                 InitiateTransfer {
-                    destination: EthereumLocation::get()
+                    destination: EthereumLocation::get(),
                     remote_fees: Some(AssetTransferFilter::ReserveDeposit(
                         fee_asset.clone().into(),
                     )),
@@ -1801,7 +1801,7 @@ fn send_eth_native_does_not_work_if_min_reward_not_covered() {
             let xcm = VersionedXcm::from(Xcm(vec![
                 WithdrawAsset(assets.clone().into()),
                 InitiateTransfer {
-                    destination: EthereumLocation::get()
+                    destination: EthereumLocation::get(),
                     remote_fees: Some(AssetTransferFilter::ReserveDeposit(
                         fee_asset.clone().into(),
                     )),
@@ -1928,7 +1928,7 @@ fn send_eth_native_does_not_work_if_reward_diff_asset() {
             let xcm = VersionedXcm::from(Xcm(vec![
                 WithdrawAsset(assets.clone().into()),
                 InitiateTransfer {
-                    destination: EthereumLocation::get()
+                    destination: EthereumLocation::get(),
                     remote_fees: Some(AssetTransferFilter::ReserveDeposit(
                         fee_asset.clone().into(),
                     )),
@@ -2060,7 +2060,7 @@ fn sending_eth_native_withdrawing_non_sufficient_amount_eth_works_but_only_sends
             let xcm = VersionedXcm::from(Xcm(vec![
                 WithdrawAsset(assets.clone().into()),
                 InitiateTransfer {
-                    destination: EthereumLocation::get()
+                    destination: EthereumLocation::get(),
                     remote_fees: Some(AssetTransferFilter::ReserveDeposit(
                         fee_asset.clone().into(),
                     )),
@@ -2200,7 +2200,7 @@ fn sending_eth_native_withdrawing_non_sufficient_amount_fee_does_not_work() {
             let xcm = VersionedXcm::from(Xcm(vec![
                 WithdrawAsset(assets.clone().into()),
                 InitiateTransfer {
-                    destination: EthereumLocation::get()
+                    destination: EthereumLocation::get(),
                     remote_fees: Some(AssetTransferFilter::ReserveDeposit(
                         fee_asset.clone().into(),
                     )),
