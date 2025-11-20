@@ -235,7 +235,7 @@ impl pallet_bridge_relayers::Config<BridgeRelayersInstance> for Runtime {
         RelayerStakeLease,
     >;
     type Balance = Balance;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_bridge_relayers::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -307,8 +307,11 @@ impl snowbridge_pallet_system_v2::Config for Runtime {
             ConvertAccountIdTo<AccountId, Location, xcm_config::RelayNetwork>,
         >,
     >;
+    #[cfg(not(feature = "runtime-benchmarks"))]
     type GovernanceOrigin = EnsureRootWithSuccess<AccountId, EthereumLocation>;
-    type WeightInfo = ();
+    #[cfg(feature = "runtime-benchmarks")]
+    type GovernanceOrigin = EnsureRootWithSuccess<AccountId, xcm_config::RootLocation>;
+    type WeightInfo = weights::snowbridge_pallet_system_v2::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type Helper = ();
 }
