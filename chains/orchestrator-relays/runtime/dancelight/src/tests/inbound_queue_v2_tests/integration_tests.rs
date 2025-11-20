@@ -18,9 +18,9 @@ use {
     crate::{
         tests::common::{mock_snowbridge_message_proof, root_origin, ExtBuilder, ALICE, BOB, UNIT},
         xcm_config::UniversalLocation,
-        AccountId, Balances, EthereumInboundQueueV2, EthereumSystemV2, ExternalValidators,
-        ForeignAssets, ForeignAssetsCreator, Runtime, RuntimeEvent, RuntimeOrigin,
-        SnowbridgeFeesAccount,
+        AccountId, Balances, EthereumInboundQueueV2, EthereumSovereignAccount, EthereumSystemV2,
+        ExternalValidators, ForeignAssets, ForeignAssetsCreator, Runtime, RuntimeEvent,
+        RuntimeOrigin, SnowbridgeFeesAccount,
     },
     alloy_sol_types::SolEvent,
     dancelight_runtime_constants::snowbridge::{EthereumLocation, EthereumNetwork},
@@ -86,23 +86,6 @@ fn test_inbound_queue_message_symbiotic_passing() {
 
         println!("symbiotic_bytes: {:?}", symbiotic_bytes.encode());
 
-        // use ethers::abi::{encode, Token};
-        // let data = encode(&[
-        //     Token::Uint(nonce.into()),
-        //     Token::Tuple(vec![
-        //         Token::Address(hex_literal::hex!("EDa338E4dC46038493b885327842fD3E301CaB39").into()),
-        //         Token::Array(vec![]),
-        //         Token::Tuple(vec![
-        //             Token::Uint(0.into()),
-        //             Token::Bytes(symbiotic_bytes.clone()),
-        //         ]),
-        //         Token::Bytes(vec![]),
-        //         Token::Uint(0.into()),
-        //         Token::Uint(0.into()),
-        //         Token::Uint(0.into()),
-        //     ])
-        // ]);
-
         assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
@@ -153,14 +136,6 @@ fn test_inbound_queue_transfer_eth_works() {
 
         let asset_id = 42u16;
 
-        // assert_ok!(
-        //     Balances::force_set_balance(
-        //         root_origin(),
-        //         SnowbridgeFeesAccount::get().into(),
-        //         10_000_000_000_000_000_000u128
-        //     )
-        // );
-
         assert_ok!(ForeignAssetsCreator::create_foreign_asset(
             root_origin(),
             eth_native_asset_location.clone(),
@@ -169,9 +144,6 @@ fn test_inbound_queue_transfer_eth_works() {
             true,
             1
         ));
-
-        // ForeignAssets::mint(RuntimeOrigin::signed(AccountId::from(ALICE)),asset_id, SnowbridgeFeesAccount::get().into(), 5_000_000_000_000_000_000u128)
-        //     .expect("to mint amount");
 
         let token_location_reanchored = token_location
             .clone()
@@ -188,7 +160,7 @@ fn test_inbound_queue_transfer_eth_works() {
 
         println!("assets: {:?}", assets);
 
-        let execution_fee = 100_000_000_000_000u128;
+        let _execution_fee = 0;
 
         let instructions = vec![DepositAsset {
             assets: Wild(AllCounted(1)),
@@ -243,7 +215,271 @@ fn test_inbound_queue_transfer_eth_works() {
             }
         }
 
-        assert!(found_message, "MessageReceived(nonce=1) not found");
-        assert!(found_issued,  "Issued(amount=12345) not found");
+        assert!(found_message, "MessageReceived event not found");
+        assert!(found_issued,  "Issued event for ETH not found");
+    });
+}
+
+#[test]
+fn test_inbound_queue_transfer_tanssi_works() {
+    ExtBuilder::default()
+        .with_validators(
+            vec![]
+        )
+        .with_external_validators(
+            vec![
+                (AccountId::from(ALICE), 210 * UNIT),
+                (AccountId::from(BOB), 100 * UNIT),
+            ]
+        ).build().execute_with(|| {
+        let current_nonce = 1;
+
+        let dummy_proof = mock_snowbridge_message_proof();
+        let token_location = Location::here();
+
+        assert_ok!(EthereumSystemV2::register_token(
+            root_origin(),
+            Box::new(token_location.clone().into()),
+            Box::new(token_location.clone().into()),
+            snowbridge_core::AssetMetadata {
+                name: "relay".as_bytes().to_vec().try_into().unwrap(),
+                symbol: "relay".as_bytes().to_vec().try_into().unwrap(),
+                decimals: 12,
+            },
+            1
+        ));
+
+        let eth_native_asset_location = Location {
+            parents: 1,
+            interior: X1([GlobalConsensus(EthereumNetwork::get())].into()),
+        };
+
+        let asset_id = 42u16;
+
+        assert_ok!(
+            Balances::force_set_balance(
+                root_origin(),
+                EthereumSovereignAccount::get().into(),
+                10_000_000_000_000_000_000u128
+            )
+        );
+
+        assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+            root_origin(),
+            eth_native_asset_location.clone(),
+            asset_id,
+            AccountId::from(ALICE),
+            true,
+            1
+        ));
+
+        let token_location_reanchored = token_location
+            .clone()
+            .reanchored(&EthereumLocation::get(), &UniversalLocation::get())
+            .expect("unable to reanchor token");
+
+        let tanssi_token_id =
+            snowbridge_pallet_system::NativeToForeignId::<Runtime>::get(&token_location_reanchored).unwrap();
+
+        let tanssi_token_transfer_value = 123_456_789_000u128;
+        let assets = vec![
+            ForeignTokenERC20 { token_id: tanssi_token_id.into(), value: tanssi_token_transfer_value },
+        ];
+
+        println!("assets: {:?}", assets);
+
+        let _execution_fee = 0;
+
+        let instructions = vec![DepositAsset {
+            assets: Wild(AllCounted(1)),
+            beneficiary: Location::new(
+                0,
+                AccountId32 {
+                    network: None,
+                    id: H256::random().into(),
+                },
+            ),
+        }];
+
+        let xcm: Xcm<()> = instructions.into();
+        let versioned_message_xcm = VersionedXcm::V5(xcm);
+
+        let xcm_bytes = RawPayload::Xcm(versioned_message_xcm.encode());
+
+        println!("xcm_bytes: {:?}", xcm_bytes.encode());
+
+        assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
+            event_log: Log {
+                address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
+                topics: vec![hex!("550e2067494b1736ea5573f2d19cdc0ac95b410fff161bf16f11c6229655ec9c").into()],
+                data: hex!("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000eda338e4dc46038493b885327842fd3e301cab3900000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000001c0000000000000000000000000000000000000000000000000000000000000026000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000040e95142d5aca3299068a3d9b4a659f9589559382d0a130a1d7cedc67d6c3d401d0000000000000000000000000000000000000000000000000000001cbe991a0800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000002c00a805040d0102040001010012bc2a144d127ff5786811f7f9e7b2871ee50194936373330db4209e922dc1f800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000").to_vec(),
+            },
+            proof: dummy_proof.clone(),
+        })), Ok(()));
+
+        let events = frame_system::Pallet::<Runtime>::events();
+        for e in events.clone() {
+            println!("Event: {:?}", e.event);
+        }
+
+        let mut found_message = false;
+        let mut found_minted = false;
+
+        for record in events {
+            match &record.event {
+                RuntimeEvent::EthereumInboundQueueV2(
+                    snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce, .. }
+                ) if *nonce == 1 => {
+                    found_message = true;
+                }
+
+                RuntimeEvent::Balances(
+                    pallet_balances::Event::Minted { amount, .. }
+                ) if *amount == 123_456_789_000u128 => {
+                    found_minted = true;
+                }
+
+                _ => {}
+            }
+        }
+
+        assert!(found_message, "MessageReceived event not found");
+        assert!(found_minted, "Minted event for native token not found");
+    });
+}
+
+#[test]
+fn test_inbound_queue_transfer_tanssi_and_eth_works() {
+    ExtBuilder::default()
+        .with_validators(
+            vec![]
+        )
+        .with_external_validators(
+            vec![
+                (AccountId::from(ALICE), 210 * UNIT),
+                (AccountId::from(BOB), 100 * UNIT),
+            ]
+        ).build().execute_with(|| {
+        let current_nonce = 1;
+
+        let dummy_proof = mock_snowbridge_message_proof();
+        let token_location = Location::here();
+
+        assert_ok!(EthereumSystemV2::register_token(
+            root_origin(),
+            Box::new(token_location.clone().into()),
+            Box::new(token_location.clone().into()),
+            snowbridge_core::AssetMetadata {
+                name: "relay".as_bytes().to_vec().try_into().unwrap(),
+                symbol: "relay".as_bytes().to_vec().try_into().unwrap(),
+                decimals: 12,
+            },
+            1
+        ));
+
+        let eth_native_asset_location = Location {
+            parents: 1,
+            interior: X1([GlobalConsensus(EthereumNetwork::get())].into()),
+        };
+
+        let asset_id = 42u16;
+
+        assert_ok!(
+            Balances::force_set_balance(
+                root_origin(),
+                EthereumSovereignAccount::get().into(),
+                10_000_000_000_000_000_000u128
+            )
+        );
+
+        assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+            root_origin(),
+            eth_native_asset_location.clone(),
+            asset_id,
+            AccountId::from(ALICE),
+            true,
+            1
+        ));
+
+        let token_location_reanchored = token_location
+            .clone()
+            .reanchored(&EthereumLocation::get(), &UniversalLocation::get())
+            .expect("unable to reanchor token");
+
+        let tanssi_token_id =
+            snowbridge_pallet_system::NativeToForeignId::<Runtime>::get(&token_location_reanchored).unwrap();
+
+        let tanssi_token_transfer_value = 123_456_789_000u128;
+        let assets = vec![
+            ForeignTokenERC20 { token_id: tanssi_token_id.into(), value: tanssi_token_transfer_value },
+        ];
+
+        println!("assets: {:?}", assets);
+
+        let _execution_fee = 0;
+
+        let instructions = vec![DepositAsset {
+            assets: Wild(AllCounted(2)),
+            beneficiary: Location::new(
+                0,
+                AccountId32 {
+                    network: None,
+                    id: H256::random().into(),
+                },
+            ),
+        }];
+
+        let xcm: Xcm<()> = instructions.into();
+        let versioned_message_xcm = VersionedXcm::V5(xcm);
+
+        let xcm_bytes = RawPayload::Xcm(versioned_message_xcm.encode());
+
+        println!("xcm_bytes: {:?}", xcm_bytes.encode());
+
+        assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
+            event_log: Log {
+                address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
+                topics: vec![hex!("550e2067494b1736ea5573f2d19cdc0ac95b410fff161bf16f11c6229655ec9c").into()],
+                data: hex!("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000eda338e4dc46038493b885327842fd3e301cab3900000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000001c00000000000000000000000000000000000000000000000000000000000000260000000000000000000000000000000000000000000000000000000002f072f400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000040e95142d5aca3299068a3d9b4a659f9589559382d0a130a1d7cedc67d6c3d401d00000000000000000000000000000000000000000000000000000000075bca0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000002c00a805040d0102080001010061f6a96dcffe809dfbdf4e983985f9ee149060a6ccf230e8c8e0f8f678588cb800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000").to_vec(),
+            },
+            proof: dummy_proof.clone(),
+        })), Ok(()));
+
+        let events = frame_system::Pallet::<Runtime>::events();
+        for e in events.clone() {
+            println!("Event: {:?}", e.event);
+        }
+
+        let mut found_message = false;
+        let mut found_minted = false;
+        let mut found_issued = false;
+
+        for record in events {
+            match &record.event {
+                RuntimeEvent::EthereumInboundQueueV2(
+                    snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce, .. }
+                ) if *nonce == 1 => {
+                    found_message = true;
+                }
+
+                RuntimeEvent::Balances(
+                    pallet_balances::Event::Minted { amount, .. }
+                ) if *amount == 123_456_000u128 => {
+                    found_minted = true;
+                }
+
+                RuntimeEvent::ForeignAssets(
+                    pallet_assets::Event::Issued { amount, .. }
+                ) if *amount == 789_000_000u128 => {
+                    found_issued = true;
+                }
+
+                _ => {}
+            }
+        }
+
+        assert!(found_message, "MessageReceived event not found");
+        assert!(found_minted, "Minted event for native token not found");
+        assert!(found_issued,  "Issued event for ETH not found");
     });
 }
