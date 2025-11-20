@@ -38,8 +38,7 @@ use {
         run_manual_seal, ConsensusDataProvider, EngineCommand, ManualSealParams,
     },
     sc_executor::{
-        sp_wasm_interface::{ExtendedHostFunctions, HostFunctions},
-        HeapAllocStrategy, NativeExecutionDispatch, RuntimeVersionOf, WasmExecutor,
+        sp_wasm_interface::HostFunctions, HeapAllocStrategy, RuntimeVersionOf, WasmExecutor,
         DEFAULT_HEAP_ALLOC_STRATEGY,
     },
     sc_network::{config::FullNetworkConfiguration, NetworkBlock},
@@ -61,9 +60,6 @@ use {
     sp_transaction_pool::runtime_api::TaggedTransactionQueue,
     std::{str::FromStr, sync::Arc},
 };
-
-#[allow(deprecated)]
-use sc_executor::NativeElseWasmExecutor;
 use sc_network::request_responses::IncomingRequest;
 use sc_network::service::traits::NetworkService;
 use sc_service::config::Multiaddr;
@@ -205,19 +201,6 @@ impl TanssiExecutorExt for WasmExecutor<ParachainHostFunctions> {
 
     fn new_with_wasm_executor(wasm_executor: WasmExecutor<Self::HostFun>) -> Self {
         wasm_executor
-    }
-}
-
-#[allow(deprecated)]
-impl<D> TanssiExecutorExt for NativeElseWasmExecutor<D>
-where
-    D: NativeExecutionDispatch,
-{
-    type HostFun = ExtendedHostFunctions<sp_io::SubstrateHostFunctions, D::ExtendHostFunctions>;
-
-    fn new_with_wasm_executor(wasm_executor: WasmExecutor<Self::HostFun>) -> Self {
-        #[allow(deprecated)]
-        NativeElseWasmExecutor::new_with_wasm_executor(wasm_executor)
     }
 }
 
