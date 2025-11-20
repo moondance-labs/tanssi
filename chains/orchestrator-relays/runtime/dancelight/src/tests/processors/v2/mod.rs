@@ -23,7 +23,6 @@ use {
     dancelight_runtime_constants::DANCELIGHT_GENESIS_HASH,
     frame_support::{assert_ok, parameter_types, BoundedVec},
     parity_scale_codec::Encode,
-    snowbridge_core::{AgentId, ChannelId},
     snowbridge_inbound_queue_primitives::v2::EthereumAsset,
     sp_core::{H160, H256},
     tanssi_runtime_common::processors::v2::{
@@ -591,15 +590,6 @@ fn prepare_raw_message_xcm_instructions_tanssi_and_eth_transfer_works() {
 #[test]
 fn prepare_raw_message_xcm_instructions_erc20_transfer_works() {
     ExtBuilder::default().build().execute_with(|| {
-        let token_location = Location::here();
-        let reanchored_location = Location {
-            parents: 1,
-            interior: X1([GlobalConsensus(NetworkId::ByGenesis(
-                DANCELIGHT_GENESIS_HASH,
-            ))]
-            .into()),
-        };
-
         let erc20_token_id = H160::random();
 
         let extracted_message: ExtractedXcmConstructionInfo<dancelight_runtime::RuntimeCall> =

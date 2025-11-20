@@ -313,6 +313,7 @@ xcm-runtime-apis = { git = "https://github.com/moondance-labs/polkadot-sdk", bra
 
 
 # Bridges (wasm)
+ethers = { git = "https://github.com/gakonst/ethers-rs", default-features = false }
 alloy-core = { version = "1.1.0", default-features = false }
 alloy-sol-types = { version = "0.4.2", default-features = false }
 milagro-bls = { package = "snowbridge-milagro-bls", version = "1.5.4", default-features = false }

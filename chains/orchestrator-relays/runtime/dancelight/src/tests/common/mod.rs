@@ -39,6 +39,7 @@ use {
         },
         ParaId,
     },
+    ethers::abi::{encode, Token},
     frame_support::{
         assert_ok,
         traits::{OnFinalize, OnInitialize},
@@ -54,6 +55,10 @@ use {
         paras_inherent as parachains_paras_inherent,
     },
     snowbridge_beacon_primitives::{types::deneb, ExecutionProof, VersionedExecutionPayloadHeader},
+    snowbridge_inbound_queue_primitives::v2::{
+        EthereumAsset::{ForeignTokenERC20, NativeTokenERC20},
+        Message, Payload,
+    },
     snowbridge_verification_primitives::Proof,
     sp_core::Pair,
     sp_core::Public,
@@ -1626,4 +1631,57 @@ pub fn mock_snowbridge_message_proof() -> Proof {
             execution_branch: vec![],
         },
     }
+}
+
+pub fn encode_message_to_eth_payload(message: &Message) -> Vec<u8> {
+    let assets_tokens: Vec<Token> = message
+        .assets
+        .iter()
+        .map(|asset| match asset {
+            NativeTokenERC20 { token_id, value } => {
+                let data = encode(&[
+                    Token::Address(ethers::types::H160::from_slice(token_id.as_bytes())),
+                    Token::Uint((*value).into()),
+                ]);
+
+                Token::Tuple(vec![Token::Uint(0u8.into()), Token::Bytes(data)])
+            }
+
+            ForeignTokenERC20 { token_id, value } => {
+                let data = encode(&[
+                    Token::FixedBytes(token_id.as_bytes().to_vec()),
+                    Token::Uint((*value).into()),
+                ]);
+
+                Token::Tuple(vec![Token::Uint(1u8.into()), Token::Bytes(data)])
+            }
+        })
+        .collect();
+
+    let (xcm_kind, xcm_bytes) = match &message.payload {
+        Payload::Raw(bytes) => (0u8, bytes.clone()),
+
+        Payload::CreateAsset { token, network } => {
+            let encoded = encode(&[
+                Token::Address(ethers::types::H160::from_slice(token.as_bytes())),
+                Token::Uint((*network as u8).into()),
+            ]);
+            (1u8, encoded)
+        }
+    };
+
+    let payload_tuple = Token::Tuple(vec![
+        Token::Address(ethers::types::H160::from_slice(message.origin.as_bytes())),
+        Token::Array(assets_tokens),
+        Token::Tuple(vec![Token::Uint(xcm_kind.into()), Token::Bytes(xcm_bytes)]),
+        match &message.claimer {
+            None => Token::Bytes(vec![]),
+            Some(c) => Token::Bytes(c.clone()),
+        },
+        Token::Uint(message.value.into()),
+        Token::Uint(message.execution_fee.into()),
+        Token::Uint(message.relayer_fee.into()),
+    ]);
+
+    encode(&[Token::Uint(message.nonce.into()), payload_tuple])
 }
