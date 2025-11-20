@@ -134,7 +134,7 @@ pub mod pallet {
     pub trait TipHandler<Origin> {
         fn add_tip(origin: Origin, message_id: MessageId, amount: u128) -> DispatchResult;
         #[cfg(feature = "runtime-benchmarks")]
-        fn set_tip(origin: Origin, message_id: MessageId, amount: u128) {}
+        fn set_tip(_origin: Origin, _message_id: MessageId, _amount: u128) {}
     }
 
     // Events

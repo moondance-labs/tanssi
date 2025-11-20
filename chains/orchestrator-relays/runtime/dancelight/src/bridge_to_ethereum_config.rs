@@ -375,7 +375,7 @@ impl TipHandler<crate::RuntimeOrigin> for EthereumTipForwarder<Runtime> {
         match message_id {
             MessageId::Inbound(_) => {
                 // We need to mit the asset
-                let (asset_id, asset_location) =
+                let (_asset_id, _asset_location) =
                     pallet_foreign_asset_creator::benchmarks::create_minted_asset::<Runtime>(
                         amount * 2,
                         sender,
