@@ -453,11 +453,6 @@ pub mod pallet {
                 need_to_charge_tip,
             );
 
-            log::trace!(
-                target: LOG_TARGET,
-                "ordered chains: {chains:?}",
-            );
-
             // We assign new collators
             // we use the config scheduled at the target_session_index
             let full_rotation =
@@ -541,22 +536,13 @@ pub mod pallet {
             } else {
                 assigned_containers
                     .into_keys()
-                    .filter_map(|para_id| {
-                        let tip = T::CollatorAssignmentTip::get_para_max_tip(para_id);
-
-                        log::trace!(
-                            target: LOG_TARGET,
-                            "tip: {para_id:?} => {tip:?}",
-                        );
-
-                        tip
-                    })
+                    .filter_map(T::CollatorAssignmentTip::get_para_max_tip)
                     .min()
             };
 
             log::trace!(
                 target: LOG_TARGET,
-                "congestion tip: {maybe_tip:?}",
+                "Tip to be charged: {maybe_tip:?}",
             );
 
             // TODO: this probably is asking for a refactor
