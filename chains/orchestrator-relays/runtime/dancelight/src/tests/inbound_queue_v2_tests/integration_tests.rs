@@ -19,7 +19,8 @@ use {
         tests::common::{mock_snowbridge_message_proof, root_origin, ExtBuilder, ALICE, BOB, UNIT},
         xcm_config::UniversalLocation,
         AccountId, Balances, EthereumInboundQueueV2, EthereumSystemV2, ExternalValidators,
-        ForeignAssets, ForeignAssetsCreator, Runtime, RuntimeOrigin, SnowbridgeFeesAccount,
+        ForeignAssets, ForeignAssetsCreator, Runtime, RuntimeEvent, RuntimeOrigin,
+        SnowbridgeFeesAccount,
     },
     alloy_sol_types::SolEvent,
     dancelight_runtime_constants::snowbridge::{EthereumLocation, EthereumNetwork},
@@ -117,7 +118,7 @@ fn test_inbound_queue_message_symbiotic_passing() {
 }
 
 #[test]
-fn test_inbound_queue_message_xcm_passing() {
+fn test_inbound_queue_transfer_eth_works() {
     ExtBuilder::default()
         .with_validators(
             vec![]
@@ -152,13 +153,13 @@ fn test_inbound_queue_message_xcm_passing() {
 
         let asset_id = 42u16;
 
-        assert_ok!(
-            Balances::force_set_balance(
-                root_origin(),
-                SnowbridgeFeesAccount::get().into(),
-                10_000_000_000_000_000_000u128
-            )
-        );
+        // assert_ok!(
+        //     Balances::force_set_balance(
+        //         root_origin(),
+        //         SnowbridgeFeesAccount::get().into(),
+        //         10_000_000_000_000_000_000u128
+        //     )
+        // );
 
         assert_ok!(ForeignAssetsCreator::create_foreign_asset(
             root_origin(),
@@ -169,8 +170,8 @@ fn test_inbound_queue_message_xcm_passing() {
             1
         ));
 
-        ForeignAssets::mint(RuntimeOrigin::signed(AccountId::from(ALICE)),asset_id, SnowbridgeFeesAccount::get().into(), 5_000_000_000_000_000_000u128)
-            .expect("to mint amount");
+        // ForeignAssets::mint(RuntimeOrigin::signed(AccountId::from(ALICE)),asset_id, SnowbridgeFeesAccount::get().into(), 5_000_000_000_000_000_000u128)
+        //     .expect("to mint amount");
 
         let token_location_reanchored = token_location
             .clone()
@@ -189,7 +190,16 @@ fn test_inbound_queue_message_xcm_passing() {
 
         let execution_fee = 100_000_000_000_000u128;
 
-        let instructions = vec![];
+        let instructions = vec![DepositAsset {
+            assets: Wild(AllCounted(1)),
+            beneficiary: Location::new(
+                0,
+                AccountId32 {
+                    network: None,
+                    id: H256::random().into(),
+                },
+            ),
+        }];
 
         let xcm: Xcm<()> = instructions.into();
         let versioned_message_xcm = VersionedXcm::V5(xcm);
@@ -202,15 +212,38 @@ fn test_inbound_queue_message_xcm_passing() {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
                 topics: vec![hex!("550e2067494b1736ea5573f2d19cdc0ac95b410fff161bf16f11c6229655ec9c").into()],
-                data: hex!("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000eda338e4dc46038493b885327842fd3e301cab3900000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000001c00000000000000000000000000000000000000000000000000000000000000240000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000038d7ea4c68000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000040e95142d5aca3299068a3d9b4a659f9589559382d0a130a1d7cedc67d6c3d401d00000000000000000000000000000000000000000000000000000246139ca80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000400080500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000").to_vec(),
+                data: hex!("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000eda338e4dc46038493b885327842fd3e301cab3900000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001a0000000000000000000000000000000000000000000000000000000000000303900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000002c00a805040d01020400010100248f8738ee4fc45c72c53654e079b4119faa60a0815558b9092dd1ad81342f8300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000").to_vec(),
             },
             proof: dummy_proof.clone(),
         })), Ok(()));
 
         let events = frame_system::Pallet::<Runtime>::events();
-        for e in events {
+        for e in events.clone() {
             println!("Event: {:?}", e.event);
         }
-        // TODO: Add event check here "error: FailedToTransactAsset"
+
+        let mut found_message = false;
+        let mut found_issued = false;
+
+        for record in events {
+            match &record.event {
+                RuntimeEvent::EthereumInboundQueueV2(
+                    snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce, .. }
+                ) if *nonce == 1 => {
+                    found_message = true;
+                }
+
+                RuntimeEvent::ForeignAssets(
+                    pallet_assets::Event::Issued { amount, .. }
+                ) if *amount == 12345 => {
+                    found_issued = true;
+                }
+
+                _ => {}
+            }
+        }
+
+        assert!(found_message, "MessageReceived(nonce=1) not found");
+        assert!(found_issued,  "Issued(amount=12345) not found");
     });
 }
