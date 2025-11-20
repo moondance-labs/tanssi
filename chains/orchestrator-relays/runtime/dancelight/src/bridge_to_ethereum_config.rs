@@ -354,10 +354,9 @@ impl TipHandler<crate::RuntimeOrigin> for EthereumTipForwarder<Runtime> {
             }
             MessageId::Outbound(_) => {
                 Balances::transfer(
-                    &sender.clone().into(),
-                    &<Runtime as pallet_ethereum_token_transfers::Config>::FeesAccount::get()
-                        .into(),
-                    amount.into(),
+                    &sender.clone(),
+                    &<Runtime as pallet_ethereum_token_transfers::Config>::FeesAccount::get(),
+                    amount,
                     Preservation::Expendable,
                 )
                 .map_err(|e| {
@@ -367,6 +366,26 @@ impl TipHandler<crate::RuntimeOrigin> for EthereumTipForwarder<Runtime> {
             }
         };
         snowbridge_pallet_system_v2::Pallet::<Runtime>::add_tip(origin, sender, message_id, amount)
+    }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_tip(origin: crate::RuntimeOrigin, message_id: MessageId, amount: u128) {
+        let sender = pallet_ethereum_token_transfers::origins::EnsureEthereumTokenTransfersOrigin::<
+            Runtime,
+        >::ensure_origin(origin.clone()).expect("origin does not match the expected origin");
+        match message_id {
+            MessageId::Inbound(_) => {
+                // We need to mit the asset
+                let (asset_id, asset_location) =
+                    pallet_foreign_asset_creator::benchmarks::create_minted_asset::<Runtime>(
+                        amount * 2,
+                        sender,
+                        Some(EthereumLocation::get()),
+                    );
+            }
+            MessageId::Outbound(_) => {
+                //TODO: fill by the outbound V2 PR.
+            }
+        }
     }
 }
 impl pallet_ethereum_token_transfers::Config for Runtime {

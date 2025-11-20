@@ -127,12 +127,7 @@ fn test_add_tip_for_ethereum_system_v2_bad_origin() {
             let amount = 100;
 
             assert_noop!(
-                EthereumSystemV2::add_tip(
-                    origin_of(BOB.into()),
-                    sender,
-                    message_id.clone(),
-                    amount.clone()
-                ),
+                EthereumSystemV2::add_tip(origin_of(BOB.into()), sender, message_id, amount),
                 BadOrigin
             );
         });
@@ -158,8 +153,8 @@ fn test_add_tip_for_ethereum_system_v2_succeeded_with_root() {
             assert_ok!(EthereumSystemV2::add_tip(
                 root_origin(),
                 sender,
-                message_id.clone(),
-                amount.clone()
+                message_id,
+                amount
             ));
         });
 }
@@ -186,10 +181,7 @@ fn test_add_tip_for_ethereum_system_v2_succeeded_with_correct_pallet_origin() {
                     .into();
 
             assert_ok!(EthereumSystemV2::add_tip(
-                origin,
-                sender,
-                message_id.clone(),
-                amount.clone(),
+                origin, sender, message_id, amount,
             ));
         });
 }

@@ -3227,7 +3227,7 @@ fn test_add_tip_for_ethereum_token_transfers_succeeded_outbound() {
             assert_ok!(EthereumTokenTransfers::add_tip(
                 origin,
                 message_id.clone(),
-                amount.clone(),
+                amount,
             ));
 
             assert_eq!(
@@ -3265,7 +3265,7 @@ fn test_add_tip_for_ethereum_token_transfers_succeeds_when_account_ripped_outbou
             assert_ok!(EthereumTokenTransfers::add_tip(
                 origin,
                 message_id.clone(),
-                amount.clone(),
+                amount,
             ));
         });
 }
@@ -3290,7 +3290,7 @@ fn test_add_tip_for_ethereum_token_transfers_does_not_succeed_if_insufficient_mo
                 <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(CHARLIE));
 
             assert_noop!(
-                EthereumTokenTransfers::add_tip(origin, message_id.clone(), amount.clone() + 1,),
+                EthereumTokenTransfers::add_tip(origin, message_id, amount + 1,),
                 pallet_ethereum_token_transfers::Error::<Runtime>::TipFailed
             );
         });
@@ -3328,11 +3328,7 @@ fn test_add_tip_for_ethereum_token_transfers_succeeded_inbound() {
             let origin =
                 <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(CHARLIE));
 
-            assert_ok!(EthereumTokenTransfers::add_tip(
-                origin,
-                message_id.clone(),
-                amount.clone(),
-            ));
+            assert_ok!(EthereumTokenTransfers::add_tip(origin, message_id, amount,));
 
             assert_eq!(
                 filter_events!(RuntimeEvent::EthereumSystemV2(
@@ -3377,11 +3373,7 @@ fn test_add_tip_for_ethereum_token_transfers_succeeds_when_account_ripped_inboun
             let origin =
                 <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(CHARLIE));
 
-            assert_ok!(EthereumTokenTransfers::add_tip(
-                origin,
-                message_id.clone(),
-                amount.clone(),
-            ));
+            assert_ok!(EthereumTokenTransfers::add_tip(origin, message_id, amount,));
         });
 }
 
@@ -3418,7 +3410,7 @@ fn test_add_tip_for_ethereum_token_transfers_does_not_succeed_if_insufficient_mo
                 <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(CHARLIE));
 
             assert_noop!(
-                EthereumTokenTransfers::add_tip(origin, message_id.clone(), amount.clone() + 1,),
+                EthereumTokenTransfers::add_tip(origin, message_id, amount + 1,),
                 pallet_ethereum_token_transfers::Error::<Runtime>::TipFailed
             );
         });

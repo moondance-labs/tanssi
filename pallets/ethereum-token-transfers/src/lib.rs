@@ -133,6 +133,8 @@ pub mod pallet {
 
     pub trait TipHandler<Origin> {
         fn add_tip(origin: Origin, message_id: MessageId, amount: u128) -> DispatchResult;
+        #[cfg(feature = "runtime-benchmarks")]
+        fn set_tip(origin: Origin, message_id: MessageId, amount: u128) {}
     }
 
     // Events
@@ -305,7 +307,13 @@ pub mod pallet {
 pub struct DenyTipHandler<T>(core::marker::PhantomData<T>);
 
 impl<T, Origin> TipHandler<Origin> for DenyTipHandler<T> {
+    #[cfg(not(feature = "runtime-benchmarks"))]
     fn add_tip(_origin: Origin, _message_id: MessageId, _amount: u128) -> DispatchResult {
         Err("Execution is not permitted!".into())
+    }
+    // in order for the extrinsic to still be benchmarkable, we implement it empty
+    #[cfg(feature = "runtime-benchmarks")]
+    fn add_tip(_origin: Origin, _message_id: MessageId, _amount: u128) -> DispatchResult {
+        Ok(())
     }
 }
