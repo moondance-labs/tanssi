@@ -33,7 +33,7 @@ use parity_scale_codec::{Decode, Encode};
 use snowbridge_core::TokenId;
 use snowbridge_outbound_queue_primitives::v2::message::{Command, Message, SendMessage};
 use sp_core::H160;
-use sp_runtime::traits::{MaybeEquivalence, Zero};
+use sp_runtime::traits::MaybeEquivalence;
 use xcm::prelude::*;
 use xcm_builder::{CreateMatcher, HandleFee, MatchXcm};
 use xcm_executor::traits::{ConvertLocation, ExportXcm, FeeReason};
@@ -93,10 +93,7 @@ where
         }
 
         // Cloning destination to avoid modifying the value so subsequent exporters can use it.
-        let dest = destination
-            .clone()
-            .take()
-            .ok_or(SendError::MissingArgument)?;
+        let dest = destination.clone().ok_or(SendError::MissingArgument)?;
         if dest != Here {
             log::trace!(target: "xcm::ethereum_blob_exporterv2", "skipped due to unmatched remote destination {dest:?}.");
             return Err(SendError::NotApplicable);
@@ -104,7 +101,6 @@ where
 
         // Cloning universal_source to avoid modifying the value so subsequent exporters can use it.
         let (local_net, local_sub) = universal_source.clone()
-            .take()
             .ok_or_else(|| {
                 log::error!(target: "xcm::ethereum_blob_exporterv2", "universal source not provided.");
                 SendError::MissingArgument

@@ -237,7 +237,7 @@ impl xcm_executor::Config for XcmConfig {
     type MaxAssetsIntoHolding = MaxAssetsIntoHolding;
     type FeeManager = XcmFeeManagerFromComponents<
         WaivedLocations,
-        ExporterFeeHandler<Self::AssetTransactor, SnowbridgeFeesAccount, SnowbridgeFeesAccount>,
+        ExporterFeeHandler<Self::AssetTransactor, SnowbridgeFeesAccount, TreasuryAccount>,
     >;
     type MessageExporter = (
         ContainerToSnowbridgeMessageExporterV2,

@@ -10,9 +10,7 @@ import {
     ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS,
     type MultiLocation,
     jumpToSession,
-    PRIMARY_GOVERNANCE_CHANNEL_ID,
     USE_V2_STORAGE_KEY,
-    sleep,
 } from "utils";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2 } from "helpers";
 
@@ -40,6 +38,16 @@ describeSuite({
                 sovereignAccountToCheck = SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS;
             }
 
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            isStarlight = runtimeName === "starlight";
+
+            shouldSkipStarlightETT =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2.includes(specVersion);
+
+            if (shouldSkipStarlightETT) {
+                console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                return;
+            }
             // TRUE is defined as 0x01
             await context.createBlock(
                 await polkadotJs.tx.sudo
@@ -62,12 +70,6 @@ describeSuite({
                 symbol: "dance",
                 decimals: 12,
             };
-
-            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
-            isStarlight = runtimeName === "starlight";
-            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
-            shouldSkipStarlightETT =
-                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2.includes(specVersion);
 
             // Register Alice as an external validator, because it starts as a whitelisted validator and whitelisted
             // validators don't get rewards.

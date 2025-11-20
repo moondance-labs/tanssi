@@ -1,24 +1,20 @@
 // @ts-nocheck
 
 import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
-import { type KeyringPair, generateKeyringPair, filterAndApply } from "@moonwall/util";
+import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import {
     type RawXcmMessage,
-    XcmFragment,
     injectUmpMessageAndSeal,
     isStarlightRuntime,
     jumpToSession,
-    TESTNET_ETHEREUM_NETWORK_ID,
     SNOWBRIDGE_FEES_ACCOUNT,
-    sleep,
 } from "utils";
 import {
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_EXPORTS,
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2,
 } from "helpers";
-import type { EventRecord } from "@polkadot/types/interfaces";
-import { hexToU8a, u8aToHex } from "@polkadot/util";
+import { hexToU8a } from "@polkadot/util";
 
 describeSuite({
     id: "DTR2003",
@@ -34,11 +30,11 @@ describeSuite({
         let shouldSkipStarlightContainerExport: boolean;
         let containerAsset: any;
         let tokenTransferChannel: any;
-        let ethTokenLocation;
-        let ethLocation;
-        let ethereumNetwork;
-        let tokenAddress;
-        let sovAddress;
+        let ethTokenLocation: any;
+        let ethLocation: any;
+        let ethereumNetwork: any;
+        let tokenAddress: any;
+        let sovAddress: any;
         let assetId: number;
 
         beforeAll(async () => {

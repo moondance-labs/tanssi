@@ -3215,7 +3215,7 @@ fn test_add_tip_for_ethereum_token_transfers_succeeded() {
             assert_ok!(EthereumTokenTransfers::add_tip(
                 origin,
                 message_id.clone(),
-                amount.clone(),
+                amount,
             ));
 
             assert_eq!(

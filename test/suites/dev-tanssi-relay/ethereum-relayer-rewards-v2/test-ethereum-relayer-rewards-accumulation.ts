@@ -15,7 +15,7 @@ import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2 } from "helpers";
 import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 
 describeSuite({
-    id: "DTR2101",
+    id: "DTR2102",
     title: "EthereumTokenTransfersV2 tests",
     foundationMethods: "dev",
 
@@ -92,43 +92,68 @@ describeSuite({
             const recipient = "0x0000000000000000000000000000000000000007";
             const amount = 1000n;
             // Finally call transferNativeToken extrinsic.
+            // Put 2, we will demonstrate rewards are accumulated
             const tx3 = await polkadotJs.tx.ethereumTokenTransfers
                 .transferNativeTokenV2(amount, recipient, relayerReward)
                 .signAsync(alice);
             await context.createBlock([tx3], { allowFailures: false });
+
+            const tx4 = await polkadotJs.tx.ethereumTokenTransfers
+                .transferNativeTokenV2(amount, recipient, relayerReward)
+                .signAsync(alice);
+            await context.createBlock([tx4], { allowFailures: false });
         });
 
         it({
             id: "E01",
-            title: "Relayer should be able to claim rewards",
+            title: "Relayer should be able to accumulate rewards",
             test: async () => {
                 // Use random account instead of alice because alice is getting block rewards
                 const randomAccount = generateKeyringPair("sr25519");
 
-                const nonceToProve = await polkadotJs.query.ethereumOutboundQueueV2.nonce();
+                const nonceToProveFirst = await polkadotJs.query.ethereumOutboundQueueV2.nonce();
+                const nonceToProveSecond = nonceToProveFirst.toNumber() - 1;
 
-                const event = await generateOutboundEventLogV2(
+                const eventFirst = await generateOutboundEventLogV2(
                     polkadotJs,
                     Uint8Array.from(Buffer.from("eda338e4dc46038493b885327842fd3e301cab39", "hex")),
                     Uint8Array.from(
                         Buffer.from("0000000000000000000000000000000000000000000000000000000000000004", "hex")
                     ),
-                    nonceToProve.toNumber(),
+                    nonceToProveFirst.toNumber(),
                     true,
                     randomAccount.addressRaw
                 );
 
-                const pendingOrder = await polkadotJs.query.ethereumOutboundQueueV2.pendingOrders(nonceToProve);
+                const eventSecond = await generateOutboundEventLogV2(
+                    polkadotJs,
+                    Uint8Array.from(Buffer.from("eda338e4dc46038493b885327842fd3e301cab39", "hex")),
+                    Uint8Array.from(
+                        Buffer.from("0000000000000000000000000000000000000000000000000000000000000004", "hex")
+                    ),
+                    nonceToProveSecond,
+                    true,
+                    randomAccount.addressRaw
+                );
 
-                const { checkpointUpdate, messageExtrinsics } = await generateUpdate(polkadotJs, [event]);
-                const tx = polkadotJs.tx.ethereumBeaconClient.forceCheckpoint(checkpointUpdate);
-                const signedTx = await polkadotJs.tx.sudo.sudo(tx).signAsync(alice);
-                await context.createBlock([signedTx], { allowFailures: false });
+                let aliceNonce = (await polkadotJs.query.system.account(alice.address)).nonce.toNumber();
 
-                const tx3 = await polkadotJs.tx.ethereumOutboundQueueV2
+                const { checkpointUpdate, messageExtrinsics } = await generateUpdate(polkadotJs, [
+                    eventFirst,
+                    eventSecond,
+                ]);
+                const firstUpdate = await polkadotJs.tx.sudo
+                    .sudo(polkadotJs.tx.ethereumBeaconClient.forceCheckpoint(checkpointUpdate))
+                    .signAsync(alice, { nonce: aliceNonce++ });
+                const fisrtClaim = await polkadotJs.tx.ethereumOutboundQueueV2
                     .submitDeliveryReceipt(messageExtrinsics[0])
-                    .signAsync(alice);
-                await context.createBlock([tx3]);
+                    .signAsync(alice, { nonce: aliceNonce++ });
+                await context.createBlock([firstUpdate, fisrtClaim], { allowFailures: false });
+
+                const secondClaim = await polkadotJs.tx.ethereumOutboundQueueV2
+                    .submitDeliveryReceipt(messageExtrinsics[1])
+                    .signAsync(alice, { nonce: aliceNonce++ });
+                await context.createBlock([secondClaim], { allowFailures: false });
 
                 // now we simply claim as relayer
                 // we are going to do it with sudo to have the relayer Reward as is (as sudo pays for tx fees)
@@ -140,7 +165,8 @@ describeSuite({
                     .signAsync(alice);
                 await context.createBlock([claimTx], { allowFailures: false });
                 const balanceRandom = (await polkadotJs.query.system.account(randomAccount.address)).data.free;
-                expect(balanceRandom.toBigInt()).to.equal(relayerReward);
+                // We should have claimed twice
+                expect(balanceRandom.toBigInt()).to.equal(relayerReward * 2n);
             },
         });
     },

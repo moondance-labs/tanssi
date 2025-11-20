@@ -301,6 +301,8 @@ impl snowbridge_pallet_system_v2::Config for Runtime {
     #[cfg(feature = "runtime-benchmarks")]
     type Helper = benchmark_helper::EthSystemBenchHelper;
     type WeightInfo = ();
+    #[cfg(feature = "runtime-benchmarks")]
+    type Helper = ();
 }
 
 pub struct EthereumTipForwarder<T>(core::marker::PhantomData<T>);
@@ -361,11 +363,16 @@ mod benchmark_helper {
         frame_support::traits::fungible::Mutate,
         snowbridge_beacon_primitives::BeaconHeader,
         snowbridge_core::Channel,
+        snowbridge_inbound_queue_primitives::v2::{
+            MessageProcessor as ProcessorV2, MessageProcessorError,
+        },
         snowbridge_inbound_queue_primitives::{
             v1::{Envelope, MessageProcessor},
             EventFixture,
         },
         snowbridge_pallet_inbound_queue::Nonce,
+        snowbridge_pallet_inbound_queue_v2::BenchmarkHelper as InboundQueueBenchmarkHelperV2,
+        snowbridge_pallet_outbound_queue_v2::BenchmarkHelper as OutboundQueueBenchmarkHelperV2,
         snowbridge_pallet_system::Channels,
         sp_core::H256,
         sp_runtime::DispatchResult,
@@ -430,15 +437,20 @@ mod benchmark_helper {
         }
     }
 
-    impl snowbridge_pallet_inbound_queue_v2::BenchmarkHelper<Runtime> for EthSystemBenchHelper {
-        fn initialize_storage(_beacon_header: BeaconHeader, _block_roots_root: H256) {
-            // TODO: check what we need to add here
+    impl snowbridge_pallet_system_v2::BenchmarkHelper<RuntimeOrigin> for () {
+        fn make_xcm_origin(location: Location) -> RuntimeOrigin {
+            RuntimeOrigin::root()
         }
     }
 
-    impl snowbridge_pallet_outbound_queue_v2::BenchmarkHelper<Runtime> for EthSystemBenchHelper {
-        fn initialize_storage(_beacon_header: BeaconHeader, _block_roots_root: H256) {
-            // TODO: check what we need to add here
+    impl<T: snowbridge_pallet_outbound_queue_v2::Config> OutboundQueueBenchmarkHelperV2<T> for Runtime {
+        fn initialize_storage(beacon_header: BeaconHeader, block_roots_root: H256) {
+            EthereumBeaconClient::store_finalized_header(beacon_header, block_roots_root).unwrap();
+        }
+    }
+    impl<T: snowbridge_pallet_inbound_queue_v2::Config> InboundQueueBenchmarkHelperV2<T> for Runtime {
+        fn initialize_storage(beacon_header: BeaconHeader, block_roots_root: H256) {
+            // TODO: fill this by inbound people
         }
     }
 
@@ -452,6 +464,25 @@ mod benchmark_helper {
         }
 
         fn process_message(channel: Channel, envelope: Envelope) -> DispatchResult {
+            P::process_message(channel, envelope)
+        }
+    }
+
+    impl<P> ProcessorV2<AccountId> for WorstCaseMessageProcessor<P>
+    where
+        P: ProcessorV2<AccountId>,
+    {
+        fn can_process_message(
+            _channel: &AccountId,
+            _envelope: &snowbridge_inbound_queue_primitives::v2::Message,
+        ) -> bool {
+            true
+        }
+
+        fn process_message(
+            channel: AccountId,
+            envelope: snowbridge_inbound_queue_primitives::v2::Message,
+        ) -> Result<[u8; 32], MessageProcessorError> {
             P::process_message(channel, envelope)
         }
     }
@@ -543,10 +574,16 @@ impl snowbridge_pallet_inbound_queue_v2::Config for Runtime {
     type Verifier = test_helpers::MockVerifier;
     // TODO: Revisit this when we enable xcmp messages
     type GatewayAddress = EthereumGatewayAddress;
+    #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (SymbioticMessageProcessor<Self>,);
+    #[cfg(feature = "runtime-benchmarks")]
+    type MessageProcessor =
+        (benchmark_helper::WorstCaseMessageProcessor<tp_bridge::SymbioticMessageProcessor<Self>>,);
     type RewardKind = BridgeReward;
     type DefaultRewardKind = SnowbridgeRewardInbound;
     type RewardPayment = BridgeRelayers;
+    #[cfg(feature = "runtime-benchmarks")]
+    type Helper = Runtime;
     type WeightInfo = ();
     #[cfg(feature = "runtime-benchmarks")]
     type Helper = benchmark_helper::EthSystemBenchHelper;

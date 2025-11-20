@@ -4,10 +4,10 @@ import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2, checkCallIsFiltered, expectEventCount } from "helpers";
-import { XcmFragment, SNOWBRIDGE_FEES_ACCOUNT } from "utils";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2, expectEventCount } from "helpers";
+import { SNOWBRIDGE_FEES_ACCOUNT } from "utils";
 import type { KeyringPair } from "@moonwall/util";
-import { hexToU8a, u8aToHex } from "@polkadot/util";
+import { hexToU8a } from "@polkadot/util";
 
 describeSuite({
     id: "DTR2002",
