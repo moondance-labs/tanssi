@@ -416,7 +416,6 @@ pub type ContainerToSnowbridgeMessageExporter = ContainerEthereumBlobExporter<
 >;
 
 /// Exports message to the Ethereum Gateway contract.
-/// TODO:CHANGE
 pub type ContainerToSnowbridgeMessageExporterV2 = ContainerEthereumBlobExporterV2<
     UniversalLocation,
     EthereumNetwork,
