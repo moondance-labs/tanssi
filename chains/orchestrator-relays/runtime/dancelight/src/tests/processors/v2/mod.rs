@@ -220,8 +220,8 @@ fn prepare_raw_message_xcm_instructions_with_foreign_asset_works() {
             root_origin(),
             Box::new(token_location.clone().into()),
             snowbridge_core::AssetMetadata {
-                name: "para".as_bytes().to_vec().try_into().unwrap(),
-                symbol: "para".as_bytes().to_vec().try_into().unwrap(),
+                name: "relay".as_bytes().to_vec().try_into().unwrap(),
+                symbol: "relay".as_bytes().to_vec().try_into().unwrap(),
                 decimals: 12,
             }
         ));
@@ -398,8 +398,8 @@ fn prepare_raw_message_xcm_instructions_tanssi_transfer_works() {
             root_origin(),
             Box::new(token_location.clone().into()),
             snowbridge_core::AssetMetadata {
-                name: "para".as_bytes().to_vec().try_into().unwrap(),
-                symbol: "para".as_bytes().to_vec().try_into().unwrap(),
+                name: "relay".as_bytes().to_vec().try_into().unwrap(),
+                symbol: "relay".as_bytes().to_vec().try_into().unwrap(),
                 decimals: 12,
             }
         ));
@@ -495,8 +495,8 @@ fn prepare_raw_message_xcm_instructions_tanssi_and_eth_transfer_works() {
             root_origin(),
             Box::new(token_location.clone().into()),
             snowbridge_core::AssetMetadata {
-                name: "para".as_bytes().to_vec().try_into().unwrap(),
-                symbol: "para".as_bytes().to_vec().try_into().unwrap(),
+                name: "relay".as_bytes().to_vec().try_into().unwrap(),
+                symbol: "relay".as_bytes().to_vec().try_into().unwrap(),
                 decimals: 12,
             }
         ));
@@ -585,5 +585,103 @@ fn prepare_raw_message_xcm_instructions_tanssi_and_eth_transfer_works() {
         }
 
         assert!(matches!(instructions.get(4), Some(SetTopic(_))));
+    });
+}
+
+#[test]
+fn prepare_raw_message_xcm_instructions_erc20_transfer_works() {
+    ExtBuilder::default().build().execute_with(|| {
+        let token_location = Location::here();
+        let reanchored_location = Location {
+            parents: 1,
+            interior: X1([GlobalConsensus(NetworkId::ByGenesis(
+                DANCELIGHT_GENESIS_HASH,
+            ))]
+            .into()),
+        };
+
+        let erc20_token_id = H160::random();
+
+        let extracted_message: ExtractedXcmConstructionInfo<dancelight_runtime::RuntimeCall> =
+            ExtractedXcmConstructionInfo {
+                origin: EthereumGatewayAddress::get(),
+                maybe_claimer: None,
+                assets: vec![EthereumAsset::NativeTokenERC20 {
+                    token_id: erc20_token_id,
+                    value: 12345,
+                }],
+                eth_value: 0u128,
+                execution_fee_in_eth: 0u128,
+                nonce: 1u64,
+                user_xcm: vec![DepositAsset {
+                    assets: Wild(AllCounted(1)),
+                    beneficiary: Location::new(
+                        0,
+                        AccountId32 {
+                            network: None,
+                            id: H256::random().into(),
+                        },
+                    ),
+                }]
+                .into(),
+            };
+
+        let res = prepare_raw_message_xcm_instructions::<Runtime>(
+            EthereumNetwork::get(),
+            &EthereumUniversalLocation::get(),
+            &TanssiUniversalLocation::get(),
+            EthereumGatewayAddress::get(),
+            DefaultClaimer::get(),
+            RAW_MESSAGE_PROCESSOR_TOPIC_PREFIX,
+            extracted_message.clone(),
+        );
+
+        let instructions = res.expect("instructions should be Ok");
+
+        assert_eq!(instructions.len(), 4);
+
+        assert!(matches!(instructions.get(0), Some(SetHints { hints: _ })));
+
+        match &instructions[1] {
+            ReserveAssetDeposited(assets) => {
+                assert_eq!(assets.len(), 1);
+
+                let asset = assets.get(0).expect("one asset expected");
+
+                assert_eq!(
+                    asset.id,
+                    AssetId(Location {
+                        parents: 1,
+                        interior: X2([
+                            GlobalConsensus(Ethereum { chain_id: 11155111 }),
+                            AccountKey20 {
+                                network: Some(Ethereum { chain_id: 11155111 }),
+                                key: erc20_token_id.0
+                            }
+                        ]
+                        .into())
+                    })
+                );
+                assert_eq!(asset.fun, Fungible(12345u128));
+            }
+            _ => panic!("Expected ReserveAssetDeposited"),
+        }
+
+        match &instructions[2] {
+            DepositAsset {
+                assets,
+                beneficiary,
+            } => {
+                assert!(matches!(assets, Wild(AllCounted(1))));
+                let expected_beneficiary = match &extracted_message.user_xcm.0[0] {
+                    DepositAsset { beneficiary, .. } => beneficiary.clone(),
+                    _ => panic!("Bad user_xcm construction"),
+                };
+                assert_eq!(*beneficiary, expected_beneficiary);
+            }
+            _ => panic!("Expected DepositAsset"),
+        }
+
+        assert!(matches!(instructions.get(3), Some(SetTopic(_))));
     });
 }
