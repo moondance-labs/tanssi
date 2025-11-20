@@ -41,30 +41,32 @@ use {
         sp_wasm_interface::HostFunctions, HeapAllocStrategy, RuntimeVersionOf, WasmExecutor,
         DEFAULT_HEAP_ALLOC_STRATEGY,
     },
-    sc_network::{config::FullNetworkConfiguration, NetworkBlock},
+    sc_network::{
+        config::FullNetworkConfiguration, request_responses::IncomingRequest,
+        service::traits::NetworkService, NetworkBlock,
+    },
     sc_network_sync::SyncingService,
     sc_network_transactions::TransactionsHandlerController,
     sc_service::{
-        Configuration, KeystoreContainer, SpawnTaskHandle, TFullBackend, TFullClient, TaskManager,
+        config::Multiaddr, Configuration, KeystoreContainer, SpawnTaskHandle, TFullBackend,
+        TFullClient, TaskManager,
     },
     sc_telemetry::{Telemetry, TelemetryWorker, TelemetryWorkerHandle},
-    sc_transaction_pool_api::OffchainTransactionPoolFactory,
+    sc_transaction_pool_api::{OffchainTransactionPoolFactory, TransactionPool},
     sc_utils::mpsc::TracingUnboundedSender,
-    sp_api::ConstructRuntimeApi,
+    sp_api::{ConstructRuntimeApi, StorageProof},
     sp_block_builder::BlockBuilder,
     sp_consensus::SelectChain,
-    sp_core::traits::CodeExecutor,
+    sp_core::{
+        traits::{CodeExecutor, SpawnNamed},
+        H256,
+    },
     sp_inherents::CreateInherentDataProviders,
     sp_offchain::OffchainWorkerApi,
     sp_runtime::Percent,
     sp_transaction_pool::runtime_api::TaggedTransactionQueue,
     std::{str::FromStr, sync::Arc},
 };
-use sc_network::request_responses::IncomingRequest;
-use sc_network::service::traits::NetworkService;
-use sc_service::config::Multiaddr;
-use sp_core::H256;
-use {sc_transaction_pool_api::TransactionPool, sp_api::StorageProof, sp_core::traits::SpawnNamed};
 
 tp_traits::alias!(
     pub trait MinimalRuntimeApi<

@@ -35,7 +35,7 @@ use {
     dp_slot_duration_runtime_api::TanssiSlotDurationApi,
     nimbus_primitives::{NimbusId, NimbusPair},
     node_common::service::node_builder::{
-        MinimalCumulusRuntimeApi, NodeBuilder, NodeBuilderConfig,
+        MinimalCumulusRuntimeApi, NodeBuilder, NodeBuilderConfig, StartBootnodeParams,
     },
     sc_basic_authorship::ProposerFactory,
     sc_consensus::{BasicQueue, BlockImport},
@@ -63,7 +63,6 @@ use {
     },
     tokio_util::sync::CancellationToken,
 };
-use node_common::service::node_builder::StartBootnodeParams;
 
 type FullBackend = TFullBackend<Block>;
 
