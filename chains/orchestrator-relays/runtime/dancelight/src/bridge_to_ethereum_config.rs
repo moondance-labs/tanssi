@@ -349,9 +349,9 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
 mod benchmark_helper {
     use {
         crate::{
-            bridge_to_ethereum_config::EthTokensProcessor, AccountId, Balances,
-            EthereumBeaconClient, ForeignAssetsCreator, Runtime, RuntimeOrigin,
-            SnowbridgeFeesAccount, UNITS,
+            bridge_to_ethereum_config::{EthTokensProcessor, EthereumGatewayAddress},
+            AccountId, Balances, EthereumBeaconClient, ForeignAssetsCreator, Runtime,
+            RuntimeOrigin, SnowbridgeFeesAccount, UNITS,
         },
         frame_support::traits::fungible::Mutate,
         snowbridge_beacon_primitives::BeaconHeader,
@@ -367,7 +367,7 @@ mod benchmark_helper {
         snowbridge_pallet_inbound_queue_v2::BenchmarkHelper as InboundQueueBenchmarkHelperV2,
         snowbridge_pallet_outbound_queue_v2::BenchmarkHelper as OutboundQueueBenchmarkHelperV2,
         snowbridge_pallet_system::Channels,
-        sp_core::H256,
+        sp_core::{H160, H256},
         sp_runtime::DispatchResult,
         xcm::latest::Location,
     };
@@ -433,6 +433,11 @@ mod benchmark_helper {
     impl<T: snowbridge_pallet_outbound_queue_v2::Config> OutboundQueueBenchmarkHelperV2<T> for Runtime {
         fn initialize_storage(beacon_header: BeaconHeader, block_roots_root: H256) {
             EthereumBeaconClient::store_finalized_header(beacon_header, block_roots_root).unwrap();
+            // Putting the gateway address in https://github.com/paritytech/polkadot-sdk/blob/c9879a5e3eeda1e8938ae7f6d06ec8df0a7a7da9/bridges/snowbridge/pallets/outbound-queue-v2/src/fixture.rs#L18C32-L18C72
+            // Necessary to bench correctly
+            EthereumGatewayAddress::set(&H160(hex_literal::hex!(
+                "b1185ede04202fe62d38f5db72f71e38ff3e8305"
+            )));
         }
     }
     impl<T: snowbridge_pallet_inbound_queue_v2::Config> InboundQueueBenchmarkHelperV2<T> for Runtime {
@@ -601,7 +606,7 @@ impl snowbridge_pallet_outbound_queue_v2::Config for Runtime {
     #[cfg(any(test, feature = "testing-helpers"))]
     type Verifier = test_helpers::MockVerifier;
     type GatewayAddress = EthereumGatewayAddress;
-    type WeightInfo = ();
+    type WeightInfo = weights::snowbridge_pallet_outbound_queue_v2::SubstrateWeight<Runtime>;
     type EthereumNetwork = dancelight_runtime_constants::snowbridge::EthereumNetwork;
     type RewardKind = BridgeReward;
     type DefaultRewardKind = SnowbridgeRewardOutbound;
