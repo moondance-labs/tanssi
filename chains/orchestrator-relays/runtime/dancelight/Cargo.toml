@@ -182,6 +182,7 @@ snowbridge-pallet-system-v2 = { workspace = true }
 
 [dev-dependencies]
 alloy-sol-types = { workspace = true, default-features = true }
+ethers = { workspace = true }
 finality-grandpa = { workspace = true, default-features = true, features = [ "derive-codec" ] }
 milagro-bls = { workspace = true, features = [ "std" ] }
 rand = { workspace = true, features = [ "std", "std_rng" ] }
@@ -192,7 +193,6 @@ sp-trie = { workspace = true }
 test-relay-sproof-builder = { workspace = true }
 tiny-keccak = { workspace = true }
 tokio = { workspace = true, features = [ "macros" ] }
-ethers = { workspace = true }
 
 [build-dependencies]
 substrate-wasm-builder = { workspace = true, optional = true }
