@@ -19,17 +19,17 @@ use {
     core::cell::RefCell,
     frame_support::{
         parameter_types,
-        traits::{ConstU32, ConstU64},
+        traits::{fungible::Mutate, tokens::Preservation, ConstU32, ConstU64, EnsureOrigin},
     },
     pallet_balances::AccountData,
     parity_scale_codec::{Decode, Encode},
-    snowbridge_core::{AgentId, ChannelId, ParaId, TokenId},
+    snowbridge_core::{reward::MessageId, AgentId, ChannelId, ParaId, TokenId},
     snowbridge_outbound_queue_primitives::v1::{Fee, Message},
     snowbridge_outbound_queue_primitives::{SendError, SendMessageFeeProvider},
     sp_core::H256,
     sp_runtime::{
         traits::{BlakeTwo256, IdentityLookup, MaybeEquivalence},
-        BuildStorage,
+        BuildStorage, DispatchResult,
     },
     tp_bridge::{ChannelInfo, EthereumSystemChannelManager, TicketInfo},
     xcm::prelude::*,
@@ -214,6 +214,8 @@ impl pallet_ethereum_token_transfers::Config for Test {
     type WeightInfo = ();
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = ();
+    type TipHandler = MockTipHandler;
+    type PalletOrigin = pallet_ethereum_token_transfers::Origin<Test>;
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
@@ -235,7 +237,29 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 }
 
 pub const ALICE: u64 = 1;
+pub const BOB: u64 = 2;
 
 pub fn run_to_block(n: u64) {
     System::run_to_block_with::<AllPalletsWithSystem>(n, frame_system::RunToBlockHooks::default());
+}
+
+pub struct MockTipHandler;
+
+impl pallet_ethereum_token_transfers::TipHandler<pallet_ethereum_token_transfers::Origin<Test>>
+    for MockTipHandler
+{
+    fn add_tip(
+        origin: pallet_ethereum_token_transfers::Origin<Test>,
+        _message_id: MessageId,
+        amount: u128,
+    ) -> DispatchResult {
+        let origin = RuntimeOrigin::from(origin);
+        let sender = pallet_ethereum_token_transfers::origins::EnsureEthereumTokenTransfersOrigin::<
+            Test,
+        >::ensure_origin(origin)?;
+
+        Balances::transfer(&sender, &BOB, amount, Preservation::Preserve)?;
+
+        Ok(())
+    }
 }

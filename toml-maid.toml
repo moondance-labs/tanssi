@@ -28,3 +28,7 @@ inline_keys = [
 ]
 
 sort_arrays = true
+
+excludes = [
+	"test/configs/zombie_tanssi_relay_k8s_delay.toml"
+]
