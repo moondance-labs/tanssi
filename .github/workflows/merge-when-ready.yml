@@ -171,9 +171,6 @@ jobs:
                 name: runtimes-benchmark
                 path: target/release
 
-            - name: Make binaries executable
-              uses: ./.github/workflow-templates/make-binaries-executable
-
             - name: Install frame-omni-bencher
               uses: ./.github/workflow-templates/install-frame-omni-bencher
 
