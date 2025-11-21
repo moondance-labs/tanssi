@@ -8,4 +8,4 @@ runs:
     - name: Install frame-omni-bencher
       shell: bash
       run: |
-        cargo install frame-omni-bencher --locked
+        cargo install frame-omni-bencher --locked --git https://github.com/moondance-labs/polkadot-sdk --branch tanssi-polkadot-stable2506
