@@ -94,11 +94,11 @@ pub struct SoloChainCmd {
 
 #[derive(Debug, Clone, clap::Args)]
 pub struct BuildSpecCmdExtraFields {
-    /// List of container chain chain spec paths to add to genesis.
+    /// List of container chain spec paths to add to genesis.
     #[arg(long)]
     pub add_container_chain: Option<Vec<String>>,
 
-    /// List of container chain chain spec mocks to add to genesis.
+    /// List of container chain spec mocks to add to genesis.
     #[arg(long)]
     pub mock_container_chain: Option<Vec<u32>>,
 

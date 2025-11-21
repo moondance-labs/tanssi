@@ -258,7 +258,7 @@ async fn try_spawn<
         )
         .map_err(|e| {
             format!(
-                "failed to create container chain chain spec from on chain genesis data: {}",
+                "failed to create container chain spec from on chain genesis data: {}",
                 e
             )
         })?;
