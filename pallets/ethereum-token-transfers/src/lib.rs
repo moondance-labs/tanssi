@@ -195,14 +195,14 @@ pub mod pallet {
         InvalidMessage(SendError),
         /// The outbound message could not be sent.
         TransferMessageNotSent(SendError),
+        /// When add_tip extrinsic could not be called.
+        TipFailed,
         V2SendingIsNotAllowed,
         TooManyCommands,
         OriginConversionFailed,
         LocationToOriginConversionFailed,
         LocationReanchorFailed,
         MinV2RewardNotAchieved,
-        /// When add_tip extrinsic could not be called.
-        TipFailed,
     }
 
     #[pallet::pallet]
