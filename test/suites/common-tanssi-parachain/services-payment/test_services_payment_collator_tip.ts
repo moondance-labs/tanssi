@@ -25,7 +25,7 @@ describeSuite({
         });
         it({
             id: "E01",
-            title: "Tip should prioritize collator assignment",
+            title: "Tip shouldn't prioritize collator assignment on congestion",
             test: async () => {
                 await context.createBlock();
 
@@ -44,12 +44,8 @@ describeSuite({
 
                 expect(
                     collators.toJSON().containerChains[paraId].length,
-                    `Container chain ${paraId} should have 2 collators`
-                ).toBe(2);
-
-                const events = await polkadotJs.query.system.events();
-                const tipEvent = fetchCollatorAssignmentTip(events);
-                expect(tipEvent.tip.toNumber()).to.be.equal(tip);
+                    `Container chain ${paraId} should have 0 collators`
+                ).toBe(0);
             },
         });
         it({
