@@ -46,6 +46,17 @@ describeSuite({
             id: "E01",
             title: "transferNativeToken should send message to Ethereum",
             test: async () => {
+                const newChannelId = "0x0000000000000000000000000000000000000000000000000000000000000004";
+                const newAgentId = "0x0000000000000000000000000000000000000000000000000000000000000005";
+                const newParaId = 500;
+
+                // Set channel info on EthereumTokenTransfers pallet.
+                const tx1 = polkadotJs.tx.ethereumTokenTransfers.setTokenTransferChannel(
+                    newChannelId,
+                    newAgentId,
+                    newParaId
+                );
+
                 const tokenLocation: MultiLocation = {
                     parents: 0,
                     interior: "Here",

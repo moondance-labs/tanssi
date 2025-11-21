@@ -49,8 +49,6 @@ describeSuite({
                 const transferAmount = BigInt(10_000);
                 const feeAmount = BigInt(1_000_000_000_000);
 
-                await context.createBlock([tx1], { allowFailures: false });
-
                 const ethereumNetwork = isStarlight
                     ? { Ethereum: { chainId: 1 } }
                     : { Ethereum: { chainId: 11155111 } };

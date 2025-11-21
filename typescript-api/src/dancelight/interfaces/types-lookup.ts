@@ -8920,25 +8920,25 @@ declare module "@polkadot/types/lookup" {
         readonly asInvalidMessage: SnowbridgeOutboundQueuePrimitivesSendError;
         readonly isTransferMessageNotSent: boolean;
         readonly asTransferMessageNotSent: SnowbridgeOutboundQueuePrimitivesSendError;
+        readonly isTipFailed: boolean;
         readonly isV2SendingIsNotAllowed: boolean;
         readonly isTooManyCommands: boolean;
         readonly isOriginConversionFailed: boolean;
         readonly isLocationToOriginConversionFailed: boolean;
         readonly isLocationReanchorFailed: boolean;
         readonly isMinV2RewardNotAchieved: boolean;
-        readonly isTipFailed: boolean;
         readonly type:
             | "ChannelInfoNotSet"
             | "UnknownLocationForToken"
             | "InvalidMessage"
             | "TransferMessageNotSent"
+            | "TipFailed"
             | "V2SendingIsNotAllowed"
             | "TooManyCommands"
             | "OriginConversionFailed"
             | "LocationToOriginConversionFailed"
             | "LocationReanchorFailed"
-            | "MinV2RewardNotAchieved"
-            | "TipFailed";
+            | "MinV2RewardNotAchieved";
     }
 
     /** @name SpCoreCryptoKeyTypeId (722) */
