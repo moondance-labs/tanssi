@@ -19,12 +19,12 @@
 #[cfg(all(not(test), not(feature = "testing-helpers")))]
 use crate::EthereumBeaconClient;
 
+use pallet_ethereum_token_transfers::DenyTipHandler;
 #[cfg(not(feature = "runtime-benchmarks"))]
 use {
     tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
     tp_bridge::{
-        symbiotic_message_processor::SymbioticInboundMessageProcessorV1,
-        GenericTokenInboundMessageProcessor,
+        symbiotic_message_processor::SymbioticMessageProcessor, GenericTokenInboundMessageProcessor,
     },
 };
 
@@ -142,6 +142,8 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = tp_bridge::EthereumTokenTransfersBenchHelper<Runtime>;
     type WeightInfo = crate::weights::pallet_ethereum_token_transfers::SubstrateWeight<Runtime>;
+    type TipHandler = DenyTipHandler<Runtime>;
+    type PalletOrigin = Self::RuntimeOrigin;
 }
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmark_helper {
@@ -268,7 +270,6 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type Helper = benchmark_helper::EthSystemBenchHelper;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
-    // TODO: Revisit this when we enable xcmp messages
     type MaxMessageSize = ConstU32<2048>;
     type AssetTransactor = AssetTransactor;
     #[cfg(not(feature = "runtime-benchmarks"))]

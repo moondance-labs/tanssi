@@ -2032,6 +2032,12 @@ construct_runtime! {
         MultiBlockMigrations: pallet_multiblock_migrations = 121,
         MaintenanceMode: pallet_maintenance_mode = 122,
 
+        // Bridge v2
+        //EthereumOutboundQueueV2: snowbridge_pallet_outbound_queue_v2 = 123,
+        EthereumInboundQueueV2: snowbridge_pallet_inbound_queue_v2 = 124,
+        EthereumSystemV2: snowbridge_pallet_system_v2 = 125,
+        BridgeRelayers: pallet_bridge_relayers = 126,
+
         // BEEFY Bridges support.
         Beefy: pallet_beefy = 240,
         // MMR leaf construction must be after session in order to have a leaf's next_auth_set

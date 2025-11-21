@@ -316,7 +316,6 @@ xcm-runtime-apis = { git = "https://github.com/moondance-labs/polkadot-sdk", bra
 # Bridges (wasm)
 alloy-core = { version = "1.1.0", default-features = false }
 alloy-sol-types = { version = "0.4.2", default-features = false }
-bp-relayers = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
 milagro-bls = { package = "snowbridge-milagro-bls", version = "1.5.4", default-features = false }
 snowbridge-beacon-primitives = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
 snowbridge-core = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
@@ -328,9 +327,16 @@ snowbridge-pallet-ethereum-client = { git = "https://github.com/moondance-labs/p
 snowbridge-pallet-inbound-queue = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
 snowbridge-pallet-inbound-queue-fixtures = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
 snowbridge-pallet-outbound-queue = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
-snowbridge-pallet-outbound-queue-v2 = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
 snowbridge-pallet-system = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
 snowbridge-verification-primitives = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
+
+# Bridges v2 (wasm)
+bp-relayers = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
+bridge-hub-common = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
+pallet-bridge-relayers = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
+snowbridge-pallet-inbound-queue-v2 = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
+snowbridge-pallet-outbound-queue-v2 = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
+snowbridge-pallet-system-v2 = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
 
 # Polkadot (client)
 polkadot-cli = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506" }
