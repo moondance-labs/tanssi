@@ -4017,12 +4017,12 @@ declare module "@polkadot/types/lookup" {
     interface PalletMessageQueueCall extends Enum {
         readonly isReapPage: boolean;
         readonly asReapPage: {
-            readonly messageOrigin: DancelightRuntimeAggregateMessageOrigin;
+            readonly messageOrigin: DancelightRuntimeTanssiAggregateMessageOrigin;
             readonly pageIndex: u32;
         } & Struct;
         readonly isExecuteOverweight: boolean;
         readonly asExecuteOverweight: {
-            readonly messageOrigin: DancelightRuntimeAggregateMessageOrigin;
+            readonly messageOrigin: DancelightRuntimeTanssiAggregateMessageOrigin;
             readonly page: u32;
             readonly index: u32;
             readonly weightLimit: SpWeightsWeightV2Weight;
@@ -4030,8 +4030,8 @@ declare module "@polkadot/types/lookup" {
         readonly type: "ReapPage" | "ExecuteOverweight";
     }
 
-    /** @name DancelightRuntimeAggregateMessageOrigin (331) */
-    interface DancelightRuntimeAggregateMessageOrigin extends Enum {
+    /** @name DancelightRuntimeTanssiAggregateMessageOrigin (331) */
+    interface DancelightRuntimeTanssiAggregateMessageOrigin extends Enum {
         readonly isUmp: boolean;
         readonly asUmp: PolkadotRuntimeParachainsInclusionUmpQueueId;
         readonly isSnowbridge: boolean;
@@ -7035,26 +7035,26 @@ declare module "@polkadot/types/lookup" {
         readonly isProcessingFailed: boolean;
         readonly asProcessingFailed: {
             readonly id: H256;
-            readonly origin: DancelightRuntimeAggregateMessageOrigin;
+            readonly origin: DancelightRuntimeTanssiAggregateMessageOrigin;
             readonly error: FrameSupportMessagesProcessMessageError;
         } & Struct;
         readonly isProcessed: boolean;
         readonly asProcessed: {
             readonly id: H256;
-            readonly origin: DancelightRuntimeAggregateMessageOrigin;
+            readonly origin: DancelightRuntimeTanssiAggregateMessageOrigin;
             readonly weightUsed: SpWeightsWeightV2Weight;
             readonly success: bool;
         } & Struct;
         readonly isOverweightEnqueued: boolean;
         readonly asOverweightEnqueued: {
             readonly id: U8aFixed;
-            readonly origin: DancelightRuntimeAggregateMessageOrigin;
+            readonly origin: DancelightRuntimeTanssiAggregateMessageOrigin;
             readonly pageIndex: u32;
             readonly messageIndex: u32;
         } & Struct;
         readonly isPageReaped: boolean;
         readonly asPageReaped: {
-            readonly origin: DancelightRuntimeAggregateMessageOrigin;
+            readonly origin: DancelightRuntimeTanssiAggregateMessageOrigin;
             readonly index: u32;
         } & Struct;
         readonly type: "ProcessingFailed" | "Processed" | "OverweightEnqueued" | "PageReaped";
@@ -9957,8 +9957,8 @@ declare module "@polkadot/types/lookup" {
 
     /** @name PalletMessageQueueNeighbours (869) */
     interface PalletMessageQueueNeighbours extends Struct {
-        readonly prev: DancelightRuntimeAggregateMessageOrigin;
-        readonly next: DancelightRuntimeAggregateMessageOrigin;
+        readonly prev: DancelightRuntimeTanssiAggregateMessageOrigin;
+        readonly next: DancelightRuntimeTanssiAggregateMessageOrigin;
     }
 
     /** @name PalletMessageQueuePage (871) */

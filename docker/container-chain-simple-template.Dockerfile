@@ -17,12 +17,19 @@ RUN useradd -m -u 1000 -U -s /bin/sh -d /container-chain-template-simple contain
 	ln -s /data /container-chain-template-simple/.local/share/container-chain-template-simple && \
 	rm -rf /usr/sbin
 
+# CA bundle from builder stage
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
-USER container-chain-template-simple
+# Install binaries to /usr/local/bin
+COPY build/container-chain-simple-node* /usr/local/bin/
+RUN chmod uog+x /usr/local/bin/container-chain-simple-node* && \
+    # For backwards compatibility: symlink all binaries into the old location
+    for f in /usr/local/bin/container-chain-simple-node*; do \
+      ln -sf "$f" "/container-chain-template-simple/$(basename "$f")"; \
+    done
 
-COPY --chown=container-chain-template-simple build/container-chain-simple-node* /container-chain-template-simple
-RUN chmod uog+x /container-chain-template-simple/container-chain-simple*
+# Drop privileges for runtime
+USER container-chain-template-simple
 
 # 30333 for parachain p2p
 # 30334 for relaychain p2p
@@ -33,4 +40,4 @@ EXPOSE 30333 30334 9933 9944 9615
 
 VOLUME ["/data"]
 
-ENTRYPOINT ["/container-chain-template-simple/container-chain-simple-node"]
+ENTRYPOINT ["/usr/local/bin/container-chain-simple-node"]

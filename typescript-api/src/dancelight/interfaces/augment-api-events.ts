@@ -25,12 +25,12 @@ import type { ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H160, H256, Perbill } from "@polkadot/types/interfaces/runtime";
 import type {
     BpRelayersRegistration,
-    DancelightRuntimeAggregateMessageOrigin,
     DancelightRuntimeBridgeToEthereumConfigBridgeReward,
     DancelightRuntimeBridgeToEthereumConfigBridgeRewardBeneficiaries,
     DancelightRuntimeProxyType,
     DancelightRuntimeRuntimeParametersKey,
     DancelightRuntimeRuntimeParametersValue,
+    DancelightRuntimeTanssiAggregateMessageOrigin,
     FrameSupportDispatchPostDispatchInfo,
     FrameSupportMessagesProcessMessageError,
     FrameSupportPreimagesBounded,
@@ -1453,16 +1453,26 @@ declare module "@polkadot/api-base/types/events" {
              **/
             OverweightEnqueued: AugmentedEvent<
                 ApiType,
-                [id: U8aFixed, origin: DancelightRuntimeAggregateMessageOrigin, pageIndex: u32, messageIndex: u32],
-                { id: U8aFixed; origin: DancelightRuntimeAggregateMessageOrigin; pageIndex: u32; messageIndex: u32 }
+                [
+                    id: U8aFixed,
+                    origin: DancelightRuntimeTanssiAggregateMessageOrigin,
+                    pageIndex: u32,
+                    messageIndex: u32,
+                ],
+                {
+                    id: U8aFixed;
+                    origin: DancelightRuntimeTanssiAggregateMessageOrigin;
+                    pageIndex: u32;
+                    messageIndex: u32;
+                }
             >;
             /**
              * This page was reaped.
              **/
             PageReaped: AugmentedEvent<
                 ApiType,
-                [origin: DancelightRuntimeAggregateMessageOrigin, index: u32],
-                { origin: DancelightRuntimeAggregateMessageOrigin; index: u32 }
+                [origin: DancelightRuntimeTanssiAggregateMessageOrigin, index: u32],
+                { origin: DancelightRuntimeTanssiAggregateMessageOrigin; index: u32 }
             >;
             /**
              * Message is processed.
@@ -1471,13 +1481,13 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [
                     id: H256,
-                    origin: DancelightRuntimeAggregateMessageOrigin,
+                    origin: DancelightRuntimeTanssiAggregateMessageOrigin,
                     weightUsed: SpWeightsWeightV2Weight,
                     success: bool,
                 ],
                 {
                     id: H256;
-                    origin: DancelightRuntimeAggregateMessageOrigin;
+                    origin: DancelightRuntimeTanssiAggregateMessageOrigin;
                     weightUsed: SpWeightsWeightV2Weight;
                     success: bool;
                 }
@@ -1489,12 +1499,12 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [
                     id: H256,
-                    origin: DancelightRuntimeAggregateMessageOrigin,
+                    origin: DancelightRuntimeTanssiAggregateMessageOrigin,
                     error: FrameSupportMessagesProcessMessageError,
                 ],
                 {
                     id: H256;
-                    origin: DancelightRuntimeAggregateMessageOrigin;
+                    origin: DancelightRuntimeTanssiAggregateMessageOrigin;
                     error: FrameSupportMessagesProcessMessageError;
                 }
             >;

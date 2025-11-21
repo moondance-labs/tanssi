@@ -3629,11 +3629,11 @@ export default {
     PalletMessageQueueCall: {
         _enum: {
             reap_page: {
-                messageOrigin: "DancelightRuntimeAggregateMessageOrigin",
+                messageOrigin: "DancelightRuntimeTanssiAggregateMessageOrigin",
                 pageIndex: "u32",
             },
             execute_overweight: {
-                messageOrigin: "DancelightRuntimeAggregateMessageOrigin",
+                messageOrigin: "DancelightRuntimeTanssiAggregateMessageOrigin",
                 page: "u32",
                 index: "u32",
                 weightLimit: "SpWeightsWeightV2Weight",
@@ -3641,9 +3641,9 @@ export default {
         },
     },
     /**
-     * Lookup331: dancelight_runtime::AggregateMessageOrigin
+     * Lookup331: dancelight_runtime::TanssiAggregateMessageOrigin
      **/
-    DancelightRuntimeAggregateMessageOrigin: {
+    DancelightRuntimeTanssiAggregateMessageOrigin: {
         _enum: {
             Ump: "PolkadotRuntimeParachainsInclusionUmpQueueId",
             Snowbridge: "SnowbridgeCoreChannelId",
@@ -6011,23 +6011,23 @@ export default {
         _enum: {
             ProcessingFailed: {
                 id: "H256",
-                origin: "DancelightRuntimeAggregateMessageOrigin",
+                origin: "DancelightRuntimeTanssiAggregateMessageOrigin",
                 error: "FrameSupportMessagesProcessMessageError",
             },
             Processed: {
                 id: "H256",
-                origin: "DancelightRuntimeAggregateMessageOrigin",
+                origin: "DancelightRuntimeTanssiAggregateMessageOrigin",
                 weightUsed: "SpWeightsWeightV2Weight",
                 success: "bool",
             },
             OverweightEnqueued: {
                 id: "[u8;32]",
-                origin: "DancelightRuntimeAggregateMessageOrigin",
+                origin: "DancelightRuntimeTanssiAggregateMessageOrigin",
                 pageIndex: "u32",
                 messageIndex: "u32",
             },
             PageReaped: {
-                origin: "DancelightRuntimeAggregateMessageOrigin",
+                origin: "DancelightRuntimeTanssiAggregateMessageOrigin",
                 index: "u32",
             },
         },
@@ -8519,7 +8519,7 @@ export default {
         ],
     },
     /**
-     * Lookup867: pallet_message_queue::BookState<dancelight_runtime::AggregateMessageOrigin>
+     * Lookup867: pallet_message_queue::BookState<dancelight_runtime::TanssiAggregateMessageOrigin>
      **/
     PalletMessageQueueBookState: {
         _alias: {
@@ -8533,11 +8533,11 @@ export default {
         size_: "u64",
     },
     /**
-     * Lookup869: pallet_message_queue::Neighbours<dancelight_runtime::AggregateMessageOrigin>
+     * Lookup869: pallet_message_queue::Neighbours<dancelight_runtime::TanssiAggregateMessageOrigin>
      **/
     PalletMessageQueueNeighbours: {
-        prev: "DancelightRuntimeAggregateMessageOrigin",
-        next: "DancelightRuntimeAggregateMessageOrigin",
+        prev: "DancelightRuntimeTanssiAggregateMessageOrigin",
+        next: "DancelightRuntimeTanssiAggregateMessageOrigin",
     },
     /**
      * Lookup871: pallet_message_queue::Page<Size, HeapSize>

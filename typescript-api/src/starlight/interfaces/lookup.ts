@@ -3577,11 +3577,11 @@ export default {
     PalletMessageQueueCall: {
         _enum: {
             reap_page: {
-                messageOrigin: "StarlightRuntimeAggregateMessageOrigin",
+                messageOrigin: "StarlightRuntimeTanssiAggregateMessageOrigin",
                 pageIndex: "u32",
             },
             execute_overweight: {
-                messageOrigin: "StarlightRuntimeAggregateMessageOrigin",
+                messageOrigin: "StarlightRuntimeTanssiAggregateMessageOrigin",
                 page: "u32",
                 index: "u32",
                 weightLimit: "SpWeightsWeightV2Weight",
@@ -3589,9 +3589,9 @@ export default {
         },
     },
     /**
-     * Lookup329: starlight_runtime::AggregateMessageOrigin
+     * Lookup329: starlight_runtime::TanssiAggregateMessageOrigin
      **/
-    StarlightRuntimeAggregateMessageOrigin: {
+    StarlightRuntimeTanssiAggregateMessageOrigin: {
         _enum: {
             Ump: "PolkadotRuntimeParachainsInclusionUmpQueueId",
             Snowbridge: "SnowbridgeCoreChannelId",
@@ -5818,23 +5818,23 @@ export default {
         _enum: {
             ProcessingFailed: {
                 id: "H256",
-                origin: "StarlightRuntimeAggregateMessageOrigin",
+                origin: "StarlightRuntimeTanssiAggregateMessageOrigin",
                 error: "FrameSupportMessagesProcessMessageError",
             },
             Processed: {
                 id: "H256",
-                origin: "StarlightRuntimeAggregateMessageOrigin",
+                origin: "StarlightRuntimeTanssiAggregateMessageOrigin",
                 weightUsed: "SpWeightsWeightV2Weight",
                 success: "bool",
             },
             OverweightEnqueued: {
                 id: "[u8;32]",
-                origin: "StarlightRuntimeAggregateMessageOrigin",
+                origin: "StarlightRuntimeTanssiAggregateMessageOrigin",
                 pageIndex: "u32",
                 messageIndex: "u32",
             },
             PageReaped: {
-                origin: "StarlightRuntimeAggregateMessageOrigin",
+                origin: "StarlightRuntimeTanssiAggregateMessageOrigin",
                 index: "u32",
             },
         },
@@ -8137,7 +8137,7 @@ export default {
         ],
     },
     /**
-     * Lookup844: pallet_message_queue::BookState<starlight_runtime::AggregateMessageOrigin>
+     * Lookup844: pallet_message_queue::BookState<starlight_runtime::TanssiAggregateMessageOrigin>
      **/
     PalletMessageQueueBookState: {
         _alias: {
@@ -8151,11 +8151,11 @@ export default {
         size_: "u64",
     },
     /**
-     * Lookup846: pallet_message_queue::Neighbours<starlight_runtime::AggregateMessageOrigin>
+     * Lookup846: pallet_message_queue::Neighbours<starlight_runtime::TanssiAggregateMessageOrigin>
      **/
     PalletMessageQueueNeighbours: {
-        prev: "StarlightRuntimeAggregateMessageOrigin",
-        next: "StarlightRuntimeAggregateMessageOrigin",
+        prev: "StarlightRuntimeTanssiAggregateMessageOrigin",
+        next: "StarlightRuntimeTanssiAggregateMessageOrigin",
     },
     /**
      * Lookup848: pallet_message_queue::Page<Size, HeapSize>

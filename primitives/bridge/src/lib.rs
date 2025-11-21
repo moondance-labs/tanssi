@@ -50,6 +50,10 @@ use {
     snowbridge_inbound_queue_primitives::v1::{
         ConvertMessage, ConvertMessageError, VersionedXcmMessage,
     },
+    snowbridge_inbound_queue_primitives::v2::{
+        ConvertMessage as ConvertMessageV2, ConvertMessageError as ConvertMessageV2Error,
+        Message as MessageV2,
+    },
     snowbridge_outbound_queue_primitives::{
         v1::Fee, v2::Message as SnowbridgeMessageV2, SendError,
     },
@@ -441,6 +445,13 @@ impl ConvertMessage for DoNothingConvertMessage {
         _message: VersionedXcmMessage,
     ) -> Result<(Xcm<()>, Self::Balance), ConvertMessageError> {
         Err(ConvertMessageError::UnsupportedVersion)
+    }
+}
+
+impl ConvertMessageV2 for DoNothingConvertMessage {
+    fn convert(_: MessageV2) -> Result<Xcm<()>, ConvertMessageV2Error> {
+        // TODO: figure out what to do here
+        Err(ConvertMessageV2Error::CannotReanchor)
     }
 }
 
