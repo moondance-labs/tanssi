@@ -1303,8 +1303,8 @@ fn test_add_tip_should_fail() {
             assert_noop!(
                 EthereumTokenTransfers::add_tip(
                     origin_of(AccountId::from(ALICE)),
-                    message_id.clone(),
-                    amount.clone()
+                    message_id,
+                    amount
                 ),
                 Module(ModuleError {
                     index: 27,
