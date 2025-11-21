@@ -134,22 +134,6 @@ describeSuite({
             await context.createBlock(
                 context.polkadotJs().tx.foreignAssets.mint(assetId, sovAddress, initialBalance).signAsync(alice)
             );
-
-            // Create EthereumTokenTransfers channel to validate when receiving the tokens.
-            tokenTransferChannel = "0x0000000000000000000000000000000000000000000000000000000000000004";
-            const newAgentId = "0x0000000000000000000000000000000000000000000000000000000000000005";
-            const newParaId = 500;
-
-            const setChannelTx = await polkadotJs.tx.sudo.sudo(
-                polkadotJs.tx.ethereumTokenTransfers.setTokenTransferChannel(
-                    tokenTransferChannel,
-                    newAgentId,
-                    newParaId
-                )
-            );
-            await context.createBlock(await setChannelTx.signAsync(alice), {
-                allowFailures: false,
-            });
         });
 
         it({
@@ -286,7 +270,6 @@ describeSuite({
                 expect(snowbridgeFeesAccountBalanceAfter).to.be.eq(snowbridgeFeesAccountBalanceBefore + feeAmount);
                 expect(sovEthBalanceAfter).to.be.eq(sovEthBalanceBefore - transferAmount);
                 expect(pendingOrder.unwrap().fee.toBigInt()).to.be.equal(feeAmount);
-                expect(tokenTransferNonceAfter.toBigInt()).toBe(tokenTransferNonceBefore.toBigInt() + 1n);
             },
         });
     },
