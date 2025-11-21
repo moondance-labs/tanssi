@@ -246,7 +246,6 @@ impl snowbridge_pallet_outbound_queue_v2::Config for Test {
     type EthereumNetwork = EthereumNetwork;
     type RewardKind = ();
     type DefaultRewardKind = ();
-    type OnNewCommitment = ();
     type AggregateMessageOrigin = MockAggregateMessageOrigin;
     type OnNewCommitment = ();
     #[cfg(feature = "runtime-benchmarks")]
