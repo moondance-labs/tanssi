@@ -133,6 +133,11 @@ jobs:
           uses: ./.github/workflow-templates/cargo-build
           with:
             features: "fast-runtime,runtime-benchmarks,metadata-hash"
+        - name: Upload benchmark runtimes
+          uses: actions/upload-artifact@v4
+          with:
+            name: runtimes-benchmark
+            path: runtimes
         - name: Upload binary
           uses: actions/upload-artifact@v4
           with:
@@ -163,8 +168,8 @@ jobs:
             - name: "Download benchmark binaries"
               uses: actions/download-artifact@v6
               with:
-                  name: binaries-benchmark
-                  path: target/release
+                name: runtimes-benchmark
+                path: target/release
 
             - name: Make binaries executable
               uses: ./.github/workflow-templates/make-binaries-executable
