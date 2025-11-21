@@ -170,6 +170,20 @@ pub fn get_authority_keys_from_seed_no_beefy(
     )
 }
 
+pub fn container_chain_genesis_data_from_path(
+    path: &str,
+) -> (ParaId, ContainerChainGenesisData, Vec<Vec<u8>>) {
+    let raw_chainspec_str = std::fs::read_to_string(path)
+        .unwrap_or_else(|_| panic!("ChainSpec for container chain not found at {:?}", path));
+
+    container_chain_genesis_data_from_str(&raw_chainspec_str).unwrap_or_else(|e| {
+        panic!(
+            "Failed to build genesis data for container chain {:?}: {}",
+            path, e
+        )
+    })
+}
+
 /// Dancelight development config (single validator Alice)
 #[cfg(feature = "dancelight-native")]
 pub fn dancelight_development_config(
@@ -186,17 +200,7 @@ pub fn dancelight_development_config(
 
     let container_chains: Vec<_> = container_chains
         .iter()
-        .map(|path| {
-            let raw_chainspec_str = std::fs::read_to_string(path)
-                .map_err(|_e| format!("ChainSpec for container chain not found at {:?}", path))
-                .unwrap();
-            container_chain_genesis_data_from_str(&raw_chainspec_str).unwrap_or_else(|e| {
-                panic!(
-                    "Failed to build genesis data for container chain {:?}: {}",
-                    path, e
-                )
-            })
-        })
+        .map(|path| container_chain_genesis_data_from_path(path))
         .chain(
             mock_container_chains
                 .iter()
@@ -236,17 +240,7 @@ pub fn starlight_development_config(
 
     let container_chains: Vec<_> = container_chains
         .iter()
-        .map(|path| {
-            let raw_chainspec_str = std::fs::read_to_string(path)
-                .map_err(|_e| format!("ChainSpec for container chain not found at {:?}", path))
-                .unwrap();
-            container_chain_genesis_data_from_str(&raw_chainspec_str).unwrap_or_else(|e| {
-                panic!(
-                    "Failed to build genesis data for container chain {:?}: {}",
-                    path, e
-                )
-            })
-        })
+        .map(|path| container_chain_genesis_data_from_path(path))
         .chain(
             mock_container_chains
                 .iter()
@@ -279,17 +273,7 @@ pub fn dancelight_local_testnet_config(
 ) -> Result<DancelightChainSpec, String> {
     let container_chains: Vec<_> = container_chains
         .iter()
-        .map(|path| {
-            let raw_chainspec_str = std::fs::read_to_string(path)
-                .map_err(|_e| format!("ChainSpec for container chain not found at {:?}", path))
-                .unwrap();
-            container_chain_genesis_data_from_str(&raw_chainspec_str).unwrap_or_else(|e| {
-                panic!(
-                    "Failed to build genesis data for container chain {:?}: {}",
-                    path, e
-                )
-            })
-        })
+        .map(|path| container_chain_genesis_data_from_path(path))
         .chain(
             mock_container_chains
                 .iter()
@@ -321,17 +305,7 @@ pub fn starlight_local_testnet_config(
 ) -> Result<StarlightChainSpec, String> {
     let container_chains: Vec<_> = container_chains
         .iter()
-        .map(|path| {
-            let raw_chainspec_str = std::fs::read_to_string(path)
-                .map_err(|_e| format!("ChainSpec for container chain not found at {:?}", path))
-                .unwrap();
-            container_chain_genesis_data_from_str(&raw_chainspec_str).unwrap_or_else(|e| {
-                panic!(
-                    "Failed to build genesis data for container chain {:?}: {}",
-                    path, e
-                )
-            })
-        })
+        .map(|path| container_chain_genesis_data_from_path(path))
         .chain(
             mock_container_chains
                 .iter()
