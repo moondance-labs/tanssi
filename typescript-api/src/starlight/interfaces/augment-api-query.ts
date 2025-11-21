@@ -138,11 +138,11 @@ import type {
     SpWeightsWeightV2Weight,
     StagingXcmV5Instruction,
     StagingXcmV5Location,
-    StarlightRuntimeAggregateMessageOrigin,
     StarlightRuntimeRuntimeHoldReason,
     StarlightRuntimeRuntimeParametersKey,
     StarlightRuntimeRuntimeParametersValue,
     StarlightRuntimeSessionKeys,
+    StarlightRuntimeTanssiAggregateMessageOrigin,
     TpBridgeChannelInfo,
     TpTraitsActiveEraInfo,
     TpTraitsContainerChainBlockInfo,
@@ -1760,16 +1760,16 @@ declare module "@polkadot/api-base/types/storage" {
                 ApiType,
                 (
                     arg:
-                        | StarlightRuntimeAggregateMessageOrigin
+                        | StarlightRuntimeTanssiAggregateMessageOrigin
                         | { Ump: any }
                         | { Snowbridge: any }
                         | { SnowbridgeTanssi: any }
                         | string
                         | Uint8Array
                 ) => Observable<PalletMessageQueueBookState>,
-                [StarlightRuntimeAggregateMessageOrigin]
+                [StarlightRuntimeTanssiAggregateMessageOrigin]
             > &
-                QueryableStorageEntry<ApiType, [StarlightRuntimeAggregateMessageOrigin]>;
+                QueryableStorageEntry<ApiType, [StarlightRuntimeTanssiAggregateMessageOrigin]>;
             /**
              * The map of page indices to pages.
              **/
@@ -1777,7 +1777,7 @@ declare module "@polkadot/api-base/types/storage" {
                 ApiType,
                 (
                     arg1:
-                        | StarlightRuntimeAggregateMessageOrigin
+                        | StarlightRuntimeTanssiAggregateMessageOrigin
                         | { Ump: any }
                         | { Snowbridge: any }
                         | { SnowbridgeTanssi: any }
@@ -1785,13 +1785,17 @@ declare module "@polkadot/api-base/types/storage" {
                         | Uint8Array,
                     arg2: u32 | AnyNumber | Uint8Array
                 ) => Observable<Option<PalletMessageQueuePage>>,
-                [StarlightRuntimeAggregateMessageOrigin, u32]
+                [StarlightRuntimeTanssiAggregateMessageOrigin, u32]
             > &
-                QueryableStorageEntry<ApiType, [StarlightRuntimeAggregateMessageOrigin, u32]>;
+                QueryableStorageEntry<ApiType, [StarlightRuntimeTanssiAggregateMessageOrigin, u32]>;
             /**
              * The origin at which we should begin servicing.
              **/
-            serviceHead: AugmentedQuery<ApiType, () => Observable<Option<StarlightRuntimeAggregateMessageOrigin>>, []> &
+            serviceHead: AugmentedQuery<
+                ApiType,
+                () => Observable<Option<StarlightRuntimeTanssiAggregateMessageOrigin>>,
+                []
+            > &
                 QueryableStorageEntry<ApiType, []>;
             /**
              * Generic query

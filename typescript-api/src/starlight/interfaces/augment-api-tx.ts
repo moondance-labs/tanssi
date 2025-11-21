@@ -67,6 +67,7 @@ import type {
     SnowbridgeCoreChannelId,
     SnowbridgeCoreOperatingModeBasicOperatingMode,
     SnowbridgeCorePricingPricingParameters,
+    SnowbridgeCoreRewardMessageId,
     SnowbridgeOutboundQueuePrimitivesOperatingMode,
     SnowbridgeOutboundQueuePrimitivesV1MessageInitializer,
     SnowbridgeVerificationPrimitivesEventProof,
@@ -82,11 +83,11 @@ import type {
     SpWeightsWeightV2Weight,
     StagingXcmExecutorAssetTransferTransferType,
     StagingXcmV5Location,
-    StarlightRuntimeAggregateMessageOrigin,
     StarlightRuntimeOriginCaller,
     StarlightRuntimeProxyType,
     StarlightRuntimeRuntimeParameters,
     StarlightRuntimeSessionKeys,
+    StarlightRuntimeTanssiAggregateMessageOrigin,
     TpDataPreserversCommonAssignerExtra,
     TpDataPreserversCommonAssignmentWitness,
     TpStreamPaymentCommonAssetId,
@@ -1374,7 +1375,15 @@ declare module "@polkadot/api-base/types/submittable" {
                 (
                     profile:
                         | PalletDataPreserversProfile
-                        | { url?: any; paraIds?: any; mode?: any; assignmentRequest?: any }
+                        | {
+                              paraIds?: any;
+                              assignmentRequest?: any;
+                              directRpcUrls?: any;
+                              proxyRpcUrls?: any;
+                              bootnodeUrl?: any;
+                              nodeType?: any;
+                              additionalInfo?: any;
+                          }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -1388,7 +1397,15 @@ declare module "@polkadot/api-base/types/submittable" {
                 (
                     profile:
                         | PalletDataPreserversProfile
-                        | { url?: any; paraIds?: any; mode?: any; assignmentRequest?: any }
+                        | {
+                              paraIds?: any;
+                              assignmentRequest?: any;
+                              directRpcUrls?: any;
+                              proxyRpcUrls?: any;
+                              bootnodeUrl?: any;
+                              nodeType?: any;
+                              additionalInfo?: any;
+                          }
                         | string
                         | Uint8Array,
                     forAccount: AccountId32 | string | Uint8Array
@@ -1417,7 +1434,15 @@ declare module "@polkadot/api-base/types/submittable" {
                     profileId: u64 | AnyNumber | Uint8Array,
                     profile:
                         | PalletDataPreserversProfile
-                        | { url?: any; paraIds?: any; mode?: any; assignmentRequest?: any }
+                        | {
+                              paraIds?: any;
+                              assignmentRequest?: any;
+                              directRpcUrls?: any;
+                              proxyRpcUrls?: any;
+                              bootnodeUrl?: any;
+                              nodeType?: any;
+                              additionalInfo?: any;
+                          }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -1452,7 +1477,15 @@ declare module "@polkadot/api-base/types/submittable" {
                     profileId: u64 | AnyNumber | Uint8Array,
                     profile:
                         | PalletDataPreserversProfile
-                        | { url?: any; paraIds?: any; mode?: any; assignmentRequest?: any }
+                        | {
+                              paraIds?: any;
+                              assignmentRequest?: any;
+                              directRpcUrls?: any;
+                              proxyRpcUrls?: any;
+                              bootnodeUrl?: any;
+                              nodeType?: any;
+                              additionalInfo?: any;
+                          }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -1718,6 +1751,18 @@ declare module "@polkadot/api-base/types/submittable" {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         ethereumTokenTransfers: {
+            addTip: AugmentedSubmittable<
+                (
+                    messageId:
+                        | SnowbridgeCoreRewardMessageId
+                        | { Inbound: any }
+                        | { Outbound: any }
+                        | string
+                        | Uint8Array,
+                    amount: u128 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [SnowbridgeCoreRewardMessageId, u128]
+            >;
             setTokenTransferChannel: AugmentedSubmittable<
                 (
                     channelId: SnowbridgeCoreChannelId | string | Uint8Array,
@@ -2122,6 +2167,7 @@ declare module "@polkadot/api-base/types/submittable" {
                     proposalOrigin:
                         | StarlightRuntimeOriginCaller
                         | { system: any }
+                        | { EthereumTokenTransfers: any }
                         | { Origins: any }
                         | { ParachainsOrigin: any }
                         | { XcmPallet: any }
@@ -4021,7 +4067,7 @@ declare module "@polkadot/api-base/types/submittable" {
             executeOverweight: AugmentedSubmittable<
                 (
                     messageOrigin:
-                        | StarlightRuntimeAggregateMessageOrigin
+                        | StarlightRuntimeTanssiAggregateMessageOrigin
                         | { Ump: any }
                         | { Snowbridge: any }
                         | { SnowbridgeTanssi: any }
@@ -4031,7 +4077,7 @@ declare module "@polkadot/api-base/types/submittable" {
                     index: u32 | AnyNumber | Uint8Array,
                     weightLimit: SpWeightsWeightV2Weight | { refTime?: any; proofSize?: any } | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [StarlightRuntimeAggregateMessageOrigin, u32, u32, SpWeightsWeightV2Weight]
+                [StarlightRuntimeTanssiAggregateMessageOrigin, u32, u32, SpWeightsWeightV2Weight]
             >;
             /**
              * Remove a page which has no more messages remaining to be processed or is stale.
@@ -4039,7 +4085,7 @@ declare module "@polkadot/api-base/types/submittable" {
             reapPage: AugmentedSubmittable<
                 (
                     messageOrigin:
-                        | StarlightRuntimeAggregateMessageOrigin
+                        | StarlightRuntimeTanssiAggregateMessageOrigin
                         | { Ump: any }
                         | { Snowbridge: any }
                         | { SnowbridgeTanssi: any }
@@ -4047,7 +4093,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | Uint8Array,
                     pageIndex: u32 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [StarlightRuntimeAggregateMessageOrigin, u32]
+                [StarlightRuntimeTanssiAggregateMessageOrigin, u32]
             >;
             /**
              * Generic tx
@@ -5342,6 +5388,7 @@ declare module "@polkadot/api-base/types/submittable" {
                     proposalOrigin:
                         | StarlightRuntimeOriginCaller
                         | { system: any }
+                        | { EthereumTokenTransfers: any }
                         | { Origins: any }
                         | { ParachainsOrigin: any }
                         | { XcmPallet: any }
@@ -6461,6 +6508,7 @@ declare module "@polkadot/api-base/types/submittable" {
                     asOrigin:
                         | StarlightRuntimeOriginCaller
                         | { system: any }
+                        | { EthereumTokenTransfers: any }
                         | { Origins: any }
                         | { ParachainsOrigin: any }
                         | { XcmPallet: any }
@@ -6482,6 +6530,7 @@ declare module "@polkadot/api-base/types/submittable" {
                     asOrigin:
                         | StarlightRuntimeOriginCaller
                         | { system: any }
+                        | { EthereumTokenTransfers: any }
                         | { Origins: any }
                         | { ParachainsOrigin: any }
                         | { XcmPallet: any }

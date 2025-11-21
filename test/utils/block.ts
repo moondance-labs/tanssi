@@ -817,9 +817,9 @@ export const getBlockData = async (api: ApiPromise, blockNum: number) => {
 /*
  *   Poll system events from the API and trying to find specific section/method event, until timeout is reached.
  */
-export const waitEventUntilTimeout = async (
+export const waitUntilNonceForChannelChanged = async (
     polkadotJs: ApiPromise,
-    eventSectionMethod: string,
+    channelId: string,
     timeoutMs = 15000,
     blockTimeMs = 6000
 ): Promise<void> => {
@@ -827,31 +827,28 @@ export const waitEventUntilTimeout = async (
 
     const timeoutAt = Date.now() + timeoutMs;
 
-    console.log("Waiting for event:", eventSectionMethod, "for", timeoutMs / 1000, "seconds");
+    console.log("Waiting nonce changed for channel:", channelId, "for", timeoutMs / 1000, "seconds");
+    let nonce: number = null;
 
     while (Date.now() < timeoutAt) {
-        const header = await polkadotJs.rpc.chain.getHeader();
-        const blockHash = await polkadotJs.rpc.chain.getBlockHash(header.number.toNumber());
-        const events = await polkadotJs.query.system.events();
+        const latestNonce = (await polkadotJs.query.ethereumOutboundQueue.nonce(channelId)).toNumber();
 
-        for (const { event } of events) {
-            if (`${event.section}.${event.method}` === eventSectionMethod) {
-                const end = performance.now();
-                console.log(
-                    `Event "${eventSectionMethod}" found in block #${header.number} with hash: ${blockHash}. Took: ${((end - start) / 1000).toFixed(2)} sec`
-                );
-                return;
-            }
+        if (nonce !== null && latestNonce !== nonce) {
+            const header = await polkadotJs.rpc.chain.getHeader();
+            const blockHash = await polkadotJs.rpc.chain.getBlockHash(header.number.toNumber());
+            const end = performance.now();
+            console.log(
+                `Nonce for channelId "${channelId}" changed in block #${header.number} with hash: ${blockHash}. Took: ${((end - start) / 1000).toFixed(2)} sec`
+            );
+
+            return;
         }
-
-        console.log(
-            `Not found event: ${eventSectionMethod} in block #${header.number.toNumber()} with hash: ${blockHash.toHex()}`
-        );
+        nonce = latestNonce;
 
         await new Promise((resolve) => setTimeout(resolve, blockTimeMs));
     }
 
-    throw new Error(`Event "${eventSectionMethod}" not found within ${timeoutMs / 1000}s`);
+    throw new Error(`Nonce for channelId "${channelId}" has not been changed within ${timeoutMs / 1000}s`);
 };
 
 /*

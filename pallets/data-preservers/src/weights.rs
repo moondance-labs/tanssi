@@ -215,19 +215,19 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	}
 
 	/// Storage: `DataPreservers::Profiles` (r:1 w:1)
-	/// Proof: `DataPreservers::Profiles` (`max_values`: None, `max_size`: Some(744), added: 3219, mode: `MaxEncodedLen`)
+	/// Proof: `DataPreservers::Profiles` (`max_values`: None, `max_size`: Some(2564), added: 5039, mode: `MaxEncodedLen`)
 	/// Storage: `System::Account` (r:1 w:1)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	/// Storage: `Balances::Holds` (r:1 w:1)
 	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(139), added: 2614, mode: `MaxEncodedLen`)
 	fn poke_deposit() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `899`
-		//  Estimated: `4209`
-		// Minimum execution time: 43_000_000 picoseconds.
-		Weight::from_parts(46_000_000, 4209)
-			.saturating_add(RocksDbWeight::get().reads(3_u64))
-			.saturating_add(RocksDbWeight::get().writes(3_u64))
+		//  Measured:  `2720`
+		//  Estimated: `6029`
+		// Minimum execution time: 48_000_000 picoseconds.
+		Weight::from_parts(48_000_000, 6029)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 }
 
@@ -380,17 +380,17 @@ impl WeightInfo for () {
 	}
 
 	/// Storage: `DataPreservers::Profiles` (r:1 w:1)
-	/// Proof: `DataPreservers::Profiles` (`max_values`: None, `max_size`: Some(744), added: 3219, mode: `MaxEncodedLen`)
+	/// Proof: `DataPreservers::Profiles` (`max_values`: None, `max_size`: Some(2564), added: 5039, mode: `MaxEncodedLen`)
 	/// Storage: `System::Account` (r:1 w:1)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	/// Storage: `Balances::Holds` (r:1 w:1)
-	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(139), added: 2614, mode: `MaxEncodedLen`)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(211), added: 2686, mode: `MaxEncodedLen`)
 	fn poke_deposit() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `899`
-		//  Estimated: `4209`
-		// Minimum execution time: 43_000_000 picoseconds.
-		Weight::from_parts(46_000_000, 4209)
+		//  Measured:  `2828`
+		//  Estimated: `6029`
+		// Minimum execution time: 50_000_000 picoseconds.
+		Weight::from_parts(50_000_000, 6029)
 			.saturating_add(RocksDbWeight::get().reads(3_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
 	}

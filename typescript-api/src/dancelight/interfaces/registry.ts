@@ -9,7 +9,9 @@ import type {
     BinaryHeapEnqueuedOrder,
     BinaryHeapReverseQueueIndex,
     BitvecOrderLsb0,
-    DancelightRuntimeAggregateMessageOrigin,
+    BpRelayersRegistration,
+    DancelightRuntimeBridgeToEthereumConfigBridgeReward,
+    DancelightRuntimeBridgeToEthereumConfigBridgeRewardBeneficiaries,
     DancelightRuntimeDynamicParamsPreimageBaseDeposit,
     DancelightRuntimeDynamicParamsPreimageByteDeposit,
     DancelightRuntimeDynamicParamsPreimageParameters,
@@ -24,6 +26,7 @@ import type {
     DancelightRuntimeRuntimeParametersKey,
     DancelightRuntimeRuntimeParametersValue,
     DancelightRuntimeSessionKeys,
+    DancelightRuntimeTanssiAggregateMessageOrigin,
     DpCollatorAssignmentAssignedCollatorsAccountId32,
     DpCollatorAssignmentAssignedCollatorsPublic,
     DpContainerChainGenesisDataContainerChainGenesisData,
@@ -99,6 +102,9 @@ import type {
     PalletBalancesReserveData,
     PalletBeefyCall,
     PalletBeefyError,
+    PalletBridgeRelayersCall,
+    PalletBridgeRelayersError,
+    PalletBridgeRelayersEvent,
     PalletCollatorAssignmentCall,
     PalletCollatorAssignmentEvent,
     PalletCollectiveCall,
@@ -125,13 +131,14 @@ import type {
     PalletDataPreserversError,
     PalletDataPreserversEvent,
     PalletDataPreserversHoldReason,
+    PalletDataPreserversNodeType,
     PalletDataPreserversParaIdsFilter,
     PalletDataPreserversProfile,
-    PalletDataPreserversProfileMode,
     PalletDataPreserversRegisteredProfile,
     PalletEthereumTokenTransfersCall,
     PalletEthereumTokenTransfersError,
     PalletEthereumTokenTransfersEvent,
+    PalletEthereumTokenTransfersOrigin,
     PalletExternalValidatorSlashesCall,
     PalletExternalValidatorSlashesError,
     PalletExternalValidatorSlashesEvent,
@@ -412,11 +419,13 @@ import type {
     SnowbridgeCoreOperatingModeBasicOperatingMode,
     SnowbridgeCorePricingPricingParameters,
     SnowbridgeCorePricingRewards,
+    SnowbridgeCoreRewardMessageId,
     SnowbridgeInboundQueuePrimitivesV1ConvertMessageError,
     SnowbridgeMilagroBlsKeysPublicKey,
     SnowbridgeOutboundQueuePrimitivesOperatingMode,
     SnowbridgeOutboundQueuePrimitivesSendError,
     SnowbridgeOutboundQueuePrimitivesV1MessageInitializer,
+    SnowbridgeOutboundQueuePrimitivesV2MessageInitializer,
     SnowbridgePalletEthereumClientCall,
     SnowbridgePalletEthereumClientError,
     SnowbridgePalletEthereumClientEvent,
@@ -424,6 +433,9 @@ import type {
     SnowbridgePalletInboundQueueError,
     SnowbridgePalletInboundQueueEvent,
     SnowbridgePalletInboundQueueSendError,
+    SnowbridgePalletInboundQueueV2Call,
+    SnowbridgePalletInboundQueueV2Error,
+    SnowbridgePalletInboundQueueV2Event,
     SnowbridgePalletOutboundQueueCall,
     SnowbridgePalletOutboundQueueCommittedMessage,
     SnowbridgePalletOutboundQueueError,
@@ -431,6 +443,9 @@ import type {
     SnowbridgePalletSystemCall,
     SnowbridgePalletSystemError,
     SnowbridgePalletSystemEvent,
+    SnowbridgePalletSystemV2Call,
+    SnowbridgePalletSystemV2Error,
+    SnowbridgePalletSystemV2Event,
     SnowbridgeVerificationPrimitivesEventProof,
     SnowbridgeVerificationPrimitivesLog,
     SnowbridgeVerificationPrimitivesProof,
@@ -571,7 +586,9 @@ declare module "@polkadot/types/types/registry" {
         BinaryHeapEnqueuedOrder: BinaryHeapEnqueuedOrder;
         BinaryHeapReverseQueueIndex: BinaryHeapReverseQueueIndex;
         BitvecOrderLsb0: BitvecOrderLsb0;
-        DancelightRuntimeAggregateMessageOrigin: DancelightRuntimeAggregateMessageOrigin;
+        BpRelayersRegistration: BpRelayersRegistration;
+        DancelightRuntimeBridgeToEthereumConfigBridgeReward: DancelightRuntimeBridgeToEthereumConfigBridgeReward;
+        DancelightRuntimeBridgeToEthereumConfigBridgeRewardBeneficiaries: DancelightRuntimeBridgeToEthereumConfigBridgeRewardBeneficiaries;
         DancelightRuntimeDynamicParamsPreimageBaseDeposit: DancelightRuntimeDynamicParamsPreimageBaseDeposit;
         DancelightRuntimeDynamicParamsPreimageByteDeposit: DancelightRuntimeDynamicParamsPreimageByteDeposit;
         DancelightRuntimeDynamicParamsPreimageParameters: DancelightRuntimeDynamicParamsPreimageParameters;
@@ -586,6 +603,7 @@ declare module "@polkadot/types/types/registry" {
         DancelightRuntimeRuntimeParametersKey: DancelightRuntimeRuntimeParametersKey;
         DancelightRuntimeRuntimeParametersValue: DancelightRuntimeRuntimeParametersValue;
         DancelightRuntimeSessionKeys: DancelightRuntimeSessionKeys;
+        DancelightRuntimeTanssiAggregateMessageOrigin: DancelightRuntimeTanssiAggregateMessageOrigin;
         DpCollatorAssignmentAssignedCollatorsAccountId32: DpCollatorAssignmentAssignedCollatorsAccountId32;
         DpCollatorAssignmentAssignedCollatorsPublic: DpCollatorAssignmentAssignedCollatorsPublic;
         DpContainerChainGenesisDataContainerChainGenesisData: DpContainerChainGenesisDataContainerChainGenesisData;
@@ -661,6 +679,9 @@ declare module "@polkadot/types/types/registry" {
         PalletBalancesReserveData: PalletBalancesReserveData;
         PalletBeefyCall: PalletBeefyCall;
         PalletBeefyError: PalletBeefyError;
+        PalletBridgeRelayersCall: PalletBridgeRelayersCall;
+        PalletBridgeRelayersError: PalletBridgeRelayersError;
+        PalletBridgeRelayersEvent: PalletBridgeRelayersEvent;
         PalletCollatorAssignmentCall: PalletCollatorAssignmentCall;
         PalletCollatorAssignmentEvent: PalletCollatorAssignmentEvent;
         PalletCollectiveCall: PalletCollectiveCall;
@@ -687,13 +708,14 @@ declare module "@polkadot/types/types/registry" {
         PalletDataPreserversError: PalletDataPreserversError;
         PalletDataPreserversEvent: PalletDataPreserversEvent;
         PalletDataPreserversHoldReason: PalletDataPreserversHoldReason;
+        PalletDataPreserversNodeType: PalletDataPreserversNodeType;
         PalletDataPreserversParaIdsFilter: PalletDataPreserversParaIdsFilter;
         PalletDataPreserversProfile: PalletDataPreserversProfile;
-        PalletDataPreserversProfileMode: PalletDataPreserversProfileMode;
         PalletDataPreserversRegisteredProfile: PalletDataPreserversRegisteredProfile;
         PalletEthereumTokenTransfersCall: PalletEthereumTokenTransfersCall;
         PalletEthereumTokenTransfersError: PalletEthereumTokenTransfersError;
         PalletEthereumTokenTransfersEvent: PalletEthereumTokenTransfersEvent;
+        PalletEthereumTokenTransfersOrigin: PalletEthereumTokenTransfersOrigin;
         PalletExternalValidatorSlashesCall: PalletExternalValidatorSlashesCall;
         PalletExternalValidatorSlashesError: PalletExternalValidatorSlashesError;
         PalletExternalValidatorSlashesEvent: PalletExternalValidatorSlashesEvent;
@@ -974,11 +996,13 @@ declare module "@polkadot/types/types/registry" {
         SnowbridgeCoreOperatingModeBasicOperatingMode: SnowbridgeCoreOperatingModeBasicOperatingMode;
         SnowbridgeCorePricingPricingParameters: SnowbridgeCorePricingPricingParameters;
         SnowbridgeCorePricingRewards: SnowbridgeCorePricingRewards;
+        SnowbridgeCoreRewardMessageId: SnowbridgeCoreRewardMessageId;
         SnowbridgeInboundQueuePrimitivesV1ConvertMessageError: SnowbridgeInboundQueuePrimitivesV1ConvertMessageError;
         SnowbridgeMilagroBlsKeysPublicKey: SnowbridgeMilagroBlsKeysPublicKey;
         SnowbridgeOutboundQueuePrimitivesOperatingMode: SnowbridgeOutboundQueuePrimitivesOperatingMode;
         SnowbridgeOutboundQueuePrimitivesSendError: SnowbridgeOutboundQueuePrimitivesSendError;
         SnowbridgeOutboundQueuePrimitivesV1MessageInitializer: SnowbridgeOutboundQueuePrimitivesV1MessageInitializer;
+        SnowbridgeOutboundQueuePrimitivesV2MessageInitializer: SnowbridgeOutboundQueuePrimitivesV2MessageInitializer;
         SnowbridgePalletEthereumClientCall: SnowbridgePalletEthereumClientCall;
         SnowbridgePalletEthereumClientError: SnowbridgePalletEthereumClientError;
         SnowbridgePalletEthereumClientEvent: SnowbridgePalletEthereumClientEvent;
@@ -986,6 +1010,9 @@ declare module "@polkadot/types/types/registry" {
         SnowbridgePalletInboundQueueError: SnowbridgePalletInboundQueueError;
         SnowbridgePalletInboundQueueEvent: SnowbridgePalletInboundQueueEvent;
         SnowbridgePalletInboundQueueSendError: SnowbridgePalletInboundQueueSendError;
+        SnowbridgePalletInboundQueueV2Call: SnowbridgePalletInboundQueueV2Call;
+        SnowbridgePalletInboundQueueV2Error: SnowbridgePalletInboundQueueV2Error;
+        SnowbridgePalletInboundQueueV2Event: SnowbridgePalletInboundQueueV2Event;
         SnowbridgePalletOutboundQueueCall: SnowbridgePalletOutboundQueueCall;
         SnowbridgePalletOutboundQueueCommittedMessage: SnowbridgePalletOutboundQueueCommittedMessage;
         SnowbridgePalletOutboundQueueError: SnowbridgePalletOutboundQueueError;
@@ -993,6 +1020,9 @@ declare module "@polkadot/types/types/registry" {
         SnowbridgePalletSystemCall: SnowbridgePalletSystemCall;
         SnowbridgePalletSystemError: SnowbridgePalletSystemError;
         SnowbridgePalletSystemEvent: SnowbridgePalletSystemEvent;
+        SnowbridgePalletSystemV2Call: SnowbridgePalletSystemV2Call;
+        SnowbridgePalletSystemV2Error: SnowbridgePalletSystemV2Error;
+        SnowbridgePalletSystemV2Event: SnowbridgePalletSystemV2Event;
         SnowbridgeVerificationPrimitivesEventProof: SnowbridgeVerificationPrimitivesEventProof;
         SnowbridgeVerificationPrimitivesLog: SnowbridgeVerificationPrimitivesLog;
         SnowbridgeVerificationPrimitivesProof: SnowbridgeVerificationPrimitivesProof;
