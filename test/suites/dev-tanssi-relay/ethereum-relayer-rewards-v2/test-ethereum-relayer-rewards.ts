@@ -40,6 +40,10 @@ describeSuite({
             sovereignAccount = isStarlight
                 ? ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS
                 : SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS;
+            if (shouldSkipStarlightETT) {
+                console.log(`Skipping E01 test for Starlight version ${specVersion}: Snowbridge v2 not available yet`);
+                return;
+            }
 
             const newChannelId = "0x0000000000000000000000000000000000000000000000000000000000000004";
             const newAgentId = "0x0000000000000000000000000000000000000000000000000000000000000005";
@@ -102,6 +106,12 @@ describeSuite({
             id: "E01",
             title: "Relayer should be able to claim rewards",
             test: async () => {
+                if (shouldSkipStarlightETT) {
+                    console.log(
+                        `Skipping E01 test for Starlight version ${specVersion}: Snowbridge v2 not available yet`
+                    );
+                    return;
+                }
                 // Use random account instead of alice because alice is getting block rewards
                 const randomAccount = generateKeyringPair("sr25519");
 

@@ -209,7 +209,7 @@ impl bp_relayers::PaymentProcedure<AccountId, BridgeReward, u128> for BridgeRewa
                         Balances::transfer(
                             &SnowbridgeFeesAccount::get(),
                             &account_id,
-                            reward.into(),
+                            reward,
                             Preservation::Preserve,
                         )?;
                         Ok(())

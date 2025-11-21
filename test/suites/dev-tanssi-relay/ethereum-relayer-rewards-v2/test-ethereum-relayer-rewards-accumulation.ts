@@ -108,6 +108,12 @@ describeSuite({
             id: "E01",
             title: "Relayer should be able to accumulate rewards",
             test: async () => {
+                if (shouldSkipStarlightETT) {
+                    console.log(
+                        `Skipping E01 test for Starlight version ${specVersion}: Snowbridge v2 not available yet`
+                    );
+                    return;
+                }
                 // Use random account instead of alice because alice is getting block rewards
                 const randomAccount = generateKeyringPair("sr25519");
 
