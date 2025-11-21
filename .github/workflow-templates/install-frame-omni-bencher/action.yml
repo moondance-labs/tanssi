@@ -9,3 +9,4 @@ runs:
       shell: bash
       run: |
         cargo install frame-omni-bencher --locked --git https://github.com/moondance-labs/polkadot-sdk --branch tanssi-polkadot-stable2506
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
