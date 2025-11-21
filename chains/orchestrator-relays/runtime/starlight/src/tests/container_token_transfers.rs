@@ -967,6 +967,7 @@ fn receive_container_foreign_tokens_from_eth_works_for_foreign_account_id_20() {
             };
 
             assert_ok!(EthereumInboundQueue::submit(relayer, message));
+            log::info!("events: {:?}", System::events());
 
             let xcm_sent_event = System::events()
                 .iter()
@@ -1088,6 +1089,7 @@ fn receive_container_foreign_tokens_from_eth_works_for_foreign_account_id_32() {
             };
 
             assert_ok!(EthereumInboundQueue::submit(relayer, message));
+            log::info!("events: {:?}", System::events());
 
             let xcm_sent_event = System::events()
                 .iter()
