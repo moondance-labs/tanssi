@@ -10,6 +10,7 @@ import type { Option, Vec, u128, u16, u32, u64, u8 } from "@polkadot/types-codec
 import type { Codec, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H160, Perbill, Permill } from "@polkadot/types/interfaces/runtime";
 import type {
+    DancelightRuntimeBridgeToEthereumConfigBridgeReward,
     FrameSupportPalletId,
     FrameSystemLimitsBlockLength,
     FrameSystemLimitsBlockWeights,
@@ -18,6 +19,7 @@ import type {
     SpVersionRuntimeVersion,
     SpWeightsRuntimeDbWeight,
     SpWeightsWeightV2Weight,
+    StagingXcmV5Junctions,
 } from "@polkadot/types/lookup";
 
 export type __AugmentedConst<ApiType extends ApiTypes> = AugmentedConst<ApiType>;
@@ -164,8 +166,9 @@ declare module "@polkadot/api-base/types/consts" {
         };
         dataPreservers: {
             maxAssignmentsPerParaId: u32 & AugmentedConst<ApiType>;
-            maxNodeUrlLen: u32 & AugmentedConst<ApiType>;
+            maxNodeUrlCount: u32 & AugmentedConst<ApiType>;
             maxParaIdsVecLen: u32 & AugmentedConst<ApiType>;
+            maxStringLen: u32 & AugmentedConst<ApiType>;
             /**
              * Generic const
              **/
@@ -183,6 +186,20 @@ declare module "@polkadot/api-base/types/consts" {
             [key: string]: Codec;
         };
         ethereumInboundQueue: {
+            gatewayAddress: H160 & AugmentedConst<ApiType>;
+            /**
+             * Generic const
+             **/
+            [key: string]: Codec;
+        };
+        ethereumInboundQueueV2: {
+            /**
+             * The default RewardKind discriminator for rewards allocated to relayers from this pallet.
+             **/
+            defaultRewardKind: DancelightRuntimeBridgeToEthereumConfigBridgeReward & AugmentedConst<ApiType>;
+            /**
+             * Address of the Gateway contract.
+             **/
             gatewayAddress: H160 & AugmentedConst<ApiType>;
             /**
              * Generic const
@@ -909,6 +926,18 @@ declare module "@polkadot/api-base/types/consts" {
              * `pallet_xcm::CurrentXcmVersion`.
              **/
             advertisedXcmVersion: u32 & AugmentedConst<ApiType>;
+            /**
+             * The maximum number of local XCM locks that a single account may have.
+             **/
+            maxLockers: u32 & AugmentedConst<ApiType>;
+            /**
+             * The maximum number of consumers a single remote lock may have.
+             **/
+            maxRemoteLockConsumers: u32 & AugmentedConst<ApiType>;
+            /**
+             * This chain's Universal Location.
+             **/
+            universalLocation: StagingXcmV5Junctions & AugmentedConst<ApiType>;
             /**
              * Generic const
              **/

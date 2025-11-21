@@ -8,8 +8,8 @@ import {
 } from "@moonwall/util";
 import { getSignatureParameters } from "utils";
 import { type Abi, encodeFunctionData, fromHex } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
 import { expectEVMResult } from "../../../helpers";
+import { privateKeyToAccount } from "viem/accounts";
 
 const PRECOMPILE_CALL_PERMIT_ADDRESS = "0x0000000000000000000000000000000000000802";
 
@@ -50,7 +50,6 @@ describeSuite({
                 })
             );
             expectEVMResult(baltatharResult?.events, "Succeed");
-
             // bond alice via baltathar using call permit
             const alithNonceResult = (
                 await context.viem().call({

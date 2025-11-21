@@ -5,12 +5,13 @@ build = "build.rs"
 description = "Common code between various nodes"
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.16.0"
+version = "0.17.0"
 
 [lints]
 workspace = true
 
 [dependencies]
+async-channel = { workspace = true }
 async-io = { workspace = true }
 async-trait = { workspace = true }
 clap = { workspace = true, features = [ "derive" ] }
@@ -80,6 +81,7 @@ polkadot-primitives = { workspace = true }
 polkadot-service = { workspace = true }
 
 # Cumulus
+cumulus-client-bootnodes = { workspace = true }
 cumulus-client-cli = { workspace = true }
 cumulus-client-collator = { workspace = true }
 cumulus-client-consensus-common = { workspace = true }

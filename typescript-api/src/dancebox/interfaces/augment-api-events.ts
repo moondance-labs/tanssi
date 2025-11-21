@@ -1520,11 +1520,30 @@ declare module "@polkadot/api-base/types/events" {
                 { pure: AccountId32; who: AccountId32; proxyType: DanceboxRuntimeProxyType; disambiguationIndex: u16 }
             >;
             /**
+             * A pure proxy was killed by its spawner.
+             **/
+            PureKilled: AugmentedEvent<
+                ApiType,
+                [
+                    pure: AccountId32,
+                    spawner: AccountId32,
+                    proxyType: DanceboxRuntimeProxyType,
+                    disambiguationIndex: u16,
+                ],
+                {
+                    pure: AccountId32;
+                    spawner: AccountId32;
+                    proxyType: DanceboxRuntimeProxyType;
+                    disambiguationIndex: u16;
+                }
+            >;
+            /**
              * Generic event
              **/
             [key: string]: AugmentedEvent<ApiType>;
         };
         registrar: {
+            DepositUpdated: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
             /**
              * A para id has been deregistered. [para_id]
              **/
@@ -1619,6 +1638,11 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         session: {
+            /**
+             * The `NewSession` event in the current block also implies a new validator set to be
+             * queued.
+             **/
+            NewQueued: AugmentedEvent<ApiType, []>;
             /**
              * New session has happened. Note that the argument is the session index, not the
              * block number as the type might suggest.

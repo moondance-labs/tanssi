@@ -130,9 +130,7 @@ describeSuite({
                 const eraStartBlockInfo = await findEraBlockUsingBinarySearch(api, eraIndexCheckpointB);
                 if (!eraStartBlockInfo.found) {
                     log(
-                        "There are no blocks produced in the era",
-                        eraIndexCheckpointB,
-                        "so no point in continuing test"
+                        `There are no blocks produced in the era ${eraIndexCheckpointB} so no point in continuing test`
                     );
                     skip();
                 }

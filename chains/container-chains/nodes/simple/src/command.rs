@@ -36,7 +36,7 @@ use {
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT, Get},
     std::marker::PhantomData,
-    tc_service_container_chain_rpc_provider::{RpcProviderCmd, RpcProviderMode},
+    tc_service_container_chain_data_preserver::{DataPreserverCmd, DataPreserverMode},
     tc_service_container_chain_spawner::cli::ContainerChainCli,
 };
 
@@ -127,8 +127,8 @@ pub fn run() -> Result<()> {
 
     // Match rpc provider subcommand in wrapper
     let subcommand = match &cli.subcommand {
-        Some(Subcommand::RpcProvider(cmd)) => {
-            return rpc_provider_mode(&cli, cmd);
+        Some(Subcommand::DataPreserver(cmd)) => {
+            return data_preserver_mode(&cli, cmd);
         }
         Some(Subcommand::Base(cmd)) => Some(cmd),
         None => None,
@@ -251,7 +251,14 @@ pub fn run() -> Result<()> {
                     let partials = NodeConfig::new_builder(&config, None)?;
                     let db = partials.backend.expose_db();
                     let storage = partials.backend.expose_storage();
-                    cmd.run(config, partials.client.clone(), db, storage)
+                    let shared_trie_cache = partials.backend.expose_shared_trie_cache();
+                    cmd.run(
+                        config,
+                        partials.client.clone(),
+                        db,
+                        storage,
+                        shared_trie_cache,
+                    )
                 }),
                 BenchmarkCmd::Machine(cmd) => {
                     runner.sync_run(|config| cmd.run(&config, SUBSTRATE_REFERENCE_HARDWARE.clone()))
@@ -336,7 +343,8 @@ pub fn run() -> Result<()> {
                     }
                 }
 
-                match config.network.network_backend.unwrap_or(sc_network::config::NetworkBackendType::Libp2p) {
+
+                match config.network.network_backend {
                     sc_network::config::NetworkBackendType::Libp2p => {
                         crate::service::start_parachain_node::<sc_network::NetworkWorker<_, _>>(
                             config,
@@ -369,7 +377,7 @@ pub fn run() -> Result<()> {
     }
 }
 
-fn rpc_provider_mode(cli: &Cli, cmd: &RpcProviderCmd) -> Result<()> {
+fn data_preserver_mode(cli: &Cli, cmd: &DataPreserverCmd) -> Result<()> {
     let runner = cli.create_runner(&cmd.container_run.normalize())?;
 
     runner.run_node_until_exit(|config| async move {
@@ -401,7 +409,7 @@ fn rpc_provider_mode(cli: &Cli, cmd: &RpcProviderCmd) -> Result<()> {
                 container_chain_template_simple_runtime::RuntimeApi,
             >::new();
 
-        RpcProviderMode {
+        DataPreserverMode {
             config,
             provider_profile_id: cmd.profile_id,
             orchestrator_endpoints: cmd.orchestrator_endpoints.clone(),
