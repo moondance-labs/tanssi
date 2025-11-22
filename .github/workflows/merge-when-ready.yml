@@ -178,7 +178,7 @@ jobs:
               shell: bash
               run: |
                 RUNTIME_NAME=${{ matrix.chains.runtime }} \
-                  RUNTIME=target/release/wbuild/$RUNTIME_NAME-runtime/$(echo $RUNTIME_NAME | tr '-' '_')_runtime.wasm \
+                  RUNTIME=target/release/$(echo $RUNTIME_NAME | tr '-' '_')_runtime.wasm \
                   TEMPLATE_PATH=./benchmarking/frame-weight-runtime-template.hbs \
                   tools/benchmarking.sh "*" "*" --check
 
