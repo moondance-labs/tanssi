@@ -179,7 +179,7 @@ jobs:
               run: |
                 ls -la target/release
                 RUNTIME_NAME=${{ matrix.chains.runtime }} \
-                  RUNTIME=target/release/$(echo $RUNTIME_NAME | tr '-' '_')_runtime.wasm \
+                  RUNTIME=target/release/$(echo $RUNTIME_NAME | tr '-' '_')_runtime.compact.compressed.wasm \
                   TEMPLATE_PATH=./benchmarking/frame-weight-runtime-template.hbs \
                   tools/benchmarking.sh "*" "*" --check
 
