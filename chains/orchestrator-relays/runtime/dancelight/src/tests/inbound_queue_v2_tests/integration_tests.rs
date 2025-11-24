@@ -19,11 +19,11 @@ use {
         bridge_to_ethereum_config::EthereumGatewayAddress,
         tests::common::{
             encode_message_to_eth_payload, mock_snowbridge_message_proof, root_origin, ExtBuilder,
-            ALICE, BOB, UNIT,
+            ALICE, BOB, FERDIE, UNIT,
         },
         xcm_config::UniversalLocation,
         AccountId, Balances, EthereumInboundQueueV2, EthereumSovereignAccount, EthereumSystemV2,
-        ExternalValidators, ForeignAssetsCreator, Runtime, RuntimeEvent,
+        ExternalValidators, ForeignAssets, ForeignAssetsCreator, Runtime, RuntimeEvent, System,
     },
     dancelight_runtime_constants::snowbridge::{EthereumLocation, EthereumNetwork},
     frame_support::assert_ok,
@@ -31,7 +31,6 @@ use {
     hex_literal::hex,
     keyring::Sr25519Keyring,
     parity_scale_codec::Encode,
-    snowbridge_core::{Channel, PRIMARY_GOVERNANCE_CHANNEL},
     snowbridge_inbound_queue_primitives::v2::{
         EthereumAsset::{ForeignTokenERC20, NativeTokenERC20},
         Message, Payload,
@@ -117,7 +116,7 @@ fn test_inbound_queue_transfer_eth_works() {
                 (AccountId::from(BOB), 100 * UNIT),
             ]
         ).build().execute_with(|| {
-        let nonce = 1;
+        let nonce_val = 1u64;
 
         let dummy_proof = mock_snowbridge_message_proof();
         let token_location = Location::here();
@@ -151,10 +150,7 @@ fn test_inbound_queue_transfer_eth_works() {
         ));
 
         let assets = vec![];
-
-        println!("assets: {:?}", assets);
-
-        let _execution_fee = 0;
+        let beneficiary = AccountId::from(FERDIE);
 
         let instructions = vec![DepositAsset {
             assets: Wild(AllCounted(1)),
@@ -162,7 +158,7 @@ fn test_inbound_queue_transfer_eth_works() {
                 0,
                 AccountId32 {
                     network: None,
-                    id: H256::random().into(),
+                    id: beneficiary.clone().into(),
                 },
             ),
         }];
@@ -171,18 +167,21 @@ fn test_inbound_queue_transfer_eth_works() {
         let versioned_message_xcm = VersionedXcm::V5(xcm);
 
         let xcm_bytes = RawPayload::Xcm(versioned_message_xcm.encode());
+        let token_value = 12345u128;
 
         let encoded_data = encode_message_to_eth_payload(&Message {
             gateway: H160::random(),
-            nonce,
+            nonce: nonce_val,
             origin: EthereumGatewayAddress::get(),
             assets,
             payload: Payload::Raw(xcm_bytes.encode()),
             claimer: None,
-            value: 12345,
+            value: token_value.into(),
             execution_fee: 0,
             relayer_fee: 0,
         });
+
+        let foreign_asset_balance_before = ForeignAssets::balance(asset_id, AccountId::from(beneficiary.clone()));
 
         assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
             event_log: Log {
@@ -193,10 +192,11 @@ fn test_inbound_queue_transfer_eth_works() {
             proof: dummy_proof.clone(),
         })), Ok(()));
 
+        let foreign_asset_balance_after = ForeignAssets::balance(asset_id, AccountId::from(beneficiary.clone()));
+
+        assert_eq!(foreign_asset_balance_after - foreign_asset_balance_before, token_value.into());
+
         let events = frame_system::Pallet::<Runtime>::events();
-        for e in events.clone() {
-            println!("Event: {:?}", e.event);
-        }
 
         let mut found_message = false;
         let mut found_issued = false;
@@ -205,13 +205,13 @@ fn test_inbound_queue_transfer_eth_works() {
             match &record.event {
                 RuntimeEvent::EthereumInboundQueueV2(
                     snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce, .. }
-                ) if *nonce == *nonce => {
+                ) if *nonce == nonce_val => {
                     found_message = true;
                 }
 
                 RuntimeEvent::ForeignAssets(
                     pallet_assets::Event::Issued { amount, .. }
-                ) if *amount == 12345 => {
+                ) if *amount == token_value => {
                     found_issued = true;
                 }
 
@@ -236,7 +236,7 @@ fn test_inbound_queue_transfer_tanssi_works() {
                 (AccountId::from(BOB), 100 * UNIT),
             ]
         ).build().execute_with(|| {
-        let nonce = 1;
+        let nonce_val = 1u64;
 
         let dummy_proof = mock_snowbridge_message_proof();
         let token_location = Location::here();
@@ -290,15 +290,14 @@ fn test_inbound_queue_transfer_tanssi_works() {
             ForeignTokenERC20 { token_id: tanssi_token_id.into(), value: tanssi_token_transfer_value },
         ];
 
-        let _execution_fee = 0;
-
+        let beneficiary = AccountId::from(FERDIE);
         let instructions = vec![DepositAsset {
             assets: Wild(AllCounted(1)),
             beneficiary: Location::new(
                 0,
                 AccountId32 {
                     network: None,
-                    id: H256::random().into(),
+                    id: beneficiary.clone().into(),
                 },
             ),
         }];
@@ -310,7 +309,7 @@ fn test_inbound_queue_transfer_tanssi_works() {
 
         let encoded_data = encode_message_to_eth_payload(&Message {
             gateway: H160::random(),
-            nonce,
+            nonce: nonce_val,
             origin: EthereumGatewayAddress::get(),
             assets,
             payload: Payload::Raw(xcm_bytes.encode()),
@@ -320,6 +319,7 @@ fn test_inbound_queue_transfer_tanssi_works() {
             relayer_fee: 0,
         });
 
+        let native_balance_before = System::account(beneficiary.clone()).data.free;
         assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
@@ -328,11 +328,10 @@ fn test_inbound_queue_transfer_tanssi_works() {
             },
             proof: dummy_proof.clone(),
         })), Ok(()));
+        let native_balance_after = System::account(beneficiary.clone()).data.free;
+        assert_eq!(native_balance_after - native_balance_before, tanssi_token_transfer_value.into());
 
         let events = frame_system::Pallet::<Runtime>::events();
-        for e in events.clone() {
-            println!("Event: {:?}", e.event);
-        }
 
         let mut found_message = false;
         let mut found_minted = false;
@@ -341,13 +340,13 @@ fn test_inbound_queue_transfer_tanssi_works() {
             match &record.event {
                 RuntimeEvent::EthereumInboundQueueV2(
                     snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce, .. }
-                ) if *nonce == *nonce => {
+                ) if *nonce == nonce_val => {
                     found_message = true;
                 }
 
                 RuntimeEvent::Balances(
                     pallet_balances::Event::Minted { amount, .. }
-                ) if *amount == 123_456_789_000u128 => {
+                ) if *amount == tanssi_token_transfer_value => {
                     found_minted = true;
                 }
 
@@ -372,7 +371,7 @@ fn test_inbound_queue_transfer_tanssi_and_eth_works() {
                 (AccountId::from(BOB), 100 * UNIT),
             ]
         ).build().execute_with(|| {
-        let nonce = 1;
+        let nonce_val = 1u64;
 
         let dummy_proof = mock_snowbridge_message_proof();
         let token_location = Location::here();
@@ -426,17 +425,14 @@ fn test_inbound_queue_transfer_tanssi_and_eth_works() {
             ForeignTokenERC20 { token_id: tanssi_token_id.into(), value: tanssi_token_transfer_value },
         ];
 
-        println!("assets: {:?}", assets);
-
-        let _execution_fee = 0;
-
+        let beneficiary = AccountId::from(FERDIE);
         let instructions = vec![DepositAsset {
             assets: Wild(AllCounted(2)),
             beneficiary: Location::new(
                 0,
                 AccountId32 {
                     network: None,
-                    id: H256::random().into(),
+                    id: beneficiary.clone().into(),
                 },
             ),
         }];
@@ -449,7 +445,7 @@ fn test_inbound_queue_transfer_tanssi_and_eth_works() {
 
         let encoded_data = encode_message_to_eth_payload(&Message {
             gateway: H160::random(),
-            nonce,
+            nonce: nonce_val,
             origin: EthereumGatewayAddress::get(),
             assets,
             payload: Payload::Raw(xcm_bytes.encode()),
@@ -458,6 +454,9 @@ fn test_inbound_queue_transfer_tanssi_and_eth_works() {
             execution_fee: 0,
             relayer_fee: 0,
         });
+
+        let native_balance_before = System::account(beneficiary.clone()).data.free;
+        let foreign_asset_balance_before = ForeignAssets::balance(asset_id, AccountId::from(beneficiary.clone()));
 
         assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
             event_log: Log {
@@ -468,10 +467,13 @@ fn test_inbound_queue_transfer_tanssi_and_eth_works() {
             proof: dummy_proof.clone(),
         })), Ok(()));
 
+        let native_balance_after = System::account(beneficiary.clone()).data.free;
+        let foreign_asset_balance_after = ForeignAssets::balance(asset_id, AccountId::from(beneficiary.clone()));
+
+        assert_eq!(foreign_asset_balance_after - foreign_asset_balance_before, eth_value.into());
+        assert_eq!(native_balance_after - native_balance_before, tanssi_token_transfer_value.into());
+
         let events = frame_system::Pallet::<Runtime>::events();
-        for e in events.clone() {
-            println!("Event: {:?}", e.event);
-        }
 
         let mut found_message = false;
         let mut found_minted = false;
@@ -481,7 +483,7 @@ fn test_inbound_queue_transfer_tanssi_and_eth_works() {
             match &record.event {
                 RuntimeEvent::EthereumInboundQueueV2(
                     snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce, .. }
-                ) if *nonce == *nonce => {
+                ) if *nonce == nonce_val => {
                     found_message = true;
                 }
 
@@ -519,7 +521,7 @@ fn test_inbound_queue_transfer_erc20_works() {
                 (AccountId::from(BOB), 100 * UNIT),
             ]
         ).build().execute_with(|| {
-        let nonce = 1;
+        let nonce_val = 1u64;
 
         let dummy_proof = mock_snowbridge_message_proof();
         let erc20_token_id = hex_literal::hex!("c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
@@ -552,10 +554,6 @@ fn test_inbound_queue_transfer_erc20_works() {
             NativeTokenERC20 { token_id: erc20_token_id.into(), value: token_value },
         ];
 
-        println!("assets: {:?}", assets);
-
-        let _execution_fee = 0;
-
         let instructions = vec![DepositAsset {
             assets: Wild(AllCounted(1)),
             beneficiary: Location::new(
@@ -574,7 +572,7 @@ fn test_inbound_queue_transfer_erc20_works() {
 
         let encoded_data = encode_message_to_eth_payload(&Message {
             gateway: H160::random(),
-            nonce,
+            nonce: nonce_val,
             origin: EthereumGatewayAddress::get(),
             assets,
             payload: Payload::Raw(xcm_bytes.encode()),
@@ -584,6 +582,7 @@ fn test_inbound_queue_transfer_erc20_works() {
             relayer_fee: 0,
         });
 
+        let foreign_asset_balance_before = ForeignAssets::balance(asset_id, AccountId::from(beneficiary.clone()));
         assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
@@ -592,11 +591,10 @@ fn test_inbound_queue_transfer_erc20_works() {
             },
             proof: dummy_proof.clone(),
         })), Ok(()));
+        let foreign_asset_balance_after = ForeignAssets::balance(asset_id, AccountId::from(beneficiary.clone()));
+        assert_eq!(foreign_asset_balance_after - foreign_asset_balance_before, token_value.into());
 
         let events = frame_system::Pallet::<Runtime>::events();
-        for e in events.clone() {
-            println!("Event: {:?}", e.event);
-        }
 
         let mut found_message = false;
         let mut found_issued = false;
@@ -605,13 +603,13 @@ fn test_inbound_queue_transfer_erc20_works() {
             match &record.event {
                 RuntimeEvent::EthereumInboundQueueV2(
                     snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce, .. }
-                ) if *nonce == *nonce => {
+                ) if *nonce == nonce_val => {
                     found_message = true;
                 }
 
                 RuntimeEvent::ForeignAssets(
                     pallet_assets::Event::Issued { amount, .. }
-                ) if *amount == 123_456_000u128 => {
+                ) if *amount == token_value => {
                     found_issued = true;
                 }
 
@@ -636,7 +634,7 @@ fn test_inbound_queue_tanssi_assets_trapped_incorrect_xcm_works() {
                 (AccountId::from(BOB), 100 * UNIT),
             ]
         ).build().execute_with(|| {
-        let nonce = 1;
+        let nonce_val = 1u64;
 
         let dummy_proof = mock_snowbridge_message_proof();
         let erc20_token_id = hex_literal::hex!("c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
@@ -669,10 +667,6 @@ fn test_inbound_queue_tanssi_assets_trapped_incorrect_xcm_works() {
             NativeTokenERC20 { token_id: erc20_token_id.into(), value: token_value },
         ];
 
-        println!("assets: {:?}", assets);
-
-        let _execution_fee = 0;
-
         let instructions = vec![];
 
         let xcm: Xcm<()> = instructions.into();
@@ -682,7 +676,7 @@ fn test_inbound_queue_tanssi_assets_trapped_incorrect_xcm_works() {
 
         let encoded_data = encode_message_to_eth_payload(&Message {
             gateway: H160::random(),
-            nonce,
+            nonce: nonce_val,
             origin: EthereumGatewayAddress::get(),
             assets,
             payload: Payload::Raw(xcm_bytes.encode()),
@@ -702,9 +696,6 @@ fn test_inbound_queue_tanssi_assets_trapped_incorrect_xcm_works() {
         })), Ok(()));
 
         let events = frame_system::Pallet::<Runtime>::events();
-        for e in events.clone() {
-            println!("Event: {:?}", e.event);
-        }
 
         let mut found_message = false;
         let mut found_trapped = false;
@@ -713,7 +704,7 @@ fn test_inbound_queue_tanssi_assets_trapped_incorrect_xcm_works() {
             match &record.event {
                 RuntimeEvent::EthereumInboundQueueV2(
                     snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce, .. }
-                ) if *nonce == *nonce => {
+                ) if *nonce == nonce_val => {
                     found_message = true;
                 }
 
@@ -754,7 +745,7 @@ fn test_inbound_queue_erc20_assets_trapped_incorrect_xcm_works() {
                 (AccountId::from(BOB), 100 * UNIT),
             ]
         ).build().execute_with(|| {
-        let nonce = 1;
+        let nonce_val = 1u64;
 
         let dummy_proof = mock_snowbridge_message_proof();
         let erc20_token_id = hex_literal::hex!("c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
@@ -784,10 +775,6 @@ fn test_inbound_queue_erc20_assets_trapped_incorrect_xcm_works() {
 
         let assets = vec![];
 
-        println!("assets: {:?}", assets);
-
-        let _execution_fee = 0;
-
         let instructions = vec![];
 
         let xcm: Xcm<()> = instructions.into();
@@ -798,7 +785,7 @@ fn test_inbound_queue_erc20_assets_trapped_incorrect_xcm_works() {
         let eth_amount = 789_000_000u128;
         let encoded_data = encode_message_to_eth_payload(&Message {
             gateway: H160::random(),
-            nonce,
+            nonce: nonce_val,
             origin: EthereumGatewayAddress::get(),
             assets,
             payload: Payload::Raw(xcm_bytes.encode()),
@@ -818,9 +805,6 @@ fn test_inbound_queue_erc20_assets_trapped_incorrect_xcm_works() {
         })), Ok(()));
 
         let events = frame_system::Pallet::<Runtime>::events();
-        for e in events.clone() {
-            println!("Event: {:?}", e.event);
-        }
 
         let mut found_message = false;
         let mut found_trapped = false;
@@ -829,7 +813,7 @@ fn test_inbound_queue_erc20_assets_trapped_incorrect_xcm_works() {
             match &record.event {
                 RuntimeEvent::EthereumInboundQueueV2(
                     snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce, .. }
-                ) if *nonce == *nonce => {
+                ) if *nonce == nonce_val => {
                     found_message = true;
                 }
 
@@ -870,7 +854,7 @@ fn test_inbound_queue_incorrect_xcm_trap_assets_works() {
                 (AccountId::from(BOB), 100 * UNIT),
             ]
         ).build().execute_with(|| {
-        let nonce = 1;
+        let nonce_val = 1u64;
 
         let dummy_proof = mock_snowbridge_message_proof();
         let erc20_token_id = hex_literal::hex!("c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
@@ -900,10 +884,6 @@ fn test_inbound_queue_incorrect_xcm_trap_assets_works() {
 
         let assets = vec![];
 
-        println!("assets: {:?}", assets);
-
-        let _execution_fee = 0;
-
         let instructions = vec![
             // Just random incorrect instruction
             WithdrawAsset(Assets::new())
@@ -917,7 +897,7 @@ fn test_inbound_queue_incorrect_xcm_trap_assets_works() {
         let eth_amount = 789_000_000u128;
         let encoded_data = encode_message_to_eth_payload(&Message {
             gateway: H160::random(),
-            nonce,
+            nonce: nonce_val,
             origin: EthereumGatewayAddress::get(),
             assets,
             payload: Payload::Raw(xcm_bytes.encode()),
@@ -937,9 +917,6 @@ fn test_inbound_queue_incorrect_xcm_trap_assets_works() {
         })), Ok(()));
 
         let events = frame_system::Pallet::<Runtime>::events();
-        for e in events.clone() {
-            println!("Event: {:?}", e.event);
-        }
 
         let mut found_message = false;
         let mut found_trapped = false;
@@ -948,7 +925,7 @@ fn test_inbound_queue_incorrect_xcm_trap_assets_works() {
             match &record.event {
                 RuntimeEvent::EthereumInboundQueueV2(
                     snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce, .. }
-                ) if *nonce == *nonce => {
+                ) if *nonce == nonce_val => {
                     found_message = true;
                 }
 
