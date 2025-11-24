@@ -315,7 +315,6 @@ xcm-runtime-apis = { git = "https://github.com/moondance-labs/polkadot-sdk", bra
 # Bridges (wasm)
 alloy-core = { version = "1.1.0", default-features = false }
 alloy-sol-types = { version = "0.4.2", default-features = false }
-ethers = { git = "https://github.com/gakonst/ethers-rs", default-features = false }
 milagro-bls = { package = "snowbridge-milagro-bls", version = "1.5.4", default-features = false }
 snowbridge-beacon-primitives = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 snowbridge-core = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }

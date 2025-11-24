@@ -39,7 +39,7 @@ use {
         },
         ParaId,
     },
-    ethers::abi::{encode, Token},
+    ethabi::{encode, Token},
     frame_support::{
         assert_ok,
         traits::{OnFinalize, OnInitialize},
@@ -62,6 +62,7 @@ use {
     snowbridge_verification_primitives::Proof,
     sp_core::Pair,
     sp_core::Public,
+    sp_core::H160,
     sp_keystore::{KeystoreExt, KeystorePtr},
     sp_runtime::{
         traits::{Dispatchable, Header, One, SaturatedConversion, Zero},
@@ -1640,7 +1641,7 @@ pub fn encode_message_to_eth_payload(message: &Message) -> Vec<u8> {
         .map(|asset| match asset {
             NativeTokenERC20 { token_id, value } => {
                 let data = encode(&[
-                    Token::Address(ethers::types::H160::from_slice(token_id.as_bytes())),
+                    Token::Address(H160::from_slice(token_id.as_bytes())),
                     Token::Uint((*value).into()),
                 ]);
 
@@ -1663,7 +1664,7 @@ pub fn encode_message_to_eth_payload(message: &Message) -> Vec<u8> {
 
         Payload::CreateAsset { token, network } => {
             let encoded = encode(&[
-                Token::Address(ethers::types::H160::from_slice(token.as_bytes())),
+                Token::Address(H160::from_slice(token.as_bytes())),
                 Token::Uint((*network as u8).into()),
             ]);
             (1u8, encoded)
@@ -1671,7 +1672,7 @@ pub fn encode_message_to_eth_payload(message: &Message) -> Vec<u8> {
     };
 
     let payload_tuple = Token::Tuple(vec![
-        Token::Address(ethers::types::H160::from_slice(message.origin.as_bytes())),
+        Token::Address(H160::from_slice(message.origin.as_bytes())),
         Token::Array(assets_tokens),
         Token::Tuple(vec![Token::Uint(xcm_kind.into()), Token::Bytes(xcm_bytes)]),
         match &message.claimer {
