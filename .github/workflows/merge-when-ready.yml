@@ -133,6 +133,11 @@ jobs:
           uses: ./.github/workflow-templates/cargo-build
           with:
             features: "fast-runtime,runtime-benchmarks,metadata-hash"
+        - name: Upload benchmark runtimes
+          uses: actions/upload-artifact@v4
+          with:
+            name: runtimes-benchmark
+            path: runtimes
         - name: Upload binary
           uses: actions/upload-artifact@v4
           with:
@@ -146,33 +151,37 @@ jobs:
             matrix:
                 chains:
                     - binary: tanssi-relay
-                      chain: dancelight-dev
+                      runtime: dancelight
                     - binary: tanssi-relay
-                      chain: starlight-dev
+                      runtime: starlight
                     - binary: tanssi-node
-                      chain: flashbox-dev
+                      runtime: flashbox
                     - binary: tanssi-node
-                      chain: dancebox-dev
+                      runtime: dancebox
                     - binary: container-chain-simple-node
-                      chain: dev
+                      runtime: container-chain-template-simple
                     - binary: container-chain-frontier-node
-                      chain: dev
+                      runtime: container-chain-template-frontier
         steps:
             - name: Checkout
               uses: actions/checkout@v5
             - name: "Download benchmark binaries"
               uses: actions/download-artifact@v6
               with:
-                  name: binaries-benchmark
-                  path: target/release
+                name: runtimes-benchmark
+                path: target/release
 
-            - name: Make binaries executable
-              uses: ./.github/workflow-templates/make-binaries-executable
+            - name: Install frame-omni-bencher
+              uses: ./.github/workflow-templates/install-frame-omni-bencher
 
             - name: "Benchmark test ${{ matrix.binary }}"
               shell: bash
               run: |
-                BINARY=./target/release/${{ matrix.chains.binary }} CHAIN=${{ matrix.chains.chain }} TEMPLATE_PATH=./benchmarking/frame-weight-runtime-template.hbs tools/benchmarking.sh "*" "*" --check
+                ls -la target/release
+                RUNTIME_NAME=${{ matrix.chains.runtime }} \
+                  RUNTIME=target/release/$(echo $RUNTIME_NAME | tr '-' '_')_runtime.compact.compressed.wasm \
+                  TEMPLATE_PATH=./benchmarking/frame-weight-runtime-template.hbs \
+                  tools/benchmarking.sh "*" "*" --check
 
     # Check that the smoke test suite works.
     # This is not to test that our networks are good, but that the test suite itself is working.
