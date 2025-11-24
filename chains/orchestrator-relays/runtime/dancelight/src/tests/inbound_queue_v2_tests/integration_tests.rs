@@ -61,12 +61,6 @@ fn test_inbound_queue_message_symbiotic_passing() {
             ]
         ).build().execute_with(|| {
 
-        // TODO: Check if we need this
-        snowbridge_pallet_system::Channels::<Runtime>::set(PRIMARY_GOVERNANCE_CHANNEL, Some(Channel {
-            agent_id: Default::default(),
-            para_id: Default::default(),
-        }));
-
         let dummy_proof = mock_snowbridge_message_proof();
 
         let payload_validators = vec![
