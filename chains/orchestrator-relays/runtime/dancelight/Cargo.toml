@@ -181,8 +181,8 @@ snowbridge-pallet-inbound-queue-v2 = { workspace = true }
 snowbridge-pallet-system-v2 = { workspace = true }
 
 [dev-dependencies]
+alloy-core = {workspace = true}
 alloy-sol-types = { workspace = true, default-features = true }
-ethabi = { workspace = true }
 finality-grandpa = { workspace = true, default-features = true, features = [ "derive-codec" ] }
 milagro-bls = { workspace = true, features = [ "std" ] }
 rand = { workspace = true, features = [ "std", "std_rng" ] }

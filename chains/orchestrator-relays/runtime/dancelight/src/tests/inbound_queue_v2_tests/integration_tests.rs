@@ -18,25 +18,24 @@ use {
     crate::{
         bridge_to_ethereum_config::EthereumGatewayAddress,
         tests::common::{
-            encode_message_to_eth_payload, mock_snowbridge_message_proof, root_origin, ExtBuilder,
-            ALICE, BOB, FERDIE, UNIT,
+            mock_snowbridge_message_proof, root_origin, ExtBuilder, ALICE, BOB, FERDIE, UNIT,
         },
         xcm_config::UniversalLocation,
         AccountId, Balances, EthereumInboundQueueV2, EthereumSovereignAccount, EthereumSystemV2,
         ExternalValidators, ForeignAssets, ForeignAssetsCreator, Runtime, RuntimeEvent, System,
     },
+    alloy_core::{
+        primitives::{Address, FixedBytes},
+        sol_types::{SolEvent, SolValue},
+    },
     dancelight_runtime_constants::snowbridge::{EthereumLocation, EthereumNetwork},
     frame_support::assert_ok,
     frame_system::pallet_prelude::OriginFor,
-    hex_literal::hex,
     keyring::Sr25519Keyring,
     parity_scale_codec::Encode,
-    snowbridge_inbound_queue_primitives::v2::{
-        EthereumAsset::{ForeignTokenERC20, NativeTokenERC20},
-        Message, Payload,
-    },
+    snowbridge_inbound_queue_primitives::v2::message::IGatewayV2,
     snowbridge_verification_primitives::{EventProof, Log},
-    sp_core::H160,
+    sp_core::H256,
     tanssi_runtime_common::processors::v2::RawPayload,
     tp_bridge::symbiotic_message_processor::{
         InboundCommand, Message as SymbioticMessage, Payload as SymbioticPayload, MAGIC_BYTES,
@@ -59,8 +58,8 @@ fn test_inbound_queue_message_symbiotic_passing() {
                 (AccountId::from(BOB), 100 * UNIT),
             ]
         ).build().execute_with(|| {
-
         let dummy_proof = mock_snowbridge_message_proof();
+        let nonce_val = 1u64;
 
         let payload_validators = vec![
             Sr25519Keyring::Charlie.to_account_id(),
@@ -78,23 +77,28 @@ fn test_inbound_queue_message_symbiotic_passing() {
 
         let symbiotic_bytes = RawPayload::Symbiotic(payload.encode());
 
-        let encoded_data = encode_message_to_eth_payload(&Message {
-            gateway: H160::random(),
-            nonce: 1,
-            origin: EthereumGatewayAddress::get(),
-            assets: vec![],
-            payload: Payload::Raw(symbiotic_bytes.encode()),
-            claimer: None,
-            value: 0,
-            execution_fee: 0,
-            relayer_fee: 0,
-        });
+        let event = IGatewayV2::OutboundMessageAccepted {
+            nonce: nonce_val,
+            payload: IGatewayV2::Payload {
+                origin: Address::from_slice(EthereumGatewayAddress::get().as_bytes()),
+                assets: vec![],
+                xcm: IGatewayV2::Xcm { kind: 0, data: symbiotic_bytes.encode().into() },
+                claimer: vec![].into(),
+                value: 0,
+                executionFee: 0,
+                relayerFee: 0,
+            },
+        };
 
         assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
-                topics: vec![hex!("550e2067494b1736ea5573f2d19cdc0ac95b410fff161bf16f11c6229655ec9c").into()],
-                data: encoded_data,
+                topics: event
+                    .encode_topics()
+                    .into_iter()
+                    .map(|word| H256::from(word.0.0))
+                    .collect(),
+                data: event.encode_data(),
             },
             proof: dummy_proof.clone(),
         })), Ok(()));
@@ -149,7 +153,7 @@ fn test_inbound_queue_transfer_eth_works() {
             1
         ));
 
-        let assets = vec![];
+        // let assets = vec![];
         let beneficiary = AccountId::from(FERDIE);
 
         let instructions = vec![DepositAsset {
@@ -169,25 +173,30 @@ fn test_inbound_queue_transfer_eth_works() {
         let xcm_bytes = RawPayload::Xcm(versioned_message_xcm.encode());
         let token_value = 12345u128;
 
-        let encoded_data = encode_message_to_eth_payload(&Message {
-            gateway: H160::random(),
-            nonce: nonce_val,
-            origin: EthereumGatewayAddress::get(),
-            assets,
-            payload: Payload::Raw(xcm_bytes.encode()),
-            claimer: None,
-            value: token_value.into(),
-            execution_fee: 0,
-            relayer_fee: 0,
-        });
-
         let foreign_asset_balance_before = ForeignAssets::balance(asset_id, AccountId::from(beneficiary.clone()));
+
+        let event = IGatewayV2::OutboundMessageAccepted {
+            nonce: nonce_val,
+            payload: IGatewayV2::Payload {
+                origin: Address::from_slice(EthereumGatewayAddress::get().as_bytes()),
+                assets: vec![],
+                xcm: IGatewayV2::Xcm { kind: 0, data: xcm_bytes.encode().into() },
+                claimer: vec![].into(),
+                value: token_value.into(),
+                executionFee: 0,
+                relayerFee: 0,
+            },
+        };
 
         assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
-                topics: vec![hex!("550e2067494b1736ea5573f2d19cdc0ac95b410fff161bf16f11c6229655ec9c").into()],
-                data: encoded_data,
+                topics: event
+                    .encode_topics()
+                    .into_iter()
+                    .map(|word| H256::from(word.0.0))
+                    .collect(),
+                data: event.encode_data(),
             },
             proof: dummy_proof.clone(),
         })), Ok(()));
@@ -286,9 +295,6 @@ fn test_inbound_queue_transfer_tanssi_works() {
             snowbridge_pallet_system::NativeToForeignId::<Runtime>::get(&token_location_reanchored).unwrap();
 
         let tanssi_token_transfer_value = 123_456_789_000u128;
-        let assets = vec![
-            ForeignTokenERC20 { token_id: tanssi_token_id.into(), value: tanssi_token_transfer_value },
-        ];
 
         let beneficiary = AccountId::from(FERDIE);
         let instructions = vec![DepositAsset {
@@ -307,24 +313,33 @@ fn test_inbound_queue_transfer_tanssi_works() {
 
         let xcm_bytes = RawPayload::Xcm(versioned_message_xcm.encode());
 
-        let encoded_data = encode_message_to_eth_payload(&Message {
-            gateway: H160::random(),
+        let asset = IGatewayV2::AsForeignTokenERC20 {token_id: FixedBytes(tanssi_token_id.into()), value: tanssi_token_transfer_value};
+        let event = IGatewayV2::OutboundMessageAccepted {
             nonce: nonce_val,
-            origin: EthereumGatewayAddress::get(),
-            assets,
-            payload: Payload::Raw(xcm_bytes.encode()),
-            claimer: None,
-            value: 0,
-            execution_fee: 0,
-            relayer_fee: 0,
-        });
+            payload: IGatewayV2::Payload {
+                origin: Address::from_slice(EthereumGatewayAddress::get().as_bytes()),
+                assets: vec![IGatewayV2::EthereumAsset {
+                    kind: 1,
+                    data: asset.abi_encode().into(),
+                }].into(),
+                xcm: IGatewayV2::Xcm { kind: 0, data: xcm_bytes.encode().into() },
+                claimer: vec![].into(),
+                value: 0,
+                executionFee: 0,
+                relayerFee: 0,
+            },
+        };
 
         let native_balance_before = System::account(beneficiary.clone()).data.free;
         assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
-                topics: vec![hex!("550e2067494b1736ea5573f2d19cdc0ac95b410fff161bf16f11c6229655ec9c").into()],
-                data: encoded_data,
+                topics: event
+                    .encode_topics()
+                    .into_iter()
+                    .map(|word| H256::from(word.0.0))
+                    .collect(),
+                data: event.encode_data(),
             },
             proof: dummy_proof.clone(),
         })), Ok(()));
@@ -421,9 +436,6 @@ fn test_inbound_queue_transfer_tanssi_and_eth_works() {
             snowbridge_pallet_system::NativeToForeignId::<Runtime>::get(&token_location_reanchored).unwrap();
 
         let tanssi_token_transfer_value = 123_456_000u128;
-        let assets = vec![
-            ForeignTokenERC20 { token_id: tanssi_token_id.into(), value: tanssi_token_transfer_value },
-        ];
 
         let beneficiary = AccountId::from(FERDIE);
         let instructions = vec![DepositAsset {
@@ -443,17 +455,22 @@ fn test_inbound_queue_transfer_tanssi_and_eth_works() {
         let xcm_bytes = RawPayload::Xcm(versioned_message_xcm.encode());
         let eth_value = 789_000_000u128;
 
-        let encoded_data = encode_message_to_eth_payload(&Message {
-            gateway: H160::random(),
+        let asset = IGatewayV2::AsForeignTokenERC20 {token_id: FixedBytes(tanssi_token_id.into()), value: tanssi_token_transfer_value};
+        let event = IGatewayV2::OutboundMessageAccepted {
             nonce: nonce_val,
-            origin: EthereumGatewayAddress::get(),
-            assets,
-            payload: Payload::Raw(xcm_bytes.encode()),
-            claimer: None,
-            value: eth_value,
-            execution_fee: 0,
-            relayer_fee: 0,
-        });
+            payload: IGatewayV2::Payload {
+                origin: Address::from_slice(EthereumGatewayAddress::get().as_bytes()),
+                assets: vec![IGatewayV2::EthereumAsset {
+                    kind: 1,
+                    data: asset.abi_encode().into(),
+                }].into(),
+                xcm: IGatewayV2::Xcm { kind: 0, data: xcm_bytes.encode().into() },
+                claimer: vec![].into(),
+                value: eth_value,
+                executionFee: 0,
+                relayerFee: 0,
+            },
+        };
 
         let native_balance_before = System::account(beneficiary.clone()).data.free;
         let foreign_asset_balance_before = ForeignAssets::balance(asset_id, AccountId::from(beneficiary.clone()));
@@ -461,8 +478,12 @@ fn test_inbound_queue_transfer_tanssi_and_eth_works() {
         assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
-                topics: vec![hex!("550e2067494b1736ea5573f2d19cdc0ac95b410fff161bf16f11c6229655ec9c").into()],
-                data: encoded_data,
+                topics: event
+                    .encode_topics()
+                    .into_iter()
+                    .map(|word| H256::from(word.0.0))
+                    .collect(),
+                data: event.encode_data(),
             },
             proof: dummy_proof.clone(),
         })), Ok(()));
@@ -550,9 +571,6 @@ fn test_inbound_queue_transfer_erc20_works() {
         ));
 
         let token_value = 123_456_000u128;
-        let assets = vec![
-            NativeTokenERC20 { token_id: erc20_token_id.into(), value: token_value },
-        ];
 
         let beneficiary = AccountId::from(FERDIE);
         let instructions = vec![DepositAsset {
@@ -571,24 +589,33 @@ fn test_inbound_queue_transfer_erc20_works() {
 
         let xcm_bytes = RawPayload::Xcm(versioned_message_xcm.encode());
 
-        let encoded_data = encode_message_to_eth_payload(&Message {
-            gateway: H160::random(),
+        let asset = IGatewayV2::AsNativeTokenERC20 {token_id: Address::from_slice(&erc20_token_id), value: token_value};
+        let event = IGatewayV2::OutboundMessageAccepted {
             nonce: nonce_val,
-            origin: EthereumGatewayAddress::get(),
-            assets,
-            payload: Payload::Raw(xcm_bytes.encode()),
-            claimer: None,
-            value: 0,
-            execution_fee: 0,
-            relayer_fee: 0,
-        });
+            payload: IGatewayV2::Payload {
+                origin: Address::from_slice(EthereumGatewayAddress::get().as_bytes()),
+                assets: vec![IGatewayV2::EthereumAsset {
+                    kind: 0,
+                    data: asset.abi_encode().into(),
+                }].into(),
+                xcm: IGatewayV2::Xcm { kind: 0, data: xcm_bytes.encode().into() },
+                claimer: vec![].into(),
+                value: 0,
+                executionFee: 0,
+                relayerFee: 0,
+            },
+        };
 
         let foreign_asset_balance_before = ForeignAssets::balance(asset_id, AccountId::from(beneficiary.clone()));
         assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
-                topics: vec![hex!("550e2067494b1736ea5573f2d19cdc0ac95b410fff161bf16f11c6229655ec9c").into()],
-                data: encoded_data,
+                topics: event
+                    .encode_topics()
+                    .into_iter()
+                    .map(|word| H256::from(word.0.0))
+                    .collect(),
+                data: event.encode_data(),
             },
             proof: dummy_proof.clone(),
         })), Ok(()));
@@ -664,9 +691,6 @@ fn test_inbound_queue_tanssi_assets_trapped_incorrect_xcm_works() {
         ));
 
         let token_value = 123_456_000u128;
-        let assets = vec![
-            NativeTokenERC20 { token_id: erc20_token_id.into(), value: token_value },
-        ];
 
         let instructions = vec![];
 
@@ -675,23 +699,32 @@ fn test_inbound_queue_tanssi_assets_trapped_incorrect_xcm_works() {
 
         let xcm_bytes = RawPayload::Xcm(versioned_message_xcm.encode());
 
-        let encoded_data = encode_message_to_eth_payload(&Message {
-            gateway: H160::random(),
+        let asset = IGatewayV2::AsNativeTokenERC20 {token_id: Address::from_slice(&erc20_token_id), value: token_value};
+        let event = IGatewayV2::OutboundMessageAccepted {
             nonce: nonce_val,
-            origin: EthereumGatewayAddress::get(),
-            assets,
-            payload: Payload::Raw(xcm_bytes.encode()),
-            claimer: None,
-            value: 0,
-            execution_fee: 0,
-            relayer_fee: 0,
-        });
+            payload: IGatewayV2::Payload {
+                origin: Address::from_slice(EthereumGatewayAddress::get().as_bytes()),
+                assets: vec![IGatewayV2::EthereumAsset {
+                    kind: 0,
+                    data: asset.abi_encode().into(),
+                }].into(),
+                xcm: IGatewayV2::Xcm { kind: 0, data: xcm_bytes.encode().into() },
+                claimer: vec![].into(),
+                value: 0,
+                executionFee: 0,
+                relayerFee: 0,
+            },
+        };
 
         assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
-                topics: vec![hex!("550e2067494b1736ea5573f2d19cdc0ac95b410fff161bf16f11c6229655ec9c").into()],
-                data: encoded_data,
+                topics: event
+                    .encode_topics()
+                    .into_iter()
+                    .map(|word| H256::from(word.0.0))
+                    .collect(),
+                data: event.encode_data(),
             },
             proof: dummy_proof.clone(),
         })), Ok(()));
@@ -774,8 +807,6 @@ fn test_inbound_queue_erc20_assets_trapped_incorrect_xcm_works() {
             1
         ));
 
-        let assets = vec![];
-
         let instructions = vec![];
 
         let xcm: Xcm<()> = instructions.into();
@@ -784,23 +815,29 @@ fn test_inbound_queue_erc20_assets_trapped_incorrect_xcm_works() {
         let xcm_bytes = RawPayload::Xcm(versioned_message_xcm.encode());
 
         let eth_amount = 789_000_000u128;
-        let encoded_data = encode_message_to_eth_payload(&Message {
-            gateway: H160::random(),
+
+        let event = IGatewayV2::OutboundMessageAccepted {
             nonce: nonce_val,
-            origin: EthereumGatewayAddress::get(),
-            assets,
-            payload: Payload::Raw(xcm_bytes.encode()),
-            claimer: None,
-            value: eth_amount,
-            execution_fee: 0,
-            relayer_fee: 0,
-        });
+            payload: IGatewayV2::Payload {
+                origin: Address::from_slice(EthereumGatewayAddress::get().as_bytes()),
+                assets: vec![].into(),
+                xcm: IGatewayV2::Xcm { kind: 0, data: xcm_bytes.encode().into() },
+                claimer: vec![].into(),
+                value: eth_amount,
+                executionFee: 0,
+                relayerFee: 0,
+            },
+        };
 
         assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
-                topics: vec![hex!("550e2067494b1736ea5573f2d19cdc0ac95b410fff161bf16f11c6229655ec9c").into()],
-                data: encoded_data,
+                topics: event
+                    .encode_topics()
+                    .into_iter()
+                    .map(|word| H256::from(word.0.0))
+                    .collect(),
+                data: event.encode_data(),
             },
             proof: dummy_proof.clone(),
         })), Ok(()));
@@ -883,8 +920,6 @@ fn test_inbound_queue_incorrect_xcm_trap_assets_works() {
             1
         ));
 
-        let assets = vec![];
-
         let instructions = vec![
             // Just random incorrect instruction
             WithdrawAsset(Assets::new())
@@ -896,23 +931,29 @@ fn test_inbound_queue_incorrect_xcm_trap_assets_works() {
         let xcm_bytes = RawPayload::Xcm(versioned_message_xcm.encode());
 
         let eth_amount = 789_000_000u128;
-        let encoded_data = encode_message_to_eth_payload(&Message {
-            gateway: H160::random(),
+
+        let event = IGatewayV2::OutboundMessageAccepted {
             nonce: nonce_val,
-            origin: EthereumGatewayAddress::get(),
-            assets,
-            payload: Payload::Raw(xcm_bytes.encode()),
-            claimer: None,
-            value: eth_amount,
-            execution_fee: 0,
-            relayer_fee: 0,
-        });
+            payload: IGatewayV2::Payload {
+                origin: Address::from_slice(EthereumGatewayAddress::get().as_bytes()),
+                assets: vec![].into(),
+                xcm: IGatewayV2::Xcm { kind: 0, data: xcm_bytes.encode().into() },
+                claimer: vec![].into(),
+                value: eth_amount,
+                executionFee: 0,
+                relayerFee: 0,
+            },
+        };
 
         assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
-                topics: vec![hex!("550e2067494b1736ea5573f2d19cdc0ac95b410fff161bf16f11c6229655ec9c").into()],
-                data: encoded_data,
+                topics: event
+                    .encode_topics()
+                    .into_iter()
+                    .map(|word| H256::from(word.0.0))
+                    .collect(),
+                data: event.encode_data(),
             },
             proof: dummy_proof.clone(),
         })), Ok(()));

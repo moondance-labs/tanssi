@@ -3903,6 +3903,7 @@ dependencies = [
 name = "dancelight-runtime"
 version = "0.1.0"
 dependencies = [
+ "alloy-core",
  "alloy-sol-types 0.4.2",
  "binary-merkle-tree",
  "bitvec",
@@ -3914,7 +3915,6 @@ dependencies = [
  "dancelight-runtime-constants",
  "dp-consensus",
  "dp-container-chain-genesis-data",
- "ethabi-decode",
  "finality-grandpa",
  "frame-benchmarking",
  "frame-executive",
