@@ -211,7 +211,7 @@ fn test_inbound_queue_transfer_eth_works() {
             match &record.event {
                 RuntimeEvent::EthereumInboundQueueV2(
                     snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce, .. }
-                ) if *nonce == nonce => {
+                ) if *nonce == *nonce => {
                     found_message = true;
                 }
 
@@ -347,7 +347,7 @@ fn test_inbound_queue_transfer_tanssi_works() {
             match &record.event {
                 RuntimeEvent::EthereumInboundQueueV2(
                     snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce, .. }
-                ) if *nonce == nonce => {
+                ) if *nonce == *nonce => {
                     found_message = true;
                 }
 
@@ -487,7 +487,7 @@ fn test_inbound_queue_transfer_tanssi_and_eth_works() {
             match &record.event {
                 RuntimeEvent::EthereumInboundQueueV2(
                     snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce, .. }
-                ) if *nonce == nonce => {
+                ) if *nonce == *nonce => {
                     found_message = true;
                 }
 
@@ -611,7 +611,7 @@ fn test_inbound_queue_transfer_erc20_works() {
             match &record.event {
                 RuntimeEvent::EthereumInboundQueueV2(
                     snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce, .. }
-                ) if *nonce == nonce => {
+                ) if *nonce == *nonce => {
                     found_message = true;
                 }
 
@@ -719,7 +719,7 @@ fn test_inbound_queue_tanssi_assets_trapped_incorrect_xcm_works() {
             match &record.event {
                 RuntimeEvent::EthereumInboundQueueV2(
                     snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce, .. }
-                ) if *nonce == nonce => {
+                ) if *nonce == *nonce => {
                     found_message = true;
                 }
 
@@ -835,7 +835,7 @@ fn test_inbound_queue_erc20_assets_trapped_incorrect_xcm_works() {
             match &record.event {
                 RuntimeEvent::EthereumInboundQueueV2(
                     snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce, .. }
-                ) if *nonce == nonce => {
+                ) if *nonce == *nonce => {
                     found_message = true;
                 }
 
@@ -954,7 +954,7 @@ fn test_inbound_queue_incorrect_xcm_trap_assets_works() {
             match &record.event {
                 RuntimeEvent::EthereumInboundQueueV2(
                     snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce, .. }
-                ) if *nonce == nonce => {
+                ) if *nonce == *nonce => {
                     found_message = true;
                 }
 

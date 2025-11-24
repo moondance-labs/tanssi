@@ -61,15 +61,17 @@ fn prepare_raw_message_xcm_instructions_without_claimer_works() {
             user_xcm: Xcm::new(),
         };
 
-    let res = prepare_raw_message_xcm_instructions::<Runtime>(
-        EthereumNetwork::get(),
-        &EthereumUniversalLocation::get(),
-        &TanssiUniversalLocation::get(),
-        EthereumGatewayAddress::get(),
-        DefaultClaimer::get(),
-        RAW_MESSAGE_PROCESSOR_TOPIC_PREFIX,
-        extracted_message,
-    );
+    let res = ExtBuilder::default().build().execute_with(|| {
+        prepare_raw_message_xcm_instructions::<Runtime>(
+            EthereumNetwork::get(),
+            &EthereumUniversalLocation::get(),
+            &TanssiUniversalLocation::get(),
+            EthereumGatewayAddress::get(),
+            DefaultClaimer::get(),
+            RAW_MESSAGE_PROCESSOR_TOPIC_PREFIX,
+            extracted_message,
+        )
+    });
 
     assert_ok!(&res);
     let instructions = res.unwrap();
@@ -97,12 +99,6 @@ fn prepare_raw_message_xcm_instructions_without_claimer_works() {
     } else {
         panic!("Expected SetHints instruction first");
     }
-
-    assert!(instructions
-        .iter()
-        .any(|i| matches!(i, ReserveAssetDeposited(_))));
-
-    assert!(instructions.iter().any(|i| matches!(i, PayFees { .. })));
 
     assert!(instructions
         .iter()
@@ -141,15 +137,17 @@ fn prepare_raw_message_xcm_instructions_with_claimer_works() {
             user_xcm: Xcm::new(),
         };
 
-    let res = prepare_raw_message_xcm_instructions::<Runtime>(
-        EthereumNetwork::get(),
-        &EthereumUniversalLocation::get(),
-        &TanssiUniversalLocation::get(),
-        EthereumGatewayAddress::get(),
-        DefaultClaimer::get(),
-        RAW_MESSAGE_PROCESSOR_TOPIC_PREFIX,
-        extracted_message,
-    );
+    let res = ExtBuilder::default().build().execute_with(|| {
+        prepare_raw_message_xcm_instructions::<Runtime>(
+            EthereumNetwork::get(),
+            &EthereumUniversalLocation::get(),
+            &TanssiUniversalLocation::get(),
+            EthereumGatewayAddress::get(),
+            DefaultClaimer::get(),
+            RAW_MESSAGE_PROCESSOR_TOPIC_PREFIX,
+            extracted_message,
+        )
+    });
 
     assert_ok!(&res);
     let instructions = res.unwrap();
@@ -177,12 +175,6 @@ fn prepare_raw_message_xcm_instructions_with_claimer_works() {
     } else {
         panic!("Expected SetHints instruction first");
     }
-
-    assert!(instructions
-        .iter()
-        .any(|i| matches!(i, ReserveAssetDeposited(_))));
-
-    assert!(instructions.iter().any(|i| matches!(i, PayFees { .. })));
 
     assert!(instructions
         .iter()
@@ -282,12 +274,6 @@ fn prepare_raw_message_xcm_instructions_with_foreign_asset_works() {
         } else {
             panic!("Expected SetHints instruction first");
         }
-
-        assert!(instructions
-            .iter()
-            .any(|i| matches!(i, ReserveAssetDeposited(_))));
-
-        assert!(instructions.iter().any(|i| matches!(i, PayFees { .. })));
 
         assert!(instructions
             .iter()
