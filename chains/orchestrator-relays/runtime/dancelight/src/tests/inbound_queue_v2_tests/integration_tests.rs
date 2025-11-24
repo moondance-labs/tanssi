@@ -36,7 +36,7 @@ use {
         Message, Payload,
     },
     snowbridge_verification_primitives::{EventProof, Log},
-    sp_core::{H160, H256},
+    sp_core::H160,
     tanssi_runtime_common::processors::v2::RawPayload,
     tp_bridge::symbiotic_message_processor::{
         InboundCommand, Message as SymbioticMessage, Payload as SymbioticPayload, MAGIC_BYTES,
@@ -554,13 +554,14 @@ fn test_inbound_queue_transfer_erc20_works() {
             NativeTokenERC20 { token_id: erc20_token_id.into(), value: token_value },
         ];
 
+        let beneficiary = AccountId::from(FERDIE);
         let instructions = vec![DepositAsset {
             assets: Wild(AllCounted(1)),
             beneficiary: Location::new(
                 0,
                 AccountId32 {
                     network: None,
-                    id: H256::random().into(),
+                    id: beneficiary.clone().into(),
                 },
             ),
         }];
