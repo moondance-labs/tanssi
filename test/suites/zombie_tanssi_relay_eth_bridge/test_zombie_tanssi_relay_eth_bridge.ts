@@ -619,6 +619,11 @@ describeSuite({
                     "Tanssi-relay"
                 );
 
+                const sessionValidators = await relayApi.query.session.validators();
+                expect(sessionValidators).to.contain(operatorAccount.address);
+                expect(sessionValidators).to.contain(operatorAccount2.address);
+                expect(sessionValidators).to.contain(operatorAccount3.address);
+
                 // In new era's first session at least one block need to be produced by the operator
                 const blocksPerSession = 10;
                 const countedSet = new Set([
@@ -1041,6 +1046,24 @@ describeSuite({
                     feesAccountBalanceBeforeSending.toNumber()
                 );
 
+                async function checkSovereignBalance() {
+                    try {
+                        // Check that the eth sovereign account balance in container has been reduced
+                        const ethSovereignContainerBalanceAfter = (
+                            await container2001PolkadotJs.query.system.account(
+                                SEPOLIA_CONTAINER_SOVEREIGN_ADDRESS_FRONTIER
+                            )
+                        ).data.free.toBigInt();
+
+                        expect(ethSovereignContainerBalanceAfter - ethSovereignContainerBalanceBefore).toEqual(
+                            containerAmountToTransfer
+                        );
+                    } catch (error) {
+                        return false;
+                    }
+                    return true;
+                }
+                let sovereignBalanceIsCorrect = false;
                 // Wait some time for the eth sovereign balance to be reduced in container
                 // As soon as this happens, then we get out
                 await waitSessions(
@@ -1048,24 +1071,14 @@ describeSuite({
                     relayApi,
                     2,
                     async () => {
-                        try {
-                            // Check that the eth sovereign account balance in container has been reduced
-                            const ethSovereignContainerBalanceAfter = (
-                                await container2001PolkadotJs.query.system.account(
-                                    SEPOLIA_CONTAINER_SOVEREIGN_ADDRESS_FRONTIER
-                                )
-                            ).data.free.toBigInt();
-
-                            expect(ethSovereignContainerBalanceAfter - ethSovereignContainerBalanceBefore).toEqual(
-                                containerAmountToTransfer
-                            );
-                        } catch (error) {
-                            return false;
-                        }
-                        return true;
+                        sovereignBalanceIsCorrect = await checkSovereignBalance();
                     },
                     "Tanssi-relay"
                 );
+                if (!sovereignBalanceIsCorrect) {
+                    sovereignBalanceIsCorrect = await checkSovereignBalance();
+                }
+                expect(sovereignBalanceIsCorrect, "Sovereign balance should be correct!").to.be.true;
 
                 // Checking native Tanssi reception on Ethereum
                 let tokenTransferSuccess = false;
@@ -1091,6 +1104,23 @@ describeSuite({
                     }
                 );
 
+                async function checkOwnerBalances() {
+                    try {
+                        expect(tokenTransferSuccess).to.be.true;
+                        expect(containerTransferSuccess).to.be.true;
+
+                        const ownerBalanceAfter = await tanssiTokenContract.balanceOf(recipient);
+                        expect(ownerBalanceAfter).to.eq(nativeAmountFromTanssi);
+
+                        const containerEthTokenBalanceAfterSubstrateTx =
+                            await containerTokenContract.balanceOf(gatewayOwnerAddress);
+                        expect(containerEthTokenBalanceAfterSubstrateTx).toEqual(containerAmountToTransfer);
+                    } catch (error) {
+                        return false;
+                    }
+                    return true;
+                }
+                let ownerBalancesAreCorrect = false;
                 // Wait some time until native Tanssi and container token are received
                 // As soon as we receive the tokens, we get out
                 await waitSessions(
@@ -1098,23 +1128,14 @@ describeSuite({
                     relayApi,
                     6,
                     async () => {
-                        try {
-                            expect(tokenTransferSuccess).to.be.true;
-                            expect(containerTransferSuccess).to.be.true;
-
-                            const ownerBalanceAfter = await tanssiTokenContract.balanceOf(recipient);
-                            expect(ownerBalanceAfter).to.eq(nativeAmountFromTanssi);
-
-                            const containerEthTokenBalanceAfterSubstrateTx =
-                                await containerTokenContract.balanceOf(gatewayOwnerAddress);
-                            expect(containerEthTokenBalanceAfterSubstrateTx).toEqual(containerAmountToTransfer);
-                        } catch (error) {
-                            return false;
-                        }
-                        return true;
+                        ownerBalancesAreCorrect = await checkOwnerBalances();
                     },
                     "Tanssi-relay"
                 );
+                if (!ownerBalancesAreCorrect) {
+                    ownerBalancesAreCorrect = await checkOwnerBalances();
+                }
+                expect(ownerBalancesAreCorrect, "Balances should be correct").to.be.true;
 
                 logTiming("Finish T08");
             },
@@ -1273,6 +1294,16 @@ describeSuite({
                 // We retrieve the current nonce and wait at most 6 sessions to see the message being relayed
                 const nonceInChannelBefore = await relayApi.query.ethereumInboundQueue.nonce(assetHubChannelId);
 
+                let nonceIsCorrect = false;
+                async function checkNonce() {
+                    try {
+                        const nonceAfter = await relayApi.query.ethereumInboundQueue.nonce(assetHubChannelId);
+                        expect(nonceAfter.toNumber()).to.be.eq(nonceInChannelBefore.toNumber() + 4);
+                    } catch (error) {
+                        return false;
+                    }
+                    return true;
+                }
                 // wait some time for the data to be relayed
                 // As soon as the nonce increases, then we get out
                 await waitSessions(
@@ -1280,16 +1311,14 @@ describeSuite({
                     relayApi,
                     6,
                     async () => {
-                        try {
-                            const nonceAfter = await relayApi.query.ethereumInboundQueue.nonce(assetHubChannelId);
-                            expect(nonceAfter.toNumber()).to.be.eq(nonceInChannelBefore.toNumber() + 4);
-                        } catch (error) {
-                            return false;
-                        }
-                        return true;
+                        nonceIsCorrect = await checkNonce();
                     },
                     "Tanssi-relay"
                 );
+                if (!nonceIsCorrect) {
+                    nonceIsCorrect = await checkNonce();
+                }
+                expect(nonceIsCorrect, "Nonce should be correct").to.be.true;
 
                 // Reward is reduced from fees account
                 // at least the amount decided in localReward
@@ -1324,6 +1353,20 @@ describeSuite({
                 );
                 expect(aliceNativeETHBalanceAfter.unwrap().balance.toBigInt()).to.be.eq(nativeETHBalanceFromEthereum);
 
+                async function checkContainerBalance() {
+                    try {
+                        const randomContainerBalanceAfter = (
+                            await container2001PolkadotJs.query.system.account(randomEthAccount.address)
+                        ).data.free;
+                        expect(randomContainerBalanceAfter.toBigInt()).to.be.eq(
+                            randomContainerAccountBalanceBefore.toBigInt() + nativeContainerTokenBalanceFromEthereum
+                        );
+                    } catch (error) {
+                        return false;
+                    }
+                    return true;
+                }
+                let containerBalanceIsCorrect = false;
                 // Wait some time until container assets are received
                 // As soon as we receive the tokens, we get out
                 await waitSessions(
@@ -1331,20 +1374,14 @@ describeSuite({
                     relayApi,
                     2,
                     async () => {
-                        try {
-                            const randomContainerBalanceAfter = (
-                                await container2001PolkadotJs.query.system.account(randomEthAccount.address)
-                            ).data.free;
-                            expect(randomContainerBalanceAfter.toBigInt()).to.be.eq(
-                                randomContainerAccountBalanceBefore.toBigInt() + nativeContainerTokenBalanceFromEthereum
-                            );
-                        } catch (error) {
-                            return false;
-                        }
-                        return true;
+                        containerBalanceIsCorrect = checkContainerBalance();
                     },
                     "Tanssi-relay"
                 );
+                if (!containerBalanceIsCorrect) {
+                    containerBalanceIsCorrect = checkContainerBalance();
+                }
+                expect(containerBalanceIsCorrect, "Container balance should be correct").to.be.true;
 
                 logTiming("Finish T09");
             },
@@ -1470,6 +1507,27 @@ describeSuite({
                     }
                 });
 
+                async function checkIfTokensReceived() {
+                    try {
+                        expect(wETHTransferSuccess).to.be.true;
+                        expect(nativeETHTransferSuccess).to.be.true;
+
+                        // Check that the WETH balance has increased
+                        const balanceAfter = await wETHContract.balanceOf(gatewayOwnerAddress);
+                        expect(balanceAfter).to.be.eq(wETHBalanceBefore + wETHBalanceToSend);
+
+                        // Check that the native ETH balance has increased
+                        const balanceAfterNativeETH = await customHttpProvider.getBalance(
+                            randomEthereumAccount.address
+                        );
+                        expect(balanceAfterNativeETH).to.be.eq(nativeETHBalanceBefore + nativeETHBalanceToSend);
+                    } catch (error) {
+                        return false;
+                    }
+                    return true;
+                }
+
+                let tokensReceived = false;
                 // Wait some time until native ETH and WETH balances are received
                 // As soon as we receive the tokens, we get out
                 await waitSessions(
@@ -1477,26 +1535,15 @@ describeSuite({
                     relayApi,
                     6,
                     async () => {
-                        try {
-                            expect(wETHTransferSuccess).to.be.true;
-                            expect(nativeETHTransferSuccess).to.be.true;
-
-                            // Check that the WETH balance has increased
-                            const balanceAfter = await wETHContract.balanceOf(gatewayOwnerAddress);
-                            expect(balanceAfter).to.be.eq(wETHBalanceBefore + wETHBalanceToSend);
-
-                            // Check that the native ETH balance has increased
-                            const balanceAfterNativeETH = await customHttpProvider.getBalance(
-                                randomEthereumAccount.address
-                            );
-                            expect(balanceAfterNativeETH).to.be.eq(nativeETHBalanceBefore + nativeETHBalanceToSend);
-                        } catch (error) {
-                            return false;
-                        }
-                        return true;
+                        tokensReceived = await checkIfTokensReceived();
                     },
                     "Tanssi-relay"
                 );
+
+                if (!tokensReceived) {
+                    tokensReceived = await checkIfTokensReceived();
+                }
+                expect(tokensReceived, "All the tokens should be delivered!").to.be.true;
 
                 logTiming("Finish T10");
             },
