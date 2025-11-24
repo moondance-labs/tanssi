@@ -85,6 +85,7 @@ function bench {
                 OUTPUT="${OUTPUT_PATH}/$MODIFIED_PALLET_FILE.rs"
             fi
             touch "$OUTPUT"
+            # Taking arguments from parity setup: https://github.com/moondance-labs/polkadot-sdk/blob/98cefb870b0fe6dbc7fa6d02ffefd1268ff2a5b7/.github/scripts/cmd/cmd.py#L233
             WASMTIME_BACKTRACE_DETAILS=1 frame-omni-bencher v1 benchmark pallet \
             --runtime="${RUNTIME}" \
             --pallet="$PALLET" \
@@ -109,6 +110,7 @@ function bench {
             OUTPUT="${OUTPUT_PATH}/$MODIFIED_PALLET_FILE.rs"
         fi
         touch "$OUTPUT"
+        # Taking arguments from parity setup: https://github.com/moondance-labs/polkadot-sdk/blob/98cefb870b0fe6dbc7fa6d02ffefd1268ff2a5b7/.github/scripts/cmd/cmd.py#L233
         WASMTIME_BACKTRACE_DETAILS=1 frame-omni-bencher v1 benchmark pallet \
             --runtime="${RUNTIME}" \
             --pallet="${1}" \
