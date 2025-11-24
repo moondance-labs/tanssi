@@ -20,12 +20,12 @@ rm -rf tmp/*_weights/*
 
 # Define benchmark commands
 declare -a BENCHMARK_CMDS=(
-  "TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs OUTPUT_PATH=tmp/dancebox_weights tools/benchmarking.sh '*' '*'"
-  "TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs CHAIN=flashbox_dev OUTPUT_PATH=tmp/flashbox_weights tools/benchmarking.sh '*' '*'"
-  "BINARY=target/release/container-chain-simple-node TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs OUTPUT_PATH=tmp/simple_template_weights tools/benchmarking.sh '*' '*'"
-  "BINARY=target/release/container-chain-frontier-node TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs OUTPUT_PATH=tmp/frontier_template_weights tools/benchmarking.sh '*' '*'"
-  "BINARY=target/release/tanssi-relay TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs CHAIN=dancelight-dev OUTPUT_PATH=tmp/dancelight_weights tools/benchmarking.sh '*' '*'"
-  "BINARY=target/release/tanssi-relay TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs CHAIN=starlight-dev OUTPUT_PATH=tmp/starlight_weights tools/benchmarking.sh '*' '*'"
+  "RUNTIME=target/release/wbuild/dancebox-runtime/dancebox_runtime.wasm TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs OUTPUT_PATH=tmp/dancebox_weights tools/benchmarking.sh '*' '*'"
+  "RUNTIME=target/release/wbuild/flashbox-runtime/flashbox_runtime.wasm TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs OUTPUT_PATH=tmp/flashbox_weights tools/benchmarking.sh '*' '*'"
+  "RUNTIME=target/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.wasm TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs OUTPUT_PATH=tmp/simple_template_weights tools/benchmarking.sh '*' '*'"
+  "RUNTIME=target/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.wasm TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs OUTPUT_PATH=tmp/frontier_template_weights tools/benchmarking.sh '*' '*'"
+  "RUNTIME=target/release/wbuild/dancelight-runtime/dancelight_runtime.wasm TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs OUTPUT_PATH=tmp/dancelight_weights tools/benchmarking.sh '*' '*'"
+  "RUNTIME=target/release/wbuild/starlight-runtime/starlight_runtime.wasm TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs OUTPUT_PATH=tmp/starlight_weights tools/benchmarking.sh '*' '*'"
 )
 
 echo "Running benchmarks. Option parallel: $PARALLEL"
