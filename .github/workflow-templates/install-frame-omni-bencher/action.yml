@@ -8,8 +8,7 @@ runs:
     - name: Install frame-omni-bencher
       shell: bash
       run: |
-        BRANCH=$(grep 'moondance-labs/polkadot-sdk' Cargo.lock \
-          | head -n 1 \
+        BRANCH=$(grep -m1 'moondance-labs/polkadot-sdk' Cargo.lock \
           | sed -E 's/.*branch=([^#"]+).*/\1/')
         cargo install frame-omni-bencher --locked --git https://github.com/moondance-labs/polkadot-sdk --branch $BRANCH --force
         echo "$HOME/.cargo/bin" >> $GITHUB_PATH
