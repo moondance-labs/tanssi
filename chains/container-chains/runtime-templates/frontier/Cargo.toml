@@ -20,11 +20,13 @@ num_enum = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive" ] }
 scale-info = { workspace = true, features = [ "derive" ] }
 serde = { workspace = true, features = [ "derive" ] }
+serde_json = { workspace = true }
 smallvec = { workspace = true }
 
 # Local
 ccp-xcm = { workspace = true }
 dp-consensus = { workspace = true }
+dp-container-chain-genesis-data = { workspace = true, features = [ "json" ] }
 dp-impl-tanssi-pallets-config = { workspace = true }
 dp-slot-duration-runtime-api = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
@@ -147,6 +149,7 @@ std = [
 	"cumulus-primitives-timestamp/std",
 	"cumulus-primitives-utility/std",
 	"dp-consensus/std",
+	"dp-container-chain-genesis-data/std",
 	"dp-impl-tanssi-pallets-config/std",
 	"dp-slot-duration-runtime-api/std",
 	"ethereum/std",
@@ -212,6 +215,7 @@ std = [
 	"precompile-utils/std",
 	"scale-info/std",
 	"serde/std",
+	"serde_json/std",
 	"sp-api/std",
 	"sp-block-builder/std",
 	"sp-consensus-aura/std",
