@@ -58,10 +58,10 @@ import type {
     StagingXcmV5Response,
     StagingXcmV5TraitsOutcome,
     StagingXcmV5Xcm,
-    StarlightRuntimeAggregateMessageOrigin,
     StarlightRuntimeProxyType,
     StarlightRuntimeRuntimeParametersKey,
     StarlightRuntimeRuntimeParametersValue,
+    StarlightRuntimeTanssiAggregateMessageOrigin,
     TpBridgeChannelInfo,
     TpBridgeCommand,
     TpTraitsFullRotationModes,
@@ -229,6 +229,7 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         containerRegistrar: {
+            DepositUpdated: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
             /**
              * A para id has been deregistered. [para_id]
              **/
@@ -967,6 +968,20 @@ declare module "@polkadot/api-base/types/events" {
              **/
             [key: string]: AugmentedEvent<ApiType>;
         };
+        historical: {
+            /**
+             * The merkle roots of up to this session index were pruned
+             **/
+            RootsPruned: AugmentedEvent<ApiType, [upTo: u32], { upTo: u32 }>;
+            /**
+             * The merkle root of the validators of the said session were stored
+             **/
+            RootStored: AugmentedEvent<ApiType, [index: u32], { index: u32 }>;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         hrmp: {
             /**
              * HRMP channel closed.
@@ -1261,16 +1276,21 @@ declare module "@polkadot/api-base/types/events" {
              **/
             OverweightEnqueued: AugmentedEvent<
                 ApiType,
-                [id: U8aFixed, origin: StarlightRuntimeAggregateMessageOrigin, pageIndex: u32, messageIndex: u32],
-                { id: U8aFixed; origin: StarlightRuntimeAggregateMessageOrigin; pageIndex: u32; messageIndex: u32 }
+                [id: U8aFixed, origin: StarlightRuntimeTanssiAggregateMessageOrigin, pageIndex: u32, messageIndex: u32],
+                {
+                    id: U8aFixed;
+                    origin: StarlightRuntimeTanssiAggregateMessageOrigin;
+                    pageIndex: u32;
+                    messageIndex: u32;
+                }
             >;
             /**
              * This page was reaped.
              **/
             PageReaped: AugmentedEvent<
                 ApiType,
-                [origin: StarlightRuntimeAggregateMessageOrigin, index: u32],
-                { origin: StarlightRuntimeAggregateMessageOrigin; index: u32 }
+                [origin: StarlightRuntimeTanssiAggregateMessageOrigin, index: u32],
+                { origin: StarlightRuntimeTanssiAggregateMessageOrigin; index: u32 }
             >;
             /**
              * Message is processed.
@@ -1279,13 +1299,13 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [
                     id: H256,
-                    origin: StarlightRuntimeAggregateMessageOrigin,
+                    origin: StarlightRuntimeTanssiAggregateMessageOrigin,
                     weightUsed: SpWeightsWeightV2Weight,
                     success: bool,
                 ],
                 {
                     id: H256;
-                    origin: StarlightRuntimeAggregateMessageOrigin;
+                    origin: StarlightRuntimeTanssiAggregateMessageOrigin;
                     weightUsed: SpWeightsWeightV2Weight;
                     success: bool;
                 }
@@ -1297,12 +1317,12 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [
                     id: H256,
-                    origin: StarlightRuntimeAggregateMessageOrigin,
+                    origin: StarlightRuntimeTanssiAggregateMessageOrigin,
                     error: FrameSupportMessagesProcessMessageError,
                 ],
                 {
                     id: H256;
-                    origin: StarlightRuntimeAggregateMessageOrigin;
+                    origin: StarlightRuntimeTanssiAggregateMessageOrigin;
                     error: FrameSupportMessagesProcessMessageError;
                 }
             >;
@@ -1574,6 +1594,14 @@ declare module "@polkadot/api-base/types/events" {
              **/
             ActionQueued: AugmentedEvent<ApiType, [u32, u32]>;
             /**
+             * A new code hash has been authorized for a Para.
+             **/
+            CodeAuthorized: AugmentedEvent<
+                ApiType,
+                [paraId: u32, codeHash: H256, expireAt: u32],
+                { paraId: u32; codeHash: H256; expireAt: u32 }
+            >;
+            /**
              * A code upgrade has been scheduled for a Para. `para_id`
              **/
             CodeUpgradeScheduled: AugmentedEvent<ApiType, [u32]>;
@@ -1604,6 +1632,10 @@ declare module "@polkadot/api-base/types/events" {
              * code. `code_hash` `para_id`
              **/
             PvfCheckStarted: AugmentedEvent<ApiType, [H256, u32]>;
+            /**
+             * The upgrade cooldown was removed.
+             **/
+            UpgradeCooldownRemoved: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
             /**
              * Generic event
              **/
@@ -1886,6 +1918,24 @@ declare module "@polkadot/api-base/types/events" {
                 { pure: AccountId32; who: AccountId32; proxyType: StarlightRuntimeProxyType; disambiguationIndex: u16 }
             >;
             /**
+             * A pure proxy was killed by its spawner.
+             **/
+            PureKilled: AugmentedEvent<
+                ApiType,
+                [
+                    pure: AccountId32,
+                    spawner: AccountId32,
+                    proxyType: StarlightRuntimeProxyType,
+                    disambiguationIndex: u16,
+                ],
+                {
+                    pure: AccountId32;
+                    spawner: AccountId32;
+                    proxyType: StarlightRuntimeProxyType;
+                    disambiguationIndex: u16;
+                }
+            >;
+            /**
              * Generic event
              **/
             [key: string]: AugmentedEvent<ApiType>;
@@ -2144,6 +2194,11 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         session: {
+            /**
+             * The `NewSession` event in the current block also implies a new validator set to be
+             * queued.
+             **/
+            NewQueued: AugmentedEvent<ApiType, []>;
             /**
              * New session has happened. Note that the argument is the session index, not the
              * block number as the type might suggest.

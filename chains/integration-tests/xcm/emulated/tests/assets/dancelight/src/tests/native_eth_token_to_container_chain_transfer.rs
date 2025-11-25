@@ -16,12 +16,16 @@
 
 use {
     dancelight_emulated_chain::DancelightRelayPallet,
+    dancelight_runtime::SnowbridgeFeesAccount,
     dancelight_system_emulated_network::{
         DancelightRelay as Dancelight, DancelightSender, FrontierTemplatePara as FrontierTemplate,
         SimpleTemplatePara as SimpleTemplate, SimpleTemplateReceiver, SimpleTemplateSender,
     },
     fp_account::AccountId20,
-    frame_support::{assert_ok, pallet_prelude::DispatchResult, traits::PalletInfoAccess},
+    frame_support::{
+        assert_ok, pallet_prelude::DispatchResult, traits::fungible::Mutate,
+        traits::PalletInfoAccess,
+    },
     frontier_template_emulated_chain::{EthereumSender, FrontierTemplateParaPallet},
     hex_literal::hex,
     simple_template_emulated_chain::SimpleTemplateParaPallet,
@@ -32,11 +36,15 @@ use {
     snowbridge_inbound_queue_primitives::{EventFixture, EventProof, Log, Proof},
     sp_core::H160,
     sp_core::U256,
-    sp_runtime::AccountId32,
+    sp_runtime::{AccountId32, FixedU128},
     xcm::latest::prelude::*,
     xcm_emulator::{Chain, TestExt},
     xcm_executor::traits::ConvertLocation,
 };
+
+const RELAY_NATIVE_TOKEN_ASSET_ID: u16 = 42;
+const CONTAINER_FEE: u128 = 500_000_000_000_000;
+const RELAY_TOKEN_ASSET_LOCATION: Location = Location::parent();
 
 #[test]
 fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
@@ -52,6 +60,7 @@ fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
 
     let mut ethereum_sovereign_container_balance_before = 0;
     let mut receiver_native_container_balance_before = 0;
+    let mut ethereum_sovereign_relay_token_balance_before = 0;
 
     let ethereum_sovereign_account_address = FrontierTemplate::execute_with(|| {
         container_chain_template_frontier_runtime::xcm_config::LocationToAccountId::convert_location(
@@ -61,9 +70,6 @@ fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
     });
 
     let transfer_amount = 100_000_000;
-
-    // Amount in native container tokens to charge on destination.
-    let container_fee = 500_000_000_000_000;
 
     Dancelight::execute_with(|| {
         let root_origin = <Dancelight as Chain>::RuntimeOrigin::root();
@@ -92,9 +98,18 @@ fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
                 }
             )
         );
+
+        // Add funds in snowbridge fees account
+        assert_ok!(
+            <<Dancelight as DancelightRelayPallet>::Balances as Mutate<_>>::mint_into(
+                &SnowbridgeFeesAccount::get(),
+                CONTAINER_FEE * 2
+            )
+        );
     });
 
     FrontierTemplate::execute_with(|| {
+        let root_origin = <FrontierTemplate as Chain>::RuntimeOrigin::root();
         let origin = <FrontierTemplate as Chain>::RuntimeOrigin::signed(EthereumSender::get());
 
         assert_ok!(
@@ -116,6 +131,32 @@ fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
             <FrontierTemplate as FrontierTemplateParaPallet>::System::account(token_receiver)
                 .data
                 .free;
+
+        ethereum_sovereign_relay_token_balance_before =
+            <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssets::balance(
+                RELAY_NATIVE_TOKEN_ASSET_ID,
+                &ethereum_sovereign_account_address,
+            );
+
+        assert_ok!(
+            <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
+                root_origin.clone(),
+                RELAY_TOKEN_ASSET_LOCATION,
+                RELAY_NATIVE_TOKEN_ASSET_ID,
+                EthereumSender::get(),
+                true,
+                1
+            )
+        );
+
+        // Create asset rate for relay token
+        assert_ok!(
+            <FrontierTemplate as FrontierTemplateParaPallet>::AssetRate::create(
+                root_origin.clone(),
+                Box::new(RELAY_NATIVE_TOKEN_ASSET_ID),
+                FixedU128::from_u32(500_000_000)
+            )
+        );
     });
 
     Dancelight::execute_with(|| {
@@ -137,9 +178,21 @@ fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
                 .data
                 .free;
 
+        let ethereum_sovereign_relay_token_balance_after =
+            <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssets::balance(
+                RELAY_NATIVE_TOKEN_ASSET_ID,
+                &ethereum_sovereign_account_address,
+            );
+
+        assert!(
+            ethereum_sovereign_relay_token_balance_after
+                > ethereum_sovereign_relay_token_balance_before
+        );
+        assert!(ethereum_sovereign_relay_token_balance_after < CONTAINER_FEE);
+
         assert_eq!(
             ethereum_sovereign_container_balance_after,
-            ethereum_sovereign_container_balance_before - (container_fee + transfer_amount)
+            ethereum_sovereign_container_balance_before - transfer_amount
         );
 
         assert_eq!(
@@ -159,6 +212,7 @@ fn check_native_eth_token_to_simple_container_chain_transfer_works() {
 
     let mut ethereum_sovereign_container_balance_before = 0;
     let mut receiver_native_container_balance_before = 0;
+    let mut ethereum_sovereign_relay_token_balance_before = 0;
 
     let ethereum_sovereign_account_address = SimpleTemplate::execute_with(|| {
         container_chain_template_simple_runtime::xcm_config::LocationToAccountId::convert_location(
@@ -171,9 +225,6 @@ fn check_native_eth_token_to_simple_container_chain_transfer_works() {
     });
 
     let transfer_amount = 100_000_000;
-
-    // Amount in native container tokens to charge on destination.
-    let container_fee = 500_000_000_000_000;
 
     Dancelight::execute_with(|| {
         let root_origin = <Dancelight as Chain>::RuntimeOrigin::root();
@@ -202,9 +253,18 @@ fn check_native_eth_token_to_simple_container_chain_transfer_works() {
                 }
             )
         );
+
+        // Add funds in snowbridge fees account
+        assert_ok!(
+            <<Dancelight as DancelightRelayPallet>::Balances as Mutate<_>>::mint_into(
+                &SnowbridgeFeesAccount::get(),
+                CONTAINER_FEE * 2
+            )
+        );
     });
 
     SimpleTemplate::execute_with(|| {
+        let root_origin = <SimpleTemplate as Chain>::RuntimeOrigin::root();
         let origin = <SimpleTemplate as Chain>::RuntimeOrigin::signed(SimpleTemplateSender::get());
 
         assert_ok!(
@@ -234,6 +294,32 @@ fn check_native_eth_token_to_simple_container_chain_transfer_works() {
             <SimpleTemplate as SimpleTemplateParaPallet>::System::account(&token_receiver)
                 .data
                 .free;
+
+        ethereum_sovereign_relay_token_balance_before =
+            <SimpleTemplate as SimpleTemplateParaPallet>::ForeignAssets::balance(
+                RELAY_NATIVE_TOKEN_ASSET_ID,
+                &ethereum_sovereign_account_address,
+            );
+
+        assert_ok!(
+            <SimpleTemplate as SimpleTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
+                root_origin.clone(),
+                RELAY_TOKEN_ASSET_LOCATION,
+                RELAY_NATIVE_TOKEN_ASSET_ID,
+                SimpleTemplateSender::get().clone(),
+                true,
+                1
+            )
+        );
+
+        // Create asset rate for relay token
+        assert_ok!(
+            <SimpleTemplate as SimpleTemplateParaPallet>::AssetRate::create(
+                root_origin.clone(),
+                Box::new(RELAY_NATIVE_TOKEN_ASSET_ID),
+                FixedU128::from_u32(500_000_000)
+            )
+        );
     });
 
     Dancelight::execute_with(|| {
@@ -255,9 +341,21 @@ fn check_native_eth_token_to_simple_container_chain_transfer_works() {
                 .data
                 .free;
 
+        let ethereum_sovereign_relay_token_balance_after =
+            <SimpleTemplate as SimpleTemplateParaPallet>::ForeignAssets::balance(
+                RELAY_NATIVE_TOKEN_ASSET_ID,
+                &ethereum_sovereign_account_address,
+            );
+
+        assert!(
+            ethereum_sovereign_relay_token_balance_after
+                > ethereum_sovereign_relay_token_balance_before
+        );
+        assert!(ethereum_sovereign_relay_token_balance_after < CONTAINER_FEE);
+
         assert_eq!(
             ethereum_sovereign_container_balance_after,
-            ethereum_sovereign_container_balance_before - (container_fee + transfer_amount)
+            ethereum_sovereign_container_balance_before - transfer_amount
         );
 
         assert_eq!(

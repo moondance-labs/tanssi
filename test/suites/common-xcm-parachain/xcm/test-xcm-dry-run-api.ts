@@ -24,6 +24,10 @@ describeSuite({
                     : new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
                           name: "Alice default",
                       });
+            // In stable2506 the dry run call breaks if the current block is still 0, returning error
+            // dryRunCall.asOk.executionResult.err.error.module { index: 53, error: '0x01000000' }
+            // The fix is to create 1 block, so the current block is 1 in tests.
+            await context.createBlock();
         });
 
         it({
@@ -83,6 +87,13 @@ describeSuite({
                     "Unlimited"
                 );
 
+                // If this test fails, uncomment this to check if actually sending the tx works.
+                /*
+                const result = await context.createBlock(await tx.signAsync(alice));
+                console.log(result);
+                return;
+                 */
+
                 const XCM_VERSION = 3;
                 const dryRunCall = await polkadotJs.call.dryRunApi.dryRunCall(
                     { System: { signed: alice.address } },
@@ -91,6 +102,15 @@ describeSuite({
                 );
 
                 expect(dryRunCall.isOk).to.be.true;
+
+                // Log error in case of failure
+                if (dryRunCall.asOk.executionResult.toJSON().err) {
+                    console.log(
+                        "dryRunCall.asOk.executionResult.err.error.module",
+                        dryRunCall.asOk.executionResult.toJSON().err.error.module
+                    );
+                }
+
                 expect(dryRunCall.asOk.executionResult.isOk).be.true;
             },
         });

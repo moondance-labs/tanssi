@@ -31,6 +31,7 @@ use sp_version::NativeVersion;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
+pub mod genesis_config_presets;
 pub mod migrations;
 pub mod weights;
 
@@ -39,6 +40,7 @@ use {
     alloc::vec,
     alloc::vec::Vec,
     cumulus_primitives_core::AggregateMessageOrigin,
+    cumulus_primitives_core::ParaId,
     dp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
     frame_support::{
         construct_runtime,
@@ -75,6 +77,7 @@ use {
     sp_api::impl_runtime_apis,
     sp_consensus_slots::{Slot, SlotDuration},
     sp_core::{Get, MaxEncodedLen, OpaqueMetadata},
+    sp_keyring::Sr25519Keyring,
     sp_runtime::{
         generic,
         generic::SignedPayload,
@@ -255,7 +258,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("container-chain-template"),
     impl_name: Cow::Borrowed("container-chain-template"),
     authoring_version: 1,
-    spec_version: 1600,
+    spec_version: 1700,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -547,6 +550,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
     type ConsensusHook = ConsensusHook;
     type SelectCore = cumulus_pallet_parachain_system::DefaultCoreSelector<Runtime>;
+    type RelayParentOffset = ConstU32<0>;
 }
 
 pub struct ParaSlotProvider;
@@ -699,7 +703,6 @@ impl xcm_primitives::PauseXcmExecution for XcmExecutionManager {
 }
 
 impl pallet_migrations::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type MigrationsList = (migrations::TemplateMigrations<Runtime, XcmpQueue, PolkadotXcm>,);
     type XcmExecutionManager = XcmExecutionManager;
 }
@@ -744,7 +747,6 @@ impl Contains<RuntimeCall> for NormalFilter {
 }
 
 impl pallet_maintenance_mode::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
@@ -860,17 +862,16 @@ where
     type RuntimeCall = RuntimeCall;
 }
 
-impl<LocalCall> frame_system::offchain::CreateInherent<LocalCall> for Runtime
+impl<LocalCall> frame_system::offchain::CreateBare<LocalCall> for Runtime
 where
     RuntimeCall: From<LocalCall>,
 {
-    fn create_inherent(call: RuntimeCall) -> UncheckedExtrinsic {
+    fn create_bare(call: RuntimeCall) -> UncheckedExtrinsic {
         UncheckedExtrinsic::new_bare(call)
     }
 }
 
 impl pallet_ocw_testing::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type UnsignedInterval = ConstU32<6>;
 }
 
@@ -1061,11 +1062,31 @@ impl_runtime_apis! {
             build_state::<RuntimeGenesisConfig>(config)
         }
 
-        fn get_preset(id: &Option<sp_genesis_builder::PresetId>) -> Option<Vec<u8>> {
-            get_preset::<RuntimeGenesisConfig>(id, |_| None)
+       fn get_preset(id: &Option<sp_genesis_builder::PresetId>) -> Option<Vec<u8>> {
+            get_preset::<RuntimeGenesisConfig>(id, |id: &sp_genesis_builder::PresetId| {
+                let mut default_funded_accounts = genesis_config_presets::pre_funded_accounts();
+                default_funded_accounts.sort();
+                default_funded_accounts.dedup();
+                let para_id: ParaId = 2000.into();
+
+                let patch = match id.as_ref() {
+                    "development" => genesis_config_presets::development(
+                        default_funded_accounts.clone(),
+                        para_id,
+                        Sr25519Keyring::Alice.to_account_id(),
+                    ),
+                    _ => return None,
+                };
+                Some(
+                    serde_json::to_string(&patch)
+                        .expect("serialization to json is expected to work. qed.")
+                        .into_bytes(),
+                )
+            })
         }
+
         fn preset_names() -> Vec<sp_genesis_builder::PresetId> {
-            vec![]
+            vec!["development".into()]
         }
     }
 
@@ -1160,11 +1181,11 @@ impl_runtime_apis! {
                     Ok(Location::parent())
                 }
 
-                fn fee_asset() -> Result<Asset, BenchmarkError> {
-                    Ok(Asset {
+                fn worst_case_for_trader() -> Result<(Asset, WeightLimit), BenchmarkError> {
+                    Ok((Asset {
                         id: AssetId(SelfReserve::get()),
                         fun: Fungible(ExistentialDeposit::get()*100),
-                    })
+                    }, WeightLimit::Unlimited))
                 }
 
                 fn claimable_asset() -> Result<(Location, Location, Assets), BenchmarkError> {
@@ -1190,7 +1211,11 @@ impl_runtime_apis! {
 
             use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
             impl pallet_xcm::benchmarking::Config for Runtime {
-                type DeliveryHelper = ();
+                type DeliveryHelper = cumulus_primitives_utility::ToParentDeliveryHelper<
+                xcm_config::XcmConfig,
+                ExistentialDepositAsset,
+                xcm_config::PriceForParentDelivery,
+                >;
                 fn get_asset() -> Asset {
                     Asset {
                         id: AssetId(SelfReserve::get()),
@@ -1260,9 +1285,10 @@ impl_runtime_apis! {
                     let asset_amount = 10u128;
                     let initial_asset_amount = asset_amount * 10;
 
-                    let (asset_id, asset_location) = pallet_foreign_asset_creator::benchmarks::create_default_minted_asset::<Runtime>(
+                    let (asset_id, asset_location) = pallet_foreign_asset_creator::benchmarks::create_minted_asset::<Runtime>(
                         initial_asset_amount,
-                        who.clone()
+                        who.clone(),
+                        None,
                     );
 
                     let transfer_asset: Asset = (asset_location, asset_amount).into();

@@ -13,5 +13,10 @@
     "polkadot": "5c1dfa939fdc70112f9bbbfaa92d9dfbe31e5a4a576b940c0ce523c24b1730b8",
     "polkadot-execute-worker": "672a1b968bd50f2ada1e6d4db572c334d5ca0a9ef8d6e6f77faf7cfc08296220",
     "polkadot-prepare-worker": "af7354c9382b27f63a51a8e5185b0bfc765b9e0c662ce184393e916a2417a067"
+  },
+  "stable2506": {
+    "polkadot": "1a847c4ffabdea886908c623c899ae5ce5b7801eb9acf6918e720ff025cf3059",
+    "polkadot-execute-worker": "ad12dd8d504b62ffd32c857bd4ef07fb2a3bb688ba2d419e2ba24f4ec4213139",
+    "polkadot-prepare-worker": "a447f08f3f3efd7b0aba7bc62663ccdc05bf31544ae79bf30aee005763a6fbda"
   }
 }

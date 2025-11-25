@@ -75,7 +75,10 @@ use {
         configuration as parachains_configuration,
         disputes::{self as parachains_disputes, slashing as parachains_slashing},
         dmp as parachains_dmp, hrmp as parachains_hrmp,
-        inclusion::{self as parachains_inclusion, UmpQueueId},
+        inclusion::{
+            self as parachains_inclusion,
+            AggregateMessageOrigin as ParaInclusionAggregateMessageOrigin, UmpQueueId,
+        },
         initializer as parachains_initializer, on_demand as parachains_assigner_on_demand,
         origin as parachains_origin, paras as parachains_paras,
         paras_inherent as parachains_paras_inherent,
@@ -91,6 +94,7 @@ use {
     snowbridge_outbound_queue_primitives::v1::Command,
     snowbridge_outbound_queue_primitives::v1::Fee,
     sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
+    sp_core::{ConstUint, OpaqueMetadata, H256},
     sp_genesis_builder::PresetId,
     sp_runtime::{traits::ConvertInto, AccountId32},
     tanssi_runtime_common::{
@@ -98,6 +102,7 @@ use {
         SessionTimer,
     },
     tp_bridge::ConvertLocation,
+    tp_message_queue::{MessageQueueWrapper, OnQueueChangedWrapper},
     tp_stream_payment_common::StreamId,
     tp_traits::{
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
@@ -130,7 +135,6 @@ use {
     pallet_identity::legacy::IdentityInfo,
     pallet_session::historical as session_historical,
     pallet_transaction_payment::{FeeDetails, FungibleAdapter, RuntimeDispatchInfo},
-    sp_core::{OpaqueMetadata, H256},
     sp_runtime::{
         generic, impl_opaque_keys,
         traits::{
@@ -201,7 +205,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("starlight"),
     impl_name: Cow::Borrowed("tanssi-starlight-v2.0"),
     authoring_version: 0,
-    spec_version: 1600,
+    spec_version: 1700,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 27,
@@ -239,7 +243,7 @@ pub fn native_version() -> NativeVersion {
     TypeInfo,
     DecodeWithMemTracking,
 )]
-pub enum AggregateMessageOrigin {
+pub enum TanssiAggregateMessageOrigin {
     /// Inbound upward message.
     #[codec(index = 0)]
     Ump(UmpQueueId),
@@ -255,58 +259,57 @@ pub enum AggregateMessageOrigin {
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-impl From<u32> for AggregateMessageOrigin {
+impl From<u32> for TanssiAggregateMessageOrigin {
     fn from(n: u32) -> Self {
         // Some dummy for the benchmarks.
         Self::Ump(UmpQueueId::Para(n.into()))
     }
 }
 
-pub struct GetAggregateMessageOrigin;
-
-impl Convert<ChannelId, AggregateMessageOrigin> for GetAggregateMessageOrigin {
-    fn convert(channel_id: ChannelId) -> AggregateMessageOrigin {
-        AggregateMessageOrigin::Snowbridge(channel_id)
+impl From<ParaInclusionAggregateMessageOrigin> for TanssiAggregateMessageOrigin {
+    fn from(origin: ParaInclusionAggregateMessageOrigin) -> Self {
+        let para = match origin {
+            ParaInclusionAggregateMessageOrigin::Ump(UmpQueueId::Para(p)) => p,
+        };
+        Self::Ump(UmpQueueId::Para(para))
     }
 }
 
-impl Convert<UmpQueueId, AggregateMessageOrigin> for GetAggregateMessageOrigin {
-    fn convert(queue_id: UmpQueueId) -> AggregateMessageOrigin {
-        AggregateMessageOrigin::Ump(queue_id)
+impl TryFrom<TanssiAggregateMessageOrigin> for ParaInclusionAggregateMessageOrigin {
+    type Error = ();
+    fn try_from(origin: TanssiAggregateMessageOrigin) -> Result<Self, ()> {
+        // Before this change we had a bug in which we entered parachains_inclusion pallet
+        // OnQueueChanged hook with origins that where not UMP. using the OnQueueChangedWrapper
+        // and erroring for origins that are not UMP will allow us to NOT DO ANYTHING and therefore
+        // not enter the hook for non-desired origins
+        match origin {
+            TanssiAggregateMessageOrigin::Ump(UmpQueueId::Para(p)) => Ok(
+                ParaInclusionAggregateMessageOrigin::Ump(UmpQueueId::Para(p)),
+            ),
+            _ => Err(()),
+        }
+    }
+}
+
+pub struct GetAggregateMessageOrigin;
+
+impl Convert<ChannelId, TanssiAggregateMessageOrigin> for GetAggregateMessageOrigin {
+    fn convert(channel_id: ChannelId) -> TanssiAggregateMessageOrigin {
+        TanssiAggregateMessageOrigin::Snowbridge(channel_id)
+    }
+}
+
+impl Convert<UmpQueueId, TanssiAggregateMessageOrigin> for GetAggregateMessageOrigin {
+    fn convert(queue_id: UmpQueueId) -> TanssiAggregateMessageOrigin {
+        TanssiAggregateMessageOrigin::Ump(queue_id)
     }
 }
 
 pub struct GetAggregateMessageOriginTanssi;
 
-impl Convert<ChannelId, AggregateMessageOrigin> for GetAggregateMessageOriginTanssi {
-    fn convert(channel_id: ChannelId) -> AggregateMessageOrigin {
-        AggregateMessageOrigin::SnowbridgeTanssi(channel_id)
-    }
-}
-
-/// This is used by [parachains_inclusion::Pallet::on_queue_changed]
-pub struct GetParaFromAggregateMessageOrigin;
-
-impl Convert<AggregateMessageOrigin, ParaId> for GetParaFromAggregateMessageOrigin {
-    fn convert(x: AggregateMessageOrigin) -> ParaId {
-        match x {
-            AggregateMessageOrigin::Ump(UmpQueueId::Para(para_id)) => para_id,
-            AggregateMessageOrigin::Snowbridge(channel_id)
-            | AggregateMessageOrigin::SnowbridgeTanssi(channel_id) => {
-                // Read para id from EthereumSystem::channels storage map
-                match EthereumSystem::channels(channel_id) {
-                    Some(x) => x.para_id,
-                    None => {
-                        // This should be unreachable, but return para id 0 if channel does not exist
-                        log::warn!(
-                            "Got snowbridge message from channel that does not exist: {:?}",
-                            channel_id
-                        );
-                        ParaId::from(0)
-                    }
-                }
-            }
-        }
+impl Convert<ChannelId, TanssiAggregateMessageOrigin> for GetAggregateMessageOriginTanssi {
+    fn convert(channel_id: ChannelId) -> TanssiAggregateMessageOrigin {
+        TanssiAggregateMessageOrigin::SnowbridgeTanssi(channel_id)
     }
 }
 
@@ -622,6 +625,7 @@ impl Convert<AccountId, Option<()>> for FullIdentificationOf {
 }
 
 impl pallet_session::historical::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
     type FullIdentification = ();
     type FullIdentificationOf = FullIdentificationOf;
 }
@@ -807,11 +811,11 @@ where
     type RuntimeCall = RuntimeCall;
 }
 
-impl<LocalCall> frame_system::offchain::CreateInherent<LocalCall> for Runtime
+impl<LocalCall> frame_system::offchain::CreateBare<LocalCall> for Runtime
 where
     RuntimeCall: From<LocalCall>,
 {
-    fn create_inherent(call: RuntimeCall) -> UncheckedExtrinsic {
+    fn create_bare(call: RuntimeCall) -> UncheckedExtrinsic {
         UncheckedExtrinsic::new_bare(call)
     }
 }
@@ -847,6 +851,8 @@ impl pallet_identity::Config for Runtime {
     type UsernameGracePeriod = ConstU32<{ 30 * DAYS }>;
     type MaxSuffixLength = ConstU32<7>;
     type MaxUsernameLength = ConstU32<32>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = ();
     type WeightInfo = weights::pallet_identity::SubstrateWeight<Runtime>;
 }
 
@@ -1065,10 +1071,11 @@ impl parachains_inclusion::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type DisputesHandler = ParasDisputes;
     type RewardValidators = RewardValidators;
-    type AggregateMessageOrigin = AggregateMessageOrigin;
-    type GetAggregateMessageOrigin = GetAggregateMessageOrigin;
-    type GetParaFromAggregateMessageOrigin = GetParaFromAggregateMessageOrigin;
-    type MessageQueue = MessageQueue;
+    type MessageQueue = MessageQueueWrapper<
+        ParaInclusionAggregateMessageOrigin,
+        TanssiAggregateMessageOrigin,
+        MessageQueue,
+    >;
     type WeightInfo = weights::runtime_parachains_inclusion::SubstrateWeight<Runtime>;
 }
 
@@ -1084,6 +1091,11 @@ impl parachains_paras::Config for Runtime {
     type NextSessionRotation = Babe;
     type OnNewHead = Registrar;
     type AssignCoretime = ();
+    type Fungible = Balances;
+    // TODO: this could be set to 1 because we don't care, but benchmarks fail in that case
+    // Per day the cooldown is removed earlier, it should cost 1000.
+    type CooldownRemovalMultiplier = ConstUint<{ 1000 * UNITS / DAYS as u128 }>;
+    type AuthorizeCurrentCodeOrigin = EnsureRoot<Self::AccountId>;
 }
 
 parameter_types! {
@@ -1100,7 +1112,7 @@ parameter_types! {
 /// Message processor to handle any messages that were enqueued into the `MessageQueue` pallet.
 pub struct MessageProcessor;
 impl ProcessMessage for MessageProcessor {
-    type Origin = AggregateMessageOrigin;
+    type Origin = TanssiAggregateMessageOrigin;
 
     fn process_message(
         message: &[u8],
@@ -1109,7 +1121,7 @@ impl ProcessMessage for MessageProcessor {
         id: &mut [u8; 32],
     ) -> Result<bool, ProcessMessageError> {
         match origin {
-            AggregateMessageOrigin::Ump(UmpQueueId::Para(para)) => {
+            TanssiAggregateMessageOrigin::Ump(UmpQueueId::Para(para)) => {
                 xcm_builder::ProcessXcmMessage::<
                     Junction,
                     xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
@@ -1118,13 +1130,13 @@ impl ProcessMessage for MessageProcessor {
                     message, Junction::Parachain(para.into()), meter, id
                 )
             }
-            AggregateMessageOrigin::Snowbridge(_) => {
+            TanssiAggregateMessageOrigin::Snowbridge(_) => {
                 snowbridge_pallet_outbound_queue::Pallet::<Runtime>::process_message(
                     message, origin, meter, id,
                 )
             }
-            AggregateMessageOrigin::SnowbridgeTanssi(_) => {
-                tp_bridge::CustomProcessSnowbridgeMessage::<Runtime>::process_message(
+            TanssiAggregateMessageOrigin::SnowbridgeTanssi(_) => {
+                tp_bridge::TanssiOutboundEthMessageProcessorV1::<Runtime>::process_message(
                     message, origin, meter, id,
                 )
             }
@@ -1143,8 +1155,12 @@ impl pallet_message_queue::Config for Runtime {
     type MessageProcessor = MessageProcessor;
     #[cfg(feature = "runtime-benchmarks")]
     type MessageProcessor =
-        pallet_message_queue::mock_helpers::NoopMessageProcessor<AggregateMessageOrigin>;
-    type QueueChangeHandler = ParaInclusion;
+        pallet_message_queue::mock_helpers::NoopMessageProcessor<TanssiAggregateMessageOrigin>;
+    type QueueChangeHandler = OnQueueChangedWrapper<
+        TanssiAggregateMessageOrigin,
+        ParaInclusionAggregateMessageOrigin,
+        ParaInclusion,
+    >;
     type QueuePausedQuery = ();
     type WeightInfo = weights::pallet_message_queue::SubstrateWeight<Runtime>;
 }
@@ -1464,7 +1480,6 @@ prod_or_fast_parameter_types! {
 }
 
 impl pallet_external_validators::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type UpdateOrigin = EnsureRoot<AccountId>;
     type HistoryDepth = ConstU32<84>;
     type MaxWhitelistedValidators = MaxWhitelistedValidators;
@@ -1525,7 +1540,6 @@ impl tp_bridge::TokenChannelSetterBenchmarkHelperTrait for RewardsBenchHelper {
 
 // Pallet to reward validators.
 impl pallet_external_validators_rewards::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type EraIndexProvider = ExternalValidators;
     type HistoryDepth = ConstU32<64>;
     type BackingPoints = ConstU32<20>;
@@ -1537,8 +1551,9 @@ impl pallet_external_validators_rewards::Config for Runtime {
     type ExternalIndexProvider = ExternalValidators;
     type GetWhitelistedValidators = GetWhitelistedValidators;
     type Hashing = Keccak256;
-    type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
-    type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;
+    type ValidateMessage = tp_bridge::TanssiEthMessageValidatorV1<Runtime>;
+    type OutboundQueue =
+        tp_bridge::TanssiEthMessageSenderV1<Runtime, GetAggregateMessageOriginTanssi>;
     type Currency = Balances;
     type RewardsEthereumSovereignAccount = EthereumSovereignAccount;
     type TokenLocationReanchored = TokenLocationReanchored;
@@ -1549,7 +1564,6 @@ impl pallet_external_validators_rewards::Config for Runtime {
 }
 
 impl pallet_external_validator_slashes::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type ValidatorId = AccountId;
     type ValidatorIdOf = ValidatorIdOf;
     type SlashDeferDuration = SlashDeferDuration;
@@ -1558,8 +1572,9 @@ impl pallet_external_validator_slashes::Config for Runtime {
     type SessionInterface = StarlightSessionInterface;
     type EraIndexProvider = ExternalValidators;
     type InvulnerablesProvider = ExternalValidators;
-    type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
-    type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;
+    type ValidateMessage = tp_bridge::TanssiEthMessageValidatorV1<Runtime>;
+    type OutboundQueue =
+        tp_bridge::TanssiEthMessageSenderV1<Runtime, GetAggregateMessageOriginTanssi>;
     type ExternalIndexProvider = ExternalValidators;
     type QueuedSlashesProcessedPerBlock = ConstU32<10>;
     type WeightInfo = weights::pallet_external_validator_slashes::SubstrateWeight<Runtime>;
@@ -1594,7 +1609,6 @@ parameter_types! {
 }
 
 impl pallet_invulnerables::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type UpdateOrigin = EnsureRoot<AccountId>;
     type MaxInvulnerables = MaxInvulnerables;
     type CollatorId = <Self as frame_system::Config>::AccountId;
@@ -1630,7 +1644,6 @@ impl pallet_configuration::Config for Runtime {
 }
 
 impl pallet_migrations::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type MigrationsList = (tanssi_runtime_common::migrations::StarlightMigrations<Runtime>,);
     type XcmExecutionManager = ();
 }
@@ -1690,7 +1703,6 @@ type NormalFilter = EverythingBut<(
 )>;
 
 impl pallet_maintenance_mode::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
@@ -1722,7 +1734,6 @@ parameter_types! {
 }
 
 impl pallet_services_payment::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     /// Handler for fees
     type OnChargeForBlock = ();
     type OnChargeForCollatorAssignment = ();
@@ -1749,7 +1760,6 @@ parameter_types! {
 }
 
 impl pallet_stream_payment::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type StreamId = tp_stream_payment_common::StreamId;
     type TimeUnit = tp_stream_payment_common::TimeUnit;
     type Balance = Balance;
@@ -1768,13 +1778,14 @@ parameter_types! {
     #[derive(Clone)]
     pub const MaxAssignmentsPerParaId: u32 = 10;
     #[derive(Clone)]
-    pub const MaxNodeUrlLen: u32 = 200;
+    pub const MaxNodeUrlCount: u32 = 4;
+    #[derive(Clone)]
+    pub const MaxStringLen: u32 = 200;
 }
 
 pub type DataPreserversProfileId = u64;
 
 impl pallet_data_preservers::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type RuntimeHoldReason = RuntimeHoldReason;
     type Currency = Balances;
     type WeightInfo = weights::pallet_data_preservers::SubstrateWeight<Runtime>;
@@ -1787,7 +1798,8 @@ impl pallet_data_preservers::Config for Runtime {
     type ForceSetProfileOrigin = EnsureRoot<AccountId>;
 
     type MaxAssignmentsPerParaId = MaxAssignmentsPerParaId;
-    type MaxNodeUrlLen = MaxNodeUrlLen;
+    type MaxNodeUrlCount = MaxNodeUrlCount;
+    type MaxStringLen = MaxStringLen;
     type MaxParaIdsVecLen = MaxLengthParaIds;
 }
 
@@ -1821,7 +1833,6 @@ impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnba
 
 // Pallet to reward container chains collators.
 impl pallet_inflation_rewards::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type ContainerChains = ContainerRegistrar;
     type GetSelfChainBlockAuthor = ();
@@ -1884,7 +1895,6 @@ parameter_types! {
 }
 
 impl pallet_pooled_staking::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type Balance = Balance;
     type StakingAccount = StakingAccount;
@@ -1905,7 +1915,6 @@ parameter_types! {
     pub const CooldownLenghtInSessions: u32 = 2;
 }
 impl pallet_inactivity_tracking::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type MaxInactiveSessions = MaxInactiveSessions;
     type MaxCollatorsPerSession = MaxCandidatesBufferSize;
     type MaxContainerChains = MaxLengthParaIds;
@@ -2203,7 +2212,6 @@ where
 }
 
 impl pallet_registrar::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin =
         EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
@@ -2266,17 +2274,20 @@ impl pallet_registrar::RegistrarHooks for StarlightRegistrarHooks {
     fn benchmarks_ensure_valid_for_collating(para_id: ParaId) {
         use {
             frame_support::traits::EnsureOriginWithArg,
-            pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode},
+            pallet_data_preservers::{NodeType, ParaIdsFilter, Profile},
         };
 
         let profile = Profile {
-            url: b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
+            bootnode_url: Some(b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
                 .to_vec()
                 .try_into()
-                .expect("to fit in BoundedVec"),
+                .expect("to fit in BoundedVec")),
+            direct_rpc_urls: Default::default(),
+            proxy_rpc_urls: Default::default(),
             para_ids: ParaIdsFilter::AnyParaId,
-            mode: ProfileMode::Bootnode,
+            node_type: NodeType::Substrate,
             assignment_request: tp_data_preservers_common::ProviderRequest::Free,
+            additional_info: Default::default(),
         };
 
         let profile_id = pallet_data_preservers::NextProfileId::<Runtime>::get();
@@ -2306,7 +2317,6 @@ impl pallet_registrar::RegistrarHooks for StarlightRegistrarHooks {
 }
 
 impl pallet_author_noting::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type ContainerChains = TanssiCollatorAssignment;
     type SlotBeacon = BabeSlotBeacon<Runtime>;
     type ContainerChainAuthor = TanssiCollatorAssignment;
@@ -3013,8 +3023,7 @@ sp_api::impl_runtime_apis! {
         /// Fetch boot_nodes for this para id
         fn boot_nodes(para_id: ParaId) -> Vec<Vec<u8>> {
             DataPreservers::assignments_profiles(para_id)
-                .filter(|profile| profile.mode == pallet_data_preservers::ProfileMode::Bootnode)
-                .map(|profile| profile.url.into())
+                .filter_map(|profile| profile.bootnode_url.map(Into::into))
                 .collect()
         }
     }
@@ -3399,11 +3408,11 @@ sp_api::impl_runtime_apis! {
                     Ok((origin, ticket, assets))
                 }
 
-                fn fee_asset() -> Result<Asset, BenchmarkError> {
-                    Ok(Asset {
+                fn worst_case_for_trader() -> Result<(Asset, WeightLimit), BenchmarkError> {
+                    Ok((Asset {
                         id: AssetId(TokenLocation::get()),
                         fun: Fungible(1_000_000 * UNITS),
-                    })
+                    }, WeightLimit::Unlimited))
                 }
 
                 fn unlockable_asset() -> Result<(Location, Location, Asset), BenchmarkError> {
@@ -3818,7 +3827,6 @@ impl Get<Option<CoreAllocationConfiguration>> for GetCoreAllocationConfiguration
 }
 
 impl pallet_collator_assignment::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type HostConfiguration = CollatorConfiguration;
     type ContainerChains = ContainerRegistrar;
     type SessionIndex = u32;

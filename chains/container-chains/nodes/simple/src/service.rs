@@ -258,15 +258,15 @@ pub async fn start_dev_node(
 
                 let mut timestamp = 0u64;
                 TIMESTAMP.with(|x| {
-                    timestamp = x.clone().take();
+                    timestamp = *x.borrow();
                 });
 
                 timestamp += slot_duration;
 
                 let relay_slot = sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
-						timestamp.into(),
-						SlotDuration::from_millis(slot_duration),
-                    );
+                    timestamp.into(),
+                    SlotDuration::from_millis(slot_duration),
+                );
                 let relay_slot = u64::from(*relay_slot);
 
                 let downward_xcm_receiver = downward_xcm_receiver.clone();
@@ -278,28 +278,28 @@ pub async fn start_dev_node(
                             current_para_block,
                             relay_offset: 1000,
                             relay_blocks_per_para_block: 2,
-                            orchestrator_para_id: crate::chain_spec::ORCHESTRATOR,
+                            orchestrator_para_id: container_chain_template_simple_runtime::genesis_config_presets::ORCHESTRATOR,
                             container_para_id: para_id,
-                            authorities: authorities_for_cidp
-                    };
+                            authorities: authorities_for_cidp,
+                        };
 
                     let mut additional_keys = mocked_authorities_noting.get_key_values();
                     additional_keys.append(&mut vec![(para_head_key, para_head_data), (relay_slot_key, Slot::from(relay_slot).encode())]);
 
                     let time = MockTimestampInherentDataProvider;
                     let current_para_head = client_set_aside_for_cidp
-                            .header(block)
-                            .expect("Header lookup should succeed")
-                            .expect("Header passed in as parent should be present in backend.");
+                        .header(block)
+                        .expect("Header lookup should succeed")
+                        .expect("Header passed in as parent should be present in backend.");
                     let should_send_go_ahead = match client_set_aside_for_cidp
-                            .runtime_api()
-                            .collect_collation_info(block, &current_para_head)
+                        .runtime_api()
+                        .collect_collation_info(block, &current_para_head)
                     {
-                            Ok(info) => info.new_validation_code.is_some(),
-                            Err(e) => {
-                                    log::error!("Failed to collect collation info: {:?}", e);
-                                    false
-                            },
+                        Ok(info) => info.new_validation_code.is_some(),
+                        Err(e) => {
+                            log::error!("Failed to collect collation info: {:?}", e);
+                            false
+                        }
                     };
 
                     let mocked_parachain = MockValidationDataInherentDataProvider {

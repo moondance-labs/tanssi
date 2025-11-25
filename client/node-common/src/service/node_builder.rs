@@ -36,8 +36,7 @@ use {
         run_manual_seal, ConsensusDataProvider, EngineCommand, ManualSealParams,
     },
     sc_executor::{
-        sp_wasm_interface::{ExtendedHostFunctions, HostFunctions},
-        HeapAllocStrategy, NativeExecutionDispatch, RuntimeVersionOf, WasmExecutor,
+        sp_wasm_interface::HostFunctions, HeapAllocStrategy, RuntimeVersionOf, WasmExecutor,
         DEFAULT_HEAP_ALLOC_STRATEGY,
     },
     sc_network::{config::FullNetworkConfiguration, NetworkBlock},
@@ -59,9 +58,6 @@ use {
     sp_transaction_pool::runtime_api::TaggedTransactionQueue,
     std::{str::FromStr, sync::Arc},
 };
-
-#[allow(deprecated)]
-use sc_executor::NativeElseWasmExecutor;
 use {sc_transaction_pool_api::TransactionPool, sp_api::StorageProof, sp_core::traits::SpawnNamed};
 
 tp_traits::alias!(
@@ -202,19 +198,6 @@ impl TanssiExecutorExt for WasmExecutor<ParachainHostFunctions> {
     }
 }
 
-#[allow(deprecated)]
-impl<D> TanssiExecutorExt for NativeElseWasmExecutor<D>
-where
-    D: NativeExecutionDispatch,
-{
-    type HostFun = ExtendedHostFunctions<sp_io::SubstrateHostFunctions, D::ExtendHostFunctions>;
-
-    fn new_with_wasm_executor(wasm_executor: WasmExecutor<Self::HostFun>) -> Self {
-        #[allow(deprecated)]
-        NativeElseWasmExecutor::new_with_wasm_executor(wasm_executor)
-    }
-}
-
 // `new` function doesn't take self, and the Rust compiler cannot infer that
 // only one type T implements `TypeIdentity`. With thus need a separate impl
 // block with concrete types `()`.
@@ -332,16 +315,20 @@ where
         Arc<(dyn RelayChainInterface + 'static)>,
         Option<CollatorPair>,
     )> {
-        build_relay_chain_interface(
-            polkadot_config,
-            parachain_config,
-            self.telemetry_worker_handle.clone(),
-            &mut self.task_manager,
-            collator_options.clone(),
-            self.hwbench.clone(),
-        )
-        .await
-        .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))
+        // FIXME(MD-1374): support DHT bootnodes
+        let (relay_chain_interface, collator_key, _relay_chain_network, _paranode_rx) =
+            build_relay_chain_interface(
+                polkadot_config,
+                parachain_config,
+                self.telemetry_worker_handle.clone(),
+                &mut self.task_manager,
+                collator_options.clone(),
+                self.hwbench.clone(),
+            )
+            .await
+            .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
+
+        Ok((relay_chain_interface, collator_key))
     }
 
     /// Given an import queue, calls [`cumulus_client_service::build_network`] and
@@ -393,6 +380,13 @@ where
         let import_queue_service = import_queue.service();
         let spawn_handle = task_manager.spawn_handle();
 
+        let metrics = Net::register_notification_metrics(
+            parachain_config
+                .prometheus_config
+                .as_ref()
+                .map(|config| &config.registry),
+        );
+
         let (network, system_rpc_tx, tx_handler_controller, sync_service) =
             cumulus_client_service::build_network(cumulus_client_service::BuildNetworkParams {
                 parachain_config,
@@ -404,6 +398,7 @@ where
                 relay_chain_interface,
                 net_config,
                 sybil_resistance_level: CollatorSybilResistance::Resistant,
+                metrics,
             })
             .await?;
 
@@ -764,6 +759,7 @@ where
             import_queue: import_queue_service,
             recovery_handle: Box::new(overseer_handle),
             sync_service: network.sync_service.clone(),
+            prometheus_registry: prometheus_registry.as_ref(),
         };
 
         // TODO: change for async backing
@@ -840,6 +836,7 @@ where
             relay_chain_slot_duration,
             recovery_handle: Box::new(overseer_handle.clone()),
             sync_service: network.sync_service.clone(),
+            prometheus_registry: prometheus_registry.as_ref(),
         };
 
         // TODO: change for async backing

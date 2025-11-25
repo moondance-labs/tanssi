@@ -23,12 +23,9 @@ extern crate alloc;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarks;
 #[cfg(test)]
+mod mock;
+#[cfg(test)]
 mod tests;
-
-pub mod container_token_to_ethereum_message_exporter;
-pub mod generic_token_message_processor;
-pub mod snowbridge_outbound_token_transfer;
-pub mod symbiotic_message_processor;
 
 use {
     alloc::vec::Vec,
@@ -40,38 +37,127 @@ use {
     },
     ethabi::{Token, U256},
     frame_support::{
-        ensure,
         pallet_prelude::{Decode, Encode, Get},
-        traits::Contains,
+        traits::{Contains, EnqueueMessage},
     },
     frame_system::unique,
     parity_scale_codec::{DecodeWithMemTracking, MaxEncodedLen},
     scale_info::TypeInfo,
-    snowbridge_core::{AgentId, Channel, ChannelId, ParaId},
+    snowbridge_core::{
+        location::{DescribeGlobalPrefix, DescribeHere, DescribeTokenTerminal},
+        AgentId, Channel, ChannelId, ParaId,
+    },
     snowbridge_inbound_queue_primitives::v1::{
         ConvertMessage, ConvertMessageError, VersionedXcmMessage,
+    },
+    snowbridge_inbound_queue_primitives::v2::{
+        ConvertMessage as ConvertMessageV2, ConvertMessageError as ConvertMessageV2Error,
+        Message as MessageV2,
     },
     snowbridge_outbound_queue_primitives::{v1::Fee, SendError},
     snowbridge_pallet_outbound_queue::send_message_impl::Ticket,
     sp_core::{blake2_256, hashing, H256},
-    sp_runtime::{app_crypto::sp_core, traits::Convert, RuntimeDebug},
+    sp_runtime::{app_crypto::sp_core, BoundedVec, RuntimeDebug},
+    xcm_builder::{
+        DescribeAccountId32Terminal, DescribeAllTerminal, DescribeFamily, DescribeTerminus,
+        HashedDescription,
+    },
 };
 
 // Separate import as rustfmt wrongly change it to `alloc::vec::self`, which is the module instead
 // of the macro.
 use alloc::vec;
 
-pub use {
-    custom_do_process_message::{ConstantGasMeter, CustomProcessSnowbridgeMessage},
-    custom_send_message::CustomSendMessage,
-    xcm_executor::traits::ConvertLocation,
-};
+pub use xcm_executor::traits::ConvertLocation;
 
 #[cfg(feature = "runtime-benchmarks")]
 pub use benchmarks::*;
 
-mod custom_do_process_message;
-mod custom_send_message;
+pub mod custom_exporters;
+pub mod inbound_queue;
+pub mod outbound_queue;
+
+pub use custom_exporters::*;
+pub use inbound_queue::*;
+pub use outbound_queue::*;
+
+/// Means of converting an ML origin into a h256
+/// We need to add DescribeAccountId32Terminal for cases in which a local user is the one sending the tokens
+pub type TanssiAgentIdOf = HashedDescription<
+    AgentId,
+    (
+        DescribeHere,
+        DescribeFamily<DescribeAllTerminal>,
+        DescribeGlobalPrefix<(
+            DescribeTerminus,
+            DescribeFamily<DescribeTokenTerminal>,
+            DescribeAccountId32Terminal,
+        )>,
+    ),
+>;
+
+pub type TanssiTicketV1<T> = Ticket<T>;
+
+/// The maximal length of an enqueued message, as determined by the MessageQueue pallet in v2
+pub type MaxEnqueuedMessageSizeOfV2<T> =
+    <<T as snowbridge_pallet_outbound_queue_v2::Config>::MessageQueue as EnqueueMessage<
+        <T as snowbridge_pallet_outbound_queue_v2::Config>::AggregateMessageOrigin,
+    >>::MaxMessageLen;
+
+// We need to crate a new one for this. the ticket type
+// in snowbridge v2 is tied to their commands (unlike v1, which only asked for a set of bytes)
+// therefore we create our own structure
+#[derive(Encode, Decode, TypeInfo, Clone, RuntimeDebug)]
+#[cfg_attr(feature = "std", derive(PartialEq))]
+pub struct TanssiTicketV2<T>
+where
+    T: snowbridge_pallet_outbound_queue_v2::Config,
+{
+    /// Origin
+    pub origin: H256,
+    /// ID
+    pub id: H256,
+    /// Fee
+    pub fee: u128,
+    /// Commands
+    /// TODO: change to bounded
+    /// I cannot change it to bounded right now because I need a cherry-pick in polkadot-sdk
+    /// will leave it as a const for now, it should be  pub const MessageQueueHeapSize: u32 = 32 * 1024  - the size of a u32;
+    /// since it's for now not going to be used, I will leave it to 32**102
+    pub message: BoundedVec<u8, MaxEnqueuedMessageSizeOfV2<T>>,
+}
+
+// A versioned ticket that will allow us to route between v1 and v2 processors
+#[derive(Encode, Decode, TypeInfo, Clone, RuntimeDebug)]
+#[cfg_attr(feature = "std", derive(PartialEq))]
+pub enum VersionedTanssiTicket<T>
+where
+    T: snowbridge_pallet_outbound_queue_v2::Config,
+    T: snowbridge_pallet_outbound_queue::Config,
+{
+    V1(TanssiTicketV1<T>),
+    V2(TanssiTicketV2<T>),
+}
+
+impl<T> From<TanssiTicketV1<T>> for VersionedTanssiTicket<T>
+where
+    T: snowbridge_pallet_outbound_queue_v2::Config,
+    T: snowbridge_pallet_outbound_queue::Config,
+{
+    fn from(ticket: TanssiTicketV1<T>) -> VersionedTanssiTicket<T> {
+        VersionedTanssiTicket::V1(ticket)
+    }
+}
+
+impl<T> From<TanssiTicketV2<T>> for VersionedTanssiTicket<T>
+where
+    T: snowbridge_pallet_outbound_queue_v2::Config,
+    T: snowbridge_pallet_outbound_queue::Config,
+{
+    fn from(ticket: TanssiTicketV2<T>) -> VersionedTanssiTicket<T> {
+        VersionedTanssiTicket::V2(ticket)
+    }
+}
 
 #[derive(Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo, PartialEq)]
 pub struct SlashData {
@@ -169,10 +255,12 @@ impl Command {
     }
 }
 
-// A message which can be accepted by implementations of `/[`SendMessage`\]`
+// A message which can be accepted by our custom implementations of `/[`SendMessage`\]`
+// This message is the COMMON structure to be passed to both V1 and V2 processors
+// the processors will later process it in whatever format the outbound queues expect
 #[derive(Encode, Decode, TypeInfo, Clone, RuntimeDebug)]
 #[cfg_attr(feature = "std", derive(PartialEq))]
-pub struct Message {
+pub struct TanssiMessage {
     /// ID for this message. One will be automatically generated if not provided.
     ///
     /// When this message is created from an XCM message, the ID should be extracted
@@ -203,6 +291,25 @@ impl<T: snowbridge_pallet_outbound_queue::Config> TicketInfo for Ticket<T> {
     }
 }
 
+#[cfg(not(feature = "runtime-benchmarks"))]
+impl<T: snowbridge_pallet_outbound_queue_v2::Config> TicketInfo for TanssiTicketV2<T> {
+    fn message_id(&self) -> H256 {
+        self.id
+    }
+}
+
+#[cfg(not(feature = "runtime-benchmarks"))]
+impl<T: snowbridge_pallet_outbound_queue::Config + snowbridge_pallet_outbound_queue_v2::Config>
+    TicketInfo for VersionedTanssiTicket<T>
+{
+    fn message_id(&self) -> H256 {
+        match self {
+            VersionedTanssiTicket::V1(ticket) => ticket.message_id,
+            VersionedTanssiTicket::V2(ticket) => ticket.id,
+        }
+    }
+}
+
 // Benchmarks check message_id so it must be deterministic.
 #[cfg(feature = "runtime-benchmarks")]
 impl<T: snowbridge_pallet_outbound_queue::Config> TicketInfo for Ticket<T> {
@@ -211,73 +318,35 @@ impl<T: snowbridge_pallet_outbound_queue::Config> TicketInfo for Ticket<T> {
     }
 }
 
-pub struct MessageValidator<T: snowbridge_pallet_outbound_queue::Config>(PhantomData<T>);
+// Benchmarks check message_id so it must be deterministic.
+#[cfg(feature = "runtime-benchmarks")]
+impl<T: snowbridge_pallet_outbound_queue_v2::Config> TicketInfo for TanssiTicketV2<T> {
+    fn message_id(&self) -> H256 {
+        H256::default()
+    }
+}
 
+// Benchmarks check message_id so it must be deterministic.
+#[cfg(feature = "runtime-benchmarks")]
+impl<T: snowbridge_pallet_outbound_queue::Config + snowbridge_pallet_outbound_queue_v2::Config>
+    TicketInfo for VersionedTanssiTicket<T>
+{
+    fn message_id(&self) -> H256 {
+        H256::default()
+    }
+}
+
+// Our own implementation of validating a tanssiMessage
 pub trait ValidateMessage {
     type Ticket: TicketInfo;
 
-    fn validate(message: &Message) -> Result<(Self::Ticket, Fee<u64>), SendError>;
-}
-
-impl<T: snowbridge_pallet_outbound_queue::Config> ValidateMessage for MessageValidator<T> {
-    type Ticket = Ticket<T>;
-
-    fn validate(message: &Message) -> Result<(Self::Ticket, Fee<u64>), SendError> {
-        log::trace!("MessageValidator: {:?}", message);
-        // The inner payload should not be too large
-        let payload = message.command.abi_encode();
-        ensure!(
-            payload.len() < T::MaxMessagePayloadSize::get() as usize,
-            SendError::MessageTooLarge
-        );
-
-        // Ensure there is a registered channel we can transmit this message on
-        ensure!(
-            T::Channels::contains(&message.channel_id),
-            SendError::InvalidChannel
-        );
-
-        // Generate a unique message id unless one is provided
-        let message_id: H256 = message
-            .id
-            .unwrap_or_else(|| unique((message.channel_id, &message.command)).into());
-
-        // Fee not used
-        /*
-        let gas_used_at_most = T::GasMeter::maximum_gas_used_at_most(&message.command);
-        let fee = Self::calculate_fee(gas_used_at_most, T::PricingParameters::get());
-         */
-
-        let queued_message: VersionedQueuedMessage = QueuedMessage {
-            id: message_id,
-            channel_id: message.channel_id,
-            command: message.command.clone(),
-        }
-        .into();
-        // The whole message should not be too large
-        let encoded = queued_message
-            .encode()
-            .try_into()
-            .map_err(|_| SendError::MessageTooLarge)?;
-
-        let ticket = Ticket {
-            message_id,
-            channel_id: message.channel_id,
-            message: encoded,
-        };
-        let fee = Fee {
-            local: Default::default(),
-            remote: Default::default(),
-        };
-
-        Ok((ticket, fee))
-    }
+    fn validate(message: &TanssiMessage) -> Result<(Self::Ticket, Fee<u64>), SendError>;
 }
 
 impl ValidateMessage for () {
     type Ticket = ();
 
-    fn validate(_message: &Message) -> Result<(Self::Ticket, Fee<u64>), SendError> {
+    fn validate(_message: &TanssiMessage) -> Result<(Self::Ticket, Fee<u64>), SendError> {
         Ok((
             (),
             Fee {
@@ -288,10 +357,10 @@ impl ValidateMessage for () {
     }
 }
 
-/// Message which is awaiting processing in the MessageQueue pallet
+/// A tanssi message which is awaiting processing in the MessageQueue pallet
 #[derive(Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(PartialEq))]
-pub struct QueuedMessage {
+pub struct QueuedTanssiMessage {
     /// Message ID
     pub id: H256,
     /// Channel ID
@@ -304,24 +373,27 @@ pub struct QueuedMessage {
 /// or loss after forkless runtime upgrades
 #[derive(Encode, Decode, TypeInfo, Clone, RuntimeDebug)]
 #[cfg_attr(feature = "std", derive(PartialEq))]
-pub enum VersionedQueuedMessage {
-    V1(QueuedMessage),
+pub enum VersionedQueuedTanssiMessage {
+    V1(QueuedTanssiMessage),
 }
 
-impl From<QueuedMessage> for VersionedQueuedMessage {
-    fn from(x: QueuedMessage) -> Self {
-        VersionedQueuedMessage::V1(x)
+impl From<QueuedTanssiMessage> for VersionedQueuedTanssiMessage {
+    fn from(x: QueuedTanssiMessage) -> Self {
+        VersionedQueuedTanssiMessage::V1(x)
     }
 }
 
-impl From<VersionedQueuedMessage> for QueuedMessage {
-    fn from(x: VersionedQueuedMessage) -> Self {
+impl From<VersionedQueuedTanssiMessage> for QueuedTanssiMessage {
+    fn from(x: VersionedQueuedTanssiMessage) -> Self {
         match x {
-            VersionedQueuedMessage::V1(x) => x,
+            VersionedQueuedTanssiMessage::V1(x) => x,
         }
     }
 }
 
+// Our own implementation of deliver message.
+// this one takes a ticket and delivers it
+// TODO: why did we separate these 2 (validate and deliver)?
 pub trait DeliverMessage {
     type Ticket;
 
@@ -357,6 +429,13 @@ impl ConvertMessage for DoNothingConvertMessage {
         _message: VersionedXcmMessage,
     ) -> Result<(Xcm<()>, Self::Balance), ConvertMessageError> {
         Err(ConvertMessageError::UnsupportedVersion)
+    }
+}
+
+impl ConvertMessageV2 for DoNothingConvertMessage {
+    fn convert(_: MessageV2) -> Result<Xcm<()>, ConvertMessageV2Error> {
+        // TODO: figure out what to do here
+        Err(ConvertMessageV2Error::CannotReanchor)
     }
 }
 

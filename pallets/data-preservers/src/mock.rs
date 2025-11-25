@@ -416,20 +416,6 @@ impl pallet_data_preservers::AssignmentProcessor<AccountId> for AssignmentProces
         Ok(())
     }
 
-    /// Return the values for a free assignment if it is supported.
-    /// This is required to perform automatic migration from old Bootnodes storage.
-    fn free_variant_values() -> Option<(
-        Self::ProviderRequest,
-        Self::AssignerParameter,
-        Self::AssignmentWitness,
-    )> {
-        Some((
-            Self::ProviderRequest::Free,
-            Self::AssignerParameter::Free,
-            Self::AssignmentWitness::Free,
-        ))
-    }
-
     // The values returned by the following functions should match with each other.
     #[cfg(feature = "runtime-benchmarks")]
     fn benchmark_provider_request() -> Self::ProviderRequest {
@@ -448,7 +434,6 @@ impl pallet_data_preservers::AssignmentProcessor<AccountId> for AssignmentProces
 }
 
 impl pallet_data_preservers::Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     type RuntimeHoldReason = RuntimeHoldReason;
     type Currency = Balances;
     type ProfileId = u64;
@@ -456,7 +441,8 @@ impl pallet_data_preservers::Config for Test {
     type AssignmentOrigin = MockContainerChainManager<Test>;
     type ForceSetProfileOrigin = EnsureRoot<AccountId>;
     type MaxAssignmentsPerParaId = ConstU32<10>;
-    type MaxNodeUrlLen = ConstU32<200>;
+    type MaxNodeUrlCount = ConstU32<4>;
+    type MaxStringLen = ConstU32<200>;
     type MaxParaIdsVecLen = ConstU32<20>;
     type ProfileDeposit = tp_traits::BytesDeposit<ConstU128<1000>, ConstU128<51>>;
     type WeightInfo = ();

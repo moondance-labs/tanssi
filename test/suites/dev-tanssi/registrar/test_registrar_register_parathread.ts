@@ -3,8 +3,8 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import { generateEmptyGenesisData, jumpSessions } from "utils";
 import type { TpTraitsSlotFrequency } from "@polkadot/types/lookup";
+import { generateEmptyGenesisData, jumpSessions } from "utils";
 
 describeSuite({
     id: "DEV0701",
@@ -57,10 +57,13 @@ describeSuite({
 
                 const profileId = await polkadotJs.query.dataPreservers.nextProfileId();
                 const tx2 = polkadotJs.tx.dataPreservers.createProfile({
-                    url: "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
+                    bootnodeUrl: "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
                     paraIds: "AnyParaId",
-                    mode: "Bootnode",
+                    nodeType: "Substrate",
                     assignmentRequest: "Free",
+                    additionalInfo: "0x",
+                    directRpcUrls: [],
+                    proxyRpcUrls: [],
                 });
 
                 const tx3 = polkadotJs.tx.dataPreservers.startAssignment(profileId, 2002, "Free");

@@ -37,6 +37,8 @@ mod benchmarks;
 pub mod weights;
 pub use weights::WeightInfo;
 
+pub mod migrations;
+
 use {
     alloc::vec::Vec,
     core::fmt::Debug,
@@ -103,15 +105,20 @@ pub mod pallet {
     impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
         fn build(&self) {
             for (para_id, profile_owner, url, request, witness) in self.bootnodes.clone() {
+                let bootnode_url = Some(url.try_into().expect("should fit in BoundedVec"));
+
                 let profile = Profile {
-                    url: url.try_into().expect("should fit in BoundedVec"),
+                    direct_rpc_urls: Default::default(),
+                    proxy_rpc_urls: Default::default(),
+                    bootnode_url,
                     para_ids: ParaIdsFilter::Whitelist({
                         let mut set = BoundedBTreeSet::new();
                         set.try_insert(para_id).expect("to fit in BoundedBTreeSet");
                         set
                     }),
-                    mode: ProfileMode::Bootnode,
+                    node_type: NodeType::Substrate,
                     assignment_request: request,
+                    additional_info: Default::default(),
                 };
 
                 let profile_id = NextProfileId::<T>::get();
@@ -129,9 +136,6 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
-        /// Overarching event type.
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-
         type RuntimeHoldReason: From<HoldReason>;
 
         type Currency: Inspect<Self::AccountId>
@@ -163,7 +167,9 @@ pub mod pallet {
         #[pallet::constant]
         type MaxAssignmentsPerParaId: Get<u32> + Clone;
         #[pallet::constant]
-        type MaxNodeUrlLen: Get<u32> + Clone;
+        type MaxNodeUrlCount: Get<u32> + Clone;
+        #[pallet::constant]
+        type MaxStringLen: Get<u32> + Clone;
         #[pallet::constant]
         type MaxParaIdsVecLen: Get<u32> + Clone;
 
@@ -249,7 +255,7 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::create_profile(
-            profile.url.len() as u32,
+            profile.strings_len() as u32,
             profile.para_ids.len() as u32,
         ))]
         #[allow(clippy::useless_conversion)]
@@ -267,7 +273,7 @@ pub mod pallet {
 
         #[pallet::call_index(2)]
         #[pallet::weight(T::WeightInfo::update_profile(
-            profile.url.len() as u32,
+            profile.strings_len() as u32,
             profile.para_ids.len() as u32,
         ))]
         #[allow(clippy::useless_conversion)]
@@ -326,7 +332,7 @@ pub mod pallet {
 
         #[pallet::call_index(4)]
         #[pallet::weight(T::WeightInfo::force_create_profile(
-            profile.url.len() as u32,
+            profile.strings_len() as u32,
             profile.para_ids.len() as u32,
         ))]
         #[allow(clippy::useless_conversion)]
@@ -342,7 +348,7 @@ pub mod pallet {
 
         #[pallet::call_index(5)]
         #[pallet::weight(T::WeightInfo::force_update_profile(
-            profile.url.len() as u32,
+            profile.strings_len() as u32,
             profile.para_ids.len() as u32,
         ))]
         #[allow(clippy::useless_conversion)]
@@ -679,9 +685,7 @@ pub mod pallet {
         }
 
         pub fn check_valid_for_collating(para_id: ParaId) -> DispatchResult {
-            if !Self::assignments_profiles(para_id)
-                .any(|profile| profile.mode == ProfileMode::Bootnode)
-            {
+            if !Self::assignments_profiles(para_id).any(|profile| profile.bootnode_url.is_some()) {
                 Err(Error::<T>::NoBootNodes)?
             }
 

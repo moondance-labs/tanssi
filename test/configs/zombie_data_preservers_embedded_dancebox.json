@@ -69,7 +69,8 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "--pool-type=fork-aware"
+                        "--pool-type=fork-aware",
+                        "-- --port 31001"
                     ]
                 },
                 {
@@ -79,7 +80,8 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "--pool-type=fork-aware"
+                        "--pool-type=fork-aware",
+                        "-- --port 31002"
                     ]
                 },
                 {
@@ -89,7 +91,8 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "--pool-type=fork-aware"
+                        "--pool-type=fork-aware",
+                        "-- --port 31003"
                     ]
                 },
                 {
@@ -99,7 +102,8 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "--pool-type=fork-aware"
+                        "--pool-type=fork-aware",
+                        "-- --port 31004"
                     ]
                 },
                 {
@@ -109,7 +113,8 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "--pool-type=fork-aware"
+                        "--pool-type=fork-aware",
+                        "-- --port 31005"
                     ]
                 },
                 {
@@ -119,18 +124,19 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "--pool-type=fork-aware"
+                        "--pool-type=fork-aware",
+                        "-- --port 31006"
                     ]
                 },
                 {
                     "name": "DataPreserver-2000",
                     "validator": false,
-                    "command": "./scripts/data-preservers-run-hack.sh ../target/release/container-chain-simple-node rpc-provider --",
+                    "command": "./scripts/data-preservers-run-hack.sh ../target/release/container-chain-simple-node data-preserver --",
                     "args": [
                         "-- --profile-id=2",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "--prometheus-external --prometheus-port 33104",
+                        "--prometheus-external --prometheus-port 33102",
                         " --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe",
                         "--rpc-port 9950"
                     ],
@@ -139,16 +145,30 @@
                 {
                     "name": "DataPreserver-2001",
                     "validator": false,
-                    "command": "./scripts/data-preservers-run-hack.sh ../target/release/container-chain-frontier-node rpc-provider --",
+                    "command": "./scripts/data-preservers-run-hack.sh ../target/release/container-chain-frontier-node data-preserver --",
                     "args": [
                         "-- --profile-id=3",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "--prometheus-external --prometheus-port 33105",
+                        "--prometheus-external --prometheus-port 33102",
                         " --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe",
                         "--rpc-port 9952"
                     ],
-                    "prometheus_port": 33103
+                    "prometheus_port": 33102
+                },
+                {
+                    "name": "Bootnode-2001",
+                    "validator": false,
+                    "command": "./scripts/data-preservers-run-hack.sh ../target/release/container-chain-frontier-node data-preserver --",
+                    "args": [
+                        "-- --profile-id=4",
+                        "--database=paritydb",
+                        "--wasmtime-precompiled=wasm",
+                        "--prometheus-external --prometheus-port 33102",
+                        "--rpc-port 9954 --disable-rpc"
+                    ],
+                    "prometheus_port": 33102,
+                    "COMMENT": "RPC server is still started but with no methods, so we set a port to actually test that"
                 }
             ]
         },

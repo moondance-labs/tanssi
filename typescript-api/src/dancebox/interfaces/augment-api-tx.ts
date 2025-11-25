@@ -446,7 +446,15 @@ declare module "@polkadot/api-base/types/submittable" {
                 (
                     profile:
                         | PalletDataPreserversProfile
-                        | { url?: any; paraIds?: any; mode?: any; assignmentRequest?: any }
+                        | {
+                              paraIds?: any;
+                              assignmentRequest?: any;
+                              directRpcUrls?: any;
+                              proxyRpcUrls?: any;
+                              bootnodeUrl?: any;
+                              nodeType?: any;
+                              additionalInfo?: any;
+                          }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -460,7 +468,15 @@ declare module "@polkadot/api-base/types/submittable" {
                 (
                     profile:
                         | PalletDataPreserversProfile
-                        | { url?: any; paraIds?: any; mode?: any; assignmentRequest?: any }
+                        | {
+                              paraIds?: any;
+                              assignmentRequest?: any;
+                              directRpcUrls?: any;
+                              proxyRpcUrls?: any;
+                              bootnodeUrl?: any;
+                              nodeType?: any;
+                              additionalInfo?: any;
+                          }
                         | string
                         | Uint8Array,
                     forAccount: AccountId32 | string | Uint8Array
@@ -489,7 +505,15 @@ declare module "@polkadot/api-base/types/submittable" {
                     profileId: u64 | AnyNumber | Uint8Array,
                     profile:
                         | PalletDataPreserversProfile
-                        | { url?: any; paraIds?: any; mode?: any; assignmentRequest?: any }
+                        | {
+                              paraIds?: any;
+                              assignmentRequest?: any;
+                              directRpcUrls?: any;
+                              proxyRpcUrls?: any;
+                              bootnodeUrl?: any;
+                              nodeType?: any;
+                              additionalInfo?: any;
+                          }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -524,7 +548,15 @@ declare module "@polkadot/api-base/types/submittable" {
                     profileId: u64 | AnyNumber | Uint8Array,
                     profile:
                         | PalletDataPreserversProfile
-                        | { url?: any; paraIds?: any; mode?: any; assignmentRequest?: any }
+                        | {
+                              paraIds?: any;
+                              assignmentRequest?: any;
+                              directRpcUrls?: any;
+                              proxyRpcUrls?: any;
+                              bootnodeUrl?: any;
+                              nodeType?: any;
+                              additionalInfo?: any;
+                          }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -2469,6 +2501,8 @@ declare module "@polkadot/api-base/types/submittable" {
                               relayChainState?: any;
                               downwardMessages?: any;
                               horizontalMessages?: any;
+                              relayParentDescendants?: any;
+                              collatorPeerId?: any;
                           }
                         | string
                         | Uint8Array
@@ -3110,7 +3144,7 @@ declare module "@polkadot/api-base/types/submittable" {
              * `pure` with corresponding parameters.
              *
              * - `spawner`: The account that originally called `pure` to create this account.
-             * - `index`: The disambiguation index originally passed to `pure`. Probably `0`.
+             * - `index`: The disambiguation index originally passed to `create_pure`. Probably `0`.
              * - `proxy_type`: The proxy type originally passed to `pure`.
              * - `height`: The height of the chain when the call to `pure` was processed.
              * - `ext_index`: The extrinsic index in which the call to `pure` was processed.
@@ -3392,6 +3426,16 @@ declare module "@polkadot/api-base/types/submittable" {
              * Only container-chains that have been marked as valid_for_collating can be paused.
              **/
             pauseContainerChain: AugmentedSubmittable<
+                (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u32]
+            >;
+            /**
+             * Recalculate and reconcile the reserved deposit for `para_id`.
+             *
+             * If the required amount differs from the currently held deposit,
+             * this extrinsic increases or releases the difference on the creator's account.
+             **/
+            pokeDeposit: AugmentedSubmittable<
                 (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u32]
             >;
