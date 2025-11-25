@@ -1351,20 +1351,6 @@ describeSuite({
                 );
                 expect(aliceNativeETHBalanceAfter.unwrap().balance.toBigInt()).to.be.eq(nativeETHBalanceFromEthereum);
 
-                async function checkContainerBalance() {
-                    try {
-                        const randomContainerBalanceAfter = (
-                            await container2001PolkadotJs.query.system.account(randomEthAccount.address)
-                        ).data.free;
-                        expect(randomContainerBalanceAfter.toBigInt()).to.be.eq(
-                            randomContainerAccountBalanceBefore.toBigInt() + nativeContainerTokenBalanceFromEthereum
-                        );
-                    } catch (error) {
-                        return false;
-                    }
-                    return true;
-                }
-                let containerBalanceIsCorrect = false;
                 // Wait some time until container assets are received
                 // As soon as we receive the tokens, we get out
                 await waitSessions(
@@ -1372,14 +1358,26 @@ describeSuite({
                     relayApi,
                     2,
                     async () => {
-                        containerBalanceIsCorrect = await checkContainerBalance();
+                        try {
+                            const randomContainerBalanceAfter = (
+                                await container2001PolkadotJs.query.system.account(randomEthAccount.address)
+                            ).data.free;
+                            expect(randomContainerBalanceAfter.toBigInt()).to.be.eq(
+                                randomContainerAccountBalanceBefore.toBigInt() + nativeContainerTokenBalanceFromEthereum
+                            );
+                        } catch (error) {
+                            return false;
+                        }
+                        return true;
                     },
                     "Tanssi-relay"
                 );
-                if (!containerBalanceIsCorrect) {
-                    containerBalanceIsCorrect = await checkContainerBalance();
-                }
-                expect(containerBalanceIsCorrect, "Container balance should be correct").to.be.true;
+                const randomContainerBalanceAfter = (
+                    await container2001PolkadotJs.query.system.account(randomEthAccount.address)
+                ).data.free;
+                expect(randomContainerBalanceAfter.toBigInt()).to.be.eq(
+                    randomContainerAccountBalanceBefore.toBigInt() + nativeContainerTokenBalanceFromEthereum
+                );
 
                 logTiming("Finish T09");
             },
