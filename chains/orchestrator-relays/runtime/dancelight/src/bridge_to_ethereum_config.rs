@@ -513,7 +513,6 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type MessageProcessor = (benchmark_helper::WorstCaseMessageProcessor<EthTokensProcessor>,);
 }
 
-#[cfg(not(feature = "runtime-benchmarks"))]
 pub type RawMessageProcessorInboundV2 = RawMessageProcessorV2<
     Runtime,
     EthereumGatewayAddress,
@@ -525,7 +524,6 @@ pub type RawMessageProcessorInboundV2 = RawMessageProcessorV2<
     <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
 >;
 
-#[cfg(not(feature = "runtime-benchmarks"))]
 pub type SymbioticInboundMessageProcessorV2 = SymbioticMessageProcessorV2<
     Runtime,
     EthereumGatewayAddress,

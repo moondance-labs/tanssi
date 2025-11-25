@@ -3903,6 +3903,7 @@ dependencies = [
 name = "dancelight-runtime"
 version = "0.1.0"
 dependencies = [
+ "alloy-core",
  "alloy-sol-types 0.4.2",
  "binary-merkle-tree",
  "bitvec",
