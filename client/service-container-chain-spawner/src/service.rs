@@ -174,6 +174,7 @@ pub fn start_node_impl_container<
     generate_rpc_builder: TGenerateRpcBuilder,
     container_chain_cli: &'a ContainerChainCli,
     data_preserver: bool,
+    collator_container_initial_sync: bool,
 ) -> impl std::future::Future<
     Output = sc_service::error::Result<(
         TaskManager,
@@ -192,6 +193,7 @@ pub fn start_node_impl_container<
             &node_builder,
             container_chain_cli,
             data_preserver,
+            collator_container_initial_sync,
         );
         let import_queue_service = import_queue.service();
 
@@ -303,6 +305,7 @@ pub fn container_chain_import_queue<RuntimeApi: MinimalContainerRuntimeApi>(
     node_builder: &NodeBuilder<ContainerChainNodeConfig<RuntimeApi>>,
     container_chain_cli: &ContainerChainCli,
     data_preserver: bool,
+    initial_network_sync: bool,
 ) -> (ContainerChainBlockImport<RuntimeApi>, BasicQueue<Block>) {
     // The nimbus import queue ONLY checks the signature correctness
     // Any other checks corresponding to the author-correctness should be done
@@ -330,7 +333,7 @@ pub fn container_chain_import_queue<RuntimeApi: MinimalContainerRuntimeApi>(
         },
         &node_builder.task_manager.spawn_essential_handle(),
         parachain_config.prometheus_registry(),
-        false,
+        initial_network_sync,
         dont_create_gap,
     )
     .expect("function never fails");
