@@ -19,10 +19,11 @@
 #[cfg(all(not(test), not(feature = "testing-helpers")))]
 use crate::EthereumBeaconClient;
 
-use pallet_ethereum_token_transfers::DenyTipHandler;
 #[cfg(not(feature = "runtime-benchmarks"))]
 use {
-    tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
+    tanssi_runtime_common::relay::{
+        NativeContainerTokensProcessor, NativeTokenTransferMessageProcessor,
+    },
     tp_bridge::{
         symbiotic_message_processor::SymbioticMessageProcessor, GenericTokenInboundMessageProcessor,
     },
@@ -37,14 +38,13 @@ use {
         TokenLocationReanchored, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
     frame_support::{traits::PalletInfoAccess, weights::ConstantMultiplier},
+    pallet_ethereum_token_transfers::DenyTipHandler,
     pallet_xcm::EnsureXcm,
     snowbridge_beacon_primitives::ForkVersions,
     snowbridge_core::{gwei, meth, PricingParameters, Rewards},
     snowbridge_pallet_outbound_queue::OnNewCommitment,
     sp_core::{ConstU32, ConstU8, H160, H256},
-    tanssi_runtime_common::relay::{
-        EthTokensLocalProcessor, NativeContainerTokensProcessor, RewardThroughFeesAccount,
-    },
+    tanssi_runtime_common::relay::{EthTokensLocalProcessor, RewardThroughFeesAccount},
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
 };
 
