@@ -268,6 +268,8 @@ async fn try_spawn<
         container_chain_para_id
     );
 
+    let mut collator_container_initial_sync = false;
+
     if !data_preserver && !start_collation {
         log::info!("This is a syncing container chain, using random ports");
 
@@ -323,6 +325,9 @@ async fn try_spawn<
             .network_params
             .node_key_params
             .unsafe_force_node_key_generation = true;
+
+        // lastly, we determine that during the initial warp sync best blocks are determined by the relay
+        collator_container_initial_sync = true;
     }
 
     let validator = collation_params.is_some();
@@ -409,6 +414,7 @@ async fn try_spawn<
                             generate_rpc_builder.clone(),
                             &container_chain_cli,
                             data_preserver,
+                            collator_container_initial_sync,
                         )
                         .await?
                     }
@@ -423,6 +429,7 @@ async fn try_spawn<
                             generate_rpc_builder.clone(),
                             &container_chain_cli,
                             data_preserver,
+                            collator_container_initial_sync,
                         )
                         .await?
                     }
