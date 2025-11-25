@@ -16,6 +16,7 @@
 
 use {
     alloc::vec::Vec,
+    crate::{match_expression, XcmConverterError},
     core::{iter::Peekable, marker::PhantomData, slice::Iter},
     frame_support::{ensure, traits::Get},
     parity_scale_codec::{Decode, Encode},
@@ -175,29 +176,6 @@ where
         log::info!(target: "xcm::container_ethereum_blob_exporter", "message delivered {message_id:#?}.");
         Ok(message_id.into())
     }
-}
-
-#[cfg(not(feature = "runtime-benchmarks"))]
-/// Errors that can be thrown to the pattern matching step.
-#[derive(PartialEq, Debug)]
-enum XcmConverterError {
-    UnexpectedEndOfXcm,
-    EndOfXcmMessageExpected,
-    DepositAssetExpected,
-    ClearOriginExpected,
-    BuyExecutionExpected,
-    NoReserveAssets,
-    FilterDoesNotConsumeAllAssets,
-    TooManyAssets,
-    ZeroAssetTransfer,
-    BeneficiaryResolutionFailed,
-    AssetResolutionFailed,
-    InvalidFeeAsset,
-    SetTopicExpected,
-    ReserveAssetDepositedExpected,
-    InvalidAsset,
-    ParaIdMismatch,
-    UnexpectedInstruction,
 }
 
 #[cfg(not(feature = "runtime-benchmarks"))]

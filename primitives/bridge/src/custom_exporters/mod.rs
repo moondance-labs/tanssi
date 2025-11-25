@@ -42,4 +42,17 @@ pub enum XcmConverterError {
     AliasOriginExpected,
     InvalidOrigin,
     TooManyCommands,
+    ClearOriginExpected,
+    BuyExecutionExpected,
+    ParaIdMismatch
+}
+
+#[macro_export]
+macro_rules! match_expression {
+	($expression:expr, $(|)? $( $pattern:pat_param )|+ $( if $guard: expr )?, $value:expr $(,)?) => {
+		match $expression {
+			$( $pattern )|+ $( if $guard )? => Some($value),
+			_ => None,
+		}
+	};
 }
