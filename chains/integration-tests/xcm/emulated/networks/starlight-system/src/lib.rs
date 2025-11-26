@@ -22,7 +22,7 @@ use {
     simple_template_emulated_chain::SimpleTemplate,
     sp_keyring::Sr25519Keyring,
     starlight_emulated_chain::Starlight,
-    tanssi_emulated_integration_tests_common::accounts::{ALICE, BOB, RANDOM},
+    tanssi_emulated_integration_tests_common::accounts::{BOB, RANDOM},
     xcm_emulator::{
         decl_test_networks, Bridge, BridgeLaneId, BridgeMessage, BridgeMessageDispatchError,
         BridgeMessageHandler, Chain, Network,
