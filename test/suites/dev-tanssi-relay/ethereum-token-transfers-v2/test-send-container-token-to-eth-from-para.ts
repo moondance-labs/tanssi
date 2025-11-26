@@ -352,7 +352,209 @@ describeSuite({
 
         it({
             id: "T02",
-            title: "Should succeed sending container token to eth from container 2001",
+            title: "Should fail sending container token to eth if export fee is lower than the minimum",
+            test: async () => {
+                if (shouldSkipStarlightContainerExport) {
+                    console.log(`Skipping XCM tests for Starlight version ${specVersion}`);
+                    return;
+                }
+
+                const transferAmount = 100_000n;
+                // Minimum export fee is 1, so we put 0 to test the failure.
+                const exportFeeAmount = 0n;
+                const beneficiaryOnDest = {
+                    parents: 0,
+                    interior: {
+                        X1: [
+                            {
+                                AccountKey20: {
+                                    network: ethereumNetwork,
+                                    key: "0x1111111111111111111111111111111111111111",
+                                },
+                            },
+                        ],
+                    },
+                };
+
+                const exportFeeTokenLocation = {
+                    parents: 1,
+                    interior: {
+                        X1: [
+                            {
+                                GlobalConsensus: {
+                                    ByGenesis: DANCELIGHT_GENESIS_HASH,
+                                },
+                            },
+                        ],
+                    },
+                };
+
+                const exportFeeAssetToWithdraw = {
+                    id: exportFeeTokenLocation,
+                    fun: { Fungible: exportFeeAmount },
+                };
+
+                const containerTokenLocationFromParent = {
+                    parents: 0,
+                    interior: { X2: [{ Parachain: 2000 }, { PalletInstance: 10 }] },
+                };
+
+                const containerTokenToDeposit = {
+                    id: {
+                        parents: 1,
+                        interior: {
+                            X3: [
+                                {
+                                    GlobalConsensus: {
+                                        ByGenesis: DANCELIGHT_GENESIS_HASH,
+                                    },
+                                },
+                                {
+                                    Parachain: 2000,
+                                },
+                                { PalletInstance: 10 },
+                            ],
+                        },
+                    },
+                    fun: { Fungible: transferAmount },
+                };
+
+                const aliceContainerOrigin = {
+                    parents: 0,
+                    interior: { X2: [{ Parachain: 2000 }, { AccountId32: { id: u8aToHex(alice.addressRaw) } }] },
+                };
+
+                const exportMessage = [
+                    {
+                        WithdrawAsset: [exportFeeAssetToWithdraw],
+                    },
+                    {
+                        PayFees: {
+                            asset: exportFeeAssetToWithdraw,
+                        },
+                    },
+                    {
+                        ReserveAssetDeposited: [containerTokenToDeposit],
+                    },
+                    {
+                        AliasOrigin: aliceContainerOrigin,
+                    },
+                    {
+                        DepositAsset: {
+                            assets: { Definite: [containerTokenToDeposit] },
+                            beneficiary: beneficiaryOnDest,
+                        },
+                    },
+                    {
+                        SetTopic: [
+                            57, 238, 159, 80, 83, 113, 184, 105, 108, 164, 73, 6, 134, 160, 7, 234, 121, 88, 234, 173,
+                            250, 136, 18, 29, 1, 204, 109, 70, 45, 3, 160, 251,
+                        ],
+                    },
+                ];
+
+                const feeTokenLocation = {
+                    parents: 0,
+                    interior: { Here: null },
+                };
+
+                const overalFeeAmount = 500_000_000n;
+
+                const feeAssetToWithdraw = {
+                    id: feeTokenLocation,
+                    fun: { Fungible: overalFeeAmount },
+                };
+
+                const xcmMessage = {
+                    V5: [
+                        {
+                            WithdrawAsset: [feeAssetToWithdraw],
+                        },
+                        {
+                            BuyExecution: {
+                                fees: feeAssetToWithdraw,
+                                weight_limit: "Unlimited",
+                            },
+                        },
+                        {
+                            SetAppendix: [
+                                {
+                                    DepositAsset: {
+                                        assets: { Wild: { AllCounted: 1 } },
+                                        beneficiary: {
+                                            parents: 0,
+                                            interior: { X1: [{ AccountId32: { id: sovAddressHex } }] },
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                        {
+                            ExportMessage: {
+                                network: ethereumNetwork,
+                                destination: "Here",
+                                xcm: exportMessage,
+                            },
+                        },
+                    ],
+                };
+
+                await context.createBlock();
+
+                // Send RPC call to enable para inherent candidate generation
+                await customDevRpcRequest("mock_enableParaInherentCandidate", []);
+
+                const tokenTransferNonceBefore = await polkadotJs.query.ethereumOutboundQueueV2.nonce();
+                const snowbridgeFeesAccountBalanceBefore = (
+                    await polkadotJs.query.system.account(SNOWBRIDGE_FEES_ACCOUNT)
+                ).data.free.toBigInt();
+
+                const containerSovereignAccountBalanceBefore = (
+                    await polkadotJs.query.system.account(sovAddress)
+                ).data.free.toBigInt();
+
+                // Wait until message is processed
+                // we need to wait until session 3 for sure so that paras produce blocks
+                await jumpToSession(context, 3);
+
+                // Send ump message
+                await injectUmpMessageAndSeal(context, {
+                    type: "XcmVersionedXcm",
+                    payload: xcmMessage,
+                } as RawXcmMessage);
+
+                await context.createBlock();
+                await context.createBlock();
+
+                // Things to verify:
+                // 1. ethereumOutboundQueueV2 nonce should not change
+                // 2. container sov account pays only the XCM fee on Tanssi, but not the export fee.
+                // 3. There's no pending order for such nonce.
+                const tokenTransferNonceAfter = await polkadotJs.query.ethereumOutboundQueueV2.nonce();
+                const snowbridgeFeesAccountBalanceAfter = (
+                    await polkadotJs.query.system.account(SNOWBRIDGE_FEES_ACCOUNT)
+                ).data.free.toBigInt();
+
+                const containerSovereignAccountBalanceAfter = (
+                    await polkadotJs.query.system.account(sovAddress)
+                ).data.free.toBigInt();
+
+                const pendingOrder =
+                    await polkadotJs.query.ethereumOutboundQueueV2.pendingOrders(tokenTransferNonceAfter);
+
+                expect(tokenTransferNonceAfter.toNumber()).to.be.equal(tokenTransferNonceBefore.toNumber());
+                expect(snowbridgeFeesAccountBalanceAfter).to.be.eq(snowbridgeFeesAccountBalanceBefore);
+                expect(
+                    containerSovereignAccountBalanceBefore - containerSovereignAccountBalanceAfter
+                ).to.be.lessThanOrEqual(overalFeeAmount);
+
+                expect(pendingOrder.toHuman()).to.be.null;
+            },
+        });
+
+        it({
+            id: "T03",
+            title: "Should succeed sending container token to eth from container 2000",
             test: async () => {
                 if (shouldSkipStarlightContainerExport) {
                     console.log(`Skipping XCM tests for Starlight version ${specVersion}`);

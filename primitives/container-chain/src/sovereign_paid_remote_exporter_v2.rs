@@ -100,7 +100,6 @@ where
             xcm: xcm.clone(),
         };
 
-        // For now hardcoding fees, but later it should be converted from fixed Tanssi relay amount
         let fees = Asset {
             id: AssetId(Location::here()),
             fun: Fungible(ExecutionFee::get()),
