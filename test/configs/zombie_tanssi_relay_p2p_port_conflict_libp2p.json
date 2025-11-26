@@ -1,0 +1,57 @@
+{
+    "settings": {
+        "timeout": 1000,
+        "provider": "native"
+    },
+    "relaychain": {
+        "chain_spec_path": "specs/tanssi-relay.json",
+        "default_command": "../target/release/tanssi-relay",
+        "default_args": [
+            "--no-hardware-benchmarks",
+            "-lparachain=debug",
+            "--database=paritydb",
+            "--no-beefy",
+            "--network-backend=libp2p",
+            "--wasmtime-precompiled=wasm"
+        ],
+        "genesis": {
+            "runtimeGenesis": {
+                "patch": {
+                    "configuration": {
+                        "config": {
+                            "async_backing_params": {
+                                "allowed_ancestry_len": 2,
+                                "max_candidate_depth": 3
+                            },
+                            "scheduler_params": {
+                                "scheduling_lookahead": 2,
+                                "num_cores": 4
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "nodes": [
+            {
+                "name": "alice",
+                "rpc_port": "9947",
+                "p2p_port": "30333",
+                "validator": true
+            },
+            {
+                "name": "bob",
+                "p2p_port": "30333",
+                "validator": true
+            }
+        ]
+    },
+    "parachains": [],
+    "types": {
+        "Header": {
+            "number": "u64",
+            "parent_hash": "Hash",
+            "post_state": "Hash"
+        }
+    }
+}
