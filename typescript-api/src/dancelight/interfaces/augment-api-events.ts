@@ -24,10 +24,13 @@ import type {
 import type { ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H160, H256, Perbill } from "@polkadot/types/interfaces/runtime";
 import type {
-    DancelightRuntimeAggregateMessageOrigin,
+    BpRelayersRegistration,
+    DancelightRuntimeBridgeToEthereumConfigBridgeReward,
+    DancelightRuntimeBridgeToEthereumConfigBridgeRewardBeneficiaries,
     DancelightRuntimeProxyType,
     DancelightRuntimeRuntimeParametersKey,
     DancelightRuntimeRuntimeParametersValue,
+    DancelightRuntimeTanssiAggregateMessageOrigin,
     FrameSupportDispatchPostDispatchInfo,
     FrameSupportMessagesProcessMessageError,
     FrameSupportPreimagesBounded,
@@ -52,6 +55,7 @@ import type {
     SnowbridgeCoreChannelId,
     SnowbridgeCoreOperatingModeBasicOperatingMode,
     SnowbridgeCorePricingPricingParameters,
+    SnowbridgeCoreRewardMessageId,
     SnowbridgeOutboundQueuePrimitivesOperatingMode,
     SpConsensusGrandpaAppPublic,
     SpRuntimeDispatchError,
@@ -228,6 +232,66 @@ declare module "@polkadot/api-base/types/events" {
              **/
             [key: string]: AugmentedEvent<ApiType>;
         };
+        bridgeRelayers: {
+            /**
+             * Relayer has been `deregistered`.
+             **/
+            Deregistered: AugmentedEvent<ApiType, [relayer: AccountId32], { relayer: AccountId32 }>;
+            /**
+             * Relayer registration has been added or updated.
+             **/
+            RegistrationUpdated: AugmentedEvent<
+                ApiType,
+                [relayer: AccountId32, registration: BpRelayersRegistration],
+                { relayer: AccountId32; registration: BpRelayersRegistration }
+            >;
+            /**
+             * Reward has been paid to the relayer.
+             **/
+            RewardPaid: AugmentedEvent<
+                ApiType,
+                [
+                    relayer: AccountId32,
+                    rewardKind: DancelightRuntimeBridgeToEthereumConfigBridgeReward,
+                    rewardBalance: u128,
+                    beneficiary: DancelightRuntimeBridgeToEthereumConfigBridgeRewardBeneficiaries,
+                ],
+                {
+                    relayer: AccountId32;
+                    rewardKind: DancelightRuntimeBridgeToEthereumConfigBridgeReward;
+                    rewardBalance: u128;
+                    beneficiary: DancelightRuntimeBridgeToEthereumConfigBridgeRewardBeneficiaries;
+                }
+            >;
+            /**
+             * Relayer reward has been registered and may be claimed later.
+             **/
+            RewardRegistered: AugmentedEvent<
+                ApiType,
+                [
+                    relayer: AccountId32,
+                    rewardKind: DancelightRuntimeBridgeToEthereumConfigBridgeReward,
+                    rewardBalance: u128,
+                ],
+                {
+                    relayer: AccountId32;
+                    rewardKind: DancelightRuntimeBridgeToEthereumConfigBridgeReward;
+                    rewardBalance: u128;
+                }
+            >;
+            /**
+             * Relayer has been slashed and `deregistered`.
+             **/
+            SlashedAndDeregistered: AugmentedEvent<
+                ApiType,
+                [relayer: AccountId32, registration: BpRelayersRegistration],
+                { relayer: AccountId32; registration: BpRelayersRegistration }
+            >;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         containerRegistrar: {
             DepositUpdated: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
             /**
@@ -366,6 +430,28 @@ declare module "@polkadot/api-base/types/events" {
              **/
             [key: string]: AugmentedEvent<ApiType>;
         };
+        ethereumInboundQueueV2: {
+            /**
+             * A message was received from Ethereum
+             **/
+            MessageReceived: AugmentedEvent<
+                ApiType,
+                [nonce: u64, messageId: U8aFixed],
+                { nonce: u64; messageId: U8aFixed }
+            >;
+            /**
+             * Set OperatingMode
+             **/
+            OperatingModeChanged: AugmentedEvent<
+                ApiType,
+                [mode: SnowbridgeCoreOperatingModeBasicOperatingMode],
+                { mode: SnowbridgeCoreOperatingModeBasicOperatingMode }
+            >;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         ethereumOutboundQueue: {
             /**
              * Message will be committed at the end of current block. From now on, to track the
@@ -462,6 +548,45 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [implAddress: H160, implCodeHash: H256, initializerParamsHash: Option<H256>],
                 { implAddress: H160; implCodeHash: H256; initializerParamsHash: Option<H256> }
+            >;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        ethereumSystemV2: {
+            /**
+             * Register Polkadot-native token as a wrapped ERC20 token on Ethereum
+             **/
+            RegisterToken: AugmentedEvent<
+                ApiType,
+                [location: XcmVersionedLocation, foreignTokenId: H256],
+                { location: XcmVersionedLocation; foreignTokenId: H256 }
+            >;
+            /**
+             * An SetOperatingMode message was sent to the Gateway
+             **/
+            SetOperatingMode: AugmentedEvent<
+                ApiType,
+                [mode: SnowbridgeOutboundQueuePrimitivesOperatingMode],
+                { mode: SnowbridgeOutboundQueuePrimitivesOperatingMode }
+            >;
+            /**
+             * A tip was processed for an inbound or outbound message, for relayer incentivization.
+             * It could have succeeded or failed (and then added to LostTips).
+             **/
+            TipProcessed: AugmentedEvent<
+                ApiType,
+                [sender: AccountId32, messageId: SnowbridgeCoreRewardMessageId, amount: u128, success: bool],
+                { sender: AccountId32; messageId: SnowbridgeCoreRewardMessageId; amount: u128; success: bool }
+            >;
+            /**
+             * An Upgrade message was sent to the Gateway
+             **/
+            Upgrade: AugmentedEvent<
+                ApiType,
+                [implAddress: H160, implCodeHash: H256, initializerParamsHash: H256],
+                { implAddress: H160; implCodeHash: H256; initializerParamsHash: H256 }
             >;
             /**
              * Generic event
@@ -1276,16 +1401,26 @@ declare module "@polkadot/api-base/types/events" {
              **/
             OverweightEnqueued: AugmentedEvent<
                 ApiType,
-                [id: U8aFixed, origin: DancelightRuntimeAggregateMessageOrigin, pageIndex: u32, messageIndex: u32],
-                { id: U8aFixed; origin: DancelightRuntimeAggregateMessageOrigin; pageIndex: u32; messageIndex: u32 }
+                [
+                    id: U8aFixed,
+                    origin: DancelightRuntimeTanssiAggregateMessageOrigin,
+                    pageIndex: u32,
+                    messageIndex: u32,
+                ],
+                {
+                    id: U8aFixed;
+                    origin: DancelightRuntimeTanssiAggregateMessageOrigin;
+                    pageIndex: u32;
+                    messageIndex: u32;
+                }
             >;
             /**
              * This page was reaped.
              **/
             PageReaped: AugmentedEvent<
                 ApiType,
-                [origin: DancelightRuntimeAggregateMessageOrigin, index: u32],
-                { origin: DancelightRuntimeAggregateMessageOrigin; index: u32 }
+                [origin: DancelightRuntimeTanssiAggregateMessageOrigin, index: u32],
+                { origin: DancelightRuntimeTanssiAggregateMessageOrigin; index: u32 }
             >;
             /**
              * Message is processed.
@@ -1294,13 +1429,13 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [
                     id: H256,
-                    origin: DancelightRuntimeAggregateMessageOrigin,
+                    origin: DancelightRuntimeTanssiAggregateMessageOrigin,
                     weightUsed: SpWeightsWeightV2Weight,
                     success: bool,
                 ],
                 {
                     id: H256;
-                    origin: DancelightRuntimeAggregateMessageOrigin;
+                    origin: DancelightRuntimeTanssiAggregateMessageOrigin;
                     weightUsed: SpWeightsWeightV2Weight;
                     success: bool;
                 }
@@ -1312,12 +1447,12 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [
                     id: H256,
-                    origin: DancelightRuntimeAggregateMessageOrigin,
+                    origin: DancelightRuntimeTanssiAggregateMessageOrigin,
                     error: FrameSupportMessagesProcessMessageError,
                 ],
                 {
                     id: H256;
-                    origin: DancelightRuntimeAggregateMessageOrigin;
+                    origin: DancelightRuntimeTanssiAggregateMessageOrigin;
                     error: FrameSupportMessagesProcessMessageError;
                 }
             >;

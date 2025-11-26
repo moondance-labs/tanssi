@@ -111,6 +111,7 @@ import type {
     PalletEthereumTokenTransfersCall,
     PalletEthereumTokenTransfersError,
     PalletEthereumTokenTransfersEvent,
+    PalletEthereumTokenTransfersOrigin,
     PalletExternalValidatorSlashesCall,
     PalletExternalValidatorSlashesError,
     PalletExternalValidatorSlashesEvent,
@@ -391,6 +392,7 @@ import type {
     SnowbridgeCoreOperatingModeBasicOperatingMode,
     SnowbridgeCorePricingPricingParameters,
     SnowbridgeCorePricingRewards,
+    SnowbridgeCoreRewardMessageId,
     SnowbridgeInboundQueuePrimitivesV1ConvertMessageError,
     SnowbridgeMilagroBlsKeysPublicKey,
     SnowbridgeOutboundQueuePrimitivesOperatingMode,
@@ -498,7 +500,6 @@ import type {
     StagingXcmV5TraitsInstructionError,
     StagingXcmV5TraitsOutcome,
     StagingXcmV5Xcm,
-    StarlightRuntimeAggregateMessageOrigin,
     StarlightRuntimeDynamicParamsPreimageBaseDeposit,
     StarlightRuntimeDynamicParamsPreimageByteDeposit,
     StarlightRuntimeDynamicParamsPreimageParameters,
@@ -513,6 +514,7 @@ import type {
     StarlightRuntimeRuntimeParametersKey,
     StarlightRuntimeRuntimeParametersValue,
     StarlightRuntimeSessionKeys,
+    StarlightRuntimeTanssiAggregateMessageOrigin,
     TpBridgeChannelInfo,
     TpBridgeCommand,
     TpBridgeSlashData,
@@ -667,6 +669,7 @@ declare module "@polkadot/types/types/registry" {
         PalletEthereumTokenTransfersCall: PalletEthereumTokenTransfersCall;
         PalletEthereumTokenTransfersError: PalletEthereumTokenTransfersError;
         PalletEthereumTokenTransfersEvent: PalletEthereumTokenTransfersEvent;
+        PalletEthereumTokenTransfersOrigin: PalletEthereumTokenTransfersOrigin;
         PalletExternalValidatorSlashesCall: PalletExternalValidatorSlashesCall;
         PalletExternalValidatorSlashesError: PalletExternalValidatorSlashesError;
         PalletExternalValidatorSlashesEvent: PalletExternalValidatorSlashesEvent;
@@ -947,6 +950,7 @@ declare module "@polkadot/types/types/registry" {
         SnowbridgeCoreOperatingModeBasicOperatingMode: SnowbridgeCoreOperatingModeBasicOperatingMode;
         SnowbridgeCorePricingPricingParameters: SnowbridgeCorePricingPricingParameters;
         SnowbridgeCorePricingRewards: SnowbridgeCorePricingRewards;
+        SnowbridgeCoreRewardMessageId: SnowbridgeCoreRewardMessageId;
         SnowbridgeInboundQueuePrimitivesV1ConvertMessageError: SnowbridgeInboundQueuePrimitivesV1ConvertMessageError;
         SnowbridgeMilagroBlsKeysPublicKey: SnowbridgeMilagroBlsKeysPublicKey;
         SnowbridgeOutboundQueuePrimitivesOperatingMode: SnowbridgeOutboundQueuePrimitivesOperatingMode;
@@ -1054,7 +1058,6 @@ declare module "@polkadot/types/types/registry" {
         StagingXcmV5TraitsInstructionError: StagingXcmV5TraitsInstructionError;
         StagingXcmV5TraitsOutcome: StagingXcmV5TraitsOutcome;
         StagingXcmV5Xcm: StagingXcmV5Xcm;
-        StarlightRuntimeAggregateMessageOrigin: StarlightRuntimeAggregateMessageOrigin;
         StarlightRuntimeDynamicParamsPreimageBaseDeposit: StarlightRuntimeDynamicParamsPreimageBaseDeposit;
         StarlightRuntimeDynamicParamsPreimageByteDeposit: StarlightRuntimeDynamicParamsPreimageByteDeposit;
         StarlightRuntimeDynamicParamsPreimageParameters: StarlightRuntimeDynamicParamsPreimageParameters;
@@ -1069,6 +1072,7 @@ declare module "@polkadot/types/types/registry" {
         StarlightRuntimeRuntimeParametersKey: StarlightRuntimeRuntimeParametersKey;
         StarlightRuntimeRuntimeParametersValue: StarlightRuntimeRuntimeParametersValue;
         StarlightRuntimeSessionKeys: StarlightRuntimeSessionKeys;
+        StarlightRuntimeTanssiAggregateMessageOrigin: StarlightRuntimeTanssiAggregateMessageOrigin;
         TpBridgeChannelInfo: TpBridgeChannelInfo;
         TpBridgeCommand: TpBridgeCommand;
         TpBridgeSlashData: TpBridgeSlashData;
