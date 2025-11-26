@@ -58,7 +58,7 @@ parameter_types! {
     pub StarlightEmptyReceiver: AccountId = StarlightRelay::account_id_of(RANDOM);
 
     // SimpleTemplate
-    pub SimpleTemplateSender: AccountId = AccountId::from(ALICE);
+    pub SimpleTemplateSender: AccountId = Sr25519Keyring::Alice.to_account_id();
     pub SimpleTemplateReceiver: AccountId = AccountId::from(BOB);
     pub SimpleTemplateEmptyReceiver: AccountId = SimpleTemplatePara::account_id_of(RANDOM);
 

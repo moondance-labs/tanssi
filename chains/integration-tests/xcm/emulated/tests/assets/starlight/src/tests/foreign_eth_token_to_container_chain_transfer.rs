@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use crate::tests::set_templates_relay_param_to_starlight;
 use {
     container_chain_template_frontier_runtime::EthereumNetwork,
     fp_account::AccountId20,
@@ -50,6 +51,8 @@ const RELAY_TOKEN_ASSET_LOCATION: Location = Location::parent();
 
 #[test]
 fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
+    set_templates_relay_param_to_starlight();
+
     let token_receiver: AccountId20 = [5u8; 20].into();
 
     let container_para_id: u32 = <FrontierTemplate as xcm_emulator::Parachain>::para_id().into();
@@ -232,6 +235,8 @@ fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
 
 #[test]
 fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
+    set_templates_relay_param_to_starlight();
+
     let token_receiver: AccountId32 = [5u8; 32].into();
     let container_para_id: u32 = <SimpleTemplate as xcm_emulator::Parachain>::para_id().into();
 
@@ -412,6 +417,8 @@ fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
 
 #[test]
 fn check_foreign_eth_token_container_fails_if_fees_account_has_not_enough_balance() {
+    set_templates_relay_param_to_starlight();
+
     let token_receiver: AccountId32 = [5u8; 32].into();
 
     let container_para_id: u32 = <SimpleTemplate as xcm_emulator::Parachain>::para_id().into();
@@ -587,6 +594,8 @@ fn check_foreign_eth_token_container_fails_if_fees_account_has_not_enough_balanc
 
 #[test]
 fn check_foreign_eth_token_container_fails_if_foreign_token_not_registered_in_relay() {
+    set_templates_relay_param_to_starlight();
+
     let token_receiver: AccountId32 = [5u8; 32].into();
     let container_para_id: u32 = <SimpleTemplate as xcm_emulator::Parachain>::para_id().into();
 

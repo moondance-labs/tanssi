@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use crate::tests::set_templates_relay_param_to_starlight;
+use sp_tracing::try_init_simple;
 use {
     frame_support::assert_ok,
     frame_support::traits::PalletInfoAccess,
@@ -33,6 +35,9 @@ use {
 
 #[test]
 fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
+    sp_tracing::try_init_simple();
+    set_templates_relay_param_to_starlight();
+
     // Define common constants and accounts
     const CONTAINER_PARA_ID: u32 = 2001;
 
@@ -195,6 +200,8 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
 
 #[test]
 fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
+    set_templates_relay_param_to_starlight();
+
     // Define common constants and accounts
     const CONTAINER_PARA_ID: u32 = 2002;
 

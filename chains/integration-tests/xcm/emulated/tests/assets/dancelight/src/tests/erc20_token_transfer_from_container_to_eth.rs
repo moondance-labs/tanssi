@@ -391,7 +391,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
     });
 
     let ethereum_network = SimpleTemplate::execute_with(|| {
-        ethereum_chain_id::<container_chain_template_frontier_runtime::EthereumNetwork>()
+        ethereum_chain_id::<container_chain_template_simple_runtime::EthereumNetwork>()
     });
 
     // Common location calculations

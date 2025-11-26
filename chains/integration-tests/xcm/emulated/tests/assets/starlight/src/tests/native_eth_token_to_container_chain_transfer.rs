@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use crate::tests::set_templates_relay_param_to_starlight;
 use {
     fp_account::AccountId20,
     frame_support::{
@@ -48,6 +49,8 @@ const RELAY_TOKEN_ASSET_LOCATION: Location = Location::parent();
 
 #[test]
 fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
+    set_templates_relay_param_to_starlight();
+
     const PARA_ID_FOR_CHANNEL: u32 = 2000;
 
     const CONTAINER_PARA_ID: u32 = 2001;
@@ -62,11 +65,12 @@ fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
     let mut receiver_native_container_balance_before = 0;
     let mut ethereum_sovereign_relay_token_balance_before = 0;
 
-    let ethereum_sovereign_account_address =
+    let ethereum_sovereign_account_address = FrontierTemplate::execute_with(|| {
         container_chain_template_frontier_runtime::xcm_config::LocationToAccountId::convert_location(
             &Location::new(2, container_chain_template_frontier_runtime::EthereumNetwork::get()),
         )
-            .unwrap();
+            .unwrap()
+    });
 
     let transfer_amount = 100_000_000;
 
@@ -205,6 +209,8 @@ fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
 
 #[test]
 fn check_native_eth_token_to_simple_container_chain_transfer_works() {
+    set_templates_relay_param_to_starlight();
+
     const PARA_ID_FOR_CHANNEL: u32 = 2000;
 
     const CONTAINER_PARA_ID: u32 = 2002;
@@ -215,14 +221,15 @@ fn check_native_eth_token_to_simple_container_chain_transfer_works() {
     let mut receiver_native_container_balance_before = 0;
     let mut ethereum_sovereign_relay_token_balance_before = 0;
 
-    let ethereum_sovereign_account_address =
+    let ethereum_sovereign_account_address = SimpleTemplate::execute_with(|| {
         container_chain_template_simple_runtime::xcm_config::LocationToAccountId::convert_location(
             &Location::new(
                 2,
                 container_chain_template_simple_runtime::EthereumNetwork::get(),
             ),
         )
-        .unwrap();
+        .unwrap()
+    });
 
     let transfer_amount = 100_000_000;
 

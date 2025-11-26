@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use crate::tests::{ethereum_chain_id, set_templates_relay_param_to_starlight};
 use {
     frame_support::assert_ok,
     frontier_template_emulated_chain::{EthereumSender, FrontierTemplateParaPallet},
@@ -41,34 +42,6 @@ const RELAY_NATIVE_ASSET_ID: u16 = 124;
 const ERC20_ASSET_AMOUNT: u128 = 123_321_000_000_000_000;
 const RELAY_ASSET_FEE_AMOUNT: u128 = 3_500_000_000_000;
 
-fn set_templates_relay_param_to_starlight() {
-    pub const STARLIGHT_GENESIS_HASH: [u8; 32] =
-        hex_literal::hex!["dd6d086f75ec041b66e20c4186d327b23c8af244c534a2418de6574e8c041a60"];
-
-    FrontierTemplate::execute_with(|| {
-        let root_origin = <FrontierTemplate as Chain>::RuntimeOrigin::root();
-
-        let a = container_chain_template_frontier_runtime::dynamic_params::xcm_config::RelayNetwork;
-        let b = Some(xcm::latest::NetworkId::ByGenesis(STARLIGHT_GENESIS_HASH));
-        let asdf = container_chain_template_frontier_runtime::RuntimeParameters::XcmConfig(container_chain_template_frontier_runtime::dynamic_params::xcm_config::Parameters::RelayNetwork(a, b));
-        <FrontierTemplate as FrontierTemplateParaPallet>::Parameters::set_parameter(
-            root_origin,
-            asdf,
-        )
-        .unwrap();
-    });
-
-    SimpleTemplate::execute_with(|| {
-        let root_origin = <SimpleTemplate as Chain>::RuntimeOrigin::root();
-
-        let a = container_chain_template_simple_runtime::dynamic_params::xcm_config::RelayNetwork;
-        let b = Some(xcm::latest::NetworkId::ByGenesis(STARLIGHT_GENESIS_HASH));
-        let asdf = container_chain_template_simple_runtime::RuntimeParameters::XcmConfig(container_chain_template_simple_runtime::dynamic_params::xcm_config::Parameters::RelayNetwork(a, b));
-        <SimpleTemplate as SimpleTemplateParaPallet>::Parameters::set_parameter(root_origin, asdf)
-            .unwrap();
-    });
-}
-
 #[test]
 fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
     set_templates_relay_param_to_starlight();
@@ -79,8 +52,9 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
         <FrontierTemplate as FrontierTemplateParaPallet>::ParachainInfo::parachain_id().into()
     });
 
-    let ethereum_network =
-        ethereum_chain_id::<container_chain_template_frontier_runtime::EthereumNetwork>();
+    let ethereum_network = FrontierTemplate::execute_with(|| {
+        ethereum_chain_id::<container_chain_template_frontier_runtime::EthereumNetwork>()
+    });
 
     // Common location calculations
     let container_location = Location::new(0, Parachain(container_para_id));
@@ -422,8 +396,9 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
         <SimpleTemplate as SimpleTemplateParaPallet>::ParachainInfo::parachain_id().into()
     });
 
-    let ethereum_network =
-        ethereum_chain_id::<container_chain_template_frontier_runtime::EthereumNetwork>();
+    let ethereum_network = SimpleTemplate::execute_with(|| {
+        ethereum_chain_id::<container_chain_template_simple_runtime::EthereumNetwork>()
+    });
 
     // Common location calculations
     let container_location = Location::new(0, Parachain(container_para_id));
@@ -751,11 +726,4 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
         // Check that fees were transferred to the treasury account
         assert!(treasury_fees_account_balance_after < RELAY_ASSET_FEE_AMOUNT);
     });
-}
-
-fn ethereum_chain_id<N: Get<NetworkId>>() -> u64 {
-    match N::get() {
-        NetworkId::Ethereum { chain_id } => chain_id,
-        _ => panic!("Expected Ethereum NetworkId"),
-    }
 }

@@ -45,10 +45,8 @@ fn test_message_exporter_disabled_for_origin_account() {
             xcm: Xcm(vec![]),
         }]);
 
-        // this test now fails because exports are yet to be allowed in starlight
-        // so its weight is set to MAX
-        // once we change that, we should change the message log received too
         let (log_capture, subscriber) = init_log_capture(Level::ERROR, true);
+        // this should inner fail with unroutable
         subscriber::with_default(subscriber, || {
             assert_eq!(
                 <Starlight as StarlightRelayPallet>::XcmPallet::execute(
@@ -61,13 +59,12 @@ fn test_message_exporter_disabled_for_origin_account() {
                 DispatchError::from(
                     Error::<<Starlight as Chain>::Runtime>::LocalExecutionIncompleteWithError {
                         index: 0,
-                        error: ExecutionError::WeightLimitReached,
+                        error: ExecutionError::Unroutable,
                     }
                 )
             );
-            assert!(
-                log_capture.contains("XCM execution failed with error error=InstructionError { index: 0, error: WeightLimitReached")
-            );
+            assert!(log_capture.contains("could not get parachain id from universal source"));
+            assert!(log_capture.contains("XCM execution failed with error error=InstructionError { index: 0, error: Unroutable }"))
         });
     });
 }
