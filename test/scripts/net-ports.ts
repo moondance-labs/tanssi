@@ -60,10 +60,12 @@ If this script ever breaks, you can get the same information using stock tools l
       }'
 */
 
+import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import net from "node:net";
 import yargs from "yargs";
+import type { Options, ArgumentsCamelCase, InferredOptionTypes } from "yargs";
 import { hideBin } from "yargs/helpers";
 
 /** A single row parsed from /proc/net/tcp* */
@@ -137,6 +139,36 @@ const EC = {
     PLATFORM: 78, // wrong OS (/proc missing)
 } as const;
 
+const globalOptions = {
+    json: {
+        type: "boolean",
+        default: false,
+        describe: "Output machine-readable JSON.",
+    },
+} as const;
+
+type GlobalOptions = InferredOptionTypes<typeof globalOptions>;
+
+// Parse --names "tanssi-node,polkadot" into ["tanssi-node", "polkadot"]
+function parseStringList(input: string | string[]): string[] {
+    const raw = Array.isArray(input) ? input.join(",") : input;
+
+    return raw
+        .split(/[,\s]+/) // split on commas *or* whitespace
+        .filter(Boolean); // drop empty chunks
+}
+
+// Parse --pids "1,2,3" into [1, 2, 3]
+function parseNumberList(input: string | string[]): number[] {
+    return parseStringList(input).map((s) => {
+        const n = Number(s);
+        if (!Number.isFinite(n)) {
+            throw new Error(`Invalid pid '${s}' in list`);
+        }
+        return n;
+    });
+}
+
 const LISTEN_HEX = "0A";
 const TCP_STATES: Record<string, string> = {
     "01": "ESTABLISHED",
@@ -157,9 +189,6 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // ---------- small utils ----------
 const pad = (s: string, w: number) => (s.length >= w ? s : s + " ".repeat(w - s.length));
-const asBool = (x: unknown, def = false) => (typeof x === "boolean" ? x : def);
-const toNum = (x: unknown) =>
-    typeof x === "number" && Number.isFinite(x) ? x : typeof x === "string" && /^\d+$/.test(x) ? Number(x) : undefined;
 
 const nameCache = new Map<number, string>();
 
@@ -167,11 +196,6 @@ const nameCache = new Map<number, string>();
 function die(msg: string, code = EC.USAGE) {
     console.error("error:", msg);
     process.exit(code);
-}
-
-/** Print warning to stderr (non-fatal). */
-function warn(msg: string) {
-    console.error("warning:", msg);
 }
 
 /** Guard: this tool relies on /proc, so Linux-only. */
@@ -250,12 +274,24 @@ async function readTcpTablesForPid(pid: number, include6: boolean): Promise<TcpR
     return rows4.concat(rows6);
 }
 
-/** Convert little-endian hex IPv4 (e.g., "0100007F") to dotted string "127.0.0.1". */
-function hexToIPv4(hex: string): string {
+/** Convert little-endian hex IPv4 (e.g. "0100007F") to dotted "127.0.0.1". */
+export function hexToIPv4(hex: string): string {
     const s = hex.trim();
-    if (s.length !== 8) return `?(${s})`;
-    const bytes = [s.slice(0, 2), s.slice(2, 4), s.slice(4, 6), s.slice(6, 8)].reverse();
-    return bytes.map((b) => String(Number.parseInt(b, 16))).join(".");
+
+    // Strict: exactly 8 hex digits, no prefix, no separators.
+    if (!/^[0-9a-fA-F]{8}$/.test(s)) {
+        throw new Error(`Invalid IPv4 hex: "${hex}"`);
+    }
+
+    // /proc/net/tcp-style is little-endian: 01 00 00 7F => 127.0.0.1
+    const octets = [
+        parseInt(s.slice(6, 8), 16), // last byte -> first octet
+        parseInt(s.slice(4, 6), 16),
+        parseInt(s.slice(2, 4), 16),
+        parseInt(s.slice(0, 2), 16), // first byte -> last octet
+    ];
+
+    return octets.join(".");
 }
 
 /** Parse /proc/net/tcp or /proc/net/tcp6 into structured rows. */
@@ -321,7 +357,7 @@ async function pidsOwningInodes(targetInodes: Set<number>, verbose = false): Pro
         const entries = await fs.readdir("/proc", { withFileTypes: true });
         procDirs = entries.filter((d) => d.isDirectory()).map((d) => d.name);
     } catch (e: any) {
-        warn(`cannot read /proc: ${String(e?.message ?? e)}`);
+        console.error(`warning: cannot read /proc: ${String(e?.message ?? e)}`);
         return result;
     }
 
@@ -360,106 +396,95 @@ async function inodesForPid(pid: number): Promise<Set<number>> {
     const result = new Set<number>();
     const fdDir = path.join("/proc", String(pid), "fd");
     let fds: string[] = [];
+
+    // Read /proc/<pid>/fd directory
     try {
         const entries = await fs.readdir(fdDir, { withFileTypes: true });
         fds = entries.map((e) => e.name);
-    } catch {
+    } catch (err) {
+        console.warn(`Failed to read fd dir for PID ${pid}:`, err);
         return result;
     }
-    const reads = await Promise.allSettled(fds.map((fd) => fs.readlink(path.join(fdDir, fd))));
-    for (const r of reads) {
-        if (r.status === "fulfilled") {
-            const m = /^socket:\[(\d+)\]$/.exec(r.value.toString());
-            if (m) result.add(Number(m[1]));
+
+    try {
+        const reads = await Promise.allSettled(fds.map((fd) => fs.readlink(path.join(fdDir, fd))));
+
+        for (const r of reads) {
+            if (r.status === "fulfilled") {
+                const m = /^socket:\[(\d+)\]$/.exec(r.value.toString());
+                if (m) {
+                    const ino = Number(m[1]);
+                    if (Number.isFinite(ino)) {
+                        result.add(ino);
+                    }
+                }
+            } else {
+                const e = r.reason as NodeJS.ErrnoException;
+                console.warn(`Failed to readlink fd for PID ${pid}:`, e);
+            }
         }
+    } catch (err) {
+        // Promise.allSettled shouldn't reject, but guard anyway
+        console.warn(`Unexpected error while inspecting fds for PID ${pid}:`, err);
+        return result;
     }
+
     return result;
 }
 
 // ---------- PID/name collection (EXACT by default) ----------
-/** Normalize yargs values into string tokens. */
-function tokensFromYargs(x: unknown): string[] {
-    if (Array.isArray(x)) return x.map(String);
-    if (x == null) return [];
-    return [String(x)];
-}
-
-/** Split on comma/whitespace and trim. */
-function explodeToken(t: string): string[] {
-    return t
-        .split(/[,\s]+/)
-        .map((s) => s.trim())
-        .filter(Boolean);
-}
 
 /**
  * Collect a de-duplicated, sorted PID list from:
  *   --pid/--pids (numbers)
  *   --names / --name      (EXACT comm matches only; case-sensitive)
  */
-async function collectPidsExact(argv: any): Promise<number[]> {
-    // numeric PIDs
-    const pidTokens = [...tokensFromYargs(argv.pid ?? argv.Pid), ...tokensFromYargs(argv.pids ?? argv.Pids)]
-        .flatMap(explodeToken)
-        .filter((t) => /^\d+$/.test(t))
-        .map(Number);
-    const pidSet = new Set<number>(pidTokens);
+async function collectPidsExact(
+    argv: ByPidArgvType | CheckConflictsArgvType | ConnectionsBetweenArgvType
+): Promise<number[]> {
+    // numeric PIDs from --pids or --pid
+    const pidSet = new Set<number>(argv.pids);
 
-    // exact comm matches: --names and --name (both exact now)
-    const namesExact = [...tokensFromYargs(argv.names ?? argv.Names), ...tokensFromYargs(argv.name ?? argv.Name)]
-        .flatMap(explodeToken)
-        .filter(Boolean);
+    // exact process name matches: --names or --name
+    const namesExact = new Set<string>(argv.names);
 
-    if (namesExact.length > 0) {
-        const map = await pidsFromCommExact(namesExact);
-        for (const pids of map.values()) for (const pid of pids) pidSet.add(pid);
+    if (namesExact.size > 0) {
+        const pids = await execPidof(Array.from(namesExact));
+        for (const pid of pids) {
+            pidSet.add(pid);
+        }
     }
 
     return [...pidSet].sort((a, b) => a - b);
 }
 
-/** Resolve PIDs by *exact* match of /proc/<pid>/comm against each token. Case-sensitive. */
-async function pidsFromCommExact(names: string[]): Promise<Map<string, number[]>> {
-    const map = new Map<string, number[]>();
-    for (const n of names) map.set(n, []);
-    let procDirs: string[] = [];
-    try {
-        const entries = await fs.readdir("/proc", { withFileTypes: true });
-        procDirs = entries.filter((d) => d.isDirectory()).map((d) => d.name);
-    } catch {
-        return map;
-    }
-    const pidDirs = procDirs.filter((name) => /^\d+$/.test(name));
-    await Promise.all(
-        pidDirs.map(async (pidStr) => {
-            const pid = Number(pidStr);
-            let comm = "";
-            try {
-                comm = (await fs.readFile(`/proc/${pid}/comm`, "utf8")).trim();
-            } catch {
-                return; // skip this pid if /proc/<pid>/comm isn't readable
+/** Resolve PIDs by *exact* match using the `pidof` executable. */
+export async function execPidof(names: string[]): Promise<number[]> {
+    if (names.length === 0) return [];
+
+    return await new Promise<number[]>((resolve, reject) => {
+        execFile("pidof", names, (error, stdout) => {
+            if (error) {
+                reject(error);
+                return;
             }
-            if (!comm) return;
-
-            for (const wanted of names) {
-                if (comm === wanted) {
-                    let list = map.get(wanted);
-                    if (!list) {
-                        list = [];
-                        map.set(wanted, list);
-                    }
-                    list.push(pid);
-                }
+            // Empty output: behave like "no PIDs"
+            if (!stdout) {
+                resolve([]);
+                return;
             }
-        })
-    );
 
-    // sort PIDs for each name
-    for (const [k, v] of map) {
-        v.sort((a, b) => a - b);
-    }
+            const pids = stdout
+                .trim()
+                .split(/\s+/)
+                .map((s) => Number.parseInt(s, 10))
+                .filter((n) => Number.isFinite(n));
 
-    return map;
+            // Unique + sorted, similar to per-name sorted arrays then flattened
+            const uniqueSorted = Array.from(new Set(pids)).sort((a, b) => a - b);
+            resolve(uniqueSorted);
+        });
+    });
 }
 
 // ---------- pretty printing ----------
@@ -476,12 +501,12 @@ function tcpStateName(hex: string): string {
 }
 
 async function listenersForPidV4(pid: number): Promise<Listener[]> {
-    const inodes = await inodesForPid(pid);
+    const pidInodes = await inodesForPid(pid);
     const rows = await readTcpTablesForPid(pid, false /* IPv4 only */);
     const s = new Set<string>();
     for (const r of rows) {
         if (r.stateHex !== LISTEN_HEX) continue;
-        if (!inodes.has(r.inode)) continue;
+        if (!pidInodes.has(r.inode)) continue;
         const ip = hexToIPv4(r.localHex);
         s.add(`${ip}:${r.localPort}`);
     }
@@ -494,12 +519,12 @@ async function listenersForPidV4(pid: number): Promise<Listener[]> {
 }
 
 async function connsForPidV4(pid: number): Promise<ConnEntry[]> {
-    const inodes = await inodesForPid(pid);
+    const pidInodes = await inodesForPid(pid);
     const rows = await readTcpTablesForPid(pid, false /* IPv4 only */);
     const out: ConnEntry[] = [];
     for (const r of rows) {
         if (r.stateHex === LISTEN_HEX) continue;
-        if (!inodes.has(r.inode)) continue;
+        if (!pidInodes.has(r.inode)) continue;
         out.push({
             inode: r.inode,
             protocol: "tcp4",
@@ -516,13 +541,152 @@ async function connsForPidV4(pid: number): Promise<ConnEntry[]> {
     return out;
 }
 
+// Separate yargs options definitions as const values, to be able to get their type
+
+const byPortOptions = {
+    port: {
+        type: "number",
+        alias: ["p"] as const,
+        demandOption: true,
+        describe: "TCP port (e.g. 30335)",
+    },
+    ipv6: {
+        type: "boolean",
+        alias: ["6", "IncludeIPv6"] as const,
+        default: false,
+        describe: "Also include IPv6 (tcp6)",
+    },
+    verbose: {
+        type: "boolean",
+        alias: ["v"] as const,
+        default: false,
+        describe: "Verbose logs to stderr",
+    },
+} as const;
+
+const byPidOptions = {
+    pids: {
+        type: "string",
+        alias: ["p", "pid"],
+        describe: "Space/comma separated: --pids 1 2 3 or --pids '1,2,3'. Repeatable: -p 1 -p 2 -p 3",
+        coerce: parseNumberList,
+    },
+    names: {
+        type: "array",
+        alias: ["n", "name"],
+        describe: "Exact process names (comm). Comma separated or repeated args: --names 'tanssi-node,polkadot'",
+        coerce: parseStringList,
+    },
+    ipv6: {
+        type: "boolean",
+        alias: ["6", "IncludeIPv6"],
+        default: false,
+        describe: "Also include IPv6 (tcp6)",
+    },
+    verbose: {
+        type: "boolean",
+        alias: ["v"],
+        default: false,
+        describe: "Verbose logs to stderr",
+    },
+} as const;
+
+const checkConflictsOptions = {
+    pids: {
+        type: "string",
+        alias: ["p", "pid"],
+        describe: "Space/comma separated: --pids 1 2 3 or --pids '1,2,3'. Repeatable: -p 1 -p 2 -p 3",
+        coerce: parseNumberList,
+    },
+    names: {
+        type: "array",
+        alias: ["n", "name"],
+        describe: "Exact process names (comm). Comma separated or repeated args: --names 'tanssi-node,polkadot'",
+        coerce: parseStringList,
+    },
+    ipv6: {
+        type: "boolean",
+        alias: ["6", "IncludeIPv6"],
+        default: false,
+        describe: "Also include IPv6 (tcp6)",
+    },
+    all: {
+        type: "boolean",
+        default: false,
+        describe: "Check conflicts among ALL running PIDs (system-wide)",
+    },
+    verbose: {
+        type: "boolean",
+        alias: ["v"],
+        default: false,
+        describe: "Verbose logs to stderr",
+    },
+    "exit-code": {
+        type: "boolean",
+        default: false,
+        describe: "Exit 1 if conflicts found (0 if none).",
+    },
+} as const;
+
+const probeReusePortOptions = {
+    port: {
+        type: "number",
+        alias: ["p"],
+        demandOption: true,
+        describe: "TCP port (e.g. 30335)",
+    },
+    host: { type: "string", describe: "Bind host (default 0.0.0.0 or :: if --ipv6)" },
+    ipv6: {
+        type: "boolean",
+        alias: ["6", "IncludeIPv6"],
+        default: false,
+        describe: "Prefer IPv6 host (::)",
+    },
+    ipv6only: { type: "boolean", describe: "Set ipv6Only when binding to :: (no dual-stack)" },
+    timeout: { type: "number", default: 400, describe: "How long to hold the socket open (ms)" },
+    verbose: {
+        type: "boolean",
+        alias: ["v"],
+        default: false,
+        describe: "Verbose logs to stderr",
+    },
+    "exit-code": { type: "boolean", default: false, describe: "Exit 1 if the bind fails." },
+} as const;
+
+const connectionsBetweenOptions = {
+    pids: {
+        type: "string",
+        alias: ["p", "pid"],
+        describe: "Space/comma separated: --pids 1 2 3 or --pids '1,2,3'. Repeatable: -p 1 -p 2 -p 3",
+        coerce: parseNumberList,
+    },
+    names: {
+        type: "array",
+        alias: ["n", "name"],
+        describe: "Exact process names (comm). Comma separated or repeated args: --names 'tanssi-node,polkadot'",
+        coerce: parseStringList,
+    },
+} as const;
+
+// Helper to get a type from options object
+type CommandArgv<Opts extends { [key: string]: Options }> = ArgumentsCamelCase<
+    GlobalOptions & InferredOptionTypes<Opts>
+>;
+// Types for each command handler
+type ByPortArgvType = CommandArgv<typeof byPortOptions>;
+type ByPidArgvType = CommandArgv<typeof byPidOptions>;
+type CheckConflictsArgvType = CommandArgv<typeof checkConflictsOptions>;
+type ProbeReusePortArgvType = CommandArgv<typeof probeReusePortOptions>;
+type ConnectionsBetweenArgvType = CommandArgv<typeof connectionsBetweenOptions>;
+
 // ---------- command impls (logic moved out) ----------
-async function cmdByPort(argv: any) {
+
+async function cmdByPort(argv: ByPortArgvType) {
     ensureLinux();
-    const port = toNum(argv.port ?? argv.Port);
+    const port = argv.port;
     if (!port) die("Invalid --port.", EC.USAGE);
-    const include6 = asBool(argv.ipv6 ?? argv.IncludeIPv6);
-    const verbose = asBool(argv.verbose ?? argv.Verbose);
+    const include6 = argv.ipv6;
+    const verbose = argv.verbose;
 
     const rows = await readTcpTables(include6);
     const listeners = new Set(rows.filter((r) => isListen(r) && r.localPort === port).map((r) => r.inode));
@@ -554,10 +718,10 @@ async function cmdByPort(argv: any) {
     );
 }
 
-async function cmdByPid(argv: any) {
+async function cmdByPid(argv: ByPidArgvType) {
     ensureLinux();
-    const include6 = asBool(argv.ipv6 ?? argv.IncludeIPv6);
-    const verbose = asBool(argv.verbose ?? argv.Verbose);
+    const include6 = argv.ipv6;
+    const verbose = argv.verbose;
 
     const pidList = await collectPidsExact(argv);
     if (pidList.length === 0) die("Provide PIDs via --pid/--pids or names via --names/--name.", EC.USAGE);
@@ -599,11 +763,11 @@ async function cmdByPid(argv: any) {
     );
 }
 
-async function cmdCheckConflicts(argv: any) {
+async function cmdCheckConflicts(argv: CheckConflictsArgvType) {
     ensureLinux();
-    const include6 = asBool(argv.ipv6 ?? argv.IncludeIPv6);
-    const verbose = asBool(argv.verbose ?? argv.Verbose);
-    const useAll = asBool(argv.all);
+    const include6 = argv.ipv6;
+    const verbose = argv.verbose;
+    const useAll = argv.all;
 
     const rows = await readTcpTables(include6);
     const inodeToRow = new Map<number, TcpRow>(rows.map((r) => [r.inode, r]));
@@ -620,43 +784,37 @@ async function cmdCheckConflicts(argv: any) {
     }
 
     const portToPids = new Map<number, Set<number>>();
+
+    const addPidPorts = (pid: number, inodes: Iterable<number>, filterListen: boolean) => {
+        const ports = new Set<number>();
+
+        for (const ino of inodes) {
+            const row = inodeToRow.get(ino);
+            if (!row) continue;
+            if (filterListen && !isListen(row)) continue;
+            ports.add(row.localPort);
+        }
+
+        for (const port of ports) {
+            let set = portToPids.get(port);
+            if (!set) {
+                set = new Set<number>();
+                portToPids.set(port, set);
+            }
+            set.add(pid);
+        }
+    };
+
     if (useAll) {
         const mapping = await pidsOwningInodes(listenInodes, verbose);
         for (const [pid, inodes] of mapping) {
-            const ports = new Set<number>();
-
-            for (const ino of inodes) {
-                const row = inodeToRow.get(ino);
-                if (row) ports.add(row.localPort);
-            }
-
-            for (const port of ports) {
-                let set = portToPids.get(port);
-                if (!set) {
-                    set = new Set<number>();
-                    portToPids.set(port, set);
-                }
-                set.add(pid);
-            }
+            // TODO: in all mode we don't filter for isListen, is this a bug?
+            addPidPorts(pid, inodes, /* filterListen */ false);
         }
     } else {
         for (const pid of pidList) {
             const pidInodes = await inodesForPid(pid);
-            const ports = new Set<number>();
-
-            for (const ino of pidInodes) {
-                const row = inodeToRow.get(ino);
-                if (row && isListen(row)) ports.add(row.localPort);
-            }
-
-            for (const port of ports) {
-                let set = portToPids.get(port);
-                if (!set) {
-                    set = new Set<number>();
-                    portToPids.set(port, set);
-                }
-                set.add(pid);
-            }
+            addPidPorts(pid, pidInodes, /* filterListen */ true);
         }
     }
 
@@ -732,17 +890,17 @@ async function cmdCheckConflicts(argv: any) {
 }
 
 // ---- probe-reuseport ----
-async function cmdProbeReusePort(argv: any) {
+async function cmdProbeReusePort(argv: ProbeReusePortArgvType) {
     ensureLinux();
-    const port = toNum(argv.port ?? argv.Port);
+    const port = argv.port;
     if (!port) die("Invalid --port.", EC.USAGE);
 
     const explicitHost = typeof argv.host === "string" && argv.host.trim() ? String(argv.host).trim() : undefined;
-    const useIPv6 = asBool(argv.ipv6 ?? argv.IncludeIPv6) || (explicitHost ? explicitHost.includes(":") : false);
+    const useIPv6 = argv.ipv6 || (explicitHost ? explicitHost.includes(":") : false);
     const host = explicitHost ?? (useIPv6 ? "::" : "0.0.0.0");
-    const ipv6Only = asBool(argv.ipv6only ?? argv.ipv6Only ?? argv.IPv6Only);
-    const holdMs = toNum(argv.timeout ?? argv.Timeout) ?? 400; // keep the socket briefly
-    const verbose = asBool(argv.verbose ?? argv.Verbose);
+    const ipv6Only = argv.ipv6only;
+    const holdMs = argv.timeout ?? 400; // keep the socket briefly
+    const verbose = argv.verbose;
     const supports = nodeSupportsReusePort();
 
     // Check existing listeners on this port (so we can confirm sharing works)
@@ -755,8 +913,8 @@ async function cmdProbeReusePort(argv: any) {
     }
 
     if (!supports) {
-        warn(
-            `Node ${process.versions.node} may not support server.listen({reusePort}). Proceeding anyway (may behave as disabled).`
+        console.error(
+            `warning: Node ${process.versions.node} may not support server.listen({reusePort}). Proceeding anyway (may behave as disabled).`
         );
     }
 
@@ -832,7 +990,7 @@ async function cmdProbeReusePort(argv: any) {
 
 // ---- connections-between ----
 // Given a set of PIDs (or names), find all direct TCP/IPv4 connections among them.
-async function cmdConnectionsBetween(argv: any) {
+async function cmdConnectionsBetween(argv: ConnectionsBetweenArgvType) {
     ensureLinux();
 
     const pidList = await collectPidsExact(argv);
@@ -1027,27 +1185,14 @@ yargs(hideBin(process.argv))
             y
                 .example("$0 by-port -p 30335", "Human-friendly table")
                 .example("$0 by-port -p 30335 --json", "JSON for scripting")
-                .options({
-                    port: {
-                        type: "number",
-                        alias: ["p", "Port"],
-                        demandOption: true,
-                        describe: "TCP port (e.g. 30335)",
-                    },
-                    ipv6: {
-                        type: "boolean",
-                        alias: ["6", "IncludeIPv6"],
-                        default: false,
-                        describe: "Also include IPv6 (tcp6)",
-                    },
-                    verbose: {
-                        type: "boolean",
-                        alias: ["v", "Verbose"],
-                        default: false,
-                        describe: "Verbose logs to stderr",
-                    },
-                }),
-        (argv) => void cmdByPort(argv).catch((e: any) => handleTopLevelError(e))
+                .options(byPortOptions),
+        async (argv) => {
+            try {
+                await cmdByPort(argv);
+            } catch (e) {
+                handleTopLevelError(e);
+            }
+        }
     )
     .command(
         "by-pid",
@@ -1056,38 +1201,14 @@ yargs(hideBin(process.argv))
             y
                 .example("$0 by-pid --names 'tanssi-node,tanssi-relay'", "Exact comm matches only")
                 .example("$0 by-pid --name tanssi-node", "Exact comm match (case-sensitive)")
-                .options({
-                    pid: { type: "array", alias: ["p", "Pid"], describe: "Repeatable: --pid 123 --pid 456" },
-                    pids: {
-                        type: "array",
-                        alias: ["Pids"],
-                        describe: "Space/comma separated: --pids 1 2 3 or --pids '1,2,3'",
-                    },
-                    // IMPORTANT SEMANTICS: both are exact comm now
-                    names: {
-                        type: "array",
-                        alias: ["Names"],
-                        describe: "Exact process names (comm). No grep, no args.",
-                    },
-                    name: {
-                        type: "array",
-                        alias: ["n", "Name"],
-                        describe: "Exact process names (comm). No grep, no args.",
-                    },
-                    ipv6: {
-                        type: "boolean",
-                        alias: ["6", "IncludeIPv6"],
-                        default: false,
-                        describe: "Also include IPv6 (tcp6)",
-                    },
-                    verbose: {
-                        type: "boolean",
-                        alias: ["v", "Verbose"],
-                        default: false,
-                        describe: "Verbose logs to stderr",
-                    },
-                }),
-        (argv) => void cmdByPid(argv).catch((e: any) => handleTopLevelError(e))
+                .options(byPidOptions),
+        async (argv) => {
+            try {
+                await cmdByPid(argv);
+            } catch (e) {
+                handleTopLevelError(e);
+            }
+        }
     )
     .command(
         "check-conflicts",
@@ -1097,47 +1218,14 @@ yargs(hideBin(process.argv))
                 .example("$0 check-conflicts --all", "Scan all running processes")
                 .example("$0 check-conflicts --pids '111,222,333'", "Limit to a specific set of PIDs")
                 .example("$0 check-conflicts -n tanssi-node -n tanssi-relay", "Exact comm matches")
-                .options({
-                    pid: { type: "array", alias: ["p", "Pid"], describe: "Repeatable: --pid 123 --pid 456" },
-                    pids: {
-                        type: "array",
-                        alias: ["Pids"],
-                        describe: "Space/comma separated: --pids 1 2 3 or --pids '1,2,3'",
-                    },
-                    names: {
-                        type: "array",
-                        alias: ["Names"],
-                        describe: "Exact process names (comm). No grep, no args.",
-                    },
-                    name: {
-                        type: "array",
-                        alias: ["n", "Name"],
-                        describe: "Exact process names (comm). No grep, no args.",
-                    },
-                    ipv6: {
-                        type: "boolean",
-                        alias: ["6", "IncludeIPv6"],
-                        default: false,
-                        describe: "Also include IPv6 (tcp6)",
-                    },
-                    all: {
-                        type: "boolean",
-                        default: false,
-                        describe: "Check conflicts among ALL running PIDs (system-wide)",
-                    },
-                    verbose: {
-                        type: "boolean",
-                        alias: ["v", "Verbose"],
-                        default: false,
-                        describe: "Verbose logs to stderr",
-                    },
-                    "exit-code": {
-                        type: "boolean",
-                        default: false,
-                        describe: "Exit 1 if conflicts found (0 if none).",
-                    },
-                }),
-        (argv) => void cmdCheckConflicts(argv).catch((e: any) => handleTopLevelError(e))
+                .options(checkConflictsOptions),
+        async (argv) => {
+            try {
+                await cmdCheckConflicts(argv);
+            } catch (e) {
+                handleTopLevelError(e);
+            }
+        }
     )
     .command(
         "probe-reuseport",
@@ -1146,31 +1234,14 @@ yargs(hideBin(process.argv))
             y
                 .example("$0 probe-reuseport -p 30335", "Attempt to share port 30335 on 0.0.0.0")
                 .example("$0 probe-reuseport -p 30335 --host :: --ipv6only", "IPv6-only probe on ::")
-                .options({
-                    port: {
-                        type: "number",
-                        alias: ["p", "Port"],
-                        demandOption: true,
-                        describe: "TCP port (e.g. 30335)",
-                    },
-                    host: { type: "string", describe: "Bind host (default 0.0.0.0 or :: if --ipv6)" },
-                    ipv6: {
-                        type: "boolean",
-                        alias: ["6", "IncludeIPv6"],
-                        default: false,
-                        describe: "Prefer IPv6 host (::)",
-                    },
-                    ipv6only: { type: "boolean", describe: "Set ipv6Only when binding to :: (no dual-stack)" },
-                    timeout: { type: "number", default: 400, describe: "How long to hold the socket open (ms)" },
-                    verbose: {
-                        type: "boolean",
-                        alias: ["v", "Verbose"],
-                        default: false,
-                        describe: "Verbose logs to stderr",
-                    },
-                    "exit-code": { type: "boolean", default: false, describe: "Exit 1 if the bind fails." },
-                }),
-        (argv) => void cmdProbeReusePort(argv).catch((e: any) => handleTopLevelError(e))
+                .options(probeReusePortOptions),
+        async (argv) => {
+            try {
+                await cmdProbeReusePort(argv);
+            } catch (e) {
+                handleTopLevelError(e);
+            }
+        }
     )
     .command(
         "connections-between",
@@ -1182,27 +1253,15 @@ yargs(hideBin(process.argv))
                     "$0 connections-between --names 'tanssi-node,tanssi-relay'",
                     "Match exact process names (comm)"
                 )
-                .options({
-                    pid: { type: "array", alias: ["p", "Pid"], describe: "Repeatable: --pid 123 --pid 456" },
-                    pids: {
-                        type: "array",
-                        alias: ["Pids"],
-                        describe: "Space/comma separated: --pids 1 2 3 or --pids '1,2,3'",
-                    },
-                    names: {
-                        type: "array",
-                        alias: ["Names"],
-                        describe: "Exact process names (comm). No grep, no args.",
-                    },
-                    name: {
-                        type: "array",
-                        alias: ["n", "Name"],
-                        describe: "Exact process names (comm). No grep, no args.",
-                    },
-                }),
-        (argv) => void cmdConnectionsBetween(argv).catch((e: any) => handleTopLevelError(e))
+                .options(connectionsBetweenOptions),
+        async (argv) => {
+            try {
+                await cmdConnectionsBetween(argv);
+            } catch (e) {
+                handleTopLevelError(e);
+            }
+        }
     )
-
     .demandCommand(1)
     .strict()
     .help()
