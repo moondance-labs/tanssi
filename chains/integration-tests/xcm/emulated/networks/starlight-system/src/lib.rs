@@ -61,6 +61,11 @@ parameter_types! {
     pub SimpleTemplateSender: AccountId = AccountId::from(ALICE);
     pub SimpleTemplateReceiver: AccountId = AccountId::from(BOB);
     pub SimpleTemplateEmptyReceiver: AccountId = SimpleTemplatePara::account_id_of(RANDOM);
+
+    // FrontierTemplate
+    pub FrontierTemplateSender: AccountId = Sr25519Keyring::Alice.to_account_id();
+    pub FrontierTemplateReceiver: AccountId = AccountId::from(BOB);
+    pub FrontierTemplateEmptyReceiver: AccountId = FrontierTemplatePara::account_id_of(RANDOM);
 }
 
 pub struct StarlightEthMockBridgeHandler;
