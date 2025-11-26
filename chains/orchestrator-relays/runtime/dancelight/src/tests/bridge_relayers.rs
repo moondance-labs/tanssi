@@ -46,7 +46,10 @@ fn test_register_new_relayer() {
 
             // We expect 0 rewards for just registered relayer
             assert_noop!(
-                BridgeRelayers::claim_rewards(relayer_origin, BridgeReward::SnowbridgeRewardInbound),
+                BridgeRelayers::claim_rewards(
+                    relayer_origin,
+                    BridgeReward::SnowbridgeRewardInbound
+                ),
                 pallet_bridge_relayers::Error::<Runtime>::NoRewardForRelayer,
             );
         });
