@@ -36,6 +36,7 @@ pub enum AssetTypes {
     Ethereum,
     Relay,
     SiblingParachain,
+    GrandParent,
     Unknown,
 }
 
@@ -71,7 +72,7 @@ impl From<&Asset> for AssetTypes {
                 if let Some(GlobalConsensus(Ethereum { .. })) = interior.first() {
                     AssetTypes::Ethereum
                 } else {
-                    AssetTypes::Unknown
+                    AssetTypes::GrandParent
                 }
             }
             Asset {
@@ -117,6 +118,7 @@ impl WeighAssets for AssetFilter {
                     AssetTypes::Ethereum => balances_weight,
                     AssetTypes::Relay => balances_weight,
                     AssetTypes::SiblingParachain => balances_weight,
+                    AssetTypes::GrandParent => balances_weight,
                     AssetTypes::Unknown => Weight::MAX,
                 })
                 .fold(Weight::zero(), |acc, x| acc.saturating_add(x)),
@@ -139,6 +141,7 @@ impl WeighAssets for Assets {
                 AssetTypes::Ethereum => balances_weight,
                 AssetTypes::Relay => balances_weight,
                 AssetTypes::SiblingParachain => balances_weight,
+                AssetTypes::GrandParent => balances_weight,
                 AssetTypes::Unknown => Weight::MAX,
             })
             .fold(Weight::zero(), |acc, x| acc.saturating_add(x))
