@@ -3510,11 +3510,20 @@ sp_api::impl_runtime_apis! {
                 }
 
                 fn prepare_rewards_account(
-                    _reward_kind: Self::Reward,
-                    _reward: Balance,
+                    reward_kind: Self::Reward,
+                    reward: Balance,
                 ) -> Option<pallet_bridge_relayers::BeneficiaryOf<Runtime, bridge_to_ethereum_config::BridgeRelayersInstance>> {
-                    // TODO: there will be probably more to setup here once we implement rewarding.
+                    use frame_support::traits::fungible::Mutate;
+                    match reward_kind {
+                        bridge_to_ethereum_config::BridgeReward::SnowbridgeRewardOutbound => {
+                          // it is the snowbridge fees account that pays rewards, and in tanssi tokens
+                          Balances::mint_into(&SnowbridgeFeesAccount::get(), reward.saturating_add(ExistentialDeposit::get())).unwrap();
+                        },
+                        _ => {},
+                    }
                     let account = AccountId::from([1u8; 32]);
+                    // the account needs to exist at least, hence pushing ed
+                    Balances::mint_into(&account, ExistentialDeposit::get()).unwrap();
                     Some(bridge_to_ethereum_config::BridgeRewardBeneficiaries::LocalAccount(account))
                 }
 
