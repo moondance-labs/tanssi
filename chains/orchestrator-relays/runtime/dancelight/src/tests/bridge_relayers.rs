@@ -78,7 +78,7 @@ fn relayer_can_claim_reward() {
 
             pallet_bridge_relayers::RelayerRewards::<Runtime>::insert(
                 AccountId::from(BOB),
-                reward_params.clone(),
+                reward_params,
                 100,
             );
             assert_ok!(BridgeRelayers::claim_rewards(
@@ -155,7 +155,7 @@ fn relayer_deregister_is_working() {
             let blocks_for_registration_to_be_active = 100;
             assert_ok!(BridgeRelayers::register(
                 relayer_origin.clone(),
-                blocks_for_registration_to_be_active.clone()
+                blocks_for_registration_to_be_active
             ));
 
             assert_eq!(
