@@ -156,6 +156,9 @@ pub use {
 
 #[cfg(feature = "runtime-benchmarks")]
 use {
+    pallet_bridge_relayers::benchmarking::{
+        Config as BridgeRelayersConfig, Pallet as BridgeRelayersBench,
+    },
     snowbridge_core::{AgentId, TokenId},
     xcm::latest::Junctions::*,
 };
@@ -2437,6 +2440,8 @@ mod benches {
         [snowbridge_pallet_ethereum_client, EthereumBeaconClient]
         [snowbridge_pallet_outbound_queue, EthereumOutboundQueue]
         [snowbridge_pallet_system, EthereumSystem]
+        [snowbridge_pallet_system_v2, EthereumSystemV2]
+        [pallet_bridge_relayers, BridgeRelayersBench::<Runtime>]
         [snowbridge_pallet_inbound_queue, EthereumInboundQueue]
         [snowbridge_pallet_outbound_queue_v2, EthereumOutboundQueueV2]
     );
@@ -3495,6 +3500,27 @@ sp_api::impl_runtime_apis! {
                 fn alias_origin() -> Result<(Location, Location), BenchmarkError> {
                     // The XCM executor of Dancelight doesn't have a configured `Aliasers`
                     Err(BenchmarkError::Skip)
+                }
+            }
+
+            impl BridgeRelayersConfig<bridge_to_ethereum_config::BridgeRelayersInstance> for Runtime {
+                fn bench_reward() -> Self::Reward {
+                    // TODO: analyze if the outbound is the worst case once we implement rewarding.
+                    bridge_to_ethereum_config::BridgeReward::SnowbridgeRewardOutbound
+                }
+
+                fn prepare_rewards_account(
+                    _reward_kind: Self::Reward,
+                    _reward: Balance,
+                ) -> Option<pallet_bridge_relayers::BeneficiaryOf<Runtime, bridge_to_ethereum_config::BridgeRelayersInstance>> {
+                    // TODO: there will be probably more to setup here once we implement rewarding.
+                    let account = AccountId::from([1u8; 32]);
+                    Some(bridge_to_ethereum_config::BridgeRewardBeneficiaries::LocalAccount(account))
+                }
+
+                fn deposit_account(account: AccountId, balance: Balance) {
+                    use frame_support::traits::fungible::Mutate;
+                    Balances::mint_into(&account, balance.saturating_add(ExistentialDeposit::get())).unwrap();
                 }
             }
 
