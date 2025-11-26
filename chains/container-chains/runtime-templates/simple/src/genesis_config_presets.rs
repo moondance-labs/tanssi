@@ -17,7 +17,7 @@
 use {
     crate as container_chain_template_simple_runtime,
     crate::{AccountId, MaintenanceModeConfig, MigrationsConfig, PolkadotXcmConfig},
-    alloc::vec::Vec,
+    alloc::{vec::Vec, vec},
     cumulus_primitives_core::ParaId,
     sp_keyring::Sr25519Keyring,
 };
@@ -71,6 +71,27 @@ fn testnet_genesis(
         maintenance_mode: MaintenanceModeConfig {
             start_in_maintenance_mode: false,
             ..Default::default()
+        },
+        foreign_assets_creator: pallet_foreign_asset_creator::GenesisConfig {
+            // foreign_asset, asset_id, admin, is_sufficient, min_balance
+            assets: vec![
+                // ETH
+                (
+                    todo!("ETH location"),
+                    1,
+                    todo!("admin account"),
+                    true,
+                    1,
+                ),
+                // TANSSI
+                (
+                    todo!("TANSSI location"),
+                    1,
+                    todo!("admin account"),
+                    true,
+                    1,
+                ),
+            ]
         },
         // This should initialize it to whatever we have set in the pallet
         polkadot_xcm: PolkadotXcmConfig::default(),

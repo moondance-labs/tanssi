@@ -10711,7 +10711,6 @@ dependencies = [
 [[package]]
 name = "pallet-foreign-asset-creator"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#c059eb2846f723815757a8d32ebf0676dc680081"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
