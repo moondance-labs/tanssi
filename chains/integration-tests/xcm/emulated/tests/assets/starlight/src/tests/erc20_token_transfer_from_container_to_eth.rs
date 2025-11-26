@@ -264,7 +264,9 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
             parents: 0,
             interior: Junctions::X1(
                 [AccountKey20 {
-                    network: Some(container_chain_template_simple_runtime::EthereumNetwork::get()),
+                    network: Some(
+                        container_chain_template_frontier_runtime::EthereumNetwork::get(),
+                    ),
                     key: ERC20_TOKEN_ADDRESS,
                 }]
                 .into(),
@@ -279,7 +281,9 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
             parents: 0,
             interior: Junctions::X1(
                 [AccountKey20 {
-                    network: Some(container_chain_template_simple_runtime::EthereumNetwork::get()),
+                    network: Some(
+                        container_chain_template_frontier_runtime::EthereumNetwork::get(),
+                    ),
                     key: beneficiary_address,
                 }]
                 .into(),
