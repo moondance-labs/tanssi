@@ -35,6 +35,7 @@ pub enum AssetTypes {
     Balances,
     Ethereum,
     Relay,
+    SiblingParachain,
     Unknown,
 }
 
@@ -81,6 +82,20 @@ impl From<&Asset> for AssetTypes {
                     }),
                 ..
             } => AssetTypes::Relay,
+            Asset {
+                id:
+                    AssetId(Location {
+                        parents: 1,
+                        interior,
+                    }),
+                ..
+            } => {
+                if let Some(Parachain(_)) = interior.first() {
+                    AssetTypes::SiblingParachain
+                } else {
+                    AssetTypes::Unknown
+                }
+            }
             _ => AssetTypes::Unknown,
         }
     }
@@ -101,6 +116,7 @@ impl WeighAssets for AssetFilter {
                     AssetTypes::Balances => balances_weight,
                     AssetTypes::Ethereum => balances_weight,
                     AssetTypes::Relay => balances_weight,
+                    AssetTypes::SiblingParachain => balances_weight,
                     AssetTypes::Unknown => Weight::MAX,
                 })
                 .fold(Weight::zero(), |acc, x| acc.saturating_add(x)),
@@ -122,6 +138,7 @@ impl WeighAssets for Assets {
                 AssetTypes::Balances => balances_weight,
                 AssetTypes::Ethereum => balances_weight,
                 AssetTypes::Relay => balances_weight,
+                AssetTypes::SiblingParachain => balances_weight,
                 AssetTypes::Unknown => Weight::MAX,
             })
             .fold(Weight::zero(), |acc, x| acc.saturating_add(x))
