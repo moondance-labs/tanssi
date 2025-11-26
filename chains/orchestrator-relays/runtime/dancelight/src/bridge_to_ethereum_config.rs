@@ -41,7 +41,9 @@ use {
     tanssi_runtime_common::relay::{
         NativeContainerTokensProcessor, NativeTokenTransferMessageProcessor,
     },
-    tp_bridge::{symbiotic_message_processor::SymbioticMessageProcessor, GenericTokenInboundMessageProcessor},
+    tp_bridge::{
+        symbiotic_message_processor::SymbioticMessageProcessor, GenericTokenInboundMessageProcessor,
+    },
 };
 
 use crate::{AccountId, BridgeRelayers};

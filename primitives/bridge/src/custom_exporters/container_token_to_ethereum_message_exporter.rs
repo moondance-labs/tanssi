@@ -990,7 +990,6 @@ mod tests {
         }]
         .into();
 
-        let beneficiary_address: [u8; 20] = hex!("2000000000000000000000000000000000000000");
         let filter: AssetFilter = assets.clone().into();
         let mut message: Option<Xcm<()>> = Some(
             vec![
@@ -1002,9 +1001,10 @@ mod tests {
                 },
                 DepositAsset {
                     assets: filter,
-                    beneficiary: AccountKey20 {
+                    // This will fail as the expected type is AccountKey20.
+                    beneficiary: AccountId32 {
                         network: None,
-                        key: beneficiary_address,
+                        id: [0; 32],
                     }
                     .into(),
                 },
