@@ -14,9 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+#[cfg(not(feature = "runtime-benchmarks"))]
+use crate::{match_expression, XcmConverterError};
 use {
     alloc::vec::Vec,
-    crate::{match_expression, XcmConverterError},
     core::{iter::Peekable, marker::PhantomData, slice::Iter},
     frame_support::{ensure, traits::Get},
     parity_scale_codec::{Decode, Encode},
@@ -176,16 +177,6 @@ where
         log::info!(target: "xcm::container_ethereum_blob_exporter", "message delivered {message_id:#?}.");
         Ok(message_id.into())
     }
-}
-
-#[cfg(not(feature = "runtime-benchmarks"))]
-macro_rules! match_expression {
-	($expression:expr, $(|)? $( $pattern:pat_param )|+ $( if $guard: expr )?, $value:expr $(,)?) => {
-		match $expression {
-			$( $pattern )|+ $( if $guard )? => Some($value),
-			_ => None,
-		}
-	};
 }
 
 #[cfg(feature = "runtime-benchmarks")]

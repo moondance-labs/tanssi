@@ -44,7 +44,7 @@ pub enum XcmConverterError {
     TooManyCommands,
     ClearOriginExpected,
     BuyExecutionExpected,
-    ParaIdMismatch
+    ParaIdMismatch,
 }
 
 #[macro_export]
