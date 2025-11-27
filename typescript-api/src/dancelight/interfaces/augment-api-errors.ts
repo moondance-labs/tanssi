@@ -529,6 +529,44 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             [key: string]: AugmentedError<ApiType>;
         };
+        ethereumOutboundQueueV2: {
+            /**
+             * The pallet is halted
+             **/
+            Halted: AugmentedError<ApiType>;
+            /**
+             * Invalid Channel
+             **/
+            InvalidChannel: AugmentedError<ApiType>;
+            /**
+             * Invalid Envelope
+             **/
+            InvalidEnvelope: AugmentedError<ApiType>;
+            /**
+             * Invalid Gateway
+             **/
+            InvalidGateway: AugmentedError<ApiType>;
+            /**
+             * Pending nonce does not exist
+             **/
+            InvalidPendingNonce: AugmentedError<ApiType>;
+            /**
+             * The message is too large
+             **/
+            MessageTooLarge: AugmentedError<ApiType>;
+            /**
+             * Reward payment failed
+             **/
+            RewardPaymentFailed: AugmentedError<ApiType>;
+            /**
+             * Message verification error
+             **/
+            Verification: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
         ethereumSystem: {
             AgentAlreadyCreated: AugmentedError<ApiType>;
             ChannelAlreadyCreated: AugmentedError<ApiType>;
@@ -582,10 +620,15 @@ declare module "@polkadot/api-base/types/errors" {
              * The outbound message is invalid prior to send.
              **/
             InvalidMessage: AugmentedError<ApiType>;
+            LocationReanchorFailed: AugmentedError<ApiType>;
+            LocationToOriginConversionFailed: AugmentedError<ApiType>;
+            MinV2RewardNotAchieved: AugmentedError<ApiType>;
+            OriginConversionFailed: AugmentedError<ApiType>;
             /**
              * When add_tip extrinsic could not be called.
              **/
             TipFailed: AugmentedError<ApiType>;
+            TooManyCommands: AugmentedError<ApiType>;
             /**
              * The outbound message could not be sent.
              **/
@@ -594,6 +637,7 @@ declare module "@polkadot/api-base/types/errors" {
              * Conversion from Location to TokenId failed.
              **/
             UnknownLocationForToken: AugmentedError<ApiType>;
+            V2SendingIsNotAllowed: AugmentedError<ApiType>;
             /**
              * Generic error
              **/

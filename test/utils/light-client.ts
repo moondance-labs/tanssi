@@ -25,7 +25,7 @@ import type {
     SnowbridgeVerificationPrimitivesLog,
     SnowbridgeVerificationPrimitivesProof,
 } from "@polkadot/types/lookup";
-import { u8aToHex } from "@polkadot/util";
+import { hexToU8a, u8aToHex } from "@polkadot/util";
 import { AbiCoder } from "ethers/abi";
 import { getBytes } from "ethers/utils";
 
@@ -117,6 +117,33 @@ export async function generateEventLog(
 
     const defaultAbiCoder = AbiCoder.defaultAbiCoder();
     const encodedDataString = defaultAbiCoder.encode(["uint64", "bytes"], [nonce, payload]);
+    const encodedData = getBytes(encodedDataString);
+
+    return api.createType<SnowbridgeVerificationPrimitivesLog>("SnowbridgeVerificationPrimitivesLog", {
+        address: gatewayAddress,
+        topics,
+        data: [].slice.call(encodedData),
+    });
+}
+
+export async function generateOutboundEventLogV2(
+    api: ApiPromise,
+    gatewayAddress: Uint8Array,
+    messageId: Uint8Array,
+    nonce: number,
+    success: boolean,
+    rewardAddress: Uint8Array
+) {
+    // Signature for event InboundMessageDispatched(uint64 indexed nonce, bytes32 topic, bool success, bytes32 rewardAddress);
+    const signature = hexToU8a("0x8856ab63954e6c2938803a4654fb704c8779757e7bfdbe94a578e341ec637a95");
+
+    const defaultAbiCoder = AbiCoder.defaultAbiCoder();
+    const encodedTopic = getBytes(defaultAbiCoder.encode(["uint64"], [nonce]));
+    const topics = [signature, encodedTopic];
+    const encodedDataString = defaultAbiCoder.encode(
+        ["bytes32", "bool", "bytes32"],
+        [messageId, success, rewardAddress]
+    );
     const encodedData = getBytes(encodedDataString);
 
     return api.createType<SnowbridgeVerificationPrimitivesLog>("SnowbridgeVerificationPrimitivesLog", {
