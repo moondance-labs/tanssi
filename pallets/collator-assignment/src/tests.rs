@@ -18,7 +18,7 @@ use {
     crate::{mock::*, CollatorContainerChain, Event, PendingCollatorContainerChain},
     dp_collator_assignment::AssignedCollators,
     sp_runtime::Perbill,
-    std::collections::BTreeMap,
+    std::collections::{BTreeMap, BTreeSet},
     tp_traits::{FullRotationMode, FullRotationModes},
 };
 
@@ -797,7 +797,7 @@ fn assign_collators_rotation_container_chains_are_shuffled() {
         assert_eq!(assigned_collators(), initial_assignment,);
 
         MockData::mutate(|m| {
-            // Seed chosen manually to see the case where container 1002 is given priority
+            // Seed chosen manually to see assignment to different collators.
             m.random_seed = [1; 32];
         });
 
@@ -806,7 +806,7 @@ fn assign_collators_rotation_container_chains_are_shuffled() {
         // Random assignment depends on the seed, shouldn't change unless the algorithm changes
         // Test that container chains are shuffled because 1001 does not have priority
         let shuffled_assignment =
-            BTreeMap::from_iter(vec![(1, 1002), (2, 1000), (3, 1000), (4, 1002)]);
+            BTreeMap::from_iter(vec![(1, 1001), (2, 1000), (3, 1000), (4, 1001)]);
 
         assert_eq!(assigned_collators(), shuffled_assignment,);
     });
@@ -836,7 +836,7 @@ fn assign_collators_rotation_parathreads_are_shuffled() {
         assert_eq!(assigned_collators(), initial_assignment,);
 
         MockData::mutate(|m| {
-            // Seed chosen manually to see the case where parathread 3002 is given priority
+            // Seed chosen manually to see assignment to different collators.
             m.random_seed = [1; 32];
         });
 
@@ -845,7 +845,7 @@ fn assign_collators_rotation_parathreads_are_shuffled() {
         // Random assignment depends on the seed, shouldn't change unless the algorithm changes
         // Test that container chains are shuffled because 1001 does not have priority
         let shuffled_assignment =
-            BTreeMap::from_iter(vec![(1, 3002), (2, 1000), (3, 1000), (4, 3002)]);
+            BTreeMap::from_iter(vec![(1, 3001), (2, 1000), (3, 1000), (4, 3001)]);
 
         assert_eq!(assigned_collators(), shuffled_assignment,);
     });
@@ -1334,6 +1334,27 @@ fn assign_collators_prioritizing_tip() {
 
         run_to_block(21);
 
+        // Chains that were selected before and can still pay stays, so the list wont change.
+        assert_eq!(
+            assigned_collators(),
+            BTreeMap::from_iter(vec![
+                (1, 1000),
+                (2, 1000),
+                (3, 1000),
+                (4, 1000),
+                (5, 1000),
+                (6, 1001),
+                (7, 1001),
+                (8, 1002),
+                (9, 1002),
+            ]),
+        );
+
+        // 1001 and 1002 can no longer pay
+        MockData::mutate(|m| m.cant_pay_tip = vec![1001.into(), 1002.into()]);
+
+        run_to_block(31);
+
         assert_eq!(
             assigned_collators(),
             BTreeMap::from_iter(vec![
@@ -1435,5 +1456,44 @@ fn keep_subset_uses_correct_config() {
             extract_assignments_in_range(assignment, 3000..4000)
         });
         assert_eq!(max_parathread_rotate, 1);
+    });
+}
+
+#[test]
+fn ordering_fn_works_as_expected() {
+    new_test_ext().execute_with(|| {
+        let mut para_ids: Vec<_> = (1000..=1005).map(Into::into).collect();
+        let old_assigned: BTreeSet<_> = [1001, 1003, 1005].into_iter().map(Into::into).collect();
+        let chains_tip: BTreeMap<_, _> = [
+            (1001.into(), 1000),
+            (1002.into(), 2000),
+            (1004.into(), 1000),
+            (1005.into(), 2000),
+        ]
+        .into_iter()
+        .collect();
+
+        MockData::mutate(|mock| {
+            mock.chains_tip = chains_tip;
+            mock.apply_tip = true;
+        });
+
+        para_ids.sort_by(|a, b| {
+            crate::order_old_assigned_first_then_by_max_tip::<Test>(*a, *b, &old_assigned)
+        });
+
+        let expected_sort: Vec<_> = [
+            1005, // old assigned, tip: 2000
+            1001, // old assigned, tip: 1000
+            1003, // old assigned, no tip
+            1002, // new assigned, tip: 2000,
+            1004, // new assigned, tip: 1000,
+            1000, // new assigned, no tip
+        ]
+        .into_iter()
+        .map(Into::into)
+        .collect();
+
+        assert_eq!(para_ids, expected_sort);
     });
 }

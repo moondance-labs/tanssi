@@ -1986,7 +1986,7 @@ fn test_block_credits_and_collator_assignation_credits_through_tank() {
 }
 
 #[test]
-fn test_collator_assignment_tip_priority_on_congestion() {
+fn test_collator_assignment_tip_dont_have_priority_on_congestion() {
     ExtBuilder::default()
         .with_balances(vec![
             (AccountId::from(ALICE), 210_000 * UNIT),
@@ -2029,17 +2029,26 @@ fn test_collator_assignment_tip_priority_on_congestion() {
                 TanssiCollatorAssignment::collator_container_chain().container_chains
                     [&para_id.into()]
                     .len(),
-                2,
+                0,
             );
         });
 }
 
 #[test]
-fn test_collator_assignment_tip_charged_on_congestion() {
+fn test_collator_assignment_tip_charged_on_congestion_assigned_before() {
     ExtBuilder::default()
+        // We need enough collators for 2 container chains to be assigned 2 collators
+        // each AND being not enough collators for all chains to have congestion.
+        // We need 4 collators in total to have 1001 and 1002 assigned but not 1003 due to congestion.
+        //
+        // 1002 is already assigned without tip, and we ensure that 1002 tipping moves it first AND
+        // tip is payed. We cannot test with 1003 as it was not assigned before, AND already assigned
+        // chains are prioritized.
         .with_balances(vec![
             (AccountId::from(ALICE), 210_000 * UNIT),
             (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
         ])
         .with_collators(vec![
             (AccountId::from(ALICE), 210 * UNIT),
@@ -2059,7 +2068,7 @@ fn test_collator_assignment_tip_charged_on_congestion() {
         .execute_with(|| {
             let tank_funds = 100 * UNIT;
             let max_tip = 1 * UNIT;
-            let para_id = 1003u32;
+            let para_id = 1002u32;
 
             // Send funds to tank
             assert_ok!(ServicesPayment::purchase_credits(
@@ -2145,7 +2154,7 @@ fn test_collator_assignment_tip_only_charge_willing_paras() {
         .execute_with(|| {
             let tank_funds = 100 * UNIT;
             let max_tip = 1 * UNIT;
-            let para_id_with_tip = 1003u32;
+            let para_id_with_tip = 1002u32;
             let para_id_without_tip = 1001u32;
 
             // Send funds to tank to both paras
@@ -2167,7 +2176,7 @@ fn test_collator_assignment_tip_only_charge_willing_paras() {
                 tank_funds,
             );
 
-            // Only set tip for 1003
+            // Only set tip for 1002
             assert_ok!(ServicesPayment::set_max_tip(
                 root_origin(),
                 para_id_with_tip.into(),
@@ -2215,15 +2224,15 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
         .build()
         .execute_with(|| {
             let tank_funds = 100 * UNIT;
-            let max_tip_1003 = 3 * UNIT;
+            let max_tip_1001 = 3 * UNIT;
             let max_tip_1002 = 2 * UNIT;
-            let para_id_1003 = 1003u32;
+            let para_id_1001 = 1001u32;
             let para_id_1002 = 1002u32;
 
             // Send funds to tank to both paras
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
-                para_id_1003.into(),
+                para_id_1001.into(),
                 tank_funds,
             ));
             assert_ok!(ServicesPayment::purchase_credits(
@@ -2235,8 +2244,8 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
             // Set tips
             assert_ok!(ServicesPayment::set_max_tip(
                 root_origin(),
-                para_id_1003.into(),
-                Some(max_tip_1003),
+                para_id_1001.into(),
+                Some(max_tip_1001),
             ));
             assert_ok!(ServicesPayment::set_max_tip(
                 root_origin(),
@@ -2248,7 +2257,7 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
 
             assert_eq!(
                 TanssiCollatorAssignment::collator_container_chain().container_chains
-                    [&para_id_1003.into()]
+                    [&para_id_1001.into()]
                     .len(),
                 2
             );
@@ -2261,7 +2270,7 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
 
             // Should have withdrawn the lowest tip from both paras
             assert_eq!(
-                Balances::usable_balance(ServicesPayment::parachain_tank(para_id_1003.into())),
+                Balances::usable_balance(ServicesPayment::parachain_tank(para_id_1001.into())),
                 tank_funds - max_tip_1002 * 2,
             );
 
@@ -2373,6 +2382,9 @@ fn test_parachains_collators_config_change_reassigned() {
         });
 }
 
+// Disabled test as chains selected before now have higher priority regardless of
+// tip.
+#[ignore]
 #[test]
 fn test_collator_assignment_tip_priority_on_less_cores() {
     let parachains = vec![1001u32, 1002u32, 1003u32];
@@ -2390,8 +2402,6 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
             (AccountId::from(BOB), 100 * UNIT),
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
-            (AccountId::from(EVE), 100 * UNIT),
-            (AccountId::from(FERDIE), 100 * UNIT),
         ])
         .with_empty_parachains(parachains.clone())
         .with_additional_empty_parathreads(parathreads.clone())
