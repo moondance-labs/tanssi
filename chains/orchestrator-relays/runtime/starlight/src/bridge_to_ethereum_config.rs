@@ -37,7 +37,10 @@ use {
         Runtime, RuntimeEvent, SnowbridgeFeesAccount, TanssiAggregateMessageOrigin,
         TokenLocationReanchored, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
-    frame_support::{traits::PalletInfoAccess, weights::ConstantMultiplier},
+    frame_support::{
+        traits::{ConstBool, ConstU128, PalletInfoAccess},
+        weights::ConstantMultiplier,
+    },
     pallet_ethereum_token_transfers::DenyTipHandler,
     pallet_xcm::EnsureXcm,
     snowbridge_beacon_primitives::ForkVersions,
@@ -131,6 +134,21 @@ impl snowbridge_pallet_system::Config for Runtime {
     type WeightInfo = crate::weights::snowbridge_pallet_system::SubstrateWeight<Runtime>;
 }
 
+pub struct ForbidOutboundQueueV2;
+impl snowbridge_outbound_queue_primitives::v2::SendMessage for ForbidOutboundQueueV2 {
+    type Ticket = ();
+
+    fn validate(
+        _: &snowbridge_outbound_queue_primitives::v2::Message,
+    ) -> Result<Self::Ticket, snowbridge_outbound_queue_primitives::SendError> {
+        Err(snowbridge_outbound_queue_primitives::SendError::Halted)
+    }
+
+    fn deliver(_: Self::Ticket) -> Result<H256, snowbridge_outbound_queue_primitives::SendError> {
+        Err(snowbridge_outbound_queue_primitives::SendError::Halted)
+    }
+}
+
 impl pallet_ethereum_token_transfers::Config for Runtime {
     type Currency = Balances;
     type OutboundQueue = EthereumOutboundQueue;
@@ -139,6 +157,13 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
     type FeesAccount = SnowbridgeFeesAccount;
     type TokenLocationReanchored = TokenLocationReanchored;
     type TokenIdFromLocation = EthereumSystem;
+    type ShouldUseV2 = ConstBool<false>;
+    type LocationHashOf = tp_bridge::TanssiAgentIdOf;
+    type EthereumLocation = starlight_runtime_constants::snowbridge::EthereumLocation;
+    type MinV2Reward = ConstU128<1>;
+    type OriginToLocation = xcm_config::LocalOriginToLocation;
+    type UniversalLocation = xcm_config::UniversalLocation;
+    type OutboundQueueV2 = ForbidOutboundQueueV2;
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = tp_bridge::EthereumTokenTransfersBenchHelper<Runtime>;
     type WeightInfo = crate::weights::pallet_ethereum_token_transfers::SubstrateWeight<Runtime>;

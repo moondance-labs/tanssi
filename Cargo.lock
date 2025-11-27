@@ -3919,6 +3919,7 @@ dependencies = [
 name = "dancelight-runtime"
 version = "0.1.0"
 dependencies = [
+ "alloy-core",
  "alloy-sol-types 0.4.2",
  "binary-merkle-tree",
  "bitvec",
@@ -4031,6 +4032,7 @@ dependencies = [
  "snowbridge-pallet-inbound-queue-fixtures",
  "snowbridge-pallet-inbound-queue-v2",
  "snowbridge-pallet-outbound-queue",
+ "snowbridge-pallet-outbound-queue-v2",
  "snowbridge-pallet-system",
  "snowbridge-pallet-system-v2",
  "snowbridge-verification-primitives",
@@ -10377,6 +10379,7 @@ dependencies = [
  "sp-runtime",
  "sp-staking",
  "staging-xcm",
+ "staging-xcm-builder",
  "tp-bridge",
  "tp-traits",
 ]
