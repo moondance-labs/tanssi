@@ -42,7 +42,6 @@ use {
     tanssi_runtime_common::universal_aliases::CommonUniversalAliases,
     tp_container_chain::{
         sovereign_paid_remote_exporter::SovereignPaidRemoteExporter,
-        sovereign_paid_remote_exporter_v2::SovereignPaidRemoteExporterV2,
         ContainerChainEthereumLocationConverter,
     },
     tp_xcm_commons::{EthereumAssetReserveForTanssi, EthereumAssetReserveFromParent},
@@ -192,14 +191,6 @@ pub type XcmRouter = WithUniqueTopic<(
     UmpRouter,
     // ..and XCMP to communicate with the sibling chains.
     XcmpQueue,
-    // First try with V2.
-    SovereignPaidRemoteExporterV2<
-        UmpRouter,
-        UniversalLocation,
-        EthereumNetwork,
-        ContainerToEthTransferFee,
-        ParachainInfo,
-    >,
     SovereignPaidRemoteExporter<
         UmpRouter,
         UniversalLocation,
