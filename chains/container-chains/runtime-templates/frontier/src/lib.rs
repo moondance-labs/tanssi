@@ -1416,7 +1416,7 @@ impl_runtime_apis! {
                         RuntimeOrigin::root(),
                         asset_location.clone(),
                         asset_id,
-                        account.clone(),
+                        account,
                         true,
                         1u128,
                     ));
