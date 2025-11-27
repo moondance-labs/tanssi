@@ -54,7 +54,9 @@ use {
         ConvertMessage as ConvertMessageV2, ConvertMessageError as ConvertMessageV2Error,
         Message as MessageV2,
     },
-    snowbridge_outbound_queue_primitives::{v1::Fee, SendError},
+    snowbridge_outbound_queue_primitives::{
+        v1::Fee, v2::Message as SnowbridgeMessageV2, SendError,
+    },
     snowbridge_pallet_outbound_queue::send_message_impl::Ticket,
     sp_core::{blake2_256, hashing, H256},
     sp_runtime::{app_crypto::sp_core, BoundedVec, RuntimeDebug},
@@ -307,6 +309,20 @@ impl<T: snowbridge_pallet_outbound_queue::Config + snowbridge_pallet_outbound_qu
             VersionedTanssiTicket::V1(ticket) => ticket.message_id,
             VersionedTanssiTicket::V2(ticket) => ticket.id,
         }
+    }
+}
+
+#[cfg(not(feature = "runtime-benchmarks"))]
+impl TicketInfo for SnowbridgeMessageV2 {
+    fn message_id(&self) -> H256 {
+        self.id
+    }
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl TicketInfo for SnowbridgeMessageV2 {
+    fn message_id(&self) -> H256 {
+        H256::default()
     }
 }
 
