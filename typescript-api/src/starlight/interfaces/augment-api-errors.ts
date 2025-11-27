@@ -17,7 +17,7 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             AlreadyExists: AugmentedError<ApiType>;
             /**
-             * Overflow ocurred when calculating the inverse rate.
+             * Overflow occurred when calculating the inverse rate.
              **/
             Overflow: AugmentedError<ApiType>;
             /**
