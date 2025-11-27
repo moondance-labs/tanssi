@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
+    crate::tests::ethereum_chain_id,
     dancelight_emulated_chain::DancelightRelayPallet,
     dancelight_runtime::TreasuryAccount,
     dancelight_system_emulated_network::{
@@ -26,7 +27,6 @@ use {
     hex_literal::hex,
     simple_template_emulated_chain::SimpleTemplateParaPallet,
     snowbridge_core::ChannelId,
-    sp_core::Get,
     xcm::latest::prelude::*,
     xcm::v5::NetworkId,
     xcm_emulator::{assert_expected_events, Chain, TestExt},
@@ -719,11 +719,4 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
         // Check that fees were transferred to the treasury account
         assert!(treasury_fees_account_balance_after < RELAY_ASSET_FEE_AMOUNT);
     });
-}
-
-fn ethereum_chain_id<N: Get<NetworkId>>() -> u64 {
-    match N::get() {
-        NetworkId::Ethereum { chain_id } => chain_id,
-        _ => panic!("Expected Ethereum NetworkId"),
-    }
 }

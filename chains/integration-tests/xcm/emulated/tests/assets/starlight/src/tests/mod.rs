@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use frame_support::__private::Get;
 use frontier_template_emulated_chain::FrontierTemplateParaPallet;
 use simple_template_emulated_chain::SimpleTemplateParaPallet;
+use sp_core::Get;
 use xcm::latest::NetworkId;
 use xcm_emulator::{Chain, TestExt};
 

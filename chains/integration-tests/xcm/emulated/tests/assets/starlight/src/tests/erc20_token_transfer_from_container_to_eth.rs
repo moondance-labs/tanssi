@@ -21,7 +21,6 @@ use {
     hex_literal::hex,
     simple_template_emulated_chain::SimpleTemplateParaPallet,
     snowbridge_core::ChannelId,
-    sp_core::Get,
     starlight_emulated_chain::StarlightRelayPallet,
     starlight_runtime::TreasuryAccount,
     starlight_system_emulated_network::{

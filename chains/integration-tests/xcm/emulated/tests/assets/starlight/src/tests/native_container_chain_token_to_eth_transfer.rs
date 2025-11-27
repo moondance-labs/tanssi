@@ -14,9 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::tests::set_templates_relay_param_to_starlight;
-use sp_tracing::try_init_simple;
 use {
+    crate::tests::set_templates_relay_param_to_starlight,
     frame_support::assert_ok,
     frame_support::traits::PalletInfoAccess,
     frontier_template_emulated_chain::{EthereumSender, FrontierTemplateParaPallet},
