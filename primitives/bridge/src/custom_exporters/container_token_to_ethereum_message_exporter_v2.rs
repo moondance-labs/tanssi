@@ -26,7 +26,7 @@ use {
     snowbridge_core::{AgentId, ChannelId, TokenId},
     snowbridge_outbound_queue_primitives::v2::message::{Message, SendMessage},
     sp_runtime::traits::MaybeEquivalence,
-    xcm::latest::SendError::{MissingArgument, NotApplicable, Unroutable},
+    xcm::latest::SendError::NotApplicable,
     xcm::prelude::*,
     xcm_builder::{CreateMatcher, MatchXcm},
     xcm_executor::traits::ExportXcm,
@@ -38,6 +38,9 @@ use {
     xcm_executor::traits::ConvertLocation,
 };
 
+// In case of error, we will always return NotApplicable.
+// If we return other kind of errors, the tuple implementation for ExportXcm will not
+// allow us to go to the next exporter available.
 pub struct ContainerEthereumBlobExporterV2<
     UniversalLocation,
     EthereumNetwork,
@@ -105,7 +108,7 @@ where
         }
 
         // Cloning destination to avoid modifying the value so subsequent exporters can use it.
-        let dest = destination.clone().take().ok_or(MissingArgument)?;
+        let dest = destination.clone().take().ok_or(NotApplicable)?;
         if dest != Here {
             log::trace!(target: "xcm::ethereum_blob_exporter", "skipped due to unmatched remote destination {dest:?}.");
             return Err(NotApplicable);
@@ -116,7 +119,7 @@ where
             .take()
             .ok_or_else(|| {
                 log::error!(target: "xcm::ethereum_blob_exporter", "universal source not provided.");
-                MissingArgument
+                NotApplicable
             })?
             .split_global()
             .map_err(|()| {
@@ -137,9 +140,9 @@ where
             }
         };
 
-        let message = message.take().ok_or_else(|| {
+        let message = message.clone().take().ok_or_else(|| {
             log::error!(target: "xcm::ethereum_blob_exporter", "xcm message not provided.");
-            MissingArgument
+            NotApplicable
         })?;
 
         // Inspect `AliasOrigin` as V2 message. This exporter should only process Snowbridge V2
@@ -163,7 +166,7 @@ where
         let dest_location = dest_junction.into_exterior(1);
         let min_reward_destination_view = MinReward::get().reanchored(&dest_location, &UniversalLocation::get()).map_err(|err| {
             log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue validation of message failed. {err:?}");
-            SendError::Unroutable
+            NotApplicable
         })?;
 
         let mut converter =
@@ -175,14 +178,14 @@ where
             );
 
         let outbound_message = converter.convert().map_err(|err|{
-            log::error!(target: "xcm::ethereum_blob_exporter", "unroutable due to pattern matching error '{err:?}'.");
-            Unroutable
+            log::error!(target: "xcm::ethereum_blob_exporter", "NotApplicable due to pattern matching error '{err:?}'.");
+            NotApplicable
         })?;
 
         // validate the message
         let ticket = OutboundQueue::validate(&outbound_message).map_err(|err| {
             log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue validation of message failed. {err:?}");
-            Unroutable
+            NotApplicable
         })?;
 
         // convert fee to Asset
@@ -729,7 +732,7 @@ mod tests {
             &mut destination,
             &mut message,
         );
-        assert_eq!(result, Err(MissingArgument));
+        assert_eq!(result, Err(NotApplicable));
     }
 
     #[test]
@@ -787,7 +790,7 @@ mod tests {
             &mut destination,
             &mut message,
         );
-        assert_eq!(result, Err(MissingArgument));
+        assert_eq!(result, Err(NotApplicable));
 
         let mut universal_source: Option<InteriorLocation> = Here.into();
         let result = ContainerEthereumBlobExporterV2::<
@@ -872,7 +875,7 @@ mod tests {
             &mut destination,
             &mut message,
         );
-        assert_eq!(result, Err(MissingArgument));
+        assert_eq!(result, Err(NotApplicable));
     }
 
     #[test]
@@ -911,7 +914,7 @@ mod tests {
     }
 
     #[test]
-    fn exporter_pay_fees_with_more_than_reserved_yields_unroutable_v2() {
+    fn exporter_pay_fees_with_more_than_reserved_yields_not_applicable_v2() {
         let asset_para_location: InteriorLocation = [
             GlobalConsensus(Polkadot),
             Parachain(2001),
@@ -1007,11 +1010,11 @@ mod tests {
             &mut destination,
             &mut message,
         );
-        assert_eq!(result, Err(Unroutable));
+        assert_eq!(result, Err(NotApplicable));
     }
 
     #[test]
-    fn exporter_pay_fees_mismatch_yields_unroutable_v2() {
+    fn exporter_pay_fees_mismatch_yields_not_applicable_v2() {
         let asset_para_location: InteriorLocation = [
             GlobalConsensus(Polkadot),
             Parachain(2001),
@@ -1108,11 +1111,11 @@ mod tests {
             &mut destination,
             &mut message,
         );
-        assert_eq!(result, Err(Unroutable));
+        assert_eq!(result, Err(NotApplicable));
     }
 
     #[test]
-    fn exporter_missing_deposit_asset_yields_unroutable_v2() {
+    fn exporter_missing_deposit_asset_yields_not_applicable_v2() {
         let asset_para_location: InteriorLocation = [
             GlobalConsensus(Polkadot),
             Parachain(2001),
@@ -1197,11 +1200,11 @@ mod tests {
             &mut destination,
             &mut message,
         );
-        assert_eq!(result, Err(Unroutable));
+        assert_eq!(result, Err(NotApplicable));
     }
 
     #[test]
-    fn exporter_incorrect_beneficiary_yields_unroutable_v2() {
+    fn exporter_incorrect_beneficiary_yields_not_applicable_v2() {
         let asset_para_location: InteriorLocation = [
             GlobalConsensus(Polkadot),
             Parachain(2001),
@@ -1289,7 +1292,7 @@ mod tests {
             &mut destination,
             &mut message,
         );
-        assert_eq!(result, Err(Unroutable));
+        assert_eq!(result, Err(NotApplicable));
     }
 
     #[test]
@@ -1375,7 +1378,7 @@ mod tests {
     }
 
     #[test]
-    fn exporter_empty_reserve_assets_yields_unroutable_v2() {
+    fn exporter_empty_reserve_assets_yields_not_applicable_v2() {
         let network = Ethereum { chain_id: 11155111 };
         let channel: u32 = 0;
         let mut universal_source: Option<InteriorLocation> = Some(
@@ -1451,11 +1454,11 @@ mod tests {
             &mut destination,
             &mut message,
         );
-        assert_eq!(result, Err(Unroutable));
+        assert_eq!(result, Err(NotApplicable));
     }
 
     #[test]
-    fn exporter_reserve_assets_more_than_one_yields_unroutable_v2() {
+    fn exporter_reserve_assets_more_than_one_yields_not_applicable_v2() {
         let asset_para_location: InteriorLocation = [
             GlobalConsensus(Polkadot),
             Parachain(2001),
@@ -1557,11 +1560,11 @@ mod tests {
             &mut destination,
             &mut message,
         );
-        assert_eq!(result, Err(Unroutable));
+        assert_eq!(result, Err(NotApplicable));
     }
 
     #[test]
-    fn exporter_reserve_assets_incorrect_resolution_yields_unroutable_v2() {
+    fn exporter_reserve_assets_incorrect_resolution_yields_not_applicable_v2() {
         let asset_para_location: InteriorLocation = [
             GlobalConsensus(Polkadot),
             Parachain(2001),
@@ -1651,11 +1654,11 @@ mod tests {
             &mut destination,
             &mut message,
         );
-        assert_eq!(result, Err(Unroutable));
+        assert_eq!(result, Err(NotApplicable));
     }
 
     #[test]
-    fn exporter_assets_mismatch_yields_unroutable_v2() {
+    fn exporter_assets_mismatch_yields_not_applicable_v2() {
         sp_tracing::try_init_simple();
         let asset_para_location: InteriorLocation = [
             GlobalConsensus(Polkadot),
@@ -1760,11 +1763,11 @@ mod tests {
             &mut destination,
             &mut message,
         );
-        assert_eq!(result, Err(Unroutable));
+        assert_eq!(result, Err(NotApplicable));
     }
 
     #[test]
-    fn exporter_incorrect_asset_amount_yields_unroutable_v2() {
+    fn exporter_incorrect_asset_amount_yields_not_applicable_v2() {
         let asset_para_location: InteriorLocation = [
             GlobalConsensus(Polkadot),
             Parachain(2001),
@@ -1853,11 +1856,11 @@ mod tests {
             &mut destination,
             &mut message,
         );
-        assert_eq!(result, Err(Unroutable));
+        assert_eq!(result, Err(NotApplicable));
     }
 
     #[test]
-    fn exporter_incorrect_fee_amount_yields_unroutable_v2() {
+    fn exporter_incorrect_fee_amount_yields_not_applicable_v2() {
         let asset_para_location: InteriorLocation = [
             GlobalConsensus(Polkadot),
             Parachain(2001),
@@ -1947,11 +1950,11 @@ mod tests {
             &mut destination,
             &mut message,
         );
-        assert_eq!(result, Err(Unroutable));
+        assert_eq!(result, Err(NotApplicable));
     }
 
     #[test]
-    fn exporter_incorrect_fee_location_yields_unroutable_v2() {
+    fn exporter_incorrect_fee_location_yields_not_applicable_v2() {
         let asset_para_location: InteriorLocation = [
             GlobalConsensus(Polkadot),
             Parachain(2001),
@@ -2040,11 +2043,11 @@ mod tests {
             &mut destination,
             &mut message,
         );
-        assert_eq!(result, Err(Unroutable));
+        assert_eq!(result, Err(NotApplicable));
     }
 
     #[test]
-    fn exporter_no_set_topic_yields_unroutable_v2() {
+    fn exporter_no_set_topic_yields_not_applicable_v2() {
         let asset_para_location: InteriorLocation = [
             GlobalConsensus(Polkadot),
             Parachain(2001),
@@ -2129,11 +2132,11 @@ mod tests {
             &mut destination,
             &mut message,
         );
-        assert_eq!(result, Err(Unroutable));
+        assert_eq!(result, Err(NotApplicable));
     }
 
     #[test]
-    fn exporter_extra_instruction_yields_unroutable_v2() {
+    fn exporter_extra_instruction_yields_not_applicable_v2() {
         let asset_para_location: InteriorLocation = [
             GlobalConsensus(Polkadot),
             Parachain(2001),
@@ -2223,7 +2226,7 @@ mod tests {
             &mut destination,
             &mut message,
         );
-        assert_eq!(result, Err(Unroutable));
+        assert_eq!(result, Err(NotApplicable));
     }
 
     #[test]
