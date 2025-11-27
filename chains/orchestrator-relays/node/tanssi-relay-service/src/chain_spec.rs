@@ -270,6 +270,7 @@ pub fn dancelight_local_testnet_config(
     container_chains: Vec<String>,
     mock_container_chains: Vec<ParaId>,
     invulnerables: Vec<String>,
+    initial_authorities: Vec<String>,
 ) -> Result<DancelightChainSpec, String> {
     let container_chains: Vec<_> = container_chains
         .iter()
@@ -279,6 +280,11 @@ pub fn dancelight_local_testnet_config(
                 .iter()
                 .map(|x| (*x, mock_container_chain_genesis_data(*x), vec![])),
         )
+        .collect();
+
+    let initial_authorities = initial_authorities
+        .iter()
+        .map(|name| dancelight_runtime::genesis_config_presets::get_authority_keys_from_seed(name))
         .collect();
 
     Ok(DancelightChainSpec::builder(
@@ -291,6 +297,7 @@ pub fn dancelight_local_testnet_config(
     .with_genesis_config_patch(dancelight_local_testnet_genesis(
         container_chains,
         invulnerables,
+        initial_authorities,
     ))
     .with_protocol_id(DEFAULT_PROTOCOL_ID)
     .build())
@@ -302,6 +309,7 @@ pub fn starlight_local_testnet_config(
     container_chains: Vec<String>,
     mock_container_chains: Vec<ParaId>,
     invulnerables: Vec<String>,
+    initial_authorities: Vec<String>,
 ) -> Result<StarlightChainSpec, String> {
     let container_chains: Vec<_> = container_chains
         .iter()
@@ -311,6 +319,11 @@ pub fn starlight_local_testnet_config(
                 .iter()
                 .map(|x| (*x, mock_container_chain_genesis_data(*x), vec![])),
         )
+        .collect();
+
+    let initial_authorities = initial_authorities
+        .iter()
+        .map(|name| starlight_runtime::genesis_config_presets::get_authority_keys_from_seed(name))
         .collect();
 
     Ok(StarlightChainSpec::builder(
@@ -323,6 +336,7 @@ pub fn starlight_local_testnet_config(
     .with_genesis_config_patch(starlight_local_testnet_genesis(
         container_chains,
         invulnerables,
+        initial_authorities,
     ))
     .with_protocol_id(DEFAULT_PROTOCOL_ID)
     .build())

@@ -76,6 +76,12 @@ describeSuite({
                 expect(relayNetwork, "Relay API incorrect").to.contain("dancelight");
                 const blockNum = (await relayApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
+
+                // Assert that we have enough validators
+                // Zombienet does not inject them automatically into genesis, so even if the config file has 4
+                // validators, we must also add them to the build-spec script
+                const validatorIds = await relayApi.query.session.validators();
+                expect(validatorIds.length).to.be.equal(4);
             },
         });
 

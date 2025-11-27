@@ -87,7 +87,7 @@ describeSuite({
                 const outboundNonceAfter = await polkadotJs.query.ethereumOutboundQueueV2.nonce();
 
                 // Nonce should increase
-                expect(Number(outboundNonceAfter.toHuman())).to.be.equal(Number(outboundNonceBefore.toHuman()) + 1);
+                expect(outboundNonceAfter.toNumber()).to.be.equal(outboundNonceBefore.toNumber() + 1);
             },
         });
 
@@ -116,7 +116,7 @@ describeSuite({
                 const outboundNonceAfter = await polkadotJs.query.ethereumOutboundQueueV2.nonce();
 
                 // Nonce should increase
-                expect(Number(outboundNonceAfter.toHuman())).to.be.equal(Number(outboundNonceBefore.toHuman()) + 1);
+                expect(outboundNonceAfter.toNumber()).to.be.equal(outboundNonceBefore.toNumber() + 1);
             },
         });
 

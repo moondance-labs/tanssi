@@ -333,6 +333,8 @@ pub mod pallet {
             let origin = Self::location_to_message_origin(origin_location)?;
 
             ensure!(T::ShouldUseV2::get(), Error::<T>::V2SendingIsNotAllowed);
+
+            // Check for minimum fee
             ensure!(
                 reward >= T::MinV2Reward::get(),
                 Error::<T>::MinV2RewardNotAchieved
@@ -367,12 +369,12 @@ pub mod pallet {
                 amount,
             };
 
+            let id = unique((origin, &command)).into();
             let mut commands: Vec<SnowbridgeCommandV2> = Vec::new();
-            commands.push(command.clone());
+            commands.push(command);
 
-            // Check for minimum fee
             let message = SnowbridgeMessageV2 {
-                id: unique((origin, &command)).into(),
+                id,
                 commands: BoundedVec::try_from(commands)
                     .map_err(|_| Error::<T>::TooManyCommands)?,
                 fee: reward,
