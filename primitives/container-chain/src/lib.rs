@@ -21,7 +21,6 @@
 extern crate alloc;
 
 pub mod sovereign_paid_remote_exporter;
-pub mod sovereign_paid_remote_exporter_v2;
 
 use {
     core::marker::PhantomData,
