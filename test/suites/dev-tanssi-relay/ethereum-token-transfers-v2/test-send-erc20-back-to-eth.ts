@@ -49,22 +49,6 @@ describeSuite({
                 const transferAmount = BigInt(10_000);
                 const feeAmount = BigInt(1_000_000_000_000);
 
-                // Create EthereumTokenTransfers channel to validate when receiving the tokens.
-                const newChannelId = "0x0000000000000000000000000000000000000000000000000000000000000004";
-                const newAgentId = "0x0000000000000000000000000000000000000000000000000000000000000005";
-                const newParaId = 500;
-
-                const tx1 = await polkadotJs.tx.sudo
-                    .sudo(
-                        polkadotJs.tx.ethereumTokenTransfers.setTokenTransferChannel(
-                            newChannelId,
-                            newAgentId,
-                            newParaId
-                        )
-                    )
-                    .signAsync(alice);
-                await context.createBlock([tx1], { allowFailures: false });
-
                 const ethereumNetwork = isStarlight
                     ? { Ethereum: { chainId: 1 } }
                     : { Ethereum: { chainId: 11155111 } };

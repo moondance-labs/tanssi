@@ -42,10 +42,13 @@ use sp_runtime::{DispatchError, TransactionOutcome};
 
 pub mod weights;
 
+pub mod genesis_config_presets;
+
 #[cfg(test)]
 mod tests;
 
 use {
+    alloc::string::ToString,
     alloc::{
         collections::{btree_map::BTreeMap, btree_set::BTreeSet},
         vec,
@@ -1662,11 +1665,31 @@ impl_runtime_apis! {
             build_state::<RuntimeGenesisConfig>(config)
         }
 
-        fn get_preset(id: &Option<sp_genesis_builder::PresetId>) -> Option<Vec<u8>> {
-            get_preset::<RuntimeGenesisConfig>(id, |_| None)
+       fn get_preset(id: &Option<sp_genesis_builder::PresetId>) -> Option<Vec<u8>> {
+            get_preset::<RuntimeGenesisConfig>(id, |id: &sp_genesis_builder::PresetId| {
+                let para_id: ParaId = 1000.into();
+                let mock_container_chains: Vec<ParaId> =
+                    vec![2000, 2001].iter().map(|&x| x.into()).collect();
+                let invulnerables = vec![
+                    "Alice".to_string(),
+                    "Bob".to_string(),
+                    "Charlie".to_string(),
+                    "Dave".to_string(),
+                ];
+
+                let patch = match id.as_ref() {
+                    "development" => genesis_config_presets::development(para_id, vec![], mock_container_chains, invulnerables),
+                    _ => return None,
+                };
+                Some(
+                    serde_json::to_string(&patch)
+                        .expect("serialization to json is expected to work. qed.")
+                        .into_bytes(),
+                )
+            })
         }
         fn preset_names() -> Vec<sp_genesis_builder::PresetId> {
-            vec![]
+            vec!["development".into()]
         }
     }
 

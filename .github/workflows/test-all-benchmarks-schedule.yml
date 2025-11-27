@@ -38,6 +38,9 @@ jobs:
       - name: Install GitHub CLI
         uses: ./.github/workflow-templates/gh-cli
 
+      - name: Install frame-omni-bencher
+        uses: ./.github/workflow-templates/install-frame-omni-bencher
+
       - name: Cargo build
         uses: ./.github/workflow-templates/cargo-build
         with:

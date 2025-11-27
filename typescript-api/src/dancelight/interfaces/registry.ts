@@ -10,7 +10,6 @@ import type {
     BinaryHeapReverseQueueIndex,
     BitvecOrderLsb0,
     BpRelayersRegistration,
-    DancelightRuntimeAggregateMessageOrigin,
     DancelightRuntimeBridgeToEthereumConfigBridgeReward,
     DancelightRuntimeBridgeToEthereumConfigBridgeRewardBeneficiaries,
     DancelightRuntimeDynamicParamsPreimageBaseDeposit,
@@ -27,6 +26,7 @@ import type {
     DancelightRuntimeRuntimeParametersKey,
     DancelightRuntimeRuntimeParametersValue,
     DancelightRuntimeSessionKeys,
+    DancelightRuntimeTanssiAggregateMessageOrigin,
     DpCollatorAssignmentAssignedCollatorsAccountId32,
     DpCollatorAssignmentAssignedCollatorsPublic,
     DpContainerChainGenesisDataContainerChainGenesisData,
@@ -595,7 +595,6 @@ declare module "@polkadot/types/types/registry" {
         BinaryHeapReverseQueueIndex: BinaryHeapReverseQueueIndex;
         BitvecOrderLsb0: BitvecOrderLsb0;
         BpRelayersRegistration: BpRelayersRegistration;
-        DancelightRuntimeAggregateMessageOrigin: DancelightRuntimeAggregateMessageOrigin;
         DancelightRuntimeBridgeToEthereumConfigBridgeReward: DancelightRuntimeBridgeToEthereumConfigBridgeReward;
         DancelightRuntimeBridgeToEthereumConfigBridgeRewardBeneficiaries: DancelightRuntimeBridgeToEthereumConfigBridgeRewardBeneficiaries;
         DancelightRuntimeDynamicParamsPreimageBaseDeposit: DancelightRuntimeDynamicParamsPreimageBaseDeposit;
@@ -612,6 +611,7 @@ declare module "@polkadot/types/types/registry" {
         DancelightRuntimeRuntimeParametersKey: DancelightRuntimeRuntimeParametersKey;
         DancelightRuntimeRuntimeParametersValue: DancelightRuntimeRuntimeParametersValue;
         DancelightRuntimeSessionKeys: DancelightRuntimeSessionKeys;
+        DancelightRuntimeTanssiAggregateMessageOrigin: DancelightRuntimeTanssiAggregateMessageOrigin;
         DpCollatorAssignmentAssignedCollatorsAccountId32: DpCollatorAssignmentAssignedCollatorsAccountId32;
         DpCollatorAssignmentAssignedCollatorsPublic: DpCollatorAssignmentAssignedCollatorsPublic;
         DpContainerChainGenesisDataContainerChainGenesisData: DpContainerChainGenesisDataContainerChainGenesisData;

@@ -18,16 +18,14 @@
 
 #[cfg(all(not(test), not(feature = "testing-helpers")))]
 use crate::EthereumBeaconClient;
-use crate::EthereumInboundQueueV2;
 use cumulus_primitives_core::Location;
-use frame_support::dispatch::DispatchResult;
-use frame_support::pallet_prelude::{DecodeWithMemTracking, Encode, TypeInfo};
-use frame_support::traits::{
-    fungible::Mutate, tokens::Preservation, ConstBool, EnqueueMessage, EnsureOrigin,
+use frame_support::{
+    dispatch::DispatchResult,
+    pallet_prelude::{DecodeWithMemTracking, Encode, TypeInfo},
+    traits::{fungible::Mutate, tokens::Preservation, ConstBool, EnqueueMessage, EnsureOrigin},
+    BoundedSlice,
 };
-use frame_support::BoundedSlice;
-use frame_system::EnsureRoot;
-use frame_system::EnsureRootWithSuccess;
+use frame_system::{EnsureRoot, EnsureRootWithSuccess};
 use pallet_ethereum_token_transfers::{
     origins::{ConvertAccountIdTo, ConvertUnitTo, EnsureEthereumTokenTransfersOrigin},
     pallet::TipHandler,
@@ -46,16 +44,16 @@ use {
     },
 };
 
-use crate::{AccountId, BridgeRelayers};
+use crate::{AccountId, BridgeRelayers, EthereumInboundQueueV2};
 use dancelight_runtime_constants::snowbridge::EthereumLocation;
 use tp_traits::BlockNumber;
 use {
     crate::{
-        parameter_types, weights, xcm_config, AggregateMessageOrigin, Balance, Balances,
-        EthereumInboundQueue, EthereumOutboundQueue, EthereumOutboundQueueV2,
-        EthereumSovereignAccount, EthereumSystem, FixedU128, GetAggregateMessageOrigin, Keccak256,
-        MessageQueue, OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent,
-        SnowbridgeFeesAccount, TokenLocationReanchored, TransactionByteFee, TreasuryAccount,
+        parameter_types, weights, xcm_config, Balance, Balances, EthereumInboundQueue,
+        EthereumOutboundQueue, EthereumOutboundQueueV2, EthereumSovereignAccount, EthereumSystem,
+        FixedU128, GetAggregateMessageOrigin, Keccak256, MessageQueue,
+        OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, SnowbridgeFeesAccount,
+        TanssiAggregateMessageOrigin, TokenLocationReanchored, TransactionByteFee, TreasuryAccount,
         WeightToFee, UNITS,
     },
     frame_support::{
@@ -70,6 +68,8 @@ use {
     sp_core::{ConstU32, ConstU8, H160, H256},
     tanssi_runtime_common::relay::{EthTokensLocalProcessor, RewardThroughFeesAccount},
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
+    xcm::latest::{Asset, XcmContext},
+    xcm_executor::traits::TransactAsset,
 };
 
 pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOTS_PER_EPOCH as u32;
@@ -107,7 +107,7 @@ impl pallet_outbound_message_commitment_recorder::Config for Runtime {}
 impl snowbridge_pallet_outbound_queue::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Hashing = Keccak256;
-    type AggregateMessageOrigin = AggregateMessageOrigin;
+    type AggregateMessageOrigin = TanssiAggregateMessageOrigin;
     type GetAggregateMessageOrigin = GetAggregateMessageOrigin;
     type MessageQueue = MessageQueue;
     type Decimals = ConstU8<12>;
@@ -209,7 +209,7 @@ impl bp_relayers::PaymentProcedure<AccountId, BridgeReward, u128> for BridgeRewa
                         Balances::transfer(
                             &SnowbridgeFeesAccount::get(),
                             &account_id,
-                            reward.into(),
+                            reward,
                             Preservation::Preserve,
                         )?;
                         Ok(())
@@ -244,7 +244,7 @@ impl pallet_bridge_relayers::Config<BridgeRelayersInstance> for Runtime {
         RelayerStakeLease,
     >;
     type Balance = Balance;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_bridge_relayers::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -296,8 +296,8 @@ impl snowbridge_pallet_system_v2::Config for Runtime {
             ConvertAccountIdTo<AccountId, Location, xcm_config::RelayNetwork>,
         >,
     >;
-    type GovernanceOrigin = EnsureRootWithSuccess<AccountId, EthereumLocation>;
-    type WeightInfo = ();
+    type GovernanceOrigin = EnsureRootWithSuccess<AccountId, xcm_config::RootLocation>;
+    type WeightInfo = weights::snowbridge_pallet_system_v2::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type Helper = ();
 }
@@ -313,14 +313,68 @@ impl TipHandler<crate::RuntimeOrigin> for EthereumTipForwarder<Runtime> {
             Runtime,
         >::ensure_origin(origin.clone())?;
 
-        Balances::transfer(
-            &sender,
-            &<Runtime as pallet_ethereum_token_transfers::Config>::FeesAccount::get(),
-            amount.into(),
-            Preservation::Preserve,
-        )?;
-
+        // Tip handling depends on the queue type
+        // Inbound: tip in ETH
+        // Outbound: tip in Tanssi
+        match message_id {
+            MessageId::Inbound(_) => {
+                let dummy_context = XcmContext {
+                    origin: None,
+                    message_id: Default::default(),
+                    topic: None,
+                };
+                let asset: Asset = (EthereumLocation::get(), amount).into();
+                // Here I am not sure I can work with any other thing than this.
+                // In theory I could call foreignAssets directly, but I prefer not to.
+                // In theory also, I could work with assetTransactor only for both cases
+                // changing the token
+                // TODO: revisit
+                AssetTransactor::transfer_asset(
+                    &asset,
+                    &sender.clone().into(),
+                    &<Runtime as pallet_ethereum_token_transfers::Config>::FeesAccount::get()
+                        .into(),
+                    &dummy_context,
+                )
+                .map_err(|e| {
+                    log::debug!("Inbound tip addition failed with error {:?}", e);
+                    sp_runtime::DispatchError::Other("TransferAsset failed for Inbound Fee")
+                })?;
+            }
+            MessageId::Outbound(_) => {
+                Balances::transfer(
+                    &sender.clone(),
+                    &<Runtime as pallet_ethereum_token_transfers::Config>::FeesAccount::get(),
+                    amount,
+                    Preservation::Expendable,
+                )
+                .map_err(|e| {
+                    log::debug!("Outbound tip addition failed with error {:?}", e);
+                    e
+                })?;
+            }
+        };
         snowbridge_pallet_system_v2::Pallet::<Runtime>::add_tip(origin, sender, message_id, amount)
+    }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_tip(origin: crate::RuntimeOrigin, message_id: MessageId, amount: u128) {
+        let sender = pallet_ethereum_token_transfers::origins::EnsureEthereumTokenTransfersOrigin::<
+            Runtime,
+        >::ensure_origin(origin.clone()).expect("origin does not match the expected origin");
+        match message_id {
+            MessageId::Inbound(_) => {
+                // We need to mit the asset
+                let (_asset_id, _asset_location) =
+                    pallet_foreign_asset_creator::benchmarks::create_minted_asset::<Runtime>(
+                        amount * 2,
+                        sender,
+                        Some(EthereumLocation::get()),
+                    );
+            }
+            MessageId::Outbound(_) => {
+                //TODO: fill by the outbound V2 PR.
+            }
+        }
     }
 }
 impl pallet_ethereum_token_transfers::Config for Runtime {
@@ -349,9 +403,9 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
 mod benchmark_helper {
     use {
         crate::{
-            bridge_to_ethereum_config::EthTokensProcessor, AccountId, Balances,
-            EthereumBeaconClient, ForeignAssetsCreator, Runtime, RuntimeOrigin,
-            SnowbridgeFeesAccount, UNITS,
+            bridge_to_ethereum_config::{EthTokensProcessor, EthereumGatewayAddress},
+            AccountId, Balances, EthereumBeaconClient, ForeignAssetsCreator, Runtime,
+            RuntimeOrigin, SnowbridgeFeesAccount, UNITS,
         },
         frame_support::traits::fungible::Mutate,
         snowbridge_beacon_primitives::BeaconHeader,
@@ -367,7 +421,7 @@ mod benchmark_helper {
         snowbridge_pallet_inbound_queue_v2::BenchmarkHelper as InboundQueueBenchmarkHelperV2,
         snowbridge_pallet_outbound_queue_v2::BenchmarkHelper as OutboundQueueBenchmarkHelperV2,
         snowbridge_pallet_system::Channels,
-        sp_core::H256,
+        sp_core::{H160, H256},
         sp_runtime::DispatchResult,
         xcm::latest::Location,
     };
@@ -433,6 +487,11 @@ mod benchmark_helper {
     impl<T: snowbridge_pallet_outbound_queue_v2::Config> OutboundQueueBenchmarkHelperV2<T> for Runtime {
         fn initialize_storage(beacon_header: BeaconHeader, block_roots_root: H256) {
             EthereumBeaconClient::store_finalized_header(beacon_header, block_roots_root).unwrap();
+            // Putting the gateway address in https://github.com/paritytech/polkadot-sdk/blob/c9879a5e3eeda1e8938ae7f6d06ec8df0a7a7da9/bridges/snowbridge/pallets/outbound-queue-v2/src/fixture.rs#L18C32-L18C72
+            // Necessary to bench correctly
+            EthereumGatewayAddress::set(&H160(hex_literal::hex!(
+                "b1185ede04202fe62d38f5db72f71e38ff3e8305"
+            )));
         }
     }
     impl<T: snowbridge_pallet_inbound_queue_v2::Config> InboundQueueBenchmarkHelperV2<T> for Runtime {
@@ -524,10 +583,8 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     #[cfg(any(test, feature = "testing-helpers"))]
     type Verifier = test_helpers::MockVerifier;
     type Token = Balances;
-    // TODO: Revisit this when we enable xcmp messages
     type XcmSender = DoNothingRouter;
     type GatewayAddress = EthereumGatewayAddress;
-    // TODO: Revisit this when we enable xcmp messages
     type MessageConverter = DoNothingConvertMessage;
     type ChannelLookup = EthereumSystem;
     type PricingParameters = EthereumSystem;
@@ -536,7 +593,6 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type Helper = benchmark_helper::EthSystemBenchHelper;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
-    // TODO: Revisit this when we enable xcmp messages
     type MaxMessageSize = ConstU32<2048>;
     type AssetTransactor = AssetTransactor;
     #[cfg(not(feature = "runtime-benchmarks"))]
@@ -601,14 +657,14 @@ impl snowbridge_pallet_outbound_queue_v2::Config for Runtime {
     #[cfg(any(test, feature = "testing-helpers"))]
     type Verifier = test_helpers::MockVerifier;
     type GatewayAddress = EthereumGatewayAddress;
-    type WeightInfo = ();
+    type WeightInfo = weights::snowbridge_pallet_outbound_queue_v2::SubstrateWeight<Runtime>;
     type EthereumNetwork = dancelight_runtime_constants::snowbridge::EthereumNetwork;
     type RewardKind = BridgeReward;
     type DefaultRewardKind = SnowbridgeRewardOutbound;
     type RewardPayment = BridgeRelayers;
     // Enable once we cherry-pick
     type OnNewCommitment = CommitmentRecorder;
-    type AggregateMessageOrigin = AggregateMessageOrigin;
+    type AggregateMessageOrigin = TanssiAggregateMessageOrigin;
     #[cfg(feature = "runtime-benchmarks")]
     type Helper = Runtime;
 }

@@ -30,10 +30,10 @@ use {
 
 use {
     crate::{
-        parameter_types, weights, xcm_config, AggregateMessageOrigin, Balance, Balances,
-        EthereumInboundQueue, EthereumOutboundQueue, EthereumSovereignAccount, EthereumSystem,
-        FixedU128, GetAggregateMessageOrigin, Keccak256, MessageQueue,
-        OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, SnowbridgeFeesAccount,
+        parameter_types, weights, xcm_config, Balance, Balances, EthereumInboundQueue,
+        EthereumOutboundQueue, EthereumSovereignAccount, EthereumSystem, FixedU128,
+        GetAggregateMessageOrigin, Keccak256, MessageQueue, OutboundMessageCommitmentRecorder,
+        Runtime, RuntimeEvent, SnowbridgeFeesAccount, TanssiAggregateMessageOrigin,
         TokenLocationReanchored, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
     frame_support::{
@@ -79,7 +79,7 @@ impl pallet_outbound_message_commitment_recorder::Config for Runtime {}
 impl snowbridge_pallet_outbound_queue::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Hashing = Keccak256;
-    type AggregateMessageOrigin = AggregateMessageOrigin;
+    type AggregateMessageOrigin = TanssiAggregateMessageOrigin;
     type GetAggregateMessageOrigin = GetAggregateMessageOrigin;
     type MessageQueue = MessageQueue;
     type Decimals = ConstU8<12>;
@@ -280,7 +280,6 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type Helper = benchmark_helper::EthSystemBenchHelper;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
-    // TODO: Revisit this when we enable xcmp messages
     type MaxMessageSize = ConstU32<2048>;
     type AssetTransactor = AssetTransactor;
     #[cfg(not(feature = "runtime-benchmarks"))]
