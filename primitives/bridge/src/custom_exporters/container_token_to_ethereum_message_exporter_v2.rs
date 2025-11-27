@@ -23,7 +23,7 @@ use {
         BoundedVec,
     },
     parity_scale_codec::{Decode, Encode},
-    snowbridge_core::{AgentId, ChannelId, TokenId},
+    snowbridge_core::TokenId,
     snowbridge_outbound_queue_primitives::v2::message::{Message, SendMessage},
     sp_runtime::traits::MaybeEquivalence,
     xcm::latest::SendError::NotApplicable,
