@@ -47,7 +47,6 @@ pub struct ContainerEthereumBlobExporterV2<
     EthereumLocation,
     OutboundQueue,
     ConvertAssetId,
-    BridgeChannelInfo,
     MinReward,
 >(
     PhantomData<(
@@ -56,7 +55,6 @@ pub struct ContainerEthereumBlobExporterV2<
         EthereumLocation,
         OutboundQueue,
         ConvertAssetId,
-        BridgeChannelInfo,
         MinReward,
     )>,
 );
@@ -67,7 +65,6 @@ impl<
         EthereumLocation,
         OutboundQueue,
         ConvertAssetId,
-        BridgeChannelInfo,
         MinReward,
     > ExportXcm
     for ContainerEthereumBlobExporterV2<
@@ -76,7 +73,6 @@ impl<
         EthereumLocation,
         OutboundQueue,
         ConvertAssetId,
-        BridgeChannelInfo,
         MinReward,
     >
 where
@@ -85,7 +81,6 @@ where
     EthereumLocation: Get<Location>,
     OutboundQueue: SendMessage,
     ConvertAssetId: MaybeEquivalence<TokenId, Location>,
-    BridgeChannelInfo: Get<Option<(ChannelId, AgentId)>>,
     MinReward: Get<Asset>,
 {
     type Ticket = (Vec<u8>, XcmHash);
@@ -626,7 +621,6 @@ mod tests {
         pub EthereumLocation: Location = Location::new(1, EthereumNetwork::get());
         const EthereumNetwork: NetworkId = Ethereum { chain_id: 11155111 };
         UniversalLocation: InteriorLocation = [GlobalConsensus(ByGenesis([ 152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43, 81, 39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10 ]))].into();
-        const BridgeChannelInfo: Option<(ChannelId, AgentId)> = Some((ChannelId::new([1u8; 32]), H256([2u8; 32])));
         pub const MinV2Reward: u128 = 1u128;
         pub MinReward: Asset = (Location::here(), MinV2Reward::get()).into();
     }
@@ -696,7 +690,6 @@ mod tests {
             EthereumLocation,
             MockOkOutboundQueue,
             MockTokenIdConvert,
-            BridgeChannelInfo,
             MinReward,
         >::validate(
             network,
@@ -722,7 +715,6 @@ mod tests {
             EthereumLocation,
             MockOkOutboundQueue,
             MockTokenIdConvert,
-            BridgeChannelInfo,
             MinReward,
         >::validate(
             network,
@@ -754,7 +746,6 @@ mod tests {
             EthereumLocation,
             MockOkOutboundQueue,
             MockTokenIdConvert,
-            BridgeChannelInfo,
             MinReward,
         >::validate(
             network,
@@ -780,7 +771,6 @@ mod tests {
             EthereumLocation,
             MockOkOutboundQueue,
             MockTokenIdConvert,
-            BridgeChannelInfo,
             MinReward,
         >::validate(
             network,
@@ -798,7 +788,6 @@ mod tests {
             EthereumLocation,
             MockOkOutboundQueue,
             MockTokenIdConvert,
-            BridgeChannelInfo,
             MinReward,
         >::validate(
             network,
@@ -830,7 +819,6 @@ mod tests {
             EthereumLocation,
             MockOkOutboundQueue,
             MockTokenIdConvert,
-            BridgeChannelInfo,
             MinReward,
         >::validate(
             network,
@@ -865,7 +853,6 @@ mod tests {
             EthereumLocation,
             MockOkOutboundQueue,
             MockTokenIdConvert,
-            BridgeChannelInfo,
             MinReward,
         >::validate(
             network,
@@ -900,7 +887,6 @@ mod tests {
             EthereumLocation,
             MockOkOutboundQueue,
             MockTokenIdConvert,
-            BridgeChannelInfo,
             MinReward,
         >::validate(
             network,
@@ -1000,7 +986,6 @@ mod tests {
             EthereumLocation,
             MockOkOutboundQueue,
             MockTokenIdConvert,
-            BridgeChannelInfo,
             MinReward,
         >::validate(
             network,
@@ -1101,7 +1086,6 @@ mod tests {
             EthereumLocation,
             MockOkOutboundQueue,
             MockTokenIdConvert,
-            BridgeChannelInfo,
             MinReward,
         >::validate(
             network,
@@ -1190,7 +1174,6 @@ mod tests {
             EthereumLocation,
             MockOkOutboundQueue,
             MockTokenIdConvert,
-            BridgeChannelInfo,
             MinReward,
         >::validate(
             network,
@@ -1282,7 +1265,6 @@ mod tests {
             EthereumLocation,
             MockOkOutboundQueue,
             MockTokenIdConvert,
-            BridgeChannelInfo,
             MinReward,
         >::validate(
             network,
@@ -1364,7 +1346,6 @@ mod tests {
             EthereumLocation,
             MockOkOutboundQueue,
             MockTokenIdConvert,
-            BridgeChannelInfo,
             MinReward,
         >::validate(
             network,
@@ -1444,7 +1425,6 @@ mod tests {
             EthereumLocation,
             MockOkOutboundQueue,
             MockTokenIdConvert,
-            BridgeChannelInfo,
             MinReward,
         >::validate(
             network,
@@ -1550,7 +1530,6 @@ mod tests {
             EthereumLocation,
             MockOkOutboundQueue,
             MockTokenIdConvert,
-            BridgeChannelInfo,
             MinReward,
         >::validate(
             network,
@@ -1644,7 +1623,6 @@ mod tests {
             EthereumLocation,
             MockOkOutboundQueue,
             MockTokenIdConvert,
-            BridgeChannelInfo,
             MinReward,
         >::validate(
             network,
@@ -1753,7 +1731,6 @@ mod tests {
             EthereumLocation,
             MockOkOutboundQueue,
             MockTokenIdConvert,
-            BridgeChannelInfo,
             MinReward,
         >::validate(
             network,
@@ -1846,7 +1823,6 @@ mod tests {
             EthereumLocation,
             MockOkOutboundQueue,
             MockTokenIdConvert,
-            BridgeChannelInfo,
             MinReward,
         >::validate(
             network,
@@ -1940,7 +1916,6 @@ mod tests {
             EthereumLocation,
             MockOkOutboundQueue,
             MockTokenIdConvert,
-            BridgeChannelInfo,
             MinReward,
         >::validate(
             network,
@@ -2033,7 +2008,6 @@ mod tests {
             EthereumLocation,
             MockOkOutboundQueue,
             MockTokenIdConvert,
-            BridgeChannelInfo,
             MinReward,
         >::validate(
             network,
@@ -2122,7 +2096,6 @@ mod tests {
             EthereumLocation,
             MockOkOutboundQueue,
             MockTokenIdConvert,
-            BridgeChannelInfo,
             MinReward,
         >::validate(
             network,
@@ -2216,7 +2189,6 @@ mod tests {
             EthereumLocation,
             MockOkOutboundQueue,
             MockTokenIdConvert,
-            BridgeChannelInfo,
             MinReward,
         >::validate(
             network,
@@ -2309,7 +2281,6 @@ mod tests {
             EthereumLocation,
             MockOkOutboundQueue,
             MockTokenIdConvert,
-            BridgeChannelInfo,
             MinReward,
         >::validate(
             network,

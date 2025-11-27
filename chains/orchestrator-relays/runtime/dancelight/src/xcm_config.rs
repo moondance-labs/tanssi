@@ -415,13 +415,12 @@ pub type ContainerToSnowbridgeMessageExporter = ContainerEthereumBlobExporter<
     SnowbridgeChannelInfo,
 >;
 
-/// Exports message to the Ethereum Gateway contract.
+/// Exports message to the Ethereum Gateway contract using Snowbridge V2.
 pub type ContainerToSnowbridgeMessageExporterV2 = ContainerEthereumBlobExporterV2<
     UniversalLocation,
     EthereumNetwork,
     EthereumLocation,
     snowbridge_pallet_outbound_queue_v2::Pallet<Runtime>,
     EthereumSystem,
-    SnowbridgeChannelInfo,
     MinSnowbridgeV2Reward,
 >;
