@@ -108,7 +108,7 @@ where
         }
 
         // Cloning destination to avoid modifying the value so subsequent exporters can use it.
-        let dest = destination.clone().take().ok_or(NotApplicable)?;
+        let dest = destination.clone().ok_or(NotApplicable)?;
         if dest != Here {
             log::trace!(target: "xcm::ethereum_blob_exporter", "skipped due to unmatched remote destination {dest:?}.");
             return Err(NotApplicable);
@@ -116,7 +116,6 @@ where
 
         // Cloning universal_source to avoid modifying the value so subsequent exporters can use it.
         let (local_net, local_sub) = universal_source.clone()
-            .take()
             .ok_or_else(|| {
                 log::error!(target: "xcm::ethereum_blob_exporter", "universal source not provided.");
                 NotApplicable
@@ -140,7 +139,7 @@ where
             }
         };
 
-        let message = message.clone().take().ok_or_else(|| {
+        let message = message.clone().ok_or_else(|| {
             log::error!(target: "xcm::ethereum_blob_exporter", "xcm message not provided.");
             NotApplicable
         })?;
