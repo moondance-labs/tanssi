@@ -31,6 +31,7 @@ use {
     grandpa_primitives::AuthorityId as GrandpaId,
     nimbus_primitives::NimbusId,
     pallet_configuration::HostConfiguration,
+    pallet_im_online::sr25519::AuthorityId as ImOnlineId,
     primitives::{AccountId, AssignmentId, ValidatorId},
     scale_info::prelude::string::String,
     sp_arithmetic::{traits::Saturating, Perbill},
@@ -57,6 +58,7 @@ pub fn insert_authority_keys_into_keystore(seed: &str, keystore: &KeystorePtr) {
     insert_into_keystore::<ValidatorId>(seed, keystore, PARACHAIN_KEY_TYPE_ID);
     insert_into_keystore::<AssignmentId>(seed, keystore, ASSIGNMENT_KEY_TYPE_ID);
     insert_into_keystore::<AuthorityDiscoveryId>(seed, keystore, key_types::AUTHORITY_DISCOVERY);
+    insert_into_keystore::<ImOnlineId>(seed, keystore, key_types::IM_ONLINE);
 }
 
 fn insert_into_keystore<TPublic: Public>(seed: &str, keystore: &KeystorePtr, key_type: KeyTypeId) {
@@ -79,6 +81,7 @@ pub struct AuthorityKeys {
     pub authority_discovery: AuthorityDiscoveryId,
     pub beefy: BeefyId,
     pub nimbus: NimbusId,
+    pub im_online: ImOnlineId,
 }
 
 /// Helper function to generate stash, controller and session key from seed
@@ -95,6 +98,7 @@ pub fn get_authority_keys_from_seed(seed: &str) -> AuthorityKeys {
         authority_discovery: keys.6,
         beefy: get_public_from_string_or_panic::<BeefyId>(seed),
         nimbus: get_aura_id_from_seed(seed),
+        im_online: keys.7,
     }
 }
 
@@ -117,6 +121,7 @@ fn get_authority_keys_from_seed_no_beefy(
     ValidatorId,
     AssignmentId,
     AuthorityDiscoveryId,
+    ImOnlineId
 ) {
     (
         get_public_from_string_or_panic::<sr25519::Public>(&format!("{}//stash", seed)).into(),
@@ -126,6 +131,7 @@ fn get_authority_keys_from_seed_no_beefy(
         get_public_from_string_or_panic::<ValidatorId>(seed),
         get_public_from_string_or_panic::<AssignmentId>(seed),
         get_public_from_string_or_panic::<AuthorityDiscoveryId>(seed),
+        get_public_from_string_or_panic::<ImOnlineId>(seed),
     )
 }
 
@@ -143,6 +149,7 @@ fn dancelight_session_keys(
     authority_discovery: AuthorityDiscoveryId,
     beefy: BeefyId,
     nimbus: NimbusId,
+    im_online: ImOnlineId
 ) -> SessionKeys {
     SessionKeys {
         babe,
@@ -152,6 +159,7 @@ fn dancelight_session_keys(
         authority_discovery,
         beefy,
         nimbus,
+        im_online
     }
 }
 
@@ -355,6 +363,7 @@ fn dancelight_testnet_genesis(
                             x.authority_discovery.clone(),
                             x.beefy.clone(),
                             x.nimbus.clone(),
+                            x.im_online.clone()
                         ),
                     )
                 })
@@ -374,6 +383,7 @@ fn dancelight_testnet_genesis(
                             x.authority_discovery.clone(),
                             x.beefy.clone(),
                             x.nimbus.clone(),
+                            x.im_online.clone()
                         ),
                     )
                 })
@@ -459,6 +469,8 @@ fn dancelight_staging_testnet_config_genesis() -> serde_json::Value {
                 hex!["034f68c5661a41930c82f26a662276bf89f33467e1c850f2fb8ef687fe43d62276"].unchecked_into(),
                 nimbus: //5Fh6rDpMDhM363o1Z3Y9twtaCPfizGQWCi55BSykTQjGbP7H
                 hex!["a076ef1280d768051f21d060623da3ab5b56944d681d303ed2d4bf658c5bed35"].unchecked_into(),
+                im_online: //5Fh6rDpMDhM363o1Z3Y9twtaCPfizGQWCi55BSykTQjGbP7H
+                hex!["a076ef1280d768051f21d060623da3ab5b56944d681d303ed2d4bf658c5bed35"].unchecked_into(),
             },
         AuthorityKeys {
                 stash: //5DvH8oEjQPYhzCoQVo7WDU91qmQfLZvxe9wJcrojmJKebCmG
@@ -479,6 +491,8 @@ fn dancelight_staging_testnet_config_genesis() -> serde_json::Value {
                 hex!["03a90c2bb6d3b7000020f6152fe2e5002fa970fd1f42aafb6c8edda8dacc2ea77e"].unchecked_into(),
                 nimbus: //5DLjSUfqZVNAADbwYLgRvHvdzXypiV1DAEaDMjcESKTcqMoM
                 hex!["38757d0de00a0c739e7d7984ef4bc01161bd61e198b7c01b618425c16bb5bd5f"].unchecked_into(),
+                im_online: //5DLjSUfqZVNAADbwYLgRvHvdzXypiV1DAEaDMjcESKTcqMoM
+                hex!["38757d0de00a0c739e7d7984ef4bc01161bd61e198b7c01b618425c16bb5bd5f"].unchecked_into(),
             },
         AuthorityKeys {
                 stash: //5FPMzsezo1PRxYbVpJMWK7HNbR2kUxidsAAxH4BosHa4wd6S
@@ -498,6 +512,7 @@ fn dancelight_staging_testnet_config_genesis() -> serde_json::Value {
                 beefy: //5EPoHj8uV4fFKQHYThc6Z9fDkU7B6ih2ncVzQuDdNFb8UyhF
                 hex!["039d065fe4f9234f0a4f13cc3ae585f2691e9c25afa469618abb6645111f607a53"].unchecked_into(),
                 nimbus: hex!["d2644c1ab2c63a3ad8d40ad70d4b260969e3abfe6d7e6665f50dc9f6365c9d2a"].unchecked_into(),
+                im_online: hex!["d2644c1ab2c63a3ad8d40ad70d4b260969e3abfe6d7e6665f50dc9f6365c9d2a"].unchecked_into(),
             },
         AuthorityKeys {
                 stash: //5DMNx7RoX6d7JQ38NEM7DWRcW2THu92LBYZEWvBRhJeqcWgR
@@ -524,6 +539,8 @@ fn dancelight_staging_testnet_config_genesis() -> serde_json::Value {
                     .unchecked_into(),
                 nimbus: hex!["764186bc30fd5a02477f19948dc723d6d57ab174debd4f80ed6038ec960bfe21"]
                     .unchecked_into(),
+                im_online: hex!["764186bc30fd5a02477f19948dc723d6d57ab174debd4f80ed6038ec960bfe21"]
+                    .unchecked_into(),
             },
         AuthorityKeys {
                 stash: //5C8AL1Zb4bVazgT3EgDxFgcow1L4SJjVu44XcLC9CrYqFN4N
@@ -549,6 +566,8 @@ fn dancelight_staging_testnet_config_genesis() -> serde_json::Value {
             hex!["02fb0330356e63a35dd930bc74525edf28b3bf5eb44aab9e9e4962c8309aaba6a6"]
                 .unchecked_into(),
             nimbus: hex!["7c94715e5dd8ab54221b1b6b2bfa5666f593f28a92a18e28052531de1bd80813"]
+                .unchecked_into(),
+            im_online: hex!["7c94715e5dd8ab54221b1b6b2bfa5666f593f28a92a18e28052531de1bd80813"]
                 .unchecked_into(),
         },
         AuthorityKeys {
@@ -577,6 +596,9 @@ fn dancelight_staging_testnet_config_genesis() -> serde_json::Value {
             nimbus: //5GHWB8ZDzegLcMW7Gdd1BS6WHVwDdStfkkE4G7KjPjZNJBtD
             hex!["bab3cccdcc34401e9b3971b96a662686cf755aa869a5c4b762199ce531b12c5b"]
                 .unchecked_into(),
+            im_online: //5GHWB8ZDzegLcMW7Gdd1BS6WHVwDdStfkkE4G7KjPjZNJBtD
+            hex!["bab3cccdcc34401e9b3971b96a662686cf755aa869a5c4b762199ce531b12c5b"]
+                .unchecked_into(),
         },
         AuthorityKeys {
             stash: //5HinEonzr8MywkqedcpsmwpxKje2jqr9miEwuzyFXEBCvVXM
@@ -603,6 +625,8 @@ fn dancelight_staging_testnet_config_genesis() -> serde_json::Value {
                 .unchecked_into(),
             nimbus: hex!["720537e2c1c554654d73b3889c3ef4c3c2f95a65dd3f7c185ebe4afebed78372"]
                 .unchecked_into(),
+            im_online: hex!["720537e2c1c554654d73b3889c3ef4c3c2f95a65dd3f7c185ebe4afebed78372"]
+                .unchecked_into(),
         },
         AuthorityKeys {
             stash: //5Ey3NQ3dfabaDc16NUv7wRLsFCMDFJSqZFzKVycAsWuUC6Di
@@ -628,6 +652,8 @@ fn dancelight_staging_testnet_config_genesis() -> serde_json::Value {
             hex!["025e84e95ed043e387ddb8668176b42f8e2773ddd84f7f58a6d9bf436a4b527986"]
                 .unchecked_into(),
             nimbus: hex!["da6b2df18f0f9001a6dcf1d301b92534fe9b1f3ccfa10c49449fee93adaa8349"]
+                .unchecked_into(),
+            im_online: hex!["da6b2df18f0f9001a6dcf1d301b92534fe9b1f3ccfa10c49449fee93adaa8349"]
                 .unchecked_into(),
         },
     ]);
@@ -658,6 +684,7 @@ fn dancelight_staging_testnet_config_genesis() -> serde_json::Value {
                             x.authority_discovery,
                             x.beefy,
                             x.nimbus,
+                            x.im_online
                         ),
                     )
                 })
@@ -708,6 +735,8 @@ pub fn dancelight_local_testnet_genesis(
         Vec::from([
             get_authority_keys_from_seed("Alice"),
             get_authority_keys_from_seed("Bob"),
+            get_authority_keys_from_seed("Charlie"),
+            get_authority_keys_from_seed("Dave"),
         ]),
         Sr25519Keyring::Alice.to_account_id(),
         None,

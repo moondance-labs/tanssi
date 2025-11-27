@@ -67,6 +67,7 @@ use {
     pallet_collator_assignment::RotateCollatorsEveryNSessions,
     pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId},
     pallet_identity::legacy::IdentityInfo,
+    pallet_im_online::sr25519::AuthorityId as ImOnlineId,
     pallet_initializer as tanssi_initializer,
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_registrar::Error as ContainerRegistrarError,
@@ -340,6 +341,39 @@ impl Contains<RuntimeCall> for IsParathreadRegistrar {
 }
 
 parameter_types! {
+	pub const ImOnlineUnsignedPriority: TransactionPriority = TransactionPriority::max_value();
+}
+
+pub struct OfflineValidatorTracker;
+use sp_staking::offence::{Offence, OffenceError, ReportOffence};
+use pallet_im_online::UnresponsivenessOffence;
+impl ReportOffence<AccountId, pallet_session::historical::IdentificationTuple<Runtime>, UnresponsivenessOffence<pallet_session::historical::IdentificationTuple<Runtime>>> for OfflineValidatorTracker {
+    fn report_offence(reporters: Vec<AccountId>, offence: UnresponsivenessOffence<pallet_session::historical::IdentificationTuple<Runtime>>) -> Result<(), OffenceError> {
+        let offenders = offence.offenders();
+        for offender in offenders {
+            log::info!("about to mark validator offline: {:?}", offender.0);
+
+            let _ = InactivityTracking::mark_validator_offline(&offender.0, None);
+        }
+        Ok(())
+    }
+    fn is_known_offence(offenders: &[pallet_session::historical::IdentificationTuple<Runtime>], time_slot: &<UnresponsivenessOffence<pallet_session::historical::IdentificationTuple<Runtime>> as Offence<pallet_session::historical::IdentificationTuple<Runtime>>>::TimeSlot) -> bool {
+        false
+    }
+}
+impl pallet_im_online::Config for Runtime {
+	type AuthorityId = ImOnlineId;
+	type RuntimeEvent = RuntimeEvent;
+	type ValidatorSet = Historical;
+	type NextSessionRotation = Babe;
+	type ReportUnresponsiveness = OfflineValidatorTracker;
+	type UnsignedPriority = ImOnlineUnsignedPriority;
+	type WeightInfo = ();
+	type MaxKeys = MaxKeys;
+	type MaxPeerInHeartbeats = MaxPeerInHeartbeats;
+}
+
+parameter_types! {
     pub const Version: RuntimeVersion = VERSION;
     pub const SS58Prefix: u8 = 42;
 }
@@ -576,6 +610,7 @@ impl_opaque_keys! {
         pub authority_discovery: AuthorityDiscovery,
         pub beefy: Beefy,
         pub nimbus: TanssiInitializer,
+        pub im_online: ImOnline,
     }
 }
 
@@ -1966,6 +2001,7 @@ construct_runtime! {
         InflationRewards: pallet_inflation_rewards = 33,
         PooledStaking: pallet_pooled_staking = 34,
         InactivityTracking: pallet_inactivity_tracking = 35,
+        ImOnline: pallet_im_online = 36,
 
         // Governance stuff; uncallable initially.
         Treasury: pallet_treasury = 40,

@@ -3961,6 +3961,7 @@ dependencies = [
  "pallet-foreign-asset-creator",
  "pallet-grandpa",
  "pallet-identity",
+ "pallet-im-online",
  "pallet-inactivity-tracking",
  "pallet-inflation-rewards",
  "pallet-initializer",

@@ -35,7 +35,7 @@ use {
     serde::{Deserialize, Serialize},
     sp_core::{MaxEncodedLen, RuntimeDebug},
     sp_runtime::{traits::Get, BoundedBTreeSet},
-    sp_staking::SessionIndex,
+    sp_staking::{SessionIndex, offence::ReportOffence},
     tp_traits::{
         AuthorNotingHook, AuthorNotingInfo, ForSession, GetContainerChainsWithCollators,
         GetSessionIndex, InvulnerablesHelper, MaybeSelfChainBlockAuthor,
@@ -205,6 +205,12 @@ pub mod pallet {
     #[pallet::storage]
     pub type OfflineCollators<T: Config> =
         StorageMap<_, Blake2_128Concat, Collator<T>, OfflineStatus, OptionQuery>;
+    
+    /// Storage map indicating the offline status of a collator
+    #[pallet::storage]
+    pub type OfflineValidators<T: Config> =
+        StorageMap<_, Blake2_128Concat, Collator<T>, OfflineStatus, OptionQuery>;
+
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -617,6 +623,43 @@ pub mod pallet {
             });
             Ok(().into())
         }
+
+        /// Internal function to mark a collator as offline.
+        pub fn mark_validator_offline(
+            validator: &Collator<T>,
+            cooldown: Option<u32>,
+        ) -> DispatchResultWithPostInfo {
+            ensure!(
+                <EnableMarkingOffline<T>>::get(),
+                Error::<T>::MarkingOfflineNotEnabled
+            );
+            match cooldown {
+                Some(cooldown_value) => {
+                    ensure!(
+                        <OfflineValidators<T>>::get(validator.clone()).is_none()
+                            || <OfflineValidators<T>>::get(validator.clone())
+                                == Some(OfflineStatus::Disabled),
+                        Error::<T>::CollatorAlreadyNotifiedOffline
+                    );
+                    let cooldown_end =
+                        T::CurrentSessionIndex::session_index().saturating_add(cooldown_value);
+                    <OfflineValidators<T>>::insert(
+                        validator.clone(),
+                        OfflineStatus::Notified { cooldown_end },
+                    );
+                }
+                None => {
+                    ensure!(
+                        <OfflineValidators<T>>::get(validator.clone()).is_none(),
+                        Error::<T>::CollatorNotOnline
+                    );
+                    <OfflineValidators<T>>::insert(validator.clone(), OfflineStatus::Disabled);
+                }
+            }
+
+            Ok(().into())
+        }
+
 
         /// Internal function to mark a collator as online.
         pub fn mark_collator_online(collator: &Collator<T>) -> DispatchResultWithPostInfo {

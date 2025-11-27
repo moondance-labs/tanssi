@@ -79,6 +79,7 @@ pallet-grandpa = { workspace = true }
 pallet-identity = { workspace = true }
 pallet-initializer = { workspace = true }
 pallet-invulnerables = { workspace = true }
+pallet-im-online = { workspace = true }
 pallet-message-queue = { workspace = true }
 pallet-mmr = { workspace = true }
 pallet-multiblock-migrations = { workspace = true }
@@ -258,6 +259,7 @@ std = [
 	"pallet-foreign-asset-creator/std",
 	"pallet-grandpa/std",
 	"pallet-identity/std",
+	"pallet-im-online/std",
 	"pallet-inactivity-tracking/std",
 	"pallet-inflation-rewards/std",
 	"pallet-initializer/std",
