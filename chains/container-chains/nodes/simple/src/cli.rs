@@ -16,11 +16,15 @@
 
 use {
     clap::Parser,
-    node_common::{cli::{BuildSpecCmd,ExportChainSpecCmd}, service::node_builder::Sealing},
+    node_common::{
+        cli::{BuildSpecCmd, ExportChainSpecCmd},
+        service::node_builder::Sealing,
+    },
     tc_service_container_chain_data_preserver::DataPreserverCmd,
 };
 
-pub type BaseSubcommand = node_common::cli::Subcommand<BuildSpecCmdSimple, ExportChainSpecCmdSimple>;
+pub type BaseSubcommand =
+    node_common::cli::Subcommand<BuildSpecCmdSimple, ExportChainSpecCmdSimple>;
 
 /// Custom subcommand enum with `rpc-provider`
 #[derive(Debug, clap::Subcommand)]

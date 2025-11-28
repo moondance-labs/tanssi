@@ -15,7 +15,10 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
-    node_common::{cli::{BuildSpecCmd,ExportChainSpecCmd}, service::node_builder::Sealing},
+    node_common::{
+        cli::{BuildSpecCmd, ExportChainSpecCmd},
+        service::node_builder::Sealing,
+    },
     std::path::PathBuf,
     tc_service_container_chain_spawner::cli::ContainerChainRunCmd,
 };

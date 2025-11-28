@@ -158,7 +158,10 @@ pub fn run() -> Result<()> {
         }
         Some(BaseSubcommand::ExportChainSpec(cmd)) => {
             let chain_spec = Box::new(chain_spec::local_testnet_config(
-                cmd.extra.parachain_id.expect("parachain_id required").into(),
+                cmd.extra
+                    .parachain_id
+                    .expect("parachain_id required")
+                    .into(),
                 cmd.extra.add_bootnode.clone(),
             ));
             cmd.base.run(chain_spec)

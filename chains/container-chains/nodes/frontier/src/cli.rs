@@ -16,7 +16,10 @@
 
 use {
     clap::Parser,
-    node_common::{cli::{BuildSpecCmd, ExportChainSpecCmd}, service::node_builder::Sealing},
+    node_common::{
+        cli::{BuildSpecCmd, ExportChainSpecCmd},
+        service::node_builder::Sealing,
+    },
 };
 
 #[derive(Debug, Parser)]
@@ -81,7 +84,8 @@ pub struct DataPreserverCmd {
 }
 
 /// Common subcommands enum configured with frontier build spec.
-pub type BaseSubcommand = node_common::cli::Subcommand<BuildSpecCmdFrontier, ExportChainSpecCmdFrontier>;
+pub type BaseSubcommand =
+    node_common::cli::Subcommand<BuildSpecCmdFrontier, ExportChainSpecCmdFrontier>;
 
 /// Custom subcommand enum with `rpc-provider`
 #[derive(Debug, clap::Subcommand)]
