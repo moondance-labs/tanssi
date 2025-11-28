@@ -210,13 +210,6 @@ impl bp_relayers::PaymentProcedure<AccountId, BridgeReward, u128> for BridgeRewa
     }
 }
 
-// These values are copied from bridge-hub-westend we will need to modify them
-parameter_types! {
-    pub storage RequiredStakeForStakeAndSlash: Balance = 1_000_000;
-    pub const RelayerStakeLease: u32 = 8;
-    pub const RelayerStakeReserveId: [u8; 8] = *b"brdgrlrs";
-}
-
 pub type BridgeRelayersInstance = ();
 impl pallet_bridge_relayers::Config<BridgeRelayersInstance> for Runtime {
     type RuntimeEvent = RuntimeEvent;
