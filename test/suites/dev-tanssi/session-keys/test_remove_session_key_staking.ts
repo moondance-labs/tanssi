@@ -55,7 +55,7 @@ describeSuite({
 
         it({
             id: "E01",
-            title: "Checking that removing a session key makes the key dissappear from eligibility",
+            title: "Checking that removing a session key makes the key disappear from eligibility",
             test: async () => {
                 // Bob is a staking candidate, but the keys will be removed and we will see what happens
                 const bobKey = (await polkadotJs.query.session.nextKeys(bob.address)).toJSON().nimbus;
