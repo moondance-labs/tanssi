@@ -134,6 +134,7 @@ pub fn run() -> Result<()> {
         None => None,
     };
 
+    #[allow(deprecated)]
     match subcommand {
         Some(BaseSubcommand::BuildSpec(cmd)) => {
             let runner = cli.create_runner(cmd)?;

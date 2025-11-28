@@ -149,6 +149,7 @@ macro_rules! construct_async_run {
 pub fn run() -> Result<()> {
     let cli = Cli::from_args();
 
+    #[allow(deprecated)]
     match &cli.subcommand {
         Some(Subcommand::BuildSpec(cmd)) => {
             let runner = cli.create_runner(cmd)?;

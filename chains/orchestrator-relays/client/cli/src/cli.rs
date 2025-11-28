@@ -113,6 +113,10 @@ pub struct ExportChainSpecCmd {
     /// List of invulnerable collators to write to pallet_invulnerables genesis.
     #[arg(long)]
     pub invulnerable: Option<Vec<String>>,
+
+    /// List of authority validators to write to genesis.
+    #[arg(long)]
+    pub authority: Option<Vec<String>>,
 }
 
 impl CliConfiguration for BuildSpecCmd {
