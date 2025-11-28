@@ -15,12 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    dancelight_emulated_chain::DancelightRelayPallet,
-    dancelight_runtime::SnowbridgeFeesAccount,
-    dancelight_system_emulated_network::{
-        DancelightRelay as Dancelight, DancelightSender, FrontierTemplatePara as FrontierTemplate,
-        FrontierTemplateSender, SimpleTemplatePara as SimpleTemplate, SimpleTemplateSender,
-    },
+    crate::tests::set_templates_relay_param_to_starlight,
     fp_account::AccountId20,
     frame_support::{assert_ok, pallet_prelude::DispatchResult, traits::fungible::Mutate},
     frontier_template_emulated_chain::FrontierTemplateParaPallet,
@@ -33,6 +28,13 @@ use {
     snowbridge_inbound_queue_primitives::{EventFixture, EventProof, Log, Proof},
     sp_core::{H160, U256},
     sp_runtime::{AccountId32, FixedU128},
+    starlight_emulated_chain::StarlightRelayPallet,
+    starlight_runtime::SnowbridgeFeesAccount,
+    starlight_system_emulated_network::{
+        FrontierTemplatePara as FrontierTemplate, FrontierTemplateSender,
+        SimpleTemplatePara as SimpleTemplate, SimpleTemplateSender, StarlightRelay as Starlight,
+        StarlightSender,
+    },
     xcm::latest::prelude::{Junctions::*, *},
     xcm_emulator::{Chain, ConvertLocation, TestExt},
 };
@@ -49,6 +51,7 @@ const RELAY_TOKEN_ASSET_LOCATION: Location = Location::parent();
 #[test]
 fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
     sp_tracing::try_init_simple();
+    set_templates_relay_param_to_starlight();
 
     let token_receiver: AccountId20 = [5u8; 20].into();
 
@@ -60,44 +63,45 @@ fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
 
     let container_location = Location::new(0, Parachain(container_para_id));
     let container_sovereign_account =
-        dancelight_runtime::xcm_config::LocationConverter::convert_location(&container_location)
+        starlight_runtime::xcm_config::LocationConverter::convert_location(&container_location)
             .unwrap();
     let ethereum_network_id = FrontierTemplate::execute_with(|| {
         container_chain_template_frontier_runtime::EthereumNetwork::get()
     });
 
-    Dancelight::execute_with(|| {
-        let root_origin = <Dancelight as Chain>::RuntimeOrigin::root();
-        let alice_account = DancelightSender::get();
+    Starlight::execute_with(|| {
+        let root_origin = <Starlight as Chain>::RuntimeOrigin::root();
+        let alice_account = StarlightSender::get();
 
         // Create EthereumTokenTransfers channel to validate when receiving the tokens.
         assert_ok!(
-            <Dancelight as DancelightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(
+            <Starlight as StarlightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(
                 root_origin.clone(),
-                ChannelId::new(hex!("0000000000000000000000000000000000000000000000000000000000000004")), 
-                hex!("0000000000000000000000000000000000000000000000000000000000000005").into(), 
+                ChannelId::new(hex!(
+                    "0000000000000000000000000000000000000000000000000000000000000004"
+                )),
+                hex!("0000000000000000000000000000000000000000000000000000000000000005").into(),
                 PARA_ID_FOR_CHANNEL.into()
             ),
         );
 
         // Add funds in snowbridge fees account
-        assert_ok!(
-            <<Dancelight as DancelightRelayPallet>::Balances as Mutate<_>>::mint_into(
-                &SnowbridgeFeesAccount::get(),
-                CONTAINER_FEE_FRONTIER * 2
-            )
-        );
+        assert_ok!(<<Starlight as StarlightRelayPallet>::Balances as Mutate<
+            _,
+        >>::mint_into(
+            &SnowbridgeFeesAccount::get(),
+            CONTAINER_FEE_FRONTIER * 2
+        ));
         snowbridge_fees_account_balance_before =
-            <Dancelight as DancelightRelayPallet>::System::account(SnowbridgeFeesAccount::get())
+            <Starlight as StarlightRelayPallet>::System::account(SnowbridgeFeesAccount::get())
                 .data
                 .free;
 
-        container_sovereign_balance_before =
-            <Dancelight as DancelightRelayPallet>::System::account(
-                container_sovereign_account.clone(),
-            )
-            .data
-            .free;
+        container_sovereign_balance_before = <Starlight as StarlightRelayPallet>::System::account(
+            container_sovereign_account.clone(),
+        )
+        .data
+        .free;
 
         // Register erc20 foreign token in ForeignAssetsCreator
         let erc20_asset_location_relay: Location = Location {
@@ -113,7 +117,7 @@ fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
         };
 
         assert_ok!(
-            <Dancelight as DancelightRelayPallet>::ForeignAssetsCreator::create_foreign_asset(
+            <Starlight as StarlightRelayPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
                 erc20_asset_location_relay,
                 ERC20_ASSET_ID,
@@ -180,23 +184,23 @@ fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
     });
 
     // Send inbound message
-    Dancelight::execute_with(|| {
+    Starlight::execute_with(|| {
         assert_ok!(send_inbound_message(
             make_send_token_message_frontier_template()
         ));
 
         let snowbridge_fees_account_balance_after =
-            <Dancelight as DancelightRelayPallet>::System::account(SnowbridgeFeesAccount::get())
+            <Starlight as StarlightRelayPallet>::System::account(SnowbridgeFeesAccount::get())
                 .data
                 .free;
 
         let container_sovereign_balance_after =
-            <Dancelight as DancelightRelayPallet>::System::account(&container_sovereign_account)
+            <Starlight as StarlightRelayPallet>::System::account(&container_sovereign_account)
                 .data
                 .free;
 
         let container_sovereign_erc20_token_balance_after =
-            <Dancelight as DancelightRelayPallet>::ForeignAssets::balance(
+            <Starlight as StarlightRelayPallet>::ForeignAssets::balance(
                 ERC20_ASSET_ID,
                 &container_sovereign_account,
             );
@@ -234,12 +238,14 @@ fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
 
 #[test]
 fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
+    set_templates_relay_param_to_starlight();
+
     let token_receiver: AccountId32 = [5u8; 32].into();
     let container_para_id: u32 = <SimpleTemplate as xcm_emulator::Parachain>::para_id().into();
 
     let container_location = Location::new(0, Parachain(container_para_id));
     let container_sovereign_account =
-        dancelight_runtime::xcm_config::LocationConverter::convert_location(&container_location)
+        starlight_runtime::xcm_config::LocationConverter::convert_location(&container_location)
             .unwrap();
     let ethereum_network_id = SimpleTemplate::execute_with(|| {
         container_chain_template_simple_runtime::EthereumNetwork::get()
@@ -249,38 +255,38 @@ fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
     let mut receiver_native_container_balance_before = 0;
     let mut container_sovereign_balance_before = 0;
 
-    Dancelight::execute_with(|| {
-        let root_origin = <Dancelight as Chain>::RuntimeOrigin::root();
-        let alice_account = DancelightSender::get();
+    Starlight::execute_with(|| {
+        let root_origin = <Starlight as Chain>::RuntimeOrigin::root();
+        let alice_account = StarlightSender::get();
 
         // Create EthereumTokenTransfers channel to validate when receiving the tokens.
         assert_ok!(
-            <Dancelight as DancelightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(
+            <Starlight as StarlightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(
                 root_origin.clone(),
-                ChannelId::new(hex!("0000000000000000000000000000000000000000000000000000000000000004")), 
-                hex!("0000000000000000000000000000000000000000000000000000000000000005").into(), 
+                ChannelId::new(hex!(
+                    "0000000000000000000000000000000000000000000000000000000000000004"
+                )),
+                hex!("0000000000000000000000000000000000000000000000000000000000000005").into(),
                 PARA_ID_FOR_CHANNEL.into()
             ),
         );
 
         // Add funds in snowbridge fees account
-        assert_ok!(
-            <<Dancelight as DancelightRelayPallet>::Balances as Mutate<_>>::mint_into(
-                &SnowbridgeFeesAccount::get(),
-                CONTAINER_FEE_SIMPLE * 2
-            )
-        );
+        assert_ok!(<<Starlight as StarlightRelayPallet>::Balances as Mutate<
+            _,
+        >>::mint_into(
+            &SnowbridgeFeesAccount::get(), CONTAINER_FEE_SIMPLE * 2
+        ));
         snowbridge_fees_account_balance_before =
-            <Dancelight as DancelightRelayPallet>::System::account(SnowbridgeFeesAccount::get())
+            <Starlight as StarlightRelayPallet>::System::account(SnowbridgeFeesAccount::get())
                 .data
                 .free;
 
-        container_sovereign_balance_before =
-            <Dancelight as DancelightRelayPallet>::System::account(
-                container_sovereign_account.clone(),
-            )
-            .data
-            .free;
+        container_sovereign_balance_before = <Starlight as StarlightRelayPallet>::System::account(
+            container_sovereign_account.clone(),
+        )
+        .data
+        .free;
 
         // Register erc20 foreign token in ForeignAssetsCreator
         let erc20_asset_location_relay: Location = Location {
@@ -296,7 +302,7 @@ fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
         };
 
         assert_ok!(
-            <Dancelight as DancelightRelayPallet>::ForeignAssetsCreator::create_foreign_asset(
+            <Starlight as StarlightRelayPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
                 erc20_asset_location_relay,
                 ERC20_ASSET_ID,
@@ -363,23 +369,23 @@ fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
     });
 
     // Send inbound message
-    Dancelight::execute_with(|| {
+    Starlight::execute_with(|| {
         assert_ok!(send_inbound_message(
             make_send_token_message_simple_template()
         ));
 
         let snowbridge_fees_account_balance_after =
-            <Dancelight as DancelightRelayPallet>::System::account(SnowbridgeFeesAccount::get())
+            <Starlight as StarlightRelayPallet>::System::account(SnowbridgeFeesAccount::get())
                 .data
                 .free;
 
         let container_sovereign_balance_after =
-            <Dancelight as DancelightRelayPallet>::System::account(&container_sovereign_account)
+            <Starlight as StarlightRelayPallet>::System::account(&container_sovereign_account)
                 .data
                 .free;
 
         let container_sovereign_erc20_token_balance_after =
-            <Dancelight as DancelightRelayPallet>::ForeignAssets::balance(
+            <Starlight as StarlightRelayPallet>::ForeignAssets::balance(
                 ERC20_ASSET_ID,
                 &container_sovereign_account,
             );
@@ -417,13 +423,15 @@ fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
 
 #[test]
 fn check_foreign_eth_token_container_fails_if_fees_account_has_not_enough_balance() {
+    set_templates_relay_param_to_starlight();
+
     let token_receiver: AccountId32 = [5u8; 32].into();
 
     let container_para_id: u32 = <SimpleTemplate as xcm_emulator::Parachain>::para_id().into();
 
     let container_location = Location::new(0, Parachain(container_para_id));
     let container_sovereign_account =
-        dancelight_runtime::xcm_config::LocationConverter::convert_location(&container_location)
+        starlight_runtime::xcm_config::LocationConverter::convert_location(&container_location)
             .unwrap();
     let ethereum_network_id = SimpleTemplate::execute_with(|| {
         container_chain_template_simple_runtime::EthereumNetwork::get()
@@ -433,23 +441,25 @@ fn check_foreign_eth_token_container_fails_if_fees_account_has_not_enough_balanc
     let mut receiver_native_container_balance_before = 0;
     let mut container_sovereign_balance_before = 0;
 
-    Dancelight::execute_with(|| {
-        let root_origin = <Dancelight as Chain>::RuntimeOrigin::root();
-        let alice_account = DancelightSender::get();
+    Starlight::execute_with(|| {
+        let root_origin = <Starlight as Chain>::RuntimeOrigin::root();
+        let alice_account = StarlightSender::get();
 
         // Create EthereumTokenTransfers channel to validate when receiving the tokens.
         assert_ok!(
-            <Dancelight as DancelightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(
+            <Starlight as StarlightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(
                 root_origin.clone(),
-                ChannelId::new(hex!("0000000000000000000000000000000000000000000000000000000000000004")), 
-                hex!("0000000000000000000000000000000000000000000000000000000000000005").into(), 
+                ChannelId::new(hex!(
+                    "0000000000000000000000000000000000000000000000000000000000000004"
+                )),
+                hex!("0000000000000000000000000000000000000000000000000000000000000005").into(),
                 PARA_ID_FOR_CHANNEL.into()
             ),
         );
 
         // Do not add funds in snowbridge fees account
         assert_ok!(
-            <<Dancelight as DancelightRelayPallet>::Balances>::force_set_balance(
+            <<Starlight as StarlightRelayPallet>::Balances>::force_set_balance(
                 root_origin.clone(),
                 SnowbridgeFeesAccount::get().into(),
                 0
@@ -457,16 +467,15 @@ fn check_foreign_eth_token_container_fails_if_fees_account_has_not_enough_balanc
         );
 
         snowbridge_fees_account_balance_before =
-            <Dancelight as DancelightRelayPallet>::System::account(SnowbridgeFeesAccount::get())
+            <Starlight as StarlightRelayPallet>::System::account(SnowbridgeFeesAccount::get())
                 .data
                 .free;
 
-        container_sovereign_balance_before =
-            <Dancelight as DancelightRelayPallet>::System::account(
-                container_sovereign_account.clone(),
-            )
-            .data
-            .free;
+        container_sovereign_balance_before = <Starlight as StarlightRelayPallet>::System::account(
+            container_sovereign_account.clone(),
+        )
+        .data
+        .free;
 
         // Register erc20 foreign token in ForeignAssetsCreator
         let erc20_asset_location_relay: Location = Location {
@@ -482,7 +491,7 @@ fn check_foreign_eth_token_container_fails_if_fees_account_has_not_enough_balanc
         };
 
         assert_ok!(
-            <Dancelight as DancelightRelayPallet>::ForeignAssetsCreator::create_foreign_asset(
+            <Starlight as StarlightRelayPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
                 erc20_asset_location_relay,
                 RELAY_NATIVE_TOKEN_ASSET_ID,
@@ -549,21 +558,21 @@ fn check_foreign_eth_token_container_fails_if_fees_account_has_not_enough_balanc
     });
 
     // Send inbound message
-    Dancelight::execute_with(|| {
+    Starlight::execute_with(|| {
         assert_ok!(send_inbound_message(
             make_send_token_message_simple_template()
         ));
     });
 
     // Check snowbridge fees are not deducted
-    Dancelight::execute_with(|| {
+    Starlight::execute_with(|| {
         let snowbridge_fees_account_balance_after =
-            <Dancelight as DancelightRelayPallet>::System::account(SnowbridgeFeesAccount::get())
+            <Starlight as StarlightRelayPallet>::System::account(SnowbridgeFeesAccount::get())
                 .data
                 .free;
 
         let container_sovereign_balance_after =
-            <Dancelight as DancelightRelayPallet>::System::account(container_sovereign_account)
+            <Starlight as StarlightRelayPallet>::System::account(container_sovereign_account)
                 .data
                 .free;
 
@@ -594,12 +603,14 @@ fn check_foreign_eth_token_container_fails_if_fees_account_has_not_enough_balanc
 
 #[test]
 fn check_foreign_eth_token_container_fails_if_foreign_token_not_registered_in_relay() {
+    set_templates_relay_param_to_starlight();
+
     let token_receiver: AccountId32 = [5u8; 32].into();
     let container_para_id: u32 = <SimpleTemplate as xcm_emulator::Parachain>::para_id().into();
 
     let container_location = Location::new(0, Parachain(container_para_id));
     let container_sovereign_account =
-        dancelight_runtime::xcm_config::LocationConverter::convert_location(&container_location)
+        starlight_runtime::xcm_config::LocationConverter::convert_location(&container_location)
             .unwrap();
     let ethereum_network_id = SimpleTemplate::execute_with(|| {
         container_chain_template_simple_runtime::EthereumNetwork::get()
@@ -609,12 +620,12 @@ fn check_foreign_eth_token_container_fails_if_foreign_token_not_registered_in_re
     let mut receiver_native_container_balance_before = 0;
     let mut container_sovereign_balance_before = 0;
 
-    Dancelight::execute_with(|| {
-        let root_origin = <Dancelight as Chain>::RuntimeOrigin::root();
+    Starlight::execute_with(|| {
+        let root_origin = <Starlight as Chain>::RuntimeOrigin::root();
 
         // Create EthereumTokenTransfers channel to validate when receiving the tokens.
         assert_ok!(
-            <Dancelight as DancelightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(
+            <Starlight as StarlightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(
                 root_origin.clone(),
                 ChannelId::new(hex!(
                     "0000000000000000000000000000000000000000000000000000000000000004"
@@ -625,24 +636,22 @@ fn check_foreign_eth_token_container_fails_if_foreign_token_not_registered_in_re
         );
 
         // Add funds in snowbridge fees account
-        assert_ok!(
-            <<Dancelight as DancelightRelayPallet>::Balances as Mutate<_>>::mint_into(
-                &SnowbridgeFeesAccount::get(),
-                CONTAINER_FEE_SIMPLE * 2
-            )
-        );
+        assert_ok!(<<Starlight as StarlightRelayPallet>::Balances as Mutate<
+            _,
+        >>::mint_into(
+            &SnowbridgeFeesAccount::get(), CONTAINER_FEE_SIMPLE * 2
+        ));
 
         snowbridge_fees_account_balance_before =
-            <Dancelight as DancelightRelayPallet>::System::account(SnowbridgeFeesAccount::get())
+            <Starlight as StarlightRelayPallet>::System::account(SnowbridgeFeesAccount::get())
                 .data
                 .free;
 
-        container_sovereign_balance_before =
-            <Dancelight as DancelightRelayPallet>::System::account(
-                container_sovereign_account.clone(),
-            )
-            .data
-            .free;
+        container_sovereign_balance_before = <Starlight as StarlightRelayPallet>::System::account(
+            container_sovereign_account.clone(),
+        )
+        .data
+        .free;
     });
 
     SimpleTemplate::execute_with(|| {
@@ -703,21 +712,21 @@ fn check_foreign_eth_token_container_fails_if_foreign_token_not_registered_in_re
     });
 
     // Send inbound message
-    Dancelight::execute_with(|| {
+    Starlight::execute_with(|| {
         assert_ok!(send_inbound_message(
             make_send_token_message_simple_template()
         ));
     });
 
     // Check snowbridge fees are not deducted
-    Dancelight::execute_with(|| {
+    Starlight::execute_with(|| {
         let snowbridge_fees_account_balance_after =
-            <Dancelight as DancelightRelayPallet>::System::account(SnowbridgeFeesAccount::get())
+            <Starlight as StarlightRelayPallet>::System::account(SnowbridgeFeesAccount::get())
                 .data
                 .free;
 
         let container_sovereign_balance_after =
-            <Dancelight as DancelightRelayPallet>::System::account(container_sovereign_account)
+            <Starlight as StarlightRelayPallet>::System::account(container_sovereign_account)
                 .data
                 .free;
 
@@ -758,13 +767,13 @@ pub fn make_send_token_message_frontier_template() -> EventFixture {
 }
 
 pub fn send_inbound_message(fixture: EventFixture) -> DispatchResult {
-    dancelight_runtime::EthereumBeaconClient::store_finalized_header(
+    starlight_runtime::EthereumBeaconClient::store_finalized_header(
         fixture.finalized_header,
         fixture.block_roots_root,
     )
     .unwrap();
-    <Dancelight as DancelightRelayPallet>::EthereumInboundQueue::submit(
-        <Dancelight as Chain>::RuntimeOrigin::signed(DancelightSender::get()),
+    <Starlight as StarlightRelayPallet>::EthereumInboundQueue::submit(
+        <Starlight as Chain>::RuntimeOrigin::signed(StarlightSender::get()),
         fixture.event,
     )
 }

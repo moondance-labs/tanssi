@@ -16,6 +16,7 @@
 
 pub mod genesis;
 
+use container_chain_template_frontier_runtime::Parameters;
 use {
     container_chain_template_frontier_runtime::{
         xcm_config::LocationToAccountId, AccountId, AssetRate, Balances, ForeignAssets,
@@ -68,6 +69,7 @@ decl_test_parachains! {
             ForeignAssets:  ForeignAssets,
             AssetRate:  AssetRate,
             ForeignAssetsCreator: ForeignAssetsCreator,
+            Parameters: Parameters,
         }
     },
 }

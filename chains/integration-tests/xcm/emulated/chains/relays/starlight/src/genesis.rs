@@ -21,13 +21,16 @@ use {
     sp_core::storage::Storage,
     starlight_runtime_constants::currency::UNITS as DANCE,
 };
-const INITIAL_BALANCE: u128 = 1_000_000 * DANCE;
+pub const INITIAL_BALANCE: u128 = 1_000_000 * DANCE;
 
 pub fn genesis() -> Storage {
     let genesis_config = starlight_runtime::RuntimeGenesisConfig {
         balances: starlight_runtime::BalancesConfig {
             balances: tanssi_emulated_integration_tests_common::accounts::init_balances()
                 .iter()
+                .chain(std::iter::once(
+                    &starlight_runtime::SnowbridgeFeesAccount::get(),
+                ))
                 .cloned()
                 .map(|k| (k, INITIAL_BALANCE))
                 .collect(),

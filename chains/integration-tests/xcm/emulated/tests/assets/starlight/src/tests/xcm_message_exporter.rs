@@ -14,16 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use pallet_xcm::ExecutionError;
 use {
-    frame_support::{assert_err, weights::Weight},
-    pallet_xcm::Error,
+    frame_support::weights::Weight,
+    pallet_xcm::{Error, ExecutionError},
     primitives::AccountId,
     sp_runtime::DispatchError,
     starlight_emulated_chain::StarlightRelayPallet,
-    starlight_runtime::xcm_config,
     starlight_system_emulated_network::StarlightRelay as Starlight,
-    xcm::{latest::prelude::*, v5::Location, VersionedXcm},
+    xcm::{latest::prelude::*, VersionedXcm},
     xcm_emulator::{Chain, TestExt},
 };
 
@@ -45,10 +43,8 @@ fn test_message_exporter_disabled_for_origin_account() {
             xcm: Xcm(vec![]),
         }]);
 
-        // this test now fails because exports are yet to be allowed in starlight
-        // so its weight is set to MAX
-        // once we change that, we should change the message log received too
         let (log_capture, subscriber) = init_log_capture(Level::ERROR, true);
+        // this should inner fail with unroutable
         subscriber::with_default(subscriber, || {
             assert_eq!(
                 <Starlight as StarlightRelayPallet>::XcmPallet::execute(
@@ -61,35 +57,12 @@ fn test_message_exporter_disabled_for_origin_account() {
                 DispatchError::from(
                     Error::<<Starlight as Chain>::Runtime>::LocalExecutionIncompleteWithError {
                         index: 0,
-                        error: ExecutionError::WeightLimitReached,
+                        error: ExecutionError::Unroutable,
                     }
                 )
             );
-            assert!(
-                log_capture.contains("XCM execution failed with error error=InstructionError { index: 0, error: WeightLimitReached")
-            );
+            assert!(log_capture.contains("could not get parachain id from universal source"));
+            assert!(log_capture.contains("XCM execution failed with error error=InstructionError { index: 0, error: Unroutable }"))
         });
     });
-}
-
-#[test]
-fn test_message_exporter_validate_should_fail() {
-    let mut location = Some(Location {
-        parents: 1,
-        interior: Junctions::Here,
-    });
-
-    let mut message = Some(Xcm(vec![Instruction::ExportMessage {
-        network: NetworkId::Ethereum { chain_id: 1 },
-        destination: Junctions::Here,
-        xcm: Xcm(vec![]),
-    }]));
-
-    assert_err!(
-        <xcm_config::XcmConfig as xcm_executor::Config>::MessageExporter::validate(
-            &mut location,
-            &mut message
-        ),
-        SendError::NotApplicable
-    );
 }
