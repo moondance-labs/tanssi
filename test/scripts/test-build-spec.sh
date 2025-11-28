@@ -91,20 +91,20 @@ compare_specs \
 
 echo "Generating tanssi-relay build vs export..."
 
-## Pre-requisit
-#$BINARY_FOLDER/container-chain-simple-node build-spec --disable-default-bootnode --add-bootnode "/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9" --parachain-id 2000 --raw > specs/single-container-template-container-2000.json
-#$BINARY_FOLDER/container-chain-frontier-node build-spec --disable-default-bootnode --add-bootnode "/ip4/127.0.0.1/tcp/33050/ws/p2p/12D3KooWFGaw1rxB6MSuN3ucuBm7hMq5pBFJbEoqTyth4cG483Cc" --parachain-id 2001 --raw > specs/single-container-template-container-2001.json
-#$BINARY_FOLDER/container-chain-simple-node build-spec --disable-default-bootnode --parachain-id 2002 --raw > specs/single-container-template-container-2002.json
-#$BINARY_FOLDER/tanssi-relay build-spec --chain starlight-local --add-container-chain specs/single-container-template-container-2000.json --add-container-chain specs/single-container-template-container-2001.json --invulnerable "Collator-01" --invulnerable "Collator-02" --invulnerable "Collator-03" --invulnerable "Collator-04" --invulnerable "Collator-05" --invulnerable "Collator-06" > specs/tanssi-relay-build.json
-#
-## export-chain-spec version
-#$BINARY_FOLDER/tanssi-relay export-chain-spec --chain starlight-local --add-container-chain specs/single-container-template-container-2000.json --add-container-chain specs/single-container-template-container-2001.json --invulnerable "Collator-01" --invulnerable "Collator-02" --invulnerable "Collator-03" --invulnerable "Collator-04" --invulnerable "Collator-05" --invulnerable "Collator-06" > specs/tanssi-relay-export.json
-#
-#
-#compare_specs \
-#    "tanssi-relay" \
-#    specs/tanssi-relay-build.json \
-#    specs/tanssi-relay-export.json
+# Pre-requisit
+$BINARY_FOLDER/container-chain-simple-node build-spec --disable-default-bootnode --add-bootnode "/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9" --parachain-id 2000 --raw > specs/single-container-template-container-2000.json
+$BINARY_FOLDER/container-chain-frontier-node build-spec --disable-default-bootnode --add-bootnode "/ip4/127.0.0.1/tcp/33050/ws/p2p/12D3KooWFGaw1rxB6MSuN3ucuBm7hMq5pBFJbEoqTyth4cG483Cc" --parachain-id 2001 --raw > specs/single-container-template-container-2001.json
+$BINARY_FOLDER/container-chain-simple-node build-spec --disable-default-bootnode --parachain-id 2002 --raw > specs/single-container-template-container-2002.json
+$BINARY_FOLDER/tanssi-relay build-spec --chain starlight-local --add-container-chain specs/single-container-template-container-2000.json --add-container-chain specs/single-container-template-container-2001.json --invulnerable "Collator-01" --invulnerable "Collator-02" --invulnerable "Collator-03" --invulnerable "Collator-04" --invulnerable "Collator-05" --invulnerable "Collator-06" > specs/tanssi-relay-build.json
+
+# export-chain-spec version
+$BINARY_FOLDER/tanssi-relay export-chain-spec --chain starlight-local --add-container-chain specs/single-container-template-container-2000.json --add-container-chain specs/single-container-template-container-2001.json --invulnerable "Collator-01" --invulnerable "Collator-02" --invulnerable "Collator-03" --invulnerable "Collator-04" --invulnerable "Collator-05" --invulnerable "Collator-06" > specs/tanssi-relay-export.json
+
+
+compare_specs \
+    "tanssi-relay" \
+    specs/tanssi-relay-build.json \
+    specs/tanssi-relay-export.json
 
 
 #############################################
