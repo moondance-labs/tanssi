@@ -2,7 +2,7 @@
 # After this command is removed (around April 2026), this file can be removed as well
 
 #!/bin/bash
-set -euo pipefail
+set -e
 
 # Always run from project root
 cd "$(dirname "$0")"/..
