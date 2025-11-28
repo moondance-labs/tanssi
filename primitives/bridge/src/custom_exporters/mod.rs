@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 pub mod container_token_to_ethereum_message_exporter;
+pub mod container_token_to_ethereum_message_exporter_v2;
 pub mod snowbridge_outbound_token_transfer;
 pub mod snowbridge_outbound_token_transfer_v2;
 
