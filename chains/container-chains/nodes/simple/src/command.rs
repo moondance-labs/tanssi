@@ -158,14 +158,15 @@ pub fn run() -> Result<()> {
             })
         }
         Some(BaseSubcommand::ExportChainSpec(cmd)) => {
-            let chain_spec: Box<dyn sc_service::ChainSpec> = if let Some(para_id) = cmd.extra.parachain_id {
-                Box::new(chain_spec::local_testnet_config(
-                    para_id.into(),
-                    cmd.extra.add_bootnode.clone(),
-                ))
-            } else {
-                cli.load_spec(&cmd.base.chain)?
-            };
+            let chain_spec: Box<dyn sc_service::ChainSpec> =
+                if let Some(para_id) = cmd.extra.parachain_id {
+                    Box::new(chain_spec::local_testnet_config(
+                        para_id.into(),
+                        cmd.extra.add_bootnode.clone(),
+                    ))
+                } else {
+                    cli.load_spec(&cmd.base.chain)?
+                };
 
             cmd.base.run(chain_spec)
         }
