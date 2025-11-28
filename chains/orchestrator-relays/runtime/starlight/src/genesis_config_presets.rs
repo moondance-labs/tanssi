@@ -692,12 +692,10 @@ pub fn starlight_development_config_genesis(
 pub fn starlight_local_testnet_genesis(
     container_chains: Vec<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>)>,
     invulnerables: Vec<String>,
+    initial_authorities: Vec<AuthorityKeys>,
 ) -> serde_json::Value {
     starlight_testnet_genesis(
-        Vec::from([
-            get_authority_keys_from_seed("Alice"),
-            get_authority_keys_from_seed("Bob"),
-        ]),
+        initial_authorities,
         Sr25519Keyring::Alice.to_account_id(),
         None,
         container_chains,
@@ -716,8 +714,14 @@ pub fn starlight_local_testnet_genesis(
 
 /// Provides the JSON representation of predefined genesis config for given `id`.
 pub fn get_preset(id: &sp_genesis_builder::PresetId) -> Option<alloc::vec::Vec<u8>> {
+    let initial_authorities = || {
+        Vec::from([
+            get_authority_keys_from_seed("Alice"),
+            get_authority_keys_from_seed("Bob"),
+        ])
+    };
     let patch = match id.as_ref() {
-        "local_testnet" => starlight_local_testnet_genesis(vec![], vec![]),
+        "local_testnet" => starlight_local_testnet_genesis(vec![], vec![], initial_authorities()),
         "development" => starlight_development_config_genesis(vec![], vec![]),
         "staging_testnet" => starlight_staging_testnet_config_genesis(),
         _ => return None,

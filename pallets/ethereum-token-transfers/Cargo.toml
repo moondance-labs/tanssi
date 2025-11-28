@@ -40,6 +40,7 @@ xcm = { workspace = true }
 [dev-dependencies]
 pallet-timestamp = { workspace = true }
 sp-io = { workspace = true }
+xcm-builder = { workspace = true, features = [ "std" ] }
 
 [features]
 default = [ "std" ]
@@ -63,6 +64,7 @@ std = [
 	"sp-staking/std",
 	"tp-bridge/std",
 	"tp-traits/std",
+	"xcm-builder/std",
 	"xcm/std",
 ]
 runtime-benchmarks = [
@@ -77,6 +79,7 @@ runtime-benchmarks = [
 	"sp-staking/runtime-benchmarks",
 	"tp-bridge/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
 	"xcm/runtime-benchmarks",
 ]
 

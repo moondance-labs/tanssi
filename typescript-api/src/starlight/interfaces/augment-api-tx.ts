@@ -1778,6 +1778,14 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [u128, H160]
             >;
+            transferNativeTokenV2: AugmentedSubmittable<
+                (
+                    amount: u128 | AnyNumber | Uint8Array,
+                    recipient: H160 | string | Uint8Array,
+                    reward: u128 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u128, H160, u128]
+            >;
             /**
              * Generic tx
              **/
