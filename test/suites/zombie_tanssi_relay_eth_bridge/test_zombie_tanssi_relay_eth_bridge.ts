@@ -1521,8 +1521,7 @@ describeSuite({
                 let wETHTransferSuccess = false;
                 let wETHTransferNonce = 0n;
                 await gatewayContract.on("InboundMessageDispatched", (channelID, nonce, _messageID, success) => {
-                    console.log("11channelID, nonce, _messageID, success", channelID, nonce, _messageID, success);
-                    if (channelID === assetHubChannelId) {
+                    if (channelID === assetHubChannelId && !wETHTransferNonce) {
                         wETHTransferSuccess = success;
                         wETHTransferNonce = nonce;
                     }
@@ -1530,8 +1529,6 @@ describeSuite({
 
                 let nativeETHTransferSuccess = false;
                 await gatewayContract.on("InboundMessageDispatched", (channelID, nonce, _messageID, success) => {
-                    console.log("22channelID, nonce, _messageID, success", channelID, nonce, _messageID, success);
-
                     if (channelID === assetHubChannelId && nonce === wETHTransferNonce + 1n) {
                         nativeETHTransferSuccess = success;
                     }
