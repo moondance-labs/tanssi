@@ -30,10 +30,6 @@ import type { SubmittableExtrinsic } from "@polkadot/api/types";
 import type { ParaId } from "@polkadot/types/interfaces";
 import type { u128 } from "@polkadot/types-codec";
 
-// Change this if we change the storage parameter in runtime
-const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
-const RESERVE_TRANSFER_FEE = 100000000000;
-
 function execCommand(command: string, options?): Promise<{ stdout: string; stderr: string }> {
     return new Promise((resolve, reject) => {
         exec(command, options, (error: unknown, stdout: string, stderr: string) => {
