@@ -104,7 +104,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier_snowbrid
 
         let eth_sovereign_account_balance_before =
             <FrontierTemplate as FrontierTemplateParaPallet>::System::account(
-                ethereum_sovereign_account.clone(),
+                ethereum_sovereign_account,
             )
             .data
             .free;
@@ -159,7 +159,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier_snowbrid
                 root_origin.clone(),
                 RELAY_TOKEN_ASSET_LOCATION,
                 RELAY_NATIVE_TOKEN_ASSET_ID,
-                alice_account.clone().into(),
+                alice_account,
                 true,
                 1
             )
@@ -189,8 +189,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier_snowbrid
             VersionedXcm::from(Xcm(vec![
                 WithdrawAsset(assets.clone().into()),
                 InitiateTransfer {
-                    destination: container_chain_template_frontier_runtime::EthereumLocation::get()
-                        .into(),
+                    destination: container_chain_template_frontier_runtime::EthereumLocation::get(),
                     remote_fees: Some(AssetTransferFilter::ReserveWithdraw(
                         fee_asset.clone().into(),
                     )),
@@ -203,8 +202,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier_snowbrid
                         beneficiary: beneficiary_location,
                     }]),
                 },
-            ]))
-            .into();
+            ]));
 
         assert_ok!(
             <FrontierTemplate as FrontierTemplateParaPallet>::PolkadotXcm::execute(
@@ -216,7 +214,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier_snowbrid
 
         let eth_sovereign_account_balance_after =
             <FrontierTemplate as FrontierTemplateParaPallet>::System::account(
-                ethereum_sovereign_account.clone(),
+                ethereum_sovereign_account,
             )
             .data
             .free;
@@ -381,7 +379,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple_snowbridge
                 root_origin.clone(),
                 RELAY_TOKEN_ASSET_LOCATION,
                 RELAY_NATIVE_TOKEN_ASSET_ID,
-                alice_account.clone().into(),
+                alice_account.clone(),
                 true,
                 1
             )
@@ -411,8 +409,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple_snowbridge
             VersionedXcm::from(Xcm(vec![
                 WithdrawAsset(assets.clone().into()),
                 InitiateTransfer {
-                    destination: container_chain_template_simple_runtime::EthereumLocation::get()
-                        .into(),
+                    destination: container_chain_template_simple_runtime::EthereumLocation::get(),
                     remote_fees: Some(AssetTransferFilter::ReserveWithdraw(
                         fee_asset.clone().into(),
                     )),
@@ -425,8 +422,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple_snowbridge
                         beneficiary: beneficiary_location,
                     }]),
                 },
-            ]))
-            .into();
+            ]));
 
         assert_ok!(
             <SimpleTemplate as SimpleTemplateParaPallet>::PolkadotXcm::execute(
