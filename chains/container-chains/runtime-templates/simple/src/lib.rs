@@ -222,7 +222,7 @@ parameter_types! {
 
             // derive chain_id from RelayNetwork
             let chain_id = EthereumNetworkChainId::from_relay_network(&RelayNetwork::get())
-                .expect("Unsupported relay network")
+                .unwrap_or(EthereumNetworkChainId::EthereumMainnet)
                 .as_u64();
 
             NetworkId::Ethereum { chain_id }
