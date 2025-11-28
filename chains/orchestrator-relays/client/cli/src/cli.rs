@@ -29,7 +29,13 @@ use {
 #[derive(Debug, Parser)]
 pub enum Subcommand {
     /// Build a chain specification.
+    #[deprecated(
+        note = "build-spec command will be removed after 1/04/2026. Use export-chain-spec command instead"
+    )]
     BuildSpec(BuildSpecCmd),
+
+    /// Export the chain specification.
+    ExportChainSpec(ExportChainSpecCmd),
 
     /// Validate blocks.
     CheckBlock(sc_cli::CheckBlockCmd),
@@ -71,6 +77,26 @@ pub struct BuildSpecCmd {
     /// Base cmd.
     #[clap(flatten)]
     pub base: sc_cli::BuildSpecCmd,
+
+    /// List of container chain chain spec paths to add to genesis.
+    #[arg(long)]
+    pub add_container_chain: Option<Vec<String>>,
+
+    /// List of container chain chain spec mocks to add to genesis.
+    #[arg(long)]
+    pub mock_container_chain: Option<Vec<u32>>,
+
+    /// List of invulnerable collators to write to pallet_invulnerables genesis.
+    #[arg(long)]
+    pub invulnerable: Option<Vec<String>>,
+}
+
+/// The `export-chain-spec` command used to export a chain-spec.
+#[derive(Debug, Clone, clap::Parser)]
+pub struct ExportChainSpecCmd {
+    /// Base cmd.
+    #[clap(flatten)]
+    pub base: sc_cli::ExportChainSpecCmd,
 
     /// List of container chain chain spec paths to add to genesis.
     #[arg(long)]

@@ -163,6 +163,16 @@ pub fn run() -> Result<()> {
                 cmd.base.run(chain_spec, config.network)
             })
         }
+        Some(Subcommand::ExportChainSpec(cmd)) => {
+            let chain_spec = load_spec(
+                &cmd.base.chain,
+                cmd.extra.parachain_id,
+                cmd.extra.add_container_chain.clone().unwrap_or_default(),
+                cmd.extra.mock_container_chain.clone().unwrap_or_default(),
+                cmd.extra.invulnerable.clone(),
+            )?;
+            cmd.base.run(chain_spec)
+        }
         Some(Subcommand::CheckBlock(cmd)) => {
             construct_async_run!(|components, cli, cmd, config| {
                 let (_, import_queue) =

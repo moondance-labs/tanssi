@@ -4,6 +4,6 @@
 set -e
 
 mkdir -p specs
-tmp/tanssi-node build-spec --chain dancebox-local > specs/dancebox-plain-spec.json
+tmp/tanssi-node export-chain-spec --chain dancebox-local > specs/dancebox-plain-spec.json
 pnpm tsx scripts/modify-plain-specs.ts process specs/dancebox-plain-spec.json specs/dancebox-modified-spec.json
-tmp/tanssi-node build-spec --chain specs/dancebox-modified-spec.json --raw > specs/dancebox-raw-spec.json
+tmp/tanssi-node export-chain-spec --chain specs/dancebox-modified-spec.json --raw > specs/dancebox-raw-spec.json

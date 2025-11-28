@@ -111,7 +111,7 @@ describeSuite({
                 const runtime = relayApi.consts.system.version.specName.toString();
 
                 const command = "../target/release/tanssi-relay";
-                const args = ["build-spec", `--chain=${runtime}-local`, "--raw"];
+                const args = ["export-chain-spec", `--chain=${runtime}-local`, "--raw"];
 
                 await testPalletVersions(relayApi, command, args);
             },

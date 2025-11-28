@@ -270,6 +270,15 @@ pub fn run() -> Result<()> {
             )?;
             Ok(runner.sync_run(|config| cmd.base.run(chain_spec, config.network))?)
         }
+        Some(Subcommand::ExportChainSpec(cmd)) => {
+            let chain_spec = load_spec(
+                &cmd.base.chain,
+                cmd.add_container_chain.clone().unwrap_or_default(),
+                cmd.mock_container_chain.clone().unwrap_or_default(),
+                cmd.invulnerable.clone(),
+            )?;
+            cmd.base.run(chain_spec).map_err(Error::SubstrateCli)
+        }
         Some(Subcommand::CheckBlock(cmd)) => {
             let runner = cli.create_runner(cmd).map_err(Error::SubstrateCli)?;
             let chain_spec = &runner.config().chain_spec;

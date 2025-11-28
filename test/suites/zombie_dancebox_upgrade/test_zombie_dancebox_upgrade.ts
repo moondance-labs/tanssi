@@ -114,7 +114,7 @@ describeSuite({
             title: "Test pallet versions for missed migrations",
             test: async () => {
                 const command = "../target/release/tanssi-node";
-                const args = ["build-spec", "--chain=dancebox-local", "--raw"];
+                const args = ["export-chain-spec", "--chain=dancebox-local", "--raw"];
 
                 await testPalletVersions(paraApi, command, args);
             },
