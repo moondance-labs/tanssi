@@ -2731,12 +2731,18 @@ declare module "@polkadot/types/lookup" {
             readonly amount: u128;
             readonly recipient: H160;
         } & Struct;
+        readonly isTransferNativeTokenV2: boolean;
+        readonly asTransferNativeTokenV2: {
+            readonly amount: u128;
+            readonly recipient: H160;
+            readonly reward: u128;
+        } & Struct;
         readonly isAddTip: boolean;
         readonly asAddTip: {
             readonly messageId: SnowbridgeCoreRewardMessageId;
             readonly amount: u128;
         } & Struct;
-        readonly type: "SetTokenTransferChannel" | "TransferNativeToken" | "AddTip";
+        readonly type: "SetTokenTransferChannel" | "TransferNativeToken" | "TransferNativeTokenV2" | "AddTip";
     }
 
     /** @name SnowbridgeCoreRewardMessageId (229) */
@@ -8488,12 +8494,24 @@ declare module "@polkadot/types/lookup" {
         readonly isTransferMessageNotSent: boolean;
         readonly asTransferMessageNotSent: SnowbridgeOutboundQueuePrimitivesSendError;
         readonly isTipFailed: boolean;
+        readonly isV2SendingIsNotAllowed: boolean;
+        readonly isTooManyCommands: boolean;
+        readonly isOriginConversionFailed: boolean;
+        readonly isLocationToOriginConversionFailed: boolean;
+        readonly isLocationReanchorFailed: boolean;
+        readonly isMinV2RewardNotAchieved: boolean;
         readonly type:
             | "ChannelInfoNotSet"
             | "UnknownLocationForToken"
             | "InvalidMessage"
             | "TransferMessageNotSent"
-            | "TipFailed";
+            | "TipFailed"
+            | "V2SendingIsNotAllowed"
+            | "TooManyCommands"
+            | "OriginConversionFailed"
+            | "LocationToOriginConversionFailed"
+            | "LocationReanchorFailed"
+            | "MinV2RewardNotAchieved";
     }
 
     /** @name SpCoreCryptoKeyTypeId (702) */

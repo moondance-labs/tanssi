@@ -22,54 +22,58 @@ use crate::{match_expression, XcmConverterError};
 use alloc::vec::Vec;
 use core::iter::Peekable;
 use core::marker::PhantomData;
+use core::ops::ControlFlow;
 use core::slice::Iter;
-use frame_support::{ensure, traits::Get};
+use frame_support::{
+    ensure,
+    traits::{Get, ProcessMessageError},
+    BoundedVec,
+};
 use parity_scale_codec::{Decode, Encode};
-use snowbridge_core::{AgentId, ChannelId, TokenId};
-use snowbridge_outbound_queue_primitives::v1::{
-    message::{Command, Message, SendMessage},
-    AgentExecuteCommand,
-};
+use snowbridge_core::TokenId;
+use snowbridge_outbound_queue_primitives::v2::message::{Command, Message, SendMessage};
 use sp_core::H160;
-use sp_runtime::traits::{MaybeEquivalence, TryConvert};
+use sp_runtime::traits::MaybeEquivalence;
 use xcm::prelude::*;
-use xcm::{
-    latest::SendError::{MissingArgument, NotApplicable},
-    VersionedLocation, VersionedXcm,
-};
-use xcm_builder::{ensure_is_remote, InspectMessageQueues};
-use xcm_executor::traits::{validate_export, ExportXcm};
+use xcm_builder::{CreateMatcher, HandleFee, MatchXcm};
+use xcm_executor::traits::{ConvertLocation, ExportXcm, FeeReason};
 
-pub struct EthereumBlobExporter<
+pub struct EthereumBlobExporterV2<
     UniversalLocation,
     EthereumNetwork,
     OutboundQueue,
     ConvertAssetId,
-    BridgeChannelInfo,
+    MinReward,
+    FeeHandler,
 >(
     PhantomData<(
         UniversalLocation,
         EthereumNetwork,
         OutboundQueue,
         ConvertAssetId,
-        BridgeChannelInfo,
+        MinReward,
+        FeeHandler,
     )>,
 );
 
-impl<UniversalLocation, EthereumNetwork, OutboundQueue, ConvertAssetId, BridgeChannelInfo> ExportXcm
-    for EthereumBlobExporter<
+impl<UniversalLocation, EthereumNetwork, OutboundQueue, ConvertAssetId, MinReward, FeeHandler>
+    ExportXcm
+    for EthereumBlobExporterV2<
         UniversalLocation,
         EthereumNetwork,
         OutboundQueue,
         ConvertAssetId,
-        BridgeChannelInfo,
+        MinReward,
+        FeeHandler,
     >
 where
     UniversalLocation: Get<InteriorLocation>,
     EthereumNetwork: Get<NetworkId>,
-    OutboundQueue: SendMessage<Balance = u128>,
+    OutboundQueue: SendMessage,
     ConvertAssetId: MaybeEquivalence<TokenId, Location>,
-    BridgeChannelInfo: Get<Option<(ChannelId, AgentId)>>,
+    // Evaluated in XCM context!
+    MinReward: Get<Asset>,
+    FeeHandler: HandleFee,
 {
     type Ticket = (Vec<u8>, XcmHash);
 
@@ -83,119 +87,153 @@ where
         let expected_network = EthereumNetwork::get();
         let universal_location = UniversalLocation::get();
 
-        log::trace!(target: "xcm::ethereum_blob_exporter", "validate params: network={network:?}, _channel={_channel:?}, universal_source={universal_source:?}, destination={destination:?}, message={message:?}");
-
         if network != expected_network {
-            log::trace!(target: "xcm::ethereum_blob_exporter", "skipped due to unmatched bridge network {network:?}.");
+            log::trace!(target: "xcm::ethereum_blob_exporterv2", "skipped due to unmatched bridge network {network:?}.");
             return Err(SendError::NotApplicable);
         }
 
         // Cloning destination to avoid modifying the value so subsequent exporters can use it.
         let dest = destination.clone().ok_or(SendError::MissingArgument)?;
         if dest != Here {
-            log::trace!(target: "xcm::ethereum_blob_exporter", "skipped due to unmatched remote destination {dest:?}.");
+            log::trace!(target: "xcm::ethereum_blob_exporterv2", "skipped due to unmatched remote destination {dest:?}.");
             return Err(SendError::NotApplicable);
         }
 
         // Cloning universal_source to avoid modifying the value so subsequent exporters can use it.
         let (local_net, local_sub) = universal_source.clone()
             .ok_or_else(|| {
-                log::error!(target: "xcm::ethereum_blob_exporter", "universal source not provided.");
+                log::error!(target: "xcm::ethereum_blob_exporterv2", "universal source not provided.");
                 SendError::MissingArgument
             })?
             .split_global()
             .map_err(|()| {
-                log::error!(target: "xcm::ethereum_blob_exporter", "could not get global consensus from universal source '{universal_source:?}'.");
+                log::error!(target: "xcm::ethereum_blob_exporterv2", "could not get global consensus from universal source '{universal_source:?}'.");
                 SendError::NotApplicable
             })?;
 
         if Ok(local_net) != universal_location.global_consensus() {
-            log::trace!(target: "xcm::ethereum_blob_exporter", "skipped due to unmatched relay network {local_net:?}.");
+            log::trace!(target: "xcm::ethereum_blob_exporterv2", "skipped due to unmatched relay network {local_net:?}.");
             return Err(SendError::NotApplicable);
         }
 
         // TODO: Support source being a parachain.
         if !matches!(local_sub, Junctions::Here) {
-            log::trace!(target: "xcm::ethereum_blob_exporter", "skipped due to unmatched sub network {local_sub:?}.");
+            log::trace!(target: "xcm::ethereum_blob_exporterv2", "skipped due to unmatched sub network {local_sub:?}.");
             return Err(SendError::NotApplicable);
         }
 
-        let (channel_id, agent_id) = BridgeChannelInfo::get().ok_or_else(|| {
-            log::error!(target: "xcm::ethereum_blob_exporter", "channel id and agent id cannot be fetched");
-            SendError::Unroutable
-        })?;
-
         let message = message.take().ok_or_else(|| {
-            log::error!(target: "xcm::ethereum_blob_exporter", "xcm message not provided.");
+            log::error!(target: "xcm::ethereum_blob_exporterv2", "xcm message not provided.");
             SendError::MissingArgument
         })?;
 
-        let mut converter =
-            XcmConverter::<ConvertAssetId, ()>::new(&message, expected_network, agent_id);
-        let (command, message_id) = converter.convert().map_err(|err|{
+        // Inspect `AliasOrigin` as V2 message. This exporter should only process Snowbridge V2
+        // messages. We use the presence of an `AliasOrigin` instruction to distinguish between
+        // Snowbridge V2 and Snowbridge V1 messages, since XCM V5 came after Snowbridge V1 and
+        // so it's not supported in Snowbridge V1. Snowbridge V1 messages are processed by the
+        // snowbridge-outbound-queue-primitives v1 exporter.
+        let mut instructions = message.clone().0;
+        let result = instructions.matcher().match_next_inst_while(
+            |_| true,
+            |inst| {
+                return match inst {
+                    AliasOrigin(..) => Err(ProcessMessageError::Yield),
+                    _ => Ok(ControlFlow::Continue(())),
+                };
+            },
+        );
+        ensure!(result.is_err(), SendError::NotApplicable);
+
+        let mut converter = XcmConverterV2::<ConvertAssetId, (), UniversalLocation>::new(
+            &message,
+            expected_network,
+            MinReward::get(),
+        );
+
+        let (outbound_message, fees) = converter.convert().map_err(|err|{
             log::error!(target: "xcm::ethereum_blob_exporter", "unroutable due to pattern matching error '{err:?}'.");
             SendError::Unroutable
         })?;
 
-        let outbound_message = Message {
-            id: Some(message_id.into()),
-            channel_id,
-            command,
-        };
-
         // validate the message
-        let (ticket, fee) = OutboundQueue::validate(&outbound_message).map_err(|err| {
+        let ticket = OutboundQueue::validate(&outbound_message).map_err(|err| {
             log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue validation of message failed. {err:?}");
             SendError::Unroutable
         })?;
 
         // convert fee to Asset
-        let fee = Asset::from((Location::here(), fee.total())).into();
+        // We handle fees here because we cannot do it within the xcm machine itself
+        // initiateTransfer already takes assets from holding
+        // we cannot have the xcmHandler deal with xcms as it tries to get from holding again
+        // i.e., charges twice.
+        // since initiateTransfer already removes from holding, we can safely assume this comes
+        // from a place in which assets have been burnt
+        FeeHandler::handle_fee(
+            fees,
+            None,
+            FeeReason::Export {
+                network: EthereumNetwork::get(),
+                destination: dest,
+            },
+        );
 
-        Ok(((ticket.encode(), message_id), fee))
+        Ok((
+            (ticket.encode(), XcmHash::from(outbound_message.id)),
+            Assets::default(),
+        ))
     }
 
     fn deliver(blob: (Vec<u8>, XcmHash)) -> Result<XcmHash, SendError> {
         let ticket: OutboundQueue::Ticket = OutboundQueue::Ticket::decode(&mut blob.0.as_ref())
             .map_err(|_| {
-                log::trace!(target: "xcm::ethereum_blob_exporter", "undeliverable due to decoding error");
+                log::trace!(target: "xcm::ethereum_blob_exporterv2", "undeliverable due to decoding error");
                 SendError::NotApplicable
             })?;
 
         let message_id = OutboundQueue::deliver(ticket).map_err(|_| {
-            log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue submit of message failed");
+            log::error!(target: "xcm::ethereum_blob_exporterv2", "OutboundQueue submit of message failed");
             SendError::Transport("other transport error")
         })?;
 
-        log::info!(target: "xcm::ethereum_blob_exporter", "message delivered {message_id:#?}.");
+        log::info!(target: "xcm::ethereum_blob_exporterv2", "message delivered {message_id:#?}.");
         Ok(message_id.into())
     }
 }
 
-pub struct XcmConverter<'a, ConvertAssetId, Call> {
+pub struct XcmConverterV2<'a, ConvertAssetId, Call, UniversalLocation> {
     iter: Peekable<Iter<'a, Instruction<Call>>>,
     ethereum_network: NetworkId,
-    agent_id: AgentId,
-    _marker: PhantomData<ConvertAssetId>,
+    min_reward: Asset,
+    _marker: PhantomData<(ConvertAssetId, UniversalLocation)>,
 }
-impl<'a, ConvertAssetId, Call> XcmConverter<'a, ConvertAssetId, Call>
+impl<'a, ConvertAssetId, Call, UniversalLocation>
+    XcmConverterV2<'a, ConvertAssetId, Call, UniversalLocation>
 where
     ConvertAssetId: MaybeEquivalence<TokenId, Location>,
+    UniversalLocation: Get<InteriorLocation>,
 {
-    pub fn new(message: &'a Xcm<Call>, ethereum_network: NetworkId, agent_id: AgentId) -> Self {
+    pub fn new(message: &'a Xcm<Call>, ethereum_network: NetworkId, min_reward: Asset) -> Self {
         Self {
             iter: message.inner().iter().peekable(),
             ethereum_network,
-            agent_id,
+            min_reward,
             _marker: Default::default(),
         }
     }
 
-    pub fn convert(&mut self) -> Result<(Command, [u8; 32]), XcmConverterError> {
+    pub fn convert(&mut self) -> Result<(Message, Assets), XcmConverterError> {
+        // Step 1: Try to extract optional remote fee
+        // Can THIS be sent without the fee being extracted? this is a key question
+        // If the answer to this is yes then we are screwed
+        // We need to remember this is part of EXPORT
+        // this instruction cannot be reached unless export is used
+        // or is it also used in send?
+
+        let (fee, claimee_amount) = self.try_extract_fee()?;
         let result = match self.peek() {
             Ok(ReserveAssetDeposited { .. }) => self.make_mint_foreign_token_command(),
             // Get withdraw/deposit and make native tokens create message.
-            Ok(WithdrawAsset { .. }) => self.make_unlock_native_token_command(),
+            Ok(WithdrawAsset { .. }) => self.make_unlock_native_token_command(claimee_amount),
             Err(e) => Err(e),
             _ => return Err(XcmConverterError::UnexpectedInstruction),
         }?;
@@ -205,14 +243,88 @@ where
             return Err(XcmConverterError::EndOfXcmMessageExpected);
         }
 
-        Ok(result)
+        Ok((result, fee.into()))
+    }
+
+    fn try_extract_fee(&mut self) -> Result<(Asset, u128), XcmConverterError> {
+        use XcmConverterError::*;
+
+        let reserved_fee_assets = match_expression!(self.next()?, ReserveAssetDeposited(fee), fee)
+            .ok_or(ReserveAssetDepositedExpected)?;
+        ensure!(
+            reserved_fee_assets.len() == 1,
+            XcmConverterError::AssetResolutionFailed
+        );
+
+        let reserved_fee_asset = reserved_fee_assets
+            .inner()
+            .first()
+            .cloned()
+            .ok_or(XcmConverterError::AssetResolutionFailed)?;
+
+        let reserved_fee_asset_reanchored = reserved_fee_asset
+            .clone()
+            .reanchored(
+                &UniversalLocation::get().into_exterior(1),
+                &UniversalLocation::get(),
+            )
+            .map_err(|_| XcmConverterError::AssetResolutionFailed)?;
+
+        let (reserved_fee_asset_id, reserved_fee_amount) = match reserved_fee_asset_reanchored {
+            Asset {
+                id: asset_id,
+                fun: Fungible(amount),
+            } => Ok((asset_id, amount)),
+            _ => Err(XcmConverterError::AssetResolutionFailed),
+        }?;
+
+        let fee_asset =
+            match_expression!(self.next()?, PayFees { asset: fee }, fee).ok_or(InvalidFeeAsset)?;
+
+        // we are going to charge the asset in our chain, so let's reanchor it
+        let fee_asset_reanchored = fee_asset
+            .clone()
+            .reanchored(
+                &UniversalLocation::get().into_exterior(1),
+                &UniversalLocation::get(),
+            )
+            .map_err(|_| InvalidFeeAsset)?;
+        let (fee_asset_id, fee_amount) = match fee_asset_reanchored.clone() {
+            Asset {
+                id: asset_id,
+                fun: Fungible(amount),
+            } => Ok((asset_id, amount)),
+            _ => Err(XcmConverterError::AssetResolutionFailed),
+        }?;
+
+        let (min_reward_asset_id, min_reward_amount) = match &self.min_reward {
+            Asset {
+                id: asset_id,
+                fun: Fungible(amount),
+            } => Ok((asset_id, amount)),
+            _ => Err(XcmConverterError::AssetResolutionFailed),
+        }?;
+
+        ensure!(fee_asset_id.0 == min_reward_asset_id.0, InvalidFeeAsset);
+        ensure!(
+            reserved_fee_asset_id.0 == min_reward_asset_id.0,
+            InvalidFeeAsset
+        );
+
+        ensure!(reserved_fee_amount >= fee_amount, InvalidFeeAsset);
+
+        ensure!(fee_amount >= *min_reward_amount, InvalidFeeAsset);
+
+        Ok((fee_asset_reanchored, fee_amount))
     }
 
     pub fn make_unlock_native_token_command(
         &mut self,
-    ) -> Result<(Command, [u8; 32]), XcmConverterError> {
+        claimee_amount: u128,
+    ) -> Result<Message, XcmConverterError> {
         use XcmConverterError::*;
 
+        // Get the fee asset from ReserveAssetDeposited, if any.
         // Get the reserve assets from WithdrawAsset.
         let reserve_assets =
             match_expression!(self.next()?, WithdrawAsset(reserve_assets), reserve_assets)
@@ -223,11 +335,12 @@ where
             let _ = self.next();
         }
 
-        // Get the fee asset item from BuyExecution or continue parsing.
-        let fee_asset = match_expression!(self.peek(), Ok(BuyExecution { fees, .. }), fees);
-        if fee_asset.is_some() {
-            let _ = self.next();
-        }
+        // Check AliasOrigin.
+        let origin_location = match_expression!(self.next()?, AliasOrigin(origin), origin)
+            .ok_or(AliasOriginExpected)?;
+
+        let origin =
+            crate::TanssiAgentIdOf::convert_location(origin_location).ok_or(InvalidOrigin)?;
 
         let (deposit_assets, beneficiary) = match_expression!(
             self.next()?,
@@ -266,19 +379,6 @@ where
         ensure!(reserve_assets.len() == 1, TooManyAssets);
         let reserve_asset = reserve_assets.get(0).ok_or(AssetResolutionFailed)?;
 
-        // Fees are collected on Tanssi, up front and directly from the user, to cover the
-        // complete cost of the transfer. Any additional fees provided in the XCM program are
-        // refunded to the beneficiary. We only validate the fee here if its provided to make sure
-        // the XCM program is well formed. Another way to think about this from an XCM perspective
-        // would be that the user offered to pay X amount in fees, but we charge 0 of that X amount
-        // (no fee) and refund X to the user.
-        if let Some(fee_asset) = fee_asset {
-            // The fee asset must be the same as the reserve asset.
-            if fee_asset.id != reserve_asset.id || fee_asset.fun > reserve_asset.fun {
-                return Err(InvalidFeeAsset);
-            }
-        }
-
         let (token, amount) = match reserve_asset {
             Asset {
                 id: AssetId(inner_location),
@@ -301,18 +401,21 @@ where
         // Check if there is a SetTopic and skip over it if found.
         let topic_id = match_expression!(self.next()?, SetTopic(id), id).ok_or(SetTopicExpected)?;
 
-        Ok((
-            // TODO: This should be changed to UnlockNativeToken once we migrate to Snowbridge V2.
-            Command::AgentExecute {
-                agent_id: self.agent_id,
-                command: AgentExecuteCommand::TransferToken {
-                    token,
-                    recipient,
-                    amount,
-                },
-            },
-            *topic_id,
-        ))
+        let mut commands: Vec<Command> = Vec::new();
+        commands.push(Command::UnlockNativeToken {
+            token,
+            recipient,
+            amount,
+        });
+
+        let message = Message {
+            id: (*topic_id).into(),
+            origin,
+            fee: claimee_amount,
+            commands: BoundedVec::try_from(commands).map_err(|_| TooManyCommands)?,
+        };
+
+        Ok(message)
     }
 
     fn next(&mut self) -> Result<&'a Instruction<Call>, XcmConverterError> {
@@ -342,9 +445,7 @@ where
     /// # BuyExecution
     /// # DepositAsset
     /// # SetTopic
-    fn make_mint_foreign_token_command(
-        &mut self,
-    ) -> Result<(Command, [u8; 32]), XcmConverterError> {
+    fn make_mint_foreign_token_command(&mut self) -> Result<Message, XcmConverterError> {
         // TODO: This function will be used only when we start receiving tokens from containers.
         // The whole struct is copied from Snowbridge and modified for our needs, and thus function
         // will be modified in a latter PR.
@@ -450,75 +551,5 @@ where
         //     },
         //     *topic_id,
         // ))
-    }
-}
-
-pub struct SnowbrigeTokenTransferRouter<Bridges, UniversalLocation>(
-    PhantomData<(Bridges, UniversalLocation)>,
-);
-
-impl<Bridges, UniversalLocation> SendXcm
-    for SnowbrigeTokenTransferRouter<Bridges, UniversalLocation>
-where
-    Bridges: ExportXcm,
-    UniversalLocation: Get<InteriorLocation>,
-{
-    type Ticket = Bridges::Ticket;
-
-    fn validate(
-        dest: &mut Option<Location>,
-        msg: &mut Option<Xcm<()>>,
-    ) -> SendResult<Self::Ticket> {
-        let universal_source = UniversalLocation::get();
-
-        // This `clone` ensures that `dest` is not consumed in any case.
-        let dest = dest.clone().ok_or(MissingArgument)?;
-        let (remote_network, remote_location) =
-            ensure_is_remote(universal_source.clone(), dest).map_err(|_| NotApplicable)?;
-        let xcm = msg.take().ok_or(MissingArgument)?;
-
-        // Channel ID is ignored by the bridge which use a different type
-        let channel = 0;
-
-        // validate export message
-        validate_export::<Bridges>(
-            remote_network,
-            channel,
-            universal_source,
-            remote_location,
-            xcm.clone(),
-        )
-        .inspect_err(|err| {
-            if let NotApplicable = err {
-                // We need to make sure that msg is not consumed in case of `NotApplicable`.
-                *msg = Some(xcm);
-            }
-        })
-    }
-
-    fn deliver(ticket: Self::Ticket) -> Result<XcmHash, SendError> {
-        Bridges::deliver(ticket)
-    }
-}
-
-impl<Bridge, UniversalLocation> InspectMessageQueues
-    for SnowbrigeTokenTransferRouter<Bridge, UniversalLocation>
-{
-    fn clear_messages() {}
-    fn get_messages() -> Vec<(VersionedLocation, Vec<VersionedXcm<()>>)> {
-        Vec::new()
-    }
-}
-
-pub struct SnowbridgeChannelToAgentId<T>(PhantomData<T>);
-impl<T: snowbridge_pallet_system::Config> TryConvert<ChannelId, AgentId>
-    for SnowbridgeChannelToAgentId<T>
-{
-    fn try_convert(channel_id: ChannelId) -> Result<AgentId, ChannelId> {
-        let Some(channel) = snowbridge_pallet_system::Channels::<T>::get(channel_id) else {
-            return Err(channel_id);
-        };
-
-        Ok(channel.agent_id)
     }
 }

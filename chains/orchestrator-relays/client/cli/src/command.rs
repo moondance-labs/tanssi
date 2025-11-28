@@ -77,12 +77,12 @@ impl SubstrateCli for Cli {
 
     #[cfg(not(feature = "runtime-benchmarks"))]
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-        load_spec(id, vec![], vec![2000, 2001], None)
+        load_spec(id, vec![], vec![2000, 2001], None, None)
     }
 
     #[cfg(feature = "runtime-benchmarks")]
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-        load_spec(id, vec![], vec![], None)
+        load_spec(id, vec![], vec![], None, None)
     }
 }
 
@@ -267,6 +267,7 @@ pub fn run() -> Result<()> {
                 cmd.add_container_chain.clone().unwrap_or_default(),
                 cmd.mock_container_chain.clone().unwrap_or_default(),
                 cmd.invulnerable.clone(),
+                cmd.authority.clone(),
             )?;
             Ok(runner.sync_run(|config| cmd.base.run(chain_spec, config.network))?)
         }
@@ -494,6 +495,7 @@ fn load_spec(
     container_chains: Vec<String>,
     mock_container_chains: Vec<u32>,
     invulnerables: Option<Vec<String>>,
+    initial_authorities: Option<Vec<String>>,
 ) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
     let id = if id.is_empty() {
         let n = get_exec_name().unwrap_or_default();
@@ -551,24 +553,30 @@ fn load_spec(
         #[cfg(feature = "dancelight-native")]
         "dancelight-local" => {
             let invulnerables = invulnerables.unwrap_or_default();
+            let initial_authorities =
+                initial_authorities.unwrap_or(vec!["Alice".to_string(), "Bob".to_string()]);
 
             Box::new(
                 tanssi_relay_service::chain_spec::dancelight_local_testnet_config(
                     container_chains,
                     mock_container_chains,
                     invulnerables,
+                    initial_authorities,
                 )?,
             )
         }
         #[cfg(feature = "starlight-native")]
         "starlight-local" => {
             let invulnerables = invulnerables.unwrap_or_default();
+            let initial_authorities =
+                initial_authorities.unwrap_or(vec!["Alice".to_string(), "Bob".to_string()]);
 
             Box::new(
                 tanssi_relay_service::chain_spec::starlight_local_testnet_config(
                     container_chains,
                     mock_container_chains,
                     invulnerables,
+                    initial_authorities,
                 )?,
             )
         }

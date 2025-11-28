@@ -2339,6 +2339,11 @@ export default {
                 amount: "u128",
                 recipient: "H160",
             },
+            transfer_native_token_v2: {
+                amount: "u128",
+                recipient: "H160",
+                reward: "u128",
+            },
             add_tip: {
                 messageId: "SnowbridgeCoreRewardMessageId",
                 amount: "u128",
@@ -7296,6 +7301,12 @@ export default {
             InvalidMessage: "SnowbridgeOutboundQueuePrimitivesSendError",
             TransferMessageNotSent: "SnowbridgeOutboundQueuePrimitivesSendError",
             TipFailed: "Null",
+            V2SendingIsNotAllowed: "Null",
+            TooManyCommands: "Null",
+            OriginConversionFailed: "Null",
+            LocationToOriginConversionFailed: "Null",
+            LocationReanchorFailed: "Null",
+            MinV2RewardNotAchieved: "Null",
         },
     },
     /**
