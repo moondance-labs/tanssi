@@ -13,6 +13,7 @@ import {
     ASSET_HUB_AGENT_ID,
     ASSET_HUB_CHANNEL_ID,
     ASSET_HUB_PARA_ID,
+    GATEWAY_STORAGE_KEY,
     SNOWBRIDGE_FEES_ACCOUNT,
     signAndSendAndInclude,
     sleep,
