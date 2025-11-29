@@ -23,6 +23,7 @@ use {
 
 mod author_noting_tests;
 mod beefy;
+mod bridge_relayers;
 mod collator_assignment_tests;
 mod common;
 mod container_token_transfers;
