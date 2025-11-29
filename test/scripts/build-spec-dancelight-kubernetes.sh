@@ -15,11 +15,11 @@ fi
 mkdir -p specs
 # use dns for bootnodes in kubernetes
 # dns works, I verified that, but still the collators are not able to connect to the full nodes
-$BINARY_FOLDER/container-chain-simple-node build-spec --disable-default-bootnode --add-bootnode "/dns4/fullnode-2000/tcp/30333/ws/p2p/12D3KooWLPFyxiN8gX9ZDb6zESRR77v9qi7ZAEhvPKKRWKgEzZf8" --parachain-id 2000 --raw > specs/single-container-template-container-2000.json
-$BINARY_FOLDER/container-chain-frontier-node build-spec --disable-default-bootnode --add-bootnode "/dns4/fullnode-2001/tcp/30333/ws/p2p/12D3KooWH9KKBLZMgJgXEQ7CTZj2PtpYZ6pW7NMvFqvjYPZJ6Aui" --parachain-id 2001 --raw > specs/single-container-template-container-2001.json
-$BINARY_FOLDER/container-chain-simple-node build-spec --disable-default-bootnode --parachain-id 2002 --raw > specs/single-container-template-container-2002.json
+$BINARY_FOLDER/container-chain-simple-node export-chain-spec --add-bootnode "/dns4/fullnode-2000/tcp/30333/ws/p2p/12D3KooWLPFyxiN8gX9ZDb6zESRR77v9qi7ZAEhvPKKRWKgEzZf8" --parachain-id 2000 --raw > specs/single-container-template-container-2000.json
+$BINARY_FOLDER/container-chain-frontier-node export-chain-spec --add-bootnode "/dns4/fullnode-2001/tcp/30333/ws/p2p/12D3KooWH9KKBLZMgJgXEQ7CTZj2PtpYZ6pW7NMvFqvjYPZJ6Aui" --parachain-id 2001 --raw > specs/single-container-template-container-2001.json
+$BINARY_FOLDER/container-chain-simple-node export-chain-spec --parachain-id 2002 --raw > specs/single-container-template-container-2002.json
 $BINARY_FOLDER/tanssi-relay \
-  build-spec \
+  export-chain-spec \
   --chain dancelight-local \
   --add-container-chain "specs/single-container-template-container-2000.json" \
   --add-container-chain "specs/single-container-template-container-2001.json" \

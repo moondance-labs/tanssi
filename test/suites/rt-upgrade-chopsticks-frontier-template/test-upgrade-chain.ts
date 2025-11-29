@@ -98,7 +98,7 @@ describeSuite({
             title: "Test pallet versions for missed migrations",
             test: async () => {
                 const command = "../target/release/container-chain-frontier-node";
-                const args = ["build-spec", "--raw"];
+                const args = ["export-chain-spec", "--raw"];
 
                 await testPalletVersions(api, command, args);
             },
