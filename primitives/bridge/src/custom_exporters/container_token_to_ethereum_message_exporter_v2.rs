@@ -34,7 +34,9 @@ use {
 
 #[cfg(not(feature = "runtime-benchmarks"))]
 use {
-    snowbridge_outbound_queue_primitives::v2::message::Command, sp_core::H160,
+    crate::{match_expression, XcmConverterError},
+    snowbridge_outbound_queue_primitives::v2::message::Command,
+    sp_core::H160,
     xcm_executor::traits::ConvertLocation,
 };
 
@@ -95,7 +97,7 @@ where
         let expected_network = EthereumNetwork::get();
         let universal_location = UniversalLocation::get();
 
-        log::info!("validate params: network={network:?}, _channel={_channel:?}, universal_source={universal_source:?}, destination={destination:?}, message={message:?}, ");
+        log::info!("validate params: network={network:?}, universal_source={universal_source:?}, destination={destination:?}, message={message:?}");
 
         if network != expected_network {
             log::trace!(target: "xcm::ethereum_blob_exporter", "skipped due to unmatched bridge network {network:?}.");
@@ -205,47 +207,6 @@ where
     }
 }
 
-#[cfg(not(feature = "runtime-benchmarks"))]
-/// Errors that can be thrown to the pattern matching step.
-#[derive(PartialEq, Debug)]
-enum XcmConverterErrorV2 {
-    AliasOriginExpected,
-    InvalidOrigin,
-    WithdrawAssetExpected,
-    UnexpectedEndOfXcm,
-    EndOfXcmMessageExpected,
-    DepositAssetExpected,
-    NoReserveAssets,
-    FilterDoesNotConsumeAllAssets,
-    TooManyAssets,
-    TooManyCommands,
-    ZeroAssetTransfer,
-    BeneficiaryResolutionFailed,
-    AssetResolutionFailed,
-    InvalidFeeAsset,
-    SetTopicExpected,
-    ReserveAssetDepositedExpected,
-    InvalidAsset,
-    ParaIdMismatch,
-    UnexpectedInstruction,
-}
-
-#[cfg(feature = "runtime-benchmarks")]
-#[derive(PartialEq, Debug)]
-enum XcmConverterErrorV2 {
-    UnexpectedEndOfXcm,
-}
-
-#[cfg(not(feature = "runtime-benchmarks"))]
-macro_rules! match_expression {
-	($expression:expr, $(|)? $( $pattern:pat_param )|+ $( if $guard: expr )?, $value:expr $(,)?) => {
-		match $expression {
-			$( $pattern )|+ $( if $guard )? => Some($value),
-			_ => None,
-		}
-	};
-}
-
 #[cfg(feature = "runtime-benchmarks")]
 struct XcmConverterV2<'a, ConvertAssetId, UniversalLocation, EthereumLocation, Call> {
     iter: Peekable<Iter<'a, Instruction<Call>>>,
@@ -277,11 +238,11 @@ where
         }
     }
 
-    fn convert(&mut self) -> Result<Message, XcmConverterErrorV2> {
+    fn convert(&mut self) -> Result<Message, crate::XcmConverterError> {
         use sp_core::H256;
 
         if self.iter.len() == 0 {
-            return Err(XcmConverterErrorV2::UnexpectedEndOfXcm);
+            return Err(crate::XcmConverterError::UnexpectedEndOfXcm);
         }
 
         return Ok(Message {
@@ -324,7 +285,7 @@ where
         }
     }
 
-    fn convert(&mut self) -> Result<Message, XcmConverterErrorV2> {
+    fn convert(&mut self) -> Result<Message, XcmConverterError> {
         let fee = self.try_extract_fee()?;
         let result = match self.peek() {
             // Prepare the command to mint the foreign token.
@@ -333,27 +294,27 @@ where
                 log::trace!(target: "xcm::convert", "peak error: {:?}", e);
                 Err(e)
             }
-            _ => return Err(XcmConverterErrorV2::UnexpectedInstruction),
+            _ => return Err(XcmConverterError::UnexpectedInstruction),
         }?;
 
         // All xcm instructions must be consumed before exit.
         if self.next().is_ok() {
-            return Err(XcmConverterErrorV2::EndOfXcmMessageExpected);
+            return Err(XcmConverterError::EndOfXcmMessageExpected);
         }
 
         Ok(result)
     }
 
-    fn next(&mut self) -> Result<&'a Instruction<Call>, XcmConverterErrorV2> {
+    fn next(&mut self) -> Result<&'a Instruction<Call>, XcmConverterError> {
         self.iter
             .next()
-            .ok_or(XcmConverterErrorV2::UnexpectedEndOfXcm)
+            .ok_or(XcmConverterError::UnexpectedEndOfXcm)
     }
 
-    fn peek(&mut self) -> Result<&&'a Instruction<Call>, XcmConverterErrorV2> {
+    fn peek(&mut self) -> Result<&&'a Instruction<Call>, XcmConverterError> {
         self.iter
             .peek()
-            .ok_or(XcmConverterErrorV2::UnexpectedEndOfXcm)
+            .ok_or(XcmConverterError::UnexpectedEndOfXcm)
     }
 
     fn network_matches(&self, network: &Option<NetworkId>) -> bool {
@@ -386,8 +347,8 @@ where
     }
 
     /// Extract the fee asset item from PayFees(V5)
-    fn try_extract_fee(&mut self) -> Result<u128, XcmConverterErrorV2> {
-        use XcmConverterErrorV2::*;
+    fn try_extract_fee(&mut self) -> Result<u128, XcmConverterError> {
+        use XcmConverterError::*;
         let reserved_fee_assets = match_expression!(self.next()?, WithdrawAsset(fee), fee)
             .ok_or(WithdrawAssetExpected)?;
         ensure!(reserved_fee_assets.len() == 1, AssetResolutionFailed);
@@ -417,7 +378,7 @@ where
                 id: asset_id,
                 fun: Fungible(amount),
             } => Ok((asset_id, amount)),
-            _ => Err(XcmConverterErrorV2::AssetResolutionFailed),
+            _ => Err(XcmConverterError::AssetResolutionFailed),
         }?;
 
         ensure!(fee_asset_id.0 == min_reward_asset_id.0, InvalidFeeAsset);
@@ -441,11 +402,8 @@ where
     /// # DepositAsset
     /// TODO: support Transact
     /// # SetTopic
-    fn make_mint_foreign_token_command(
-        &mut self,
-        fee: u128,
-    ) -> Result<Message, XcmConverterErrorV2> {
-        use XcmConverterErrorV2::*;
+    fn make_mint_foreign_token_command(&mut self, fee: u128) -> Result<Message, XcmConverterError> {
+        use XcmConverterError::*;
 
         // Get the reserve assets.
         let reserve_assets = match_expression!(
