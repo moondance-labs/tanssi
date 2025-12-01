@@ -131,7 +131,9 @@ import type {
     SnowbridgeCoreChannelId,
     SnowbridgeCoreOperatingModeBasicOperatingMode,
     SnowbridgeCorePricingPricingParameters,
+    SnowbridgeOutboundQueuePrimitivesV2MessageOutboundMessage,
     SnowbridgePalletOutboundQueueCommittedMessage,
+    SnowbridgePalletOutboundQueueV2PendingOrder,
     SpAuthorityDiscoveryAppPublic,
     SpConsensusBabeAppPublic,
     SpConsensusBabeBabeEpochConfiguration,
@@ -950,6 +952,48 @@ declare module "@polkadot/api-base/types/storage" {
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        ethereumOutboundQueueV2: {
+            /**
+             * Hashes of the ABI-encoded messages in the [`Messages`] storage value. Used to generate a
+             * merkle root during `on_finalize`. This storage value is killed in `on_initialize`, so state
+             * at each block contains only root hash of messages processed in that block. This also means
+             * it doesn't have to be included in PoV.
+             **/
+            messageLeaves: AugmentedQuery<ApiType, () => Observable<Vec<H256>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Messages to be committed in the current block. This storage value is killed in
+             * `on_initialize`, so will not end up bloating state.
+             *
+             * Is never read in the runtime, only by offchain message relayers.
+             * Because of this, it will never go into the PoV of a block.
+             *
+             * Inspired by the `frame_system::Pallet::Events` storage value
+             **/
+            messages: AugmentedQuery<
+                ApiType,
+                () => Observable<Vec<SnowbridgeOutboundQueuePrimitivesV2MessageOutboundMessage>>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * The current nonce for the messages
+             **/
+            nonce: AugmentedQuery<ApiType, () => Observable<u64>, []> & QueryableStorageEntry<ApiType, []>;
+            /**
+             * Pending orders to relay
+             **/
+            pendingOrders: AugmentedQuery<
+                ApiType,
+                (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<SnowbridgePalletOutboundQueueV2PendingOrder>>,
+                [u64]
+            > &
+                QueryableStorageEntry<ApiType, [u64]>;
             /**
              * Generic query
              **/
@@ -1850,6 +1894,8 @@ declare module "@polkadot/api-base/types/storage" {
                         | { Ump: any }
                         | { Snowbridge: any }
                         | { SnowbridgeTanssi: any }
+                        | { SnowbridgeV2: any }
+                        | { SnowbridgeTanssiV2: any }
                         | string
                         | Uint8Array
                 ) => Observable<PalletMessageQueueBookState>,
@@ -1867,6 +1913,8 @@ declare module "@polkadot/api-base/types/storage" {
                         | { Ump: any }
                         | { Snowbridge: any }
                         | { SnowbridgeTanssi: any }
+                        | { SnowbridgeV2: any }
+                        | { SnowbridgeTanssiV2: any }
                         | string
                         | Uint8Array,
                     arg2: u32 | AnyNumber | Uint8Array
