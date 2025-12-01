@@ -229,8 +229,6 @@ describeSuite({
                                 }
                             ).find(Boolean);
 
-                            console.log("matched", matched);
-
                             expect(
                                 matched,
                                 `Expected Transfer of ${amount.toString()} from sovereign to ${destination.accountId32} in block ${blockNumber}`
