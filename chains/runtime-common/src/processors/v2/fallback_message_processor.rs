@@ -153,3 +153,82 @@ where
         Ok([0; 32])
     }
 }
+
+/// This fallback message processor will only attempt to trap assets if there are any, otherwise it will return
+/// an error.
+/// In simple term this is a wrapper around `AssetTrapMessageProcessor`
+pub struct SymbioticFallbackProcessor<
+    T,
+    AssetTrapFallbackProcessor,
+    GatewayAddress,
+    DefaultClaimer,
+    EthereumNetwork,
+    EthereumUniversalLocation,
+    TanssiUniversalLocation,
+    XcmProcessor,
+    XcmWeigher,
+>(
+    PhantomData<(
+        T,
+        AssetTrapFallbackProcessor,
+        GatewayAddress,
+        DefaultClaimer,
+        EthereumNetwork,
+        EthereumUniversalLocation,
+        TanssiUniversalLocation,
+        XcmProcessor,
+        XcmWeigher,
+    )>,
+);
+
+impl<
+        T,
+        AssetTrapFallbackProcessor,
+        AccountId,
+        GatewayAddress,
+        DefaultClaimer,
+        EthereumNetwork,
+        EthereumUniversalLocation,
+        TanssiUniversalLocation,
+        XcmProcessor,
+        XcmWeigher,
+    > FallbackMessageProcessor<AccountId>
+    for SymbioticFallbackProcessor<
+        T,
+        AssetTrapFallbackProcessor,
+        GatewayAddress,
+        DefaultClaimer,
+        EthereumNetwork,
+        EthereumUniversalLocation,
+        TanssiUniversalLocation,
+        XcmProcessor,
+        XcmWeigher,
+    >
+where
+    T: snowbridge_pallet_inbound_queue::Config
+        + pallet_xcm::Config
+        + snowbridge_pallet_system::Config,
+    AssetTrapFallbackProcessor: FallbackMessageProcessor<AccountId>,
+    [u8; 32]: From<<T as frame_system::Config>::AccountId>,
+    GatewayAddress: Get<H160>,
+    DefaultClaimer: Get<<T as frame_system::Config>::AccountId>,
+    EthereumNetwork: Get<NetworkId>,
+    EthereumUniversalLocation: Get<InteriorLocation>,
+    TanssiUniversalLocation: Get<InteriorLocation>,
+    XcmProcessor: ExecuteXcm<<T as pallet_xcm::Config>::RuntimeCall>,
+    XcmWeigher: WeightBounds<<T as pallet_xcm::Config>::RuntimeCall>,
+{
+    fn handle_message(who: AccountId, message: Message) -> Result<[u8; 32], MessageProcessorError> {
+        // It is highly likey that:
+        // If any assets are associated with the message, a user mistakenly or maliciously sent Symbiotic message
+        // If no assets are associated with the message, the symbiotic middleware sent the message with wrong semantics
+        // Based on above assumption we do conditional fallback
+        if !message.assets.is_empty() || message.value > 0 || message.execution_fee > 0 {
+            AssetTrapFallbackProcessor::handle_message(who, message)
+        } else {
+            Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
+                "Invalid symbiotic message payload",
+            )))
+        }
+    }
+}

@@ -16,9 +16,11 @@
 
 extern crate alloc;
 
+use crate::processors::v2::fallback_message_processor::{
+    AssetTrapFallbackProcessor, SymbioticFallbackProcessor,
+};
 use crate::processors::v2::{
-    fallback_message_processor::AssetTrapFallbackProcessor, CodecError, FallbackMessageProcessor,
-    MessageExtractionError, MessageProcessorWithFallback,
+    CodecError, FallbackMessageProcessor, MessageExtractionError, MessageProcessorWithFallback,
 };
 use alloc::boxed::Box;
 use alloc::format;
@@ -178,8 +180,18 @@ where
     XcmProcessor: ExecuteXcm<<T as pallet_xcm::Config>::RuntimeCall>,
     XcmWeigher: WeightBounds<<T as pallet_xcm::Config>::RuntimeCall>,
 {
-    type Fallback = AssetTrapFallbackProcessor<
+    type Fallback = SymbioticFallbackProcessor<
         T,
+        AssetTrapFallbackProcessor<
+            T,
+            GatewayAddress,
+            DefaultClaimer,
+            EthereumNetwork,
+            EthereumUniversalLocation,
+            TanssiUniversalLocation,
+            XcmProcessor,
+            XcmWeigher,
+        >,
         GatewayAddress,
         DefaultClaimer,
         EthereumNetwork,
