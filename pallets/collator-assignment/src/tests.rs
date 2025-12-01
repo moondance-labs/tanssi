@@ -786,7 +786,7 @@ fn assign_collators_rotation_container_chains_are_shuffled() {
 
             // 4 collators so we can only assign to one container chain
             m.collators = vec![1, 2, 3, 4];
-            m.container_chains = vec![1001, 1002];
+            m.container_chains = vec![1001, 1002, 1003];
         });
         assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
@@ -797,16 +797,18 @@ fn assign_collators_rotation_container_chains_are_shuffled() {
         assert_eq!(assigned_collators(), initial_assignment,);
 
         MockData::mutate(|m| {
-            // Seed chosen manually to see assignment to different collators.
+            // We remove 1001, so there'll be a 50% chance 1003 takes it place, 50% for 1002
+            m.container_chains = vec![1002, 1003];
+            // Seed chosen manually to see the case where container 1003 is given priority
             m.random_seed = [1; 32];
         });
 
         run_to_block(26);
 
         // Random assignment depends on the seed, shouldn't change unless the algorithm changes
-        // Test that container chains are shuffled because 1001 does not have priority
+        // Test that container chains are shuffled
         let shuffled_assignment =
-            BTreeMap::from_iter(vec![(1, 1001), (2, 1000), (3, 1000), (4, 1001)]);
+            BTreeMap::from_iter(vec![(1, 1003), (2, 1000), (3, 1000), (4, 1003)]);
 
         assert_eq!(assigned_collators(), shuffled_assignment,);
     });
@@ -825,7 +827,7 @@ fn assign_collators_rotation_parathreads_are_shuffled() {
 
             // 4 collators so we can only assign to one parathread
             m.collators = vec![1, 2, 3, 4];
-            m.parathreads = vec![3001, 3002];
+            m.parathreads = vec![3001, 3002, 3003];
         });
         assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
@@ -836,6 +838,8 @@ fn assign_collators_rotation_parathreads_are_shuffled() {
         assert_eq!(assigned_collators(), initial_assignment,);
 
         MockData::mutate(|m| {
+            // We remove 1001, so there'll be a 50% chance 3003 takes it place, 50% for 3002
+            m.parathreads = vec![3002, 3003];
             // Seed chosen manually to see assignment to different collators.
             m.random_seed = [1; 32];
         });
@@ -845,7 +849,7 @@ fn assign_collators_rotation_parathreads_are_shuffled() {
         // Random assignment depends on the seed, shouldn't change unless the algorithm changes
         // Test that container chains are shuffled because 1001 does not have priority
         let shuffled_assignment =
-            BTreeMap::from_iter(vec![(1, 3001), (2, 1000), (3, 1000), (4, 3001)]);
+            BTreeMap::from_iter(vec![(1, 3003), (2, 1000), (3, 1000), (4, 3003)]);
 
         assert_eq!(assigned_collators(), shuffled_assignment,);
     });
@@ -1308,7 +1312,7 @@ fn assign_collators_prioritizing_tip() {
             m.max_orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
-            m.container_chains = vec![1001, 1002, 1003, 1004];
+            m.container_chains = vec![1001, 1002, 1003, 1004, 1005];
             m.apply_tip = false
         });
 
@@ -1329,8 +1333,18 @@ fn assign_collators_prioritizing_tip() {
             ])
         );
 
-        // Enable tip for 1003 and 1004
-        MockData::mutate(|m| m.apply_tip = true);
+        // Enable tip for 1003, 1004 and 1005.
+        // 1004 will have lower tip than others and shouldn't be selected when there is room.
+        MockData::mutate(|m| {
+            m.apply_tip = true;
+            m.chains_tip = [
+                (1003.into(), 2000),
+                (1004.into(), 1000),
+                (1005.into(), 1500),
+            ]
+            .into_iter()
+            .collect();
+        });
 
         run_to_block(21);
 
@@ -1365,8 +1379,8 @@ fn assign_collators_prioritizing_tip() {
                 (5, 1000),
                 (6, 1003),
                 (7, 1003),
-                (8, 1004),
-                (9, 1004),
+                (8, 1005),
+                (9, 1005),
             ]),
         );
     });
