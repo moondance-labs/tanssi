@@ -91,7 +91,13 @@ pub mod pallet {
 
             // Get the number of chains at this block (tanssi + container chain blocks)
             weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 1));
-            let registered_para_ids = T::ContainerChains::current_container_chains();
+            // TODO: this should be container_chains_with_collators to match author_noting
+            // With the current impl we mint tokens for chains that don't have collators assigned
+            // in the case where there aren't enough collators for all chains.
+            // Or maybe that's desired, because it makes inflation depend on number of registered
+            // chains.
+            let registered_para_ids =
+                bounded_vec_into_bounded_btree_set(T::ContainerChains::current_container_chains());
 
             let mut number_of_chains: BalanceOf<T> = (registered_para_ids.len() as u32).into();
 
@@ -193,7 +199,12 @@ pub mod pallet {
         },
     }
 
-    /// Container chains to reward per block
+    /// Container chains to reward per block.
+    /// This gets initialized to the list of chains that should be producing blocks.
+    /// Then, in the `set_latest_author_data` inherent, the chains that actually have produced
+    /// blocks are rewarded and removed from this list, in the `on_container_authors_noted` hook.
+    /// Chains that have not produced blocks stay in this list, and their rewards get accumulated as
+    /// `not_distributed_rewards` and handled by `OnUnbalanced` in the next block `on_initialize`.
     #[pallet::storage]
     pub(super) type ChainsToReward<T: Config> =
         StorageValue<_, ChainsToRewardValue<T>, OptionQuery>;
@@ -203,7 +214,7 @@ pub mod pallet {
     )]
     #[scale_info(skip_type_params(T))]
     pub struct ChainsToRewardValue<T: Config> {
-        pub para_ids: BoundedVec<
+        pub para_ids: BoundedBTreeSet<
             ParaId,
             <T::ContainerChains as GetCurrentContainerChains>::MaxContainerChains,
         >,
@@ -266,7 +277,8 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
                 let para_id = info.para_id;
 
                 // If we find the index is because we still have not rewarded it
-                if let Ok(index) = container_chains_to_reward.para_ids.binary_search(&para_id) {
+                // this makes sure we dont reward it twice in the same block
+                if container_chains_to_reward.para_ids.remove(&para_id) {
                     // we distribute rewards to the author
                     match T::StakingRewardsDistributor::distribute_rewards(
                         author.clone(),
@@ -293,9 +305,6 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
                             log::warn!("Fail to distribute rewards: {:?}", e)
                         }
                     }
-                    // we remove the para id from container-chains to reward
-                    // this makes sure we dont reward it twice in the same block
-                    container_chains_to_reward.para_ids.remove(index);
                 }
             }
 
@@ -303,8 +312,12 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
             // Keep track of chains to reward
             ChainsToReward::<T>::put(container_chains_to_reward);
         } else {
-            // TODO: why would ChainsToReward ever be None?
-            log::warn!("ChainsToReward is None");
+            // Should never happen because `AuthorNotingInfo` is created from the same list of
+            // para_ids as the one we use in pallet_inflation_rewards::OnInitialize, so they cannot
+            // mismatch.
+            // TODO: actually it is not the same list, but the author_noting list is a subset of
+            // this one, so the warning cannot happen. See TODO in this pallet on_initialize
+            log::warn!("AuthorNoting inherent tried to reward a chain that was not assigned collators. This is a bug.");
         }
 
         total_weight
@@ -324,8 +337,25 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
         .expect("to mint tokens");
 
         ChainsToReward::<T>::put(ChainsToRewardValue {
-            para_ids: alloc::vec![para_id].try_into().expect("to be in bound"),
+            para_ids: alloc::collections::BTreeSet::from_iter([para_id])
+                .try_into()
+                .expect("to be in bound"),
             rewards_per_chain: BalanceOf::<T>::from(reward_amount),
         });
     }
+}
+
+/// Convert a `BoundedVec` into a `BoundedBTreeSet` with the same bound.
+// TODO: upstream this into BoundedVec crate
+fn bounded_vec_into_bounded_btree_set<T: core::cmp::Ord + core::fmt::Debug, S: Get<u32>>(
+    x: BoundedVec<T, S>,
+) -> BoundedBTreeSet<T, S> {
+    let mut set = BoundedBTreeSet::default();
+
+    for item in x {
+        set.try_insert(item)
+            .expect("insert must have enough space because vec and set use the same type as bound");
+    }
+
+    set
 }
