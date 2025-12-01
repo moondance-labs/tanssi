@@ -314,7 +314,7 @@ describeSuite({
                                         issuedAmount.toString() === hexToBigInt(amount).toString()
                                     );
                                 }
-                            )[0];
+                            ).find(Boolean);
 
                             expect(
                                 matched,
@@ -384,7 +384,7 @@ describeSuite({
                                             burnedAmount.toString() === hexToBigInt(amount).toString()
                                         );
                                     }
-                                )[0];
+                                ).find(Boolean);
 
                                 expect(
                                     matched,
