@@ -21,8 +21,8 @@ default = [
 	"std",
 ]
 std = [
+	"dp-xcm-reserve/std",
 	"frame-support/std",
 	"log/std",
 	"xcm/std",
-	"dp-xcm-reserve/std"
 ]
