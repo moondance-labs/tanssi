@@ -29,7 +29,7 @@ use {
         sol_types::{SolEvent, SolValue},
     },
     dancelight_runtime_constants::snowbridge::{EthereumLocation, EthereumNetwork},
-    frame_support::assert_ok,
+    frame_support::{assert_ok},
     frame_system::pallet_prelude::OriginFor,
     keyring::Sr25519Keyring,
     parity_scale_codec::Encode,
@@ -105,6 +105,54 @@ fn test_inbound_queue_message_symbiotic_passing() {
 
         let expected_validators = [ExternalValidators::whitelisted_validators(), payload_validators].concat();
         assert_eq!(ExternalValidators::validators(), expected_validators);
+    });
+}
+
+#[test]
+fn test_inbound_queue_message_symbiotic_incorrect_payload() {
+    ExtBuilder::default()
+        .with_validators(
+            vec![]
+        )
+        .with_external_validators(
+            vec![
+                (AccountId::from(ALICE), 210 * UNIT),
+                (AccountId::from(BOB), 100 * UNIT),
+            ]
+        ).build().execute_with(|| {
+        let dummy_proof = mock_snowbridge_message_proof();
+        let nonce_val = 1u64;
+
+        let payload_bytes: Vec<u8> = vec![1, 2, 3];
+
+        let symbiotic_bytes = RawPayload::Symbiotic(payload_bytes);
+
+        let event = IGatewayV2::OutboundMessageAccepted {
+            nonce: nonce_val,
+            payload: IGatewayV2::Payload {
+                origin: Address::from_slice(EthereumGatewayAddress::get().as_bytes()),
+                assets: vec![],
+                xcm: IGatewayV2::Xcm { kind: 0, data: symbiotic_bytes.encode().into() },
+                claimer: vec![].into(),
+                value: 0,
+                executionFee: 0,
+                relayerFee: 0,
+            },
+        };
+
+        let result = EthereumInboundQueueV2::submit(
+            OriginFor::<Runtime>::signed(AccountId::new([0; 32])),
+            Box::new(EventProof {
+                event_log: Log {
+                    address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
+                    topics: event.encode_topics().into_iter().map(|word| H256::from(word.0.0)).collect(),
+                    data: event.encode_data(),
+                },
+                proof: dummy_proof.clone(),
+            }),
+        );
+
+        assert!(matches!(result, Err(sp_runtime::DispatchError::Other(_))));
     });
 }
 
