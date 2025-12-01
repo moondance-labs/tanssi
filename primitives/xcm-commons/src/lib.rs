@@ -21,26 +21,6 @@ use xcm::latest::prelude::*;
 
 pub use dp_xcm_reserve::NativeAssetReserve;
 
-trait Parse {
-    /// Returns the "chain" location part. It could be parent, sibling
-    /// parachain, or child parachain.
-    fn chain_part(&self) -> Option<Location>;
-}
-
-impl Parse for Location {
-    fn chain_part(&self) -> Option<Location> {
-        match (self.parents, self.first_interior()) {
-            // sibling parachain
-            (1, Some(Parachain(id))) => Some(Location::new(1, [Parachain(*id)])),
-            // parent
-            (1, _) => Some(Location::parent()),
-            // children parachain
-            (0, Some(Parachain(id))) => Some(Location::new(0, [Parachain(*id)])),
-            _ => None,
-        }
-    }
-}
-
 /// Filter to ensure an ETH asset is coming from a trusted Ethereum location.
 pub struct EthereumAssetReserve<EthereumLocation, EthereumNetwork>(
     core::marker::PhantomData<(EthereumLocation, EthereumNetwork)>,
