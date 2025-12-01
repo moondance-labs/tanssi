@@ -319,7 +319,17 @@ parameter_types! {
         /// to is the Ethereum mainnet, with chain ID 1.
         /// <https://chainlist.org/chain/1>
         /// <https://ethereum.org/en/developers/docs/apis/json-rpc/#net_version>
-        pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 11155111 };
+        pub EthereumNetwork: NetworkId = {
+            use crate::dynamic_params::xcm_config::RelayNetwork;
+            use crate::dynamic_params::EthereumNetworkChainId;
+
+            // derive chain_id from RelayNetwork
+            let chain_id = EthereumNetworkChainId::from_relay_network(&RelayNetwork::get())
+                .expect("Unsupported relay network")
+                .as_u64();
+
+            NetworkId::Ethereum { chain_id }
+        };
         pub EthereumLocation: Location = Location::new(2, EthereumNetwork::get());
 }
 
@@ -821,6 +831,40 @@ pub mod dynamic_params {
     /// The Dancelight genesis hash used as the default relay network identifier.
     pub const DANCELIGHT_GENESIS_HASH: [u8; 32] =
         hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"];
+
+    /// The Starlight genesis hash.
+    pub const TANSSI_GENESIS_HASH: [u8; 32] =
+        hex_literal::hex!["dd6d086f75ec041b66e20c4186d327b23c8af244c534a2418de6574e8c041a60"];
+
+    pub enum EthereumNetworkChainId {
+        EthereumTestnet,
+        EthereumMainnet,
+    }
+
+    pub const SEPOLIA_ETH_TESTNET_CHAIN_ID: u64 = 11155111;
+    pub const ETH_MAINNET_CHAIN_ID: u64 = 1;
+
+    impl EthereumNetworkChainId {
+        pub fn as_u64(&self) -> u64 {
+            match self {
+                EthereumNetworkChainId::EthereumTestnet => SEPOLIA_ETH_TESTNET_CHAIN_ID,
+                EthereumNetworkChainId::EthereumMainnet => ETH_MAINNET_CHAIN_ID,
+            }
+        }
+
+        /// Derive chain_id from relay network
+        pub fn from_relay_network(network: &NetworkId) -> Option<Self> {
+            match network {
+                NetworkId::ByGenesis(hash) if hash == &DANCELIGHT_GENESIS_HASH => {
+                    Some(Self::EthereumTestnet)
+                }
+                NetworkId::ByGenesis(hash) if hash == &TANSSI_GENESIS_HASH => {
+                    Some(Self::EthereumMainnet)
+                }
+                _ => None,
+            }
+        }
+    }
 
     #[dynamic_pallet_params]
     #[codec(index = 4)]
@@ -2016,5 +2060,25 @@ mod tests {
             BlockGasLimit::get().min(u64::MAX.into()).low_u64() / BLOCK_STORAGE_LIMIT,
             GasLimitStorageGrowthRatio::get()
         );
+    }
+
+    #[test]
+    fn test_chain_id_derivation_dancelight() {
+        let chain_id = dynamic_params::EthereumNetworkChainId::from_relay_network(
+            &NetworkId::ByGenesis(dynamic_params::DANCELIGHT_GENESIS_HASH),
+        )
+        .unwrap()
+        .as_u64();
+        assert_eq!(chain_id, dynamic_params::SEPOLIA_ETH_TESTNET_CHAIN_ID);
+    }
+
+    #[test]
+    fn test_chain_id_derivation_starlight() {
+        let chain_id = dynamic_params::EthereumNetworkChainId::from_relay_network(
+            &NetworkId::ByGenesis(dynamic_params::TANSSI_GENESIS_HASH),
+        )
+        .unwrap()
+        .as_u64();
+        assert_eq!(chain_id, dynamic_params::ETH_MAINNET_CHAIN_ID);
     }
 }

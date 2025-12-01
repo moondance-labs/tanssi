@@ -60,6 +60,16 @@ export async function jumpToBlock(context: DevModeContext, targetBlockNumber: nu
     }
 }
 
+/*
+ * Waits for the specified number of sessions, periodically checking `earlyExit`.
+ *
+ * The function returns as soon as one of the following occurs:
+ *  - the session-wait limit is reached, or
+ *  - `earlyExit` returns true.
+ *
+ * A successful return does *not* guarantee that `earlyExit` returned true —
+ * it may simply indicate that the session timeout was reached.
+ */
 export async function waitSessions(
     context,
     paraApi: ApiPromise,
