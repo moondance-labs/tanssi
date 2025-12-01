@@ -16,6 +16,8 @@
 
 #![cfg(test)]
 
+use crate::{weights, BlockWeights};
+use pallet_author_noting::WeightInfo;
 use {
     crate::tests::common::*,
     alloc::vec,
@@ -27,6 +29,7 @@ use {
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_traits::{ContainerChainBlockInfo, ParaId},
 };
+
 #[test]
 fn test_author_noting_not_self_para() {
     ExtBuilder::default()
@@ -165,6 +168,35 @@ fn test_author_noting_set_author_and_kill_author_data_bad_origin() {
                 AuthorNoting::kill_author_data(origin_of(ALICE.into()), other_para),
                 BadOrigin
             );
+        });
+}
+
+#[test]
+fn max_num_chains() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_empty_parachains(vec![1001, 1002])
+        .build()
+        .execute_with(|| {
+            for x in 0..1000 {
+                let base_weight = <weights::pallet_author_noting::SubstrateWeight<Runtime>>::set_latest_author_data(
+                    x
+                );
+                println!("{:4} parachains: {:?}", x, base_weight);
+            }
+            println!("MAX BLOCK WEIGHT: {:?}", BlockWeights::get());
         });
 }
 

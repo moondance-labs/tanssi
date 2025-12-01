@@ -704,6 +704,20 @@ fn weights_assigned_to_extrinsics_are_correct() {
 }
 
 #[test]
+fn weights_base_includes_hooks() {
+    new_test_ext().execute_with(|| {
+        // TODO: this test is a bit useless because in mock.rs the hook is just ()
+        // So its weight will be 0. So this test is just asserting x > 0
+        for x in 0..100 {
+            let base_weight = <() as crate::weights::WeightInfo>::set_latest_author_data(x);
+            let hooks_weight = <() as crate::weights::WeightInfo>::on_container_authors_noted(x);
+            assert!(base_weight.ref_time() > hooks_weight.ref_time());
+            assert!(base_weight.proof_size() > hooks_weight.proof_size());
+        }
+    });
+}
+
+#[test]
 fn test_kill_author_data() {
     BlockTests::new()
         .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {

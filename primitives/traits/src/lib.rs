@@ -47,7 +47,6 @@ use {
             Decode, DecodeWithMemTracking, DispatchResultWithPostInfo, Encode, Get, MaxEncodedLen,
             Weight,
         },
-        BoundedVec,
     },
     scale_info::TypeInfo,
     serde::{Deserialize, Serialize},
@@ -111,7 +110,21 @@ pub trait AuthorNotingHook<AccountId> {
     fn on_container_authors_noted(info: &[AuthorNotingInfo<AccountId>]) -> Weight;
 
     #[cfg(feature = "runtime-benchmarks")]
+    /// Some benchmarks need a special setup: register accounts, transfer tokens, etc.
+    /// Use this method to perform that setup. In some cases, there is a mandatory delay needed to
+    /// execute something, for example in `pallet_pooled_staking`. In that case, use
+    /// `bench_advance_block` to fast-forward the chain until the wait period is over, and
+    /// `bench_execute_pending` to execute any pending operations.
     fn prepare_worst_case_for_bench(author: &AccountId, block_number: BlockNumber, para_id: ParaId);
+    #[cfg(feature = "runtime-benchmarks")]
+    /// Advances the chain until all the conditions required by `bench_execute_pending` have been
+    /// met. Assumes that the initial setup was done in block 0. So this does nothing if the chain
+    /// has already been advanced before.
+    fn bench_advance_block() {}
+    #[cfg(feature = "runtime-benchmarks")]
+    /// Executes any pending steps from `prepare_worst_case_for_bench`.
+    /// Assumes that `bench_advance_block` has already been called.
+    fn bench_execute_pending() {}
 }
 
 #[impl_trait_for_tuples::impl_for_tuples(5)]
@@ -126,26 +139,44 @@ impl<AccountId> AuthorNotingHook<AccountId> for Tuple {
     fn prepare_worst_case_for_bench(a: &AccountId, b: BlockNumber, p: ParaId) {
         for_tuples!( #( Tuple::prepare_worst_case_for_bench(a, b, p); )* );
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_advance_block() {
+        for_tuples!( #( Tuple::bench_advance_block(); )* );
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_execute_pending() {
+        for_tuples!( #( Tuple::bench_execute_pending(); )* );
+    }
 }
 
 pub trait DistributeRewards<AccountId, Imbalance> {
     fn distribute_rewards(rewarded: AccountId, amount: Imbalance) -> DispatchResultWithPostInfo;
+    #[cfg(feature = "runtime-benchmarks")]
+    /// Some benchmarks need a special setup: register accounts, transfer tokens, etc.
+    /// Use this method to perform that setup. In some cases, there is a mandatory delay needed to
+    /// execute something, for example in `pallet_pooled_staking`. In that case, use
+    /// `bench_advance_block` to fast-forward the chain until the wait period is over, and
+    /// `bench_execute_pending` to execute any pending operations.
+    fn prepare_worst_case_for_bench(a: &AccountId);
+    #[cfg(feature = "runtime-benchmarks")]
+    /// Advances the chain until all the conditions required by `bench_execute_pending` have been
+    /// met. Assumes that the initial setup was done in block 0. So this does nothing if the chain
+    /// has already been advanced before.
+    fn bench_advance_block() {}
+    #[cfg(feature = "runtime-benchmarks")]
+    /// Executes any pending steps from `prepare_worst_case_for_bench`.
+    /// Assumes that `bench_advance_block` has already been called.
+    fn bench_execute_pending() {}
 }
 
 impl<AccountId, Imbalance> DistributeRewards<AccountId, Imbalance> for () {
     fn distribute_rewards(_rewarded: AccountId, _amount: Imbalance) -> DispatchResultWithPostInfo {
         Ok(().into())
     }
-}
-
-/// Get the current list of container chains parachain ids.
-pub trait GetCurrentContainerChains {
-    type MaxContainerChains: Get<u32>;
-
-    fn current_container_chains() -> BoundedVec<ParaId, Self::MaxContainerChains>;
-
     #[cfg(feature = "runtime-benchmarks")]
-    fn set_current_container_chains(container_chains: &[ParaId]);
+    fn prepare_worst_case_for_bench(_a: &AccountId) {}
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]

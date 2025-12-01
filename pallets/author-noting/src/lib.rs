@@ -157,8 +157,23 @@ pub mod pallet {
                     .into_iter()
                     .filter_map(|(para_id, collators)| (!collators.is_empty()).then_some(para_id))
                     .collect();
+            // We have two benchmarks, one for `set_latest_author_data` + hooks, and one for only hooks
+            // Here we subtract the hooks weight from the main benchmark, because we add the weight
+            // used by hooks later. In the benchmark it is assumed that all chains produce blocks, so
+            // we must use `container_chains_to_check.len()`, not `infos.len()`.
+            // TODO: this is a bit weird, we could also remove hooks from the base benchmark by adding
+            // a cfg runtime-benchmarks to this function, but that also looks ugly.
+            // Maybe something like
+            // if cfg runtime-benchmarks and some storage value is set: then skip hooks
+            // else keep working as normal
+            // Or a custom hook that does this transparently, but then we need to set that benchmarking hook
+            // in each runtime, and that shouldn't depend on the runtime, all runtimes need the same
+            // benchmarking cfg code.
             let mut total_weight =
-                T::WeightInfo::set_latest_author_data(container_chains_to_check.len() as u32);
+                T::WeightInfo::set_latest_author_data(container_chains_to_check.len() as u32)
+                    .saturating_sub(T::WeightInfo::on_container_authors_noted(
+                        container_chains_to_check.len() as u32,
+                    ));
 
             // We do this first to make sure we don't do 2 reads (parachains and relay state)
             // when we have no containers registered
@@ -176,7 +191,7 @@ pub mod pallet {
                         parent_tanssi_slot,
                     ) {
                         Ok(block_info) => {
-                            LatestAuthor::<T>::mutate(
+                            let _ = LatestAuthor::<T>::try_mutate(
                                 para_id,
                                 |maybe_old_block_info: &mut Option<
                                     ContainerChainBlockInfo<T::AccountId>,
@@ -198,6 +213,10 @@ pub mod pallet {
                                         };
                                         infos.push(info);
                                         *maybe_old_block_info = Some(bi);
+                                        Ok(())
+                                    } else {
+                                        // No need to mutate value if block number didn't change
+                                        Err(())
                                     }
                                 },
                             );

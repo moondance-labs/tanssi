@@ -772,6 +772,18 @@ pub mod pallet {
             .ok()
             .map(|x| x.0)
         }
+
+        #[cfg(feature = "runtime-benchmarks")]
+        pub fn execute_all_pending_operations() -> DispatchResultWithPostInfo {
+            for (account, op_key) in PendingOperations::<T>::iter_keys() {
+                Calls::<T>::execute_pending_operations(alloc::vec![PendingOperationQuery {
+                    delegator: account,
+                    operation: op_key
+                }])?;
+            }
+
+            Ok(().into())
+        }
     }
 
     impl<T: Config> tp_traits::DistributeRewards<Candidate<T>, CreditOf<T>> for Pallet<T> {
@@ -780,6 +792,50 @@ pub mod pallet {
             rewards: CreditOf<T>,
         ) -> DispatchResultWithPostInfo {
             pools::distribute_rewards::<T>(&candidate, rewards)
+        }
+
+        #[cfg(feature = "runtime-benchmarks")]
+        fn prepare_worst_case_for_bench(caller: &Candidate<T>) {
+            // TODO: register and self-delegate?
+            use frame_support::traits::fungible::Balanced;
+            use frame_system::RawOrigin;
+
+            /// Minimum collator candidate stake
+            fn min_candidate_stk<T: Config>() -> T::Balance {
+                <<T as Config>::MinimumSelfDelegation as Get<T::Balance>>::get()
+            }
+            let source_stake = min_candidate_stk::<T>() * 10u32.into();
+
+            T::Currency::resolve(caller, T::Currency::issue(source_stake * 3u32.into()))
+                .expect("to mint tokens");
+
+            Pallet::<T>::request_delegate(
+                RawOrigin::Signed(caller.clone()).into(),
+                caller.clone(),
+                ActivePoolKind::AutoCompounding,
+                source_stake,
+            )
+            .expect("failed to request_delegate AutoCompounding pool");
+            Pallet::<T>::request_delegate(
+                RawOrigin::Signed(caller.clone()).into(),
+                caller.clone(),
+                ActivePoolKind::ManualRewards,
+                source_stake,
+            )
+            .expect("failed to request_delegate ManualRewards pool");
+        }
+
+        #[cfg(feature = "runtime-benchmarks")]
+        fn bench_advance_block() {
+            // TODO: this one is weird. It advances 2 sessions, but it only calls `rotate_session`,
+            // if doesn't call on_initialize/on_finalize for any block
+            T::JoiningRequestTimer::skip_to_elapsed();
+        }
+
+        #[cfg(feature = "runtime-benchmarks")]
+        fn bench_execute_pending() {
+            Pallet::<T>::execute_all_pending_operations()
+                .expect("failed to execute pending operations");
         }
     }
     impl<T: Config> tp_traits::StakingCandidateHelper<Candidate<T>> for Pallet<T> {

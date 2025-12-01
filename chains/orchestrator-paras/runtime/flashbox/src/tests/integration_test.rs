@@ -2206,6 +2206,14 @@ fn test_reward_to_invulnerable() {
             (AccountId::from(BOB), 100 * UNIT),
             (AccountId::from(CHARLIE), 100 * UNIT),
         ])
+        // set 1 collator per chain
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 1,
+            max_orchestrator_collators: 1,
+            collators_per_container: 1,
+            ..Default::default()
+        })
         .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
@@ -2217,6 +2225,18 @@ fn test_reward_to_invulnerable() {
 
             // wait for next session so that ALICE is elected
             run_to_session(4u32);
+
+            // Verify that all chains have collators
+            let collator_assignment = CollatorAssignment::collator_container_chain();
+            // 2 container chains total
+            assert_eq!(collator_assignment.container_chains.len(), 2);
+            // 1 collator on orchestrator
+            assert_eq!(collator_assignment.orchestrator_chain.len(), 1);
+            // 1 collator per container chain
+            assert!(collator_assignment
+                .container_chains
+                .values()
+                .all(|cs| cs.len() == 1));
 
             let account: AccountId = ALICE.into();
             let balance_before = System::account(account.clone()).data.free;
@@ -2255,7 +2275,19 @@ fn test_reward_to_invulnerable_with_key_change() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+        ])
+        // set 1 collator per chain
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 1,
+            max_orchestrator_collators: 1,
+            collators_per_container: 1,
+            ..Default::default()
+        })
         .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
@@ -2275,6 +2307,18 @@ fn test_reward_to_invulnerable_with_key_change() {
 
             run_to_session(4u32);
 
+            // Verify that all chains have collators
+            let collator_assignment = CollatorAssignment::collator_container_chain();
+            // 2 container chains total
+            assert_eq!(collator_assignment.container_chains.len(), 2);
+            // 1 collator on orchestrator
+            assert_eq!(collator_assignment.orchestrator_chain.len(), 1);
+            // 1 collator per container chain
+            assert!(collator_assignment
+                .container_chains
+                .values()
+                .all(|cs| cs.len() == 1));
+
             let account: AccountId = ALICE.into();
             let balance_before = System::account(account.clone()).data.free;
 
@@ -2290,6 +2334,103 @@ fn test_reward_to_invulnerable_with_key_change() {
                 orchestrator_rewards,
                 balance_after - balance_before,
                 "alice should get the correct reward portion"
+            );
+        });
+}
+
+#[test]
+fn test_reward_chain_without_collators() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_empty_parachains(vec![1001, 1002])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            let account: AccountId = ALICE.into();
+            let balance_before = System::account(account.clone()).data.free;
+
+            let summary = run_block();
+            assert_eq!(summary.author_id, ALICE.into());
+
+            let balance_after = System::account(account).data.free;
+
+            let all_rewards = RewardsPortion::get() * summary.inflation;
+            let alice_rewards = balance_after - balance_before;
+
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(assignment.container_chains.len(), 2);
+            assert_eq!(
+                assignment.container_chains[&1001u32.into()],
+                vec![CHARLIE.into(), DAVE.into()]
+            );
+            // The other chain has 0 collators
+            assert_eq!(assignment.container_chains[&1002u32.into()], vec![]);
+
+            // There are 2 registered chains but only 1 has collators. So we mint tokens for 2
+            // chains (orchestrator + 1 container). So Alice gets 1/2 instead of 1/3.
+            assert_eq!(
+                alice_rewards,
+                all_rewards / 2,
+                "alice should get half of the rewards when there is 1 container chain with collators",
+            );
+        });
+}
+
+#[test]
+fn test_reward_no_container_chains_still_has_inflation() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 1,
+            max_orchestrator_collators: 1,
+            collators_per_container: 1,
+            ..Default::default()
+        })
+        .with_empty_parachains(vec![1001, 1002])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            let account: AccountId = ALICE.into();
+            let balance_before = System::account(account.clone()).data.free;
+
+            let summary = run_block();
+            assert_eq!(summary.author_id, ALICE.into());
+
+            let balance_after = System::account(account).data.free;
+
+            let all_rewards = RewardsPortion::get() * summary.inflation;
+            let alice_rewards = balance_after - balance_before;
+
+            // All container chains have 0 collators
+            let assignment = CollatorAssignment::collator_container_chain();
+            // There are 2 chains registered
+            assert_eq!(assignment.container_chains.len(), 2);
+            // But they don't have collators
+            assert!(assignment.container_chains.values().all(|cs| cs.len() == 0));
+
+            // But we always reward orchestrator chain, so there is always inflation minted
+            // and the 100% goes to Alice
+            assert_eq!(
+                alice_rewards, all_rewards,
+                "alice should get the full reward when there are no container chains with collators",
             );
         });
 }

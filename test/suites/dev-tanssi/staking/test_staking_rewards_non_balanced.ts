@@ -1,7 +1,7 @@
 import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import type { KeyringPair } from "@moonwall/util";
+import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import {
     fetchIssuance,
@@ -21,11 +21,25 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let bob: KeyringPair;
+        let charlie: KeyringPair;
+        let dave: KeyringPair;
+        let randomAccount: KeyringPair;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
             bob = context.keyring.bob;
+            charlie = context.keyring.charlie;
+            dave = context.keyring.dave;
+            randomAccount = generateKeyringPair("sr25519");
+
+            const value = 400_000n * DANCE;
+            await context.createBlock([
+                await polkadotJs.tx.balances.transferAllowDeath(randomAccount.address, value).signAsync(alice),
+            ]);
+            // Add an additional collator because we need 5 in total
+            const newKey1 = await polkadotJs.rpc.author.rotateKeys();
+            await context.createBlock([await polkadotJs.tx.session.setKeys(newKey1, "0x").signAsync(randomAccount)]);
 
             // We need to remove all the invulnerables and add to staking
             // Remove all invulnerables, otherwise they have priority
@@ -37,23 +51,47 @@ describeSuite({
             // We will make each of them self-delegate the min amount, while
             // we will make each of them delegate the other with 50%
             // Alice autocompounding, Bob will be manual
-            let aliceNonce = (await polkadotJs.rpc.system.accountNextIndex(alice.address)).toNumber();
-            let bobNonce = (await polkadotJs.rpc.system.accountNextIndex(bob.address)).toNumber();
+            const collators = [alice, bob, charlie, dave, randomAccount];
+            // Pre-fetch nonces for all collators/delegators we’ll use
+            const nonces: Record<string, number> = {};
+            for (const acc of collators) {
+                nonces[acc.address] = (await polkadotJs.rpc.system.accountNextIndex(acc.address)).toNumber();
+            }
 
-            await context.createBlock([
-                await polkadotJs.tx.pooledStaking
-                    .requestDelegate(alice.address, "AutoCompounding", 18000n * DANCE)
-                    .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
-                await polkadotJs.tx.pooledStaking
-                    .requestDelegate(alice.address, "ManualRewards", 2000n * DANCE)
-                    .signAsync(context.keyring.bob, { nonce: bobNonce++ }),
-                await polkadotJs.tx.pooledStaking
-                    .requestDelegate(bob.address, "AutoCompounding", 18000n * DANCE)
-                    .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
-                await polkadotJs.tx.pooledStaking
-                    .requestDelegate(bob.address, "ManualRewards", 2000n * DANCE)
-                    .signAsync(context.keyring.bob, { nonce: bobNonce++ }),
-            ]);
+            // Delegation plan: all collators self-delegate using auto compounding
+            // And alice is a manual delegator of bob
+            const delegationPlan = [
+                { candidate: alice, autoDelegator: alice },
+                { candidate: bob, autoDelegator: alice },
+                { candidate: alice, manualDelegator: bob },
+                { candidate: bob, manualDelegator: bob },
+                { candidate: charlie, autoDelegator: charlie, manualDelegator: charlie },
+                { candidate: dave, autoDelegator: dave, manualDelegator: dave },
+                { candidate: randomAccount, autoDelegator: randomAccount, manualDelegator: randomAccount },
+            ];
+
+            const stakingTxs = [];
+            for (const { candidate, autoDelegator, manualDelegator } of delegationPlan) {
+                // Auto-compounding delegation
+                if (autoDelegator) {
+                    stakingTxs.push(
+                        await polkadotJs.tx.pooledStaking
+                            .requestDelegate(candidate.address, "AutoCompounding", 180000n * DANCE)
+                            .signAsync(autoDelegator, { nonce: nonces[autoDelegator.address]++ })
+                    );
+                }
+
+                // Manual rewards delegation
+                if (manualDelegator) {
+                    stakingTxs.push(
+                        await polkadotJs.tx.pooledStaking
+                            .requestDelegate(candidate.address, "ManualRewards", 20000n * DANCE)
+                            .signAsync(manualDelegator, { nonce: nonces[manualDelegator.address]++ })
+                    );
+                }
+            }
+
+            await context.createBlock(stakingTxs, { allowFailures: false });
             // At least 2 sessions for the change to have effect
             await jumpSessions(context, 2);
         });
@@ -61,6 +99,9 @@ describeSuite({
             id: "E01",
             title: "Alice should receive rewards through staking now",
             test: async () => {
+                const assignment = (await polkadotJs.query.collatorAssignment.collatorContainerChain()).toJSON();
+                // Assert 2 collators in each chain
+                expect(Object.values(assignment.containerChains).map((x) => x.length)).to.deep.equal([2, 2]);
                 // 70% is distributed across all rewards
                 // But we have 2 container chains, so it should get 1/3 of this
                 // Since it is an invulnerable, it receives all payment
