@@ -33,12 +33,12 @@ jobs:
               with:
                 features: "fast-runtime,metadata-hash"
             - name: Upload runtimes
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v5
               with:
                   name: runtimes
                   path: runtimes
             - name: Upload binary
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v5
               with:
                   name: binaries
                   path: binaries
@@ -134,12 +134,12 @@ jobs:
           with:
             features: "fast-runtime,runtime-benchmarks,metadata-hash"
         - name: Upload benchmark runtimes
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v5
           with:
             name: runtimes-benchmark
             path: runtimes
         - name: Upload binary
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v5
           with:
             name: binaries-benchmark
             path: binaries

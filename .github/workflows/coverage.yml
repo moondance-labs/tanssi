@@ -78,12 +78,12 @@ jobs:
           # Enable coverage when running tests
           echo "LLVM_PROFILE_FILE=$(pwd)/proffiles/default_%m_%p.profraw" >> $GITHUB_ENV
       - name: Upload runtimes
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: runtimes
           path: runtimes
       - name: Upload binaries
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: binaries
           path: binaries
@@ -168,7 +168,7 @@ jobs:
 
           rm -rf proffiles/
       - name: Upload coverate to gha
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: coverage
           path: coverage
