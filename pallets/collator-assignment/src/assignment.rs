@@ -53,7 +53,7 @@ where
     /// shuffling doesn't cause a collator with low priority to be assigned instead of a collator
     /// with higher priority.
     pub fn assign_collators_always_keep_old<TShuffle>(
-        collators: Vec<T::AccountId>,
+        mut collators: Vec<T::AccountId>,
         orchestrator_chain: ChainNumCollators,
         mut chains: Vec<ChainNumCollators>,
         mut old_assigned: AssignedCollators<T::AccountId>,
@@ -76,9 +76,21 @@ where
         // Orchestrator chain must be the first one in the list because it always has priority
         chains.insert(0, orchestrator_chain);
         let all_para_ids: Vec<ParaId> = chains.iter().map(|cc| cc.para_id).collect();
-        let collators_set = BTreeSet::from_iter(collators.iter().cloned());
         let chains_with_collators =
             Self::select_chains_with_collators(collators.len() as u32, &chains);
+
+        // Only ever consider the collators with higher priority. If we need N collators, then we
+        // ensure that the top N collators will be assigned.
+        let num_needed_collators = get_required_collators(
+            chains_with_collators
+                .iter()
+                .map(|(_para_id, num_collators)| *num_collators),
+        );
+        collators.truncate(num_needed_collators as usize);
+        let collators = collators;
+        let chains = chains;
+
+        let collators_set = BTreeSet::from_iter(collators.iter().cloned());
         let chains_with_collators_set: BTreeSet<ParaId> = chains_with_collators
             .iter()
             .map(|(para_id, _num_collators)| *para_id)
@@ -402,14 +414,13 @@ where
     where
         TShuffle: FnOnce(&mut Vec<T::AccountId>),
     {
-        let mut required_collators = 0usize;
-        for (_para_id, num_collators) in chains.iter() {
-            let num_collators =
-                usize::try_from(*num_collators).map_err(|_| AssignmentError::NotEnoughCollators)?;
-            required_collators = required_collators
-                .checked_add(num_collators)
-                .ok_or(AssignmentError::NotEnoughCollators)?;
-        }
+        let required_collators = get_required_collators(
+            chains
+                .iter()
+                .map(|(_para_id, num_collators)| *num_collators),
+        );
+        let required_collators =
+            usize::try_from(required_collators).map_err(|_| AssignmentError::NotEnoughCollators)?;
 
         // This check is necessary to ensure priority: if the number of collators is less than required, it is
         // possible that the chain with the least priority could be assigned collators (since they are in
@@ -538,4 +549,14 @@ pub struct ChainNumCollators {
     pub max_collators: u32,
     /// True if this a parathread. False means parachain or orchestrator.
     pub parathread: bool,
+}
+
+/// Return number of collators needed to satisfy all chains.
+/// This is just `.sum()` but with saturating_add instead of a panic.
+fn get_required_collators<T: Iterator<Item = u32>>(chains: T) -> u32 {
+    let mut required_collators = 0u32;
+    for num_collators in chains {
+        required_collators.saturating_accrue(num_collators);
+    }
+    required_collators
 }
