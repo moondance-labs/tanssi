@@ -227,7 +227,9 @@ describeSuite({
                                         value.toString() === amount.toString()
                                     );
                                 }
-                            )[0];
+                            ).find(Boolean);
+
+                            console.log("matched", matched);
 
                             expect(
                                 matched,
