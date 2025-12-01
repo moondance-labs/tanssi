@@ -2063,10 +2063,9 @@ fn test_collator_assignment_tip_have_priority_among_newcomers_on_congestion() {
                 0
             );
 
-            assert!(TanssiCollatorAssignment::collator_container_chain()
+            assert!(!TanssiCollatorAssignment::collator_container_chain()
                 .container_chains
-                .get(&1004u32.into())
-                .is_none());
+                .contains_key(&1004u32.into()));
 
             // Send funds to tank
             assert_ok!(ServicesPayment::purchase_credits(
@@ -2100,10 +2099,9 @@ fn test_collator_assignment_tip_have_priority_among_newcomers_on_congestion() {
             // 1004 should get priority since it has higher tip.
             run_to_session(2);
             // - no elligible
-            assert!(TanssiCollatorAssignment::collator_container_chain()
+            assert!(!TanssiCollatorAssignment::collator_container_chain()
                 .container_chains
-                .get(&1001.into())
-                .is_none());
+                .contains_key(&1001.into()));
             // elligble but not selected as no tip
             assert_eq!(
                 TanssiCollatorAssignment::collator_container_chain().container_chains[&1002.into()]
