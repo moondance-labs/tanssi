@@ -11,6 +11,7 @@ workspace = true
 workspace = true
 
 [dependencies]
+dp-xcm-reserve = { workspace = true }
 frame-support = { workspace = true }
 log = { workspace = true }
 xcm = { workspace = true }
@@ -23,4 +24,5 @@ std = [
 	"frame-support/std",
 	"log/std",
 	"xcm/std",
+	"dp-xcm-reserve/std"
 ]
