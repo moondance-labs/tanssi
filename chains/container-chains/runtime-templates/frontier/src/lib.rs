@@ -334,7 +334,10 @@ impl WeightToFeePolynomial for ProofSizeToFee {
     type Balance = Balance;
     fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
         // Map 10kb proof to 1 CENT.
+        #[cfg(not(feature = "runtime-benchmarks"))]
         let p = currency::MILLIUNIT / 10;
+        #[cfg(feature = "runtime-benchmarks")]
+        let p = 100 * Balance::from(ExtrinsicBaseWeight::get().proof_size());
         let q = 10_000;
 
         smallvec![WeightToFeeCoefficient {
