@@ -49,8 +49,9 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
         <FrontierTemplate as FrontierTemplateParaPallet>::ParachainInfo::parachain_id().into()
     });
 
-    let ethereum_network =
-        ethereum_chain_id::<container_chain_template_frontier_runtime::EthereumNetwork>();
+    let ethereum_network = FrontierTemplate::execute_with(|| {
+        ethereum_chain_id::<container_chain_template_frontier_runtime::EthereumNetwork>()
+    });
 
     // Common location calculations
     let container_location = Location::new(0, Parachain(container_para_id));
@@ -389,8 +390,9 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
         <SimpleTemplate as SimpleTemplateParaPallet>::ParachainInfo::parachain_id().into()
     });
 
-    let ethereum_network =
-        ethereum_chain_id::<container_chain_template_frontier_runtime::EthereumNetwork>();
+    let ethereum_network = SimpleTemplate::execute_with(|| {
+        ethereum_chain_id::<container_chain_template_frontier_runtime::EthereumNetwork>()
+    });
 
     // Common location calculations
     let container_location = Location::new(0, Parachain(container_para_id));
