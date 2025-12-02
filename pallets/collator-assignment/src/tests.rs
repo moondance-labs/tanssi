@@ -838,7 +838,7 @@ fn assign_collators_rotation_parathreads_are_shuffled() {
         assert_eq!(assigned_collators(), initial_assignment,);
 
         MockData::mutate(|m| {
-            // We remove 1001, so there'll be a 50% chance 3003 takes it place, 50% for 3002
+            // We remove 3001, so there'll be a 50% chance 3003 takes it place, 50% for 3002
             m.parathreads = vec![3002, 3003];
             // Seed chosen manually to see assignment to different collators.
             m.random_seed = [1; 32];
@@ -847,7 +847,6 @@ fn assign_collators_rotation_parathreads_are_shuffled() {
         run_to_block(26);
 
         // Random assignment depends on the seed, shouldn't change unless the algorithm changes
-        // Test that container chains are shuffled because 1001 does not have priority
         let shuffled_assignment =
             BTreeMap::from_iter(vec![(1, 3003), (2, 1000), (3, 1000), (4, 3003)]);
 
