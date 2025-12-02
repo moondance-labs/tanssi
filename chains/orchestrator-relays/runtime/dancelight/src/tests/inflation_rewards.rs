@@ -350,3 +350,113 @@ fn test_reward_to_invulnerable_with_key_change() {
             );
         });
 }
+
+#[test]
+fn test_reward_chain_without_collators() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_empty_parachains(vec![1001, 1002])
+        .build()
+        .execute_with(|| {
+            // Let's get the inflation of the block.
+            let summary = run_block();
+
+            // Calculate Bob's rewards.
+            let all_rewards = RewardsPortion::get() * summary.inflation;
+            // Even though there are 2 parachains registered, 1001 gets all the rewards because it
+            // is the only chain with collators
+            let bob_rewards = all_rewards;
+
+            let mut sproof = ParaHeaderSproofBuilder::default();
+            let slot: u64 = 5;
+            let other_para: ParaId = 1001u32.into();
+
+            // In dancelight there is no orchestrator chain, so instead of Charlie and Dave
+            // we assign Alice and Bob.
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert_eq!(
+                assignment.container_chains[&1001u32.into()],
+                vec![ALICE.into(), BOB.into()]
+            );
+            // The other chain has 0 collators
+            assert_eq!(assignment.container_chains[&1002u32.into()], vec![]);
+
+            // Build the proof needed to call AuthorNoting's inherent.
+            let s = ParaHeaderSproofBuilderItem {
+                para_id: other_para,
+                author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                    parent_hash: Default::default(),
+                    number: 1,
+                    state_root: Default::default(),
+                    extrinsics_root: Default::default(),
+                    digest: sp_runtime::generic::Digest {
+                        logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                    },
+                }),
+            };
+            sproof.items.push(s);
+
+            let account: AccountId = BOB.into();
+            let balance_before = System::account(account.clone()).data.free;
+
+            // We need to set the AuthorNoting's inherent for it to also run
+            // InflationRewards::on_container_authors_noted and reward the collator.
+            set_author_noting_inherent_data(sproof);
+
+            assert_eq!(
+                AuthorNoting::latest_author(other_para),
+                Some(ContainerChainBlockInfo {
+                    block_number: 1,
+                    author: AccountId::from(BOB),
+                    latest_slot_number: 2.into(),
+                })
+            );
+
+            let balance_after = System::account(account).data.free;
+
+            assert_eq!(
+                bob_rewards,
+                balance_after - balance_before,
+                "bob should get the correct reward portion"
+            );
+        });
+}
+
+#[test]
+fn test_reward_no_collators_no_inflation() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
+        .with_empty_parachains(vec![1001, 1002])
+        .build()
+        .execute_with(|| {
+            // Let's get the inflation of the block.
+            let summary = run_block();
+
+            // All container chains have 0 collators
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            // There are 2 chains registered
+            assert_eq!(assignment.container_chains.len(), 2);
+            // But they don't have collators
+            assert!(assignment.container_chains.values().all(|cs| cs.len() == 0));
+
+            // So there is no minted inflation
+            assert_eq!(summary.inflation, 0);
+        });
+}
