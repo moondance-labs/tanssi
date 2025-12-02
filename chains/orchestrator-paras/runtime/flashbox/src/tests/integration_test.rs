@@ -2206,6 +2206,14 @@ fn test_reward_to_invulnerable() {
             (AccountId::from(BOB), 100 * UNIT),
             (AccountId::from(CHARLIE), 100 * UNIT),
         ])
+        // set 1 collator per chain
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 1,
+            max_orchestrator_collators: 1,
+            collators_per_container: 1,
+            ..Default::default()
+        })
         .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
@@ -2217,6 +2225,18 @@ fn test_reward_to_invulnerable() {
 
             // wait for next session so that ALICE is elected
             run_to_session(4u32);
+
+            // Verify that all chains have collators
+            let collator_assignment = CollatorAssignment::collator_container_chain();
+            // 2 container chains total
+            assert_eq!(collator_assignment.container_chains.len(), 2);
+            // 1 collator on orchestrator
+            assert_eq!(collator_assignment.orchestrator_chain.len(), 1);
+            // 1 collator per container chain
+            assert!(collator_assignment
+                .container_chains
+                .values()
+                .all(|cs| cs.len() == 1));
 
             let account: AccountId = ALICE.into();
             let balance_before = System::account(account.clone()).data.free;
@@ -2255,7 +2275,19 @@ fn test_reward_to_invulnerable_with_key_change() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+        ])
+        // set 1 collator per chain
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 1,
+            max_orchestrator_collators: 1,
+            collators_per_container: 1,
+            ..Default::default()
+        })
         .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
@@ -2274,6 +2306,18 @@ fn test_reward_to_invulnerable_with_key_change() {
             ));
 
             run_to_session(4u32);
+
+            // Verify that all chains have collators
+            let collator_assignment = CollatorAssignment::collator_container_chain();
+            // 2 container chains total
+            assert_eq!(collator_assignment.container_chains.len(), 2);
+            // 1 collator on orchestrator
+            assert_eq!(collator_assignment.orchestrator_chain.len(), 1);
+            // 1 collator per container chain
+            assert!(collator_assignment
+                .container_chains
+                .values()
+                .all(|cs| cs.len() == 1));
 
             let account: AccountId = ALICE.into();
             let balance_before = System::account(account.clone()).data.free;
