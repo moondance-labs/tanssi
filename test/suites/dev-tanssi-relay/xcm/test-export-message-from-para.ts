@@ -10,6 +10,7 @@ import {
     isStarlightRuntime,
     jumpToSession,
     TESTNET_ETHEREUM_NETWORK_ID,
+    MAINNET_ETHEREUM_NETWORK_ID,
 } from "utils";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_EXPORTS } from "helpers";
 import type { EventRecord } from "@polkadot/types/interfaces";
@@ -149,7 +150,9 @@ describeSuite({
                     return;
                 }
 
-                const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
+                const ethereumNetwork = {
+                    Ethereum: { chainId: isStarlight ? MAINNET_ETHEREUM_NETWORK_ID : TESTNET_ETHEREUM_NETWORK_ID },
+                };
 
                 const xcmToExport = new XcmFragment({
                     assets: [
