@@ -1834,7 +1834,8 @@ impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnba
 // Pallet to reward container chains collators.
 impl pallet_inflation_rewards::Config for Runtime {
     type Currency = Balances;
-    type ContainerChains = ContainerRegistrar;
+    type ContainerChains = TanssiCollatorAssignment;
+    type MaxContainerChains = MaxLengthParaIds;
     type GetSelfChainBlockAuthor = ();
     type InflationRate = CollatorsInflationRatePerBlock;
     type OnUnbalanced = OnUnbalancedInflation;
