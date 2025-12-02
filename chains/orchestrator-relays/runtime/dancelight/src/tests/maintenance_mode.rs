@@ -17,10 +17,11 @@
 #![cfg(test)]
 
 use {
-    crate::{tests::common::*, MaintenanceMode, RuntimeCall, SessionKeys},
+    crate::{tests::common::*, Historical, MaintenanceMode, RuntimeCall, SessionKeys},
     alloc::vec,
-    frame_support::{assert_noop, assert_ok},
+    frame_support::{assert_noop, assert_ok, traits::KeyOwnerProofSystem},
     pallet_assets::Instance1,
+    sp_application_crypto::Pair,
     sp_runtime::traits::Dispatchable,
 };
 
@@ -198,11 +199,115 @@ fn test_filtered_calls_maintenance_mode() {
         });
 }
 
+#[test]
+fn test_non_filtered_calls_maintenance_mode() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_sudo(AccountId::from(ALICE))
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            assert_ok!(MaintenanceMode::enter_maintenance_mode(root_origin()));
+            let babe_key = get_pair_from_seed::<babe_primitives::AuthorityId>(
+                &AccountId::from(ALICE).to_string(),
+            );
+            let grandpa_key = get_pair_from_seed::<grandpa_primitives::AuthorityId>(
+                &AccountId::from(ALICE).to_string(),
+            );
+
+            let babe_equivocation_proof = generate_babe_equivocation_proof(&babe_key);
+
+            let set_id = Grandpa::current_set_id();
+
+            let grandpa_equivocation_proof = generate_grandpa_equivocation_proof(
+                set_id,
+                (1, sp_core::H256::random(), 1, &grandpa_key),
+                (1, sp_core::H256::random(), 1, &grandpa_key),
+            );
+
+            let grandpa_key_owner_proof =
+                Historical::prove((grandpa_primitives::KEY_TYPE, grandpa_key.public())).unwrap();
+
+            let babe_key_owner_proof =
+                Historical::prove((babe_primitives::KEY_TYPE, babe_key.public())).unwrap();
+
+            assert_call_not_filtered(RuntimeCall::Babe(
+                pallet_babe::Call::<Runtime>::report_equivocation_unsigned {
+                    equivocation_proof: Box::new(babe_equivocation_proof),
+                    key_owner_proof: babe_key_owner_proof,
+                },
+            ));
+
+            assert_call_not_filtered(RuntimeCall::Timestamp(
+                pallet_timestamp::Call::<Runtime>::set { now: 1u64 },
+            ));
+
+            assert_call_not_filtered(RuntimeCall::CollatorConfiguration(
+                pallet_configuration::Call::<Runtime>::set_max_collators { new: 1u32 },
+            ));
+
+            assert_call_not_filtered(RuntimeCall::TanssiInvulnerables(
+                pallet_invulnerables::Call::<Runtime>::add_invulnerable {
+                    who: AccountId::from(ALICE),
+                },
+            ));
+
+            assert_call_not_filtered(RuntimeCall::AuthorNoting(pallet_author_noting::Call::<
+                Runtime,
+            >::kill_author_data {
+                para_id: 2000u32.into(),
+            }));
+
+            assert_call_not_filtered(RuntimeCall::ExternalValidators(
+                pallet_external_validators::Call::<Runtime>::skip_external_validators {
+                    skip: true,
+                },
+            ));
+
+            assert_call_not_filtered(RuntimeCall::EthereumInboundQueue(
+                snowbridge_pallet_inbound_queue::Call::<Runtime>::set_operating_mode {
+                    mode: snowbridge_core::BasicOperatingMode::Normal,
+                },
+            ));
+
+            assert_call_not_filtered(RuntimeCall::Grandpa(
+                pallet_grandpa::Call::<Runtime>::report_equivocation_unsigned {
+                    equivocation_proof: Box::new(grandpa_equivocation_proof),
+                    key_owner_proof: grandpa_key_owner_proof,
+                },
+            ));
+
+
+            assert_call_not_filtered(RuntimeCall::EthereumBeaconClient(
+                snowbridge_pallet_ethereum_client::Call::<Runtime>::force_checkpoint {
+                    update: Box::new(snowbridge_pallet_ethereum_client::mock_electra::load_checkpoint_update_fixture()),
+                },
+            ));
+        });
+}
+
 fn assert_call_filtered(call: RuntimeCall) {
     assert_noop!(
         call.dispatch(<Runtime as frame_system::Config>::RuntimeOrigin::signed(
             AccountId::from(ALICE)
         )),
         frame_system::Error::<Runtime>::CallFiltered
+    );
+}
+
+fn assert_call_not_filtered(call: RuntimeCall) {
+    let res = call.dispatch(<Runtime as frame_system::Config>::RuntimeOrigin::signed(
+        AccountId::from(ALICE),
+    ));
+
+    assert!(
+        res != Err(frame_system::Error::<Runtime>::CallFiltered.into()),
+        "Call is filtered"
     );
 }
