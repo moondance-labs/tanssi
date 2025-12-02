@@ -3,7 +3,7 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { isStarlightRuntime, XcmFragment, TESTNET_ETHEREUM_NETWORK_ID } from "utils";
+import { isStarlightRuntime, XcmFragment, MAINNET_ETHEREUM_NETWORK_ID, TESTNET_ETHEREUM_NETWORK_ID } from "utils";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_EXPORTS } from "helpers";
 
 describeSuite({
@@ -141,7 +141,9 @@ describeSuite({
                     return;
                 }
 
-                const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
+                const ethereumNetwork = {
+                    Ethereum: { chainId: isStarlight ? MAINNET_ETHEREUM_NETWORK_ID : TESTNET_ETHEREUM_NETWORK_ID },
+                };
 
                 const xcmToExport = new XcmFragment({
                     assets: [
