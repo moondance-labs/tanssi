@@ -1680,7 +1680,6 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
                 | RuntimeCall::PooledStaking(..)
                 | RuntimeCall::Identity(..)
                 | RuntimeCall::XcmPallet(..)
-                | RuntimeCall::EthereumBeaconClient(..)
                 | RuntimeCall::EthereumSystem(..)
                 | RuntimeCall::EthereumTokenTransfers(..)
                 | RuntimeCall::OnDemandAssignmentProvider(..)
@@ -1692,6 +1691,7 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
                 | RuntimeCall::StreamPayment(..)
                 | RuntimeCall::Treasury(..)
                 | RuntimeCall::ForeignAssets(..)
+                | RuntimeCall::ForeignAssetsCreator(..)
         )
     }
 }
