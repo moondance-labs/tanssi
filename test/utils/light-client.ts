@@ -25,7 +25,7 @@ import type {
     SnowbridgeVerificationPrimitivesLog,
     SnowbridgeVerificationPrimitivesProof,
 } from "@polkadot/types/lookup";
-import { u8aToHex } from "@polkadot/util";
+import { hexToU8a, u8aToHex } from "@polkadot/util";
 import { AbiCoder } from "ethers/abi";
 import { getBytes } from "ethers/utils";
 
@@ -37,6 +37,117 @@ function defaultBeaconBlockHeader(slot: Slot): deneb.LightClientHeader {
     const header = ssz.deneb.LightClientHeader.defaultValue();
     header.beacon.slot = slot;
     return header;
+}
+
+function encodeAsNativeTokenERC20(tokenAddress: string, value: bigint): Uint8Array {
+    const defaultAbiCoder = AbiCoder.defaultAbiCoder();
+
+    const encoded = defaultAbiCoder.encode(["address", "uint128"], [tokenAddress, value]);
+    return getBytes(encoded);
+}
+
+function encodeAsForeignTokenERC20(tokenId: Uint8Array | string, value: bigint): Uint8Array {
+    const defaultAbiCoder = AbiCoder.defaultAbiCoder();
+
+    const encoded = defaultAbiCoder.encode(["bytes32", "uint128"], [tokenId, value]);
+
+    return getBytes(encoded);
+}
+
+function encodeXcmMessage(api: ApiPromise, xcmInstructions): Uint8Array {
+    const xcm = api.createType("XcmVersionedXcm", {
+        V5: xcmInstructions,
+    });
+
+    return xcm.toU8a();
+}
+
+function encodeRawPayloadXcm(api: ApiPromise, xcmBytes: Uint8Array): Uint8Array {
+    api.registry.register({
+        RawPayload: {
+            _enum: {
+                Xcm: "Vec<u8>",
+                Symbiotic: "Vec<u8>",
+            },
+        },
+    });
+
+    const rawPayload = api.createType("RawPayload", {
+        Xcm: Array.from(xcmBytes),
+    });
+
+    return rawPayload.toU8a();
+}
+
+function createXcmData(api: ApiPromise, xcmInstructions): Uint8Array {
+    const xcmBytes = encodeXcmMessage(api, xcmInstructions);
+
+    return encodeRawPayloadXcm(api, xcmBytes);
+}
+
+export async function generateOutboundMessageAcceptedLog(
+    api: ApiPromise,
+    nonce,
+    ethValue: bigint,
+    instructions,
+    nativeERC20Params: { value: bigint; tokenAddress: string }[] = [],
+    foreignTokenParams: { value: bigint; tokenId: string }[] = []
+) {
+    const gatewayHex = "EDa338E4dC46038493b885327842fD3E301CaB39";
+    const origin = `0x${gatewayHex}`;
+    const gatewayAddress = Uint8Array.from(Buffer.from(gatewayHex, "hex"));
+
+    const xcmData = createXcmData(api, instructions);
+    const defaultAbiCoder = AbiCoder.defaultAbiCoder();
+
+    const payload = {
+        origin,
+        assets: [
+            ...nativeERC20Params.map((nativeTokenParam) => ({
+                kind: 0,
+                data: encodeAsNativeTokenERC20(nativeTokenParam.tokenAddress, nativeTokenParam.value),
+            })),
+            ...foreignTokenParams.map((foreignTokenParam) => ({
+                kind: 1,
+                data: encodeAsForeignTokenERC20(foreignTokenParam.tokenId, foreignTokenParam.value),
+            })),
+        ],
+        xcm: { kind: 0, data: xcmData },
+        claimer: "0x",
+        value: ethValue,
+        executionFee: 0n,
+        relayerFee: 0n,
+    };
+
+    // Signature for event OutboundMessageAccepted(uint64 nonce, Payload payload) - fixed value
+    const signature = hexToU8a("0x550e2067494b1736ea5573f2d19cdc0ac95b410fff161bf16f11c6229655ec9c");
+    const topics = [signature];
+    const assetsEncoded = payload.assets.map((asset) => [asset.kind, asset.data]);
+    const xcmEncoded = [payload.xcm.kind, payload.xcm.data];
+
+    const encodedDataString = defaultAbiCoder.encode(
+        ["uint64", "tuple(address,tuple(uint8,bytes)[],tuple(uint8,bytes),bytes,uint128,uint128,uint128)"],
+        [
+            nonce,
+            [
+                payload.origin,
+                assetsEncoded,
+                xcmEncoded,
+                payload.claimer,
+                payload.value,
+                payload.executionFee,
+                payload.relayerFee,
+            ],
+        ]
+    );
+
+    const encodedData = getBytes(encodedDataString);
+
+    return api.createType<SnowbridgeVerificationPrimitivesLog>("SnowbridgeVerificationPrimitivesLog", {
+        address: gatewayAddress,
+        topics,
+        data: [].slice.call(encodedData),
+    });
 }
 
 function createSyncCommittee(seed: number) {
