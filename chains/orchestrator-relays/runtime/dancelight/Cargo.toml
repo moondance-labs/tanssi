@@ -200,7 +200,7 @@ substrate-wasm-builder = { workspace = true, optional = true }
 [features]
 default = [ "std" ]
 std = [
-    "alloy-core/std",
+	"alloy-core/std",
 	"authority-discovery-primitives/std",
 	"babe-primitives/std",
 	"beefy-primitives/std",
