@@ -29,13 +29,13 @@ use {
         sol_types::{SolEvent, SolValue},
     },
     dancelight_runtime_constants::snowbridge::{EthereumLocation, EthereumNetwork},
-    frame_support::{assert_ok},
+    frame_support::assert_ok,
     frame_system::pallet_prelude::OriginFor,
     keyring::Sr25519Keyring,
     parity_scale_codec::Encode,
     snowbridge_inbound_queue_primitives::v2::message::IGatewayV2,
     snowbridge_verification_primitives::{EventProof, Log},
-    sp_core::{H256,H160},
+    sp_core::{H160, H256},
     tanssi_runtime_common::processors::v2::RawPayload,
     tp_bridge::symbiotic_message_processor::{
         InboundCommand, Message as SymbioticMessage, Payload as SymbioticPayload, MAGIC_BYTES,
@@ -227,7 +227,6 @@ fn test_inbound_queue_message_symbiotic_incorrect_origin() {
         assert!(matches!(result, Err(sp_runtime::DispatchError::Other(_))));
     });
 }
-
 
 #[test]
 fn test_inbound_queue_message_symbiotic_incorrect_payload() {
