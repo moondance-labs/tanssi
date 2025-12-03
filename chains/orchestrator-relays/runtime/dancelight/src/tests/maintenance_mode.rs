@@ -39,7 +39,7 @@ fn maintenance_mode_can_be_set_by_sudo() {
         .build()
         .execute_with(|| {
             run_to_block(2);
-            // Alice should be able to execute this extrinsic
+            // Root should be able to enter maintenance mode
             assert_ok!(MaintenanceMode::enter_maintenance_mode(root_origin(),));
         });
 }
@@ -58,7 +58,7 @@ fn asset_maintenance_mode_cannot_be_set_by_signed_origin() {
         .build()
         .execute_with(|| {
             run_to_block(2);
-            // Alice should be able to execute this extrinsic
+            // Alice should not be able to execute extrinsic
             assert_noop!(
                 MaintenanceMode::enter_maintenance_mode(origin_of(ALICE.into())),
                 crate::DispatchError::BadOrigin
@@ -81,13 +81,6 @@ fn test_filtered_calls_maintenance_mode() {
         .execute_with(|| {
             run_to_block(2);
             assert_ok!(MaintenanceMode::enter_maintenance_mode(root_origin()));
-
-            assert_call_filtered(RuntimeCall::Balances(
-                pallet_balances::Call::<Runtime>::transfer_allow_death {
-                    dest: AccountId::from(BOB).into(),
-                    value: 1 * UNIT,
-                },
-            ));
 
             assert_call_filtered(RuntimeCall::Balances(
                 pallet_balances::Call::<Runtime>::transfer_allow_death {
