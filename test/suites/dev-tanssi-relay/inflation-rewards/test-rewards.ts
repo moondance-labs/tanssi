@@ -5,7 +5,14 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import { mockAndInsertHeadData, DANCELIGHT_BOND, fetchIssuance, filterRewardFromContainer, jumpToSession } from "utils";
+import {
+    mockAndInsertHeadData,
+    DANCELIGHT_BOND,
+    fetchIssuance,
+    filterRewardFromContainer,
+    jumpToSession,
+    jumpSessions,
+} from "utils";
 //5EYCAe5cHUC3LZehbwavqEb95LcNnpBzfQTsAxeUibSo1Gtb
 
 describeSuite({
@@ -15,10 +22,36 @@ describeSuite({
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
+        let bob: KeyringPair;
+        let charlie: KeyringPair;
+        let dave: KeyringPair;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
+            bob = context.keyring.bob;
+            charlie = context.keyring.charlie;
+            dave = context.keyring.dave;
+
+            // Add keys to pallet session. In dancebox they are already there in genesis.
+            // We need 4 collators because we have 2 chains with 2 collators per chain.
+            const newKey1 = await polkadotJs.rpc.author.rotateKeys();
+            const newKey2 = await polkadotJs.rpc.author.rotateKeys();
+            const newKey3 = await polkadotJs.rpc.author.rotateKeys();
+            const newKey4 = await polkadotJs.rpc.author.rotateKeys();
+
+            await context.createBlock([
+                await polkadotJs.tx.session.setKeys(newKey1, []).signAsync(alice),
+                await polkadotJs.tx.session.setKeys(newKey2, []).signAsync(bob),
+                await polkadotJs.tx.session.setKeys(newKey3, []).signAsync(charlie),
+                await polkadotJs.tx.session.setKeys(newKey4, []).signAsync(dave),
+            ]);
+
+            // At least 2 sessions for the change to have effect
+            await jumpSessions(context, 2);
+            // +2 because in tanssi-relay sessions start 1 block later
+            await context.createBlock();
+            await context.createBlock();
         });
 
         it({
@@ -26,6 +59,11 @@ describeSuite({
             title: "Parachain bond receives 30% of the inflation and pending rewards plus division dust",
             test: async () => {
                 await context.createBlock();
+
+                const assignment = (await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()).toJSON();
+                // Assert 2 collators in each chain
+                expect(Object.values(assignment.containerChains).map((x) => x.length)).to.deep.equal([2, 2]);
+
                 let expectedAmountParachainBond = 0n;
 
                 const pendingChainRewards = await polkadotJs.query.inflationRewards.chainsToReward();
