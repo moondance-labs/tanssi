@@ -151,12 +151,13 @@ pub struct Mocks {
     pub container_chains: Vec<u32>,
     pub parathreads: Vec<u32>,
     pub random_seed: [u8; 32],
-    pub chains_that_are_tipping: Vec<ParaId>,
+    pub chains_tip: BTreeMap<ParaId, u32>,
     // None means 5
     pub full_rotation_period: Option<u32>,
     pub full_rotation_mode: FullRotationModes,
     pub apply_tip: bool,
     pub assignment_hook_errors: bool,
+    pub cant_pay_tip: Vec<ParaId>,
 }
 
 impl Default for Mocks {
@@ -173,11 +174,14 @@ impl Default for Mocks {
             container_chains: Default::default(),
             parathreads: Default::default(),
             random_seed: Default::default(),
-            chains_that_are_tipping: vec![1003.into(), 1004.into()],
+            chains_tip: [(1003.into(), 1000), (1004.into(), 1000)]
+                .into_iter()
+                .collect(),
             full_rotation_period: Default::default(),
             full_rotation_mode: Default::default(),
             apply_tip: Default::default(),
             assignment_hook_errors: Default::default(),
+            cant_pay_tip: Default::default(),
         }
     }
 }
@@ -311,10 +315,9 @@ impl Get<u32> for MockCollatorRotationSessionPeriod {
 pub struct MockCollatorAssignmentTip;
 
 impl CollatorAssignmentTip<u32> for MockCollatorAssignmentTip {
-    fn get_para_tip(para_id: ParaId) -> Option<u32> {
-        if MockData::mock().apply_tip && MockData::mock().chains_that_are_tipping.contains(&para_id)
-        {
-            Some(1_000u32)
+    fn get_para_max_tip(para_id: ParaId) -> Option<u32> {
+        if MockData::mock().apply_tip {
+            MockData::mock().chains_tip.get(&para_id).copied()
         } else {
             None
         }
@@ -411,6 +414,7 @@ pub struct MockParaIdAssignmentHooksImpl;
 impl<AC> ParaIdAssignmentHooks<u32, AC> for MockParaIdAssignmentHooksImpl {
     fn pre_assignment(para_ids: &mut Vec<ParaId>, _old_assigned: &BTreeSet<ParaId>) {
         para_ids.retain(|para_id| *para_id <= ParaId::from(5000));
+        para_ids.retain(|para_id| !MockData::mock().cant_pay_tip.contains(para_id));
     }
 
     fn post_assignment(

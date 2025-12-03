@@ -1988,7 +1988,7 @@ fn test_block_credits_and_collator_assignation_credits_through_tank() {
 }
 
 #[test]
-fn test_collator_assignment_tip_priority_on_congestion() {
+fn test_collator_assignment_tip_dont_have_priority_on_congestion() {
     ExtBuilder::default()
         .with_balances(vec![
             (AccountId::from(ALICE), 210_000 * UNIT),
@@ -2031,13 +2031,13 @@ fn test_collator_assignment_tip_priority_on_congestion() {
                 TanssiCollatorAssignment::collator_container_chain().container_chains
                     [&para_id.into()]
                     .len(),
-                2,
+                0,
             );
         });
 }
 
 #[test]
-fn test_collator_assignment_tip_charged_on_congestion() {
+fn test_collator_assignment_tip_have_priority_among_newcomers_on_congestion() {
     ExtBuilder::default()
         .with_balances(vec![
             (AccountId::from(ALICE), 210_000 * UNIT),
@@ -2046,7 +2046,105 @@ fn test_collator_assignment_tip_charged_on_congestion() {
         .with_collators(vec![
             (AccountId::from(ALICE), 210 * UNIT),
             (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 210 * UNIT),
+        ])
+        .with_empty_parachains(vec![1001, 1002, 1003, 1004])
+        .build()
+        .execute_with(|| {
+            let tank_funds_1003 = 100 * UNIT;
+            let max_tip_1003 = 1 * UNIT;
+
+            let tank_funds_1004 = 100 * UNIT;
+            let max_tip_1004 = 2 * UNIT;
+
+            assert_eq!(
+                TanssiCollatorAssignment::collator_container_chain().container_chains
+                    [&1003u32.into()]
+                    .len(),
+                0
+            );
+
+            assert!(!TanssiCollatorAssignment::collator_container_chain()
+                .container_chains
+                .contains_key(&1004u32.into()));
+
+            // Send funds to tank
+            assert_ok!(ServicesPayment::purchase_credits(
+                origin_of(ALICE.into()),
+                1003.into(),
+                tank_funds_1003,
+            ));
+
+            assert_ok!(ServicesPayment::purchase_credits(
+                origin_of(ALICE.into()),
+                1004.into(),
+                tank_funds_1004,
+            ));
+
+            // Set tips
+            assert_ok!(ServicesPayment::set_max_tip(
+                root_origin(),
+                1003.into(),
+                Some(max_tip_1003),
+            ));
+
+            assert_ok!(ServicesPayment::set_max_tip(
+                root_origin(),
+                1004.into(),
+                Some(max_tip_1004),
+            ));
+
+            // Remove 1001 to make room
+            assert_ok!(ContainerRegistrar::deregister(root_origin(), 1001.into(),));
+
+            // 1004 should get priority since it has higher tip.
+            run_to_session(2);
+            // - no elligible
+            assert!(!TanssiCollatorAssignment::collator_container_chain()
+                .container_chains
+                .contains_key(&1001.into()));
+            // elligble but not selected as no tip
+            assert_eq!(
+                TanssiCollatorAssignment::collator_container_chain().container_chains[&1002.into()]
+                    .len(),
+                0,
+            );
+            // elligible but not selected as lower tip than 1004
+            assert_eq!(
+                TanssiCollatorAssignment::collator_container_chain().container_chains[&1003.into()]
+                    .len(),
+                0,
+            );
+            // selected
+            assert_eq!(
+                TanssiCollatorAssignment::collator_container_chain().container_chains[&1004.into()]
+                    .len(),
+                2,
+            );
+        });
+}
+
+#[test]
+fn test_collator_assignment_tip_charged_on_congestion_assigned_before() {
+    sp_tracing::init_for_tests();
+    ExtBuilder::default()
+        // We need enough collators for 2 container chains to be assigned 2 collators each,
+        // AND being not enough collators for all chains to have congestion. The config
+        // tells there is no collators for orchestrator, so we need only 4 collators to have 2 out of
+        // 3 chains to be selected.
+        //
+        // 1002 is already assigned without tip, and we ensure that 1002 tipping moves it first AND
+        // tip is payed. We cannot test with 1003 as it was not assigned before, AND already assigned
+        // chains are prioritized.
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_config(pallet_configuration::HostConfiguration {
@@ -2061,7 +2159,7 @@ fn test_collator_assignment_tip_charged_on_congestion() {
         .execute_with(|| {
             let tank_funds = 100 * UNIT;
             let max_tip = 1 * UNIT;
-            let para_id = 1003u32;
+            let para_id = 1002u32;
 
             // Send funds to tank
             assert_ok!(ServicesPayment::purchase_credits(
@@ -2141,13 +2239,15 @@ fn test_collator_assignment_tip_only_charge_willing_paras() {
             (AccountId::from(BOB), 100 * UNIT),
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
+            (AccountId::from(EVE), 100 * UNIT),
+            (AccountId::from(FERDIE), 100 * UNIT),
         ])
         .with_empty_parachains(vec![1001, 1002, 1003])
         .build()
         .execute_with(|| {
             let tank_funds = 100 * UNIT;
             let max_tip = 1 * UNIT;
-            let para_id_with_tip = 1003u32;
+            let para_id_with_tip = 1002u32;
             let para_id_without_tip = 1001u32;
 
             // Send funds to tank to both paras
@@ -2217,15 +2317,15 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
         .build()
         .execute_with(|| {
             let tank_funds = 100 * UNIT;
-            let max_tip_1003 = 3 * UNIT;
+            let max_tip_1001 = 3 * UNIT;
             let max_tip_1002 = 2 * UNIT;
-            let para_id_1003 = 1003u32;
+            let para_id_1001 = 1001u32;
             let para_id_1002 = 1002u32;
 
             // Send funds to tank to both paras
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
-                para_id_1003.into(),
+                para_id_1001.into(),
                 tank_funds,
             ));
             assert_ok!(ServicesPayment::purchase_credits(
@@ -2237,8 +2337,8 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
             // Set tips
             assert_ok!(ServicesPayment::set_max_tip(
                 root_origin(),
-                para_id_1003.into(),
-                Some(max_tip_1003),
+                para_id_1001.into(),
+                Some(max_tip_1001),
             ));
             assert_ok!(ServicesPayment::set_max_tip(
                 root_origin(),
@@ -2250,7 +2350,7 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
 
             assert_eq!(
                 TanssiCollatorAssignment::collator_container_chain().container_chains
-                    [&para_id_1003.into()]
+                    [&para_id_1001.into()]
                     .len(),
                 2
             );
@@ -2263,7 +2363,7 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
 
             // Should have withdrawn the lowest tip from both paras
             assert_eq!(
-                Balances::usable_balance(ServicesPayment::parachain_tank(para_id_1003.into())),
+                Balances::usable_balance(ServicesPayment::parachain_tank(para_id_1001.into())),
                 tank_funds - max_tip_1002 * 2,
             );
 
@@ -2371,351 +2471,6 @@ fn test_parachains_collators_config_change_reassigned() {
             assert_eq!(
                 assignment.container_chains[&1001u32.into()],
                 vec![ALICE.into(), BOB.into(), CHARLIE.into()]
-            );
-        });
-}
-
-#[test]
-fn test_collator_assignment_tip_priority_on_less_cores() {
-    let parachains = vec![1001u32, 1002u32, 1003u32];
-    let parathreads = vec![1004u32, 1005u32, 1006u32, 1007u32];
-
-    ExtBuilder::default()
-        .with_balances(vec![
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
-            (AccountId::from(EVE), 100 * UNIT),
-            (AccountId::from(FERDIE), 100 * UNIT),
-        ])
-        .with_empty_parachains(parachains.clone())
-        .with_additional_empty_parathreads(parathreads.clone())
-        .with_relay_config(runtime_parachains::configuration::HostConfiguration {
-            scheduler_params: SchedulerParams {
-                num_cores: 4,
-                ..Default::default()
-            },
-            ..Default::default()
-        })
-        .with_config(pallet_configuration::HostConfiguration {
-            collators_per_container: 2,
-            collators_per_parathread: 1,
-            ..Default::default()
-        })
-        .build()
-        .execute_with(|| {
-            // Parachains and parathreads are sorted separately
-            let parachain_id_offering_tip: ParaId = 1003u32.into();
-            let parachain_ids_without_tip: Vec<ParaId> = parachains
-                .iter()
-                .filter_map(|parachain| {
-                    if ParaId::new(*parachain) == parachain_id_offering_tip {
-                        None
-                    } else {
-                        Some((*parachain).into())
-                    }
-                })
-                .collect();
-            let parathread_ids_offering_tip: Vec<ParaId> = vec![1005u32.into(), 1006u32.into()];
-            let parathread_ids_without_tip: Vec<ParaId> = parathreads
-                .iter()
-                .filter_map(|parathread| {
-                    if parathread_ids_offering_tip.contains(&((*parathread).into())) {
-                        None
-                    } else {
-                        Some((*parathread).into())
-                    }
-                })
-                .collect();
-            let tank_funds = 100 * UNIT;
-            let max_tip_for_parachain = 1 * UNIT;
-            let max_tip_for_parathread = 10 * UNIT;
-
-            // 1003 should not be part of the container chains as we have less cores available
-            assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain()
-                    .container_chains
-                    .keys()
-                    .cloned()
-                    .collect::<Vec<ParaId>>(),
-                vec![
-                    1001u32.into(),
-                    1002u32.into(),
-                    1004u32.into(),
-                    1005u32.into(),
-                    1006u32.into(),
-                    1007u32.into()
-                ]
-            );
-
-            // Send funds to tank
-            assert_ok!(ServicesPayment::purchase_credits(
-                origin_of(ALICE.into()),
-                parachain_id_offering_tip,
-                tank_funds,
-            ));
-
-            // Set tip for 1003
-            assert_ok!(ServicesPayment::set_max_tip(
-                root_origin(),
-                parachain_id_offering_tip,
-                Some(max_tip_for_parachain),
-            ));
-
-            for parathread_id in &parathread_ids_offering_tip {
-                assert_ok!(ServicesPayment::purchase_credits(
-                    origin_of(ALICE.into()),
-                    *parathread_id,
-                    tank_funds,
-                ));
-
-                assert_ok!(ServicesPayment::set_max_tip(
-                    root_origin(),
-                    *parathread_id,
-                    Some(max_tip_for_parathread),
-                ));
-            }
-
-            run_to_session(2);
-
-            assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain().container_chains
-                    [&parachain_id_offering_tip]
-                    .len(),
-                2,
-            );
-
-            // The first parachain has collator even without tip as it is highest priority without tip
-            assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain().container_chains
-                    [parachain_ids_without_tip
-                        .first()
-                        .expect("at least one parachain id is without tip")]
-                .len(),
-                2
-            );
-
-            for parachain_id in &mut parachain_ids_without_tip.iter().skip(1) {
-                assert_eq!(
-                    TanssiCollatorAssignment::collator_container_chain()
-                        .container_chains
-                        .get(parachain_id),
-                    None
-                );
-            }
-
-            for parathread_id in &parathread_ids_offering_tip {
-                assert_eq!(
-                    TanssiCollatorAssignment::collator_container_chain().container_chains
-                        [parathread_id]
-                        .len(),
-                    1,
-                );
-            }
-
-            for parathread_id in &parathread_ids_without_tip {
-                assert_eq!(
-                    TanssiCollatorAssignment::collator_container_chain().container_chains
-                        [parathread_id]
-                        .len(),
-                    0
-                );
-            }
-
-            // Now 1003 is part of container chains with collator as we sorted by tip
-            // And 1005 and 1006 as well for parathread
-            // Even though parathread's tip is 10 times more it cannot kick out parachain
-            assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain()
-                    .container_chains
-                    .keys()
-                    .cloned()
-                    .collect::<Vec<ParaId>>(),
-                vec![
-                    1001u32.into(),
-                    1003u32.into(),
-                    1004u32.into(),
-                    1005u32.into(),
-                    1006u32.into(),
-                    1007u32.into()
-                ]
-            );
-        });
-
-    ExtBuilder::default()
-        .with_balances(vec![
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
-            (AccountId::from(EVE), 100 * UNIT),
-            (AccountId::from(FERDIE), 100 * UNIT),
-        ])
-        .with_empty_parachains(parachains.clone())
-        .with_additional_empty_parathreads(parathreads.clone())
-        .with_relay_config(runtime_parachains::configuration::HostConfiguration {
-            scheduler_params: SchedulerParams {
-                num_cores: 4,
-                ..Default::default()
-            },
-            ..Default::default()
-        })
-        .with_config(pallet_configuration::HostConfiguration {
-            collators_per_container: 2,
-            collators_per_parathread: 1,
-            ..Default::default()
-        })
-        .build()
-        .execute_with(|| {
-            // Parachains and parathreads are sorted separately
-            let parachain_ids_offering_tip: Vec<ParaId> = vec![1002u32.into(), 1003u32.into()];
-            let parachain_ids_without_tip: Vec<ParaId> = parachains
-                .iter()
-                .filter_map(|parachain| {
-                    if parachain_ids_offering_tip.contains(&((*parachain).into())) {
-                        None
-                    } else {
-                        Some((*parachain).into())
-                    }
-                })
-                .collect();
-            let parathread_id_offering_tip: ParaId = 1006u32.into();
-            let parathread_ids_without_tip: Vec<ParaId> = parathreads
-                .iter()
-                .filter_map(|parathread| {
-                    if ParaId::new(*parathread) == parathread_id_offering_tip {
-                        None
-                    } else {
-                        Some((*parathread).into())
-                    }
-                })
-                .collect();
-            let tank_funds = 100 * UNIT;
-            let max_tip_for_parachain = 10 * UNIT;
-            let max_tip_for_parathread = 1 * UNIT;
-
-            // 1003 should not be part of the container chains as we have less cores available
-            assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain()
-                    .container_chains
-                    .keys()
-                    .cloned()
-                    .collect::<Vec<ParaId>>(),
-                vec![
-                    1001u32.into(),
-                    1002u32.into(),
-                    1004u32.into(),
-                    1005u32.into(),
-                    1006u32.into(),
-                    1007u32.into()
-                ]
-            );
-
-            for parachain_id in &parachain_ids_offering_tip {
-                // Send funds to tank
-                assert_ok!(ServicesPayment::purchase_credits(
-                    origin_of(ALICE.into()),
-                    *parachain_id,
-                    tank_funds,
-                ));
-
-                assert_ok!(ServicesPayment::set_max_tip(
-                    root_origin(),
-                    *parachain_id,
-                    Some(max_tip_for_parachain),
-                ));
-            }
-
-            assert_ok!(ServicesPayment::purchase_credits(
-                origin_of(ALICE.into()),
-                parathread_id_offering_tip,
-                tank_funds,
-            ));
-
-            assert_ok!(ServicesPayment::set_max_tip(
-                root_origin(),
-                parathread_id_offering_tip,
-                Some(max_tip_for_parathread),
-            ));
-
-            run_to_session(2);
-
-            for parachain_id in &parachain_ids_offering_tip {
-                assert_eq!(
-                    TanssiCollatorAssignment::collator_container_chain().container_chains
-                        [parachain_id]
-                        .len(),
-                    2,
-                );
-            }
-
-            // No parachain without tip has any collators as all cores dedicated to parachains are filled
-            // by tipping parachains.
-            for parachain_id in &parachain_ids_without_tip {
-                assert_eq!(
-                    TanssiCollatorAssignment::collator_container_chain()
-                        .container_chains
-                        .get(parachain_id),
-                    None
-                );
-            }
-
-            assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain().container_chains
-                    [&parathread_id_offering_tip]
-                    .len(),
-                1,
-            );
-
-            // The first parathread has collator even without tip as it is highest priority without tip and we have one collator remaining
-            assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain().container_chains
-                    [parathread_ids_without_tip
-                        .first()
-                        .expect("at least one parathread id is without tip")]
-                .len(),
-                1
-            );
-
-            for parathread_id in &mut parathread_ids_without_tip.iter().skip(1) {
-                assert_eq!(
-                    TanssiCollatorAssignment::collator_container_chain().container_chains
-                        [parathread_id]
-                        .len(),
-                    0
-                );
-            }
-
-            // Now 1003 is part of container chains with collator as we sorted by tip
-            // And 1005 and 1006 as well for parathread
-            // Even though parachain's tip is 10 times more it cannot kick out parathread
-            assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain()
-                    .container_chains
-                    .keys()
-                    .cloned()
-                    .collect::<Vec<ParaId>>(),
-                vec![
-                    1002u32.into(),
-                    1003u32.into(),
-                    1004u32.into(),
-                    1005u32.into(),
-                    1006u32.into(),
-                    1007u32.into()
-                ]
             );
         });
 }
