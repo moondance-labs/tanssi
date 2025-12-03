@@ -35,7 +35,7 @@ use {
     parity_scale_codec::Encode,
     snowbridge_inbound_queue_primitives::v2::message::IGatewayV2,
     snowbridge_verification_primitives::{EventProof, Log},
-    sp_core::H256,
+    sp_core::{H256,H160},
     tanssi_runtime_common::processors::v2::RawPayload,
     tp_bridge::symbiotic_message_processor::{
         InboundCommand, Message as SymbioticMessage, Payload as SymbioticPayload, MAGIC_BYTES,
@@ -107,6 +107,127 @@ fn test_inbound_queue_message_symbiotic_passing() {
         assert_eq!(ExternalValidators::validators(), expected_validators);
     });
 }
+
+#[test]
+fn test_inbound_queue_message_symbiotic_incorrect_magic_bytes() {
+    ExtBuilder::default()
+        .with_validators(
+            vec![]
+        )
+        .with_external_validators(
+            vec![
+                (AccountId::from(ALICE), 210 * UNIT),
+                (AccountId::from(BOB), 100 * UNIT),
+            ]
+        ).build().execute_with(|| {
+        let dummy_proof = mock_snowbridge_message_proof();
+        let nonce_val = 1u64;
+
+        let payload_validators = vec![
+            Sr25519Keyring::Charlie.to_account_id(),
+            Sr25519Keyring::Ferdie.to_account_id(),
+            Sr25519Keyring::BobStash.to_account_id()
+        ];
+
+        let payload = SymbioticPayload {
+            magic_bytes: [1, 2, 3, 4],
+            message: SymbioticMessage::V1(InboundCommand::<Runtime>::ReceiveValidators {
+                validators: payload_validators.clone(),
+                external_index: 0u64,
+            }),
+        };
+
+        let symbiotic_bytes = RawPayload::Symbiotic(payload.encode());
+
+        let event = IGatewayV2::OutboundMessageAccepted {
+            nonce: nonce_val,
+            payload: IGatewayV2::Payload {
+                origin: Address::from_slice(EthereumGatewayAddress::get().as_bytes()),
+                assets: vec![],
+                xcm: IGatewayV2::Xcm { kind: 0, data: symbiotic_bytes.encode().into() },
+                claimer: vec![].into(),
+                value: 0,
+                executionFee: 0,
+                relayerFee: 0,
+            },
+        };
+
+        let result = EthereumInboundQueueV2::submit(
+            OriginFor::<Runtime>::signed(AccountId::new([0; 32])),
+            Box::new(EventProof {
+                event_log: Log {
+                    address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
+                    topics: event.encode_topics().into_iter().map(|word| H256::from(word.0.0)).collect(),
+                    data: event.encode_data(),
+                },
+                proof: dummy_proof.clone(),
+            }),
+        );
+
+        assert!(matches!(result, Err(sp_runtime::DispatchError::Other(_))));
+    });
+}
+
+#[test]
+fn test_inbound_queue_message_symbiotic_incorrect_origin() {
+    ExtBuilder::default()
+        .with_validators(
+            vec![]
+        )
+        .with_external_validators(
+            vec![
+                (AccountId::from(ALICE), 210 * UNIT),
+                (AccountId::from(BOB), 100 * UNIT),
+            ]
+        ).build().execute_with(|| {
+        let dummy_proof = mock_snowbridge_message_proof();
+        let nonce_val = 1u64;
+
+        let payload_validators = vec![
+            Sr25519Keyring::Charlie.to_account_id(),
+            Sr25519Keyring::Ferdie.to_account_id(),
+            Sr25519Keyring::BobStash.to_account_id()
+        ];
+
+        let payload = SymbioticPayload {
+            magic_bytes: MAGIC_BYTES,
+            message: SymbioticMessage::V1(InboundCommand::<Runtime>::ReceiveValidators {
+                validators: payload_validators.clone(),
+                external_index: 0u64,
+            }),
+        };
+
+        let symbiotic_bytes = RawPayload::Symbiotic(payload.encode());
+
+        let event = IGatewayV2::OutboundMessageAccepted {
+            nonce: nonce_val,
+            payload: IGatewayV2::Payload {
+                origin: Address::from_slice(H160(hex_literal::hex!("abcdefabcd1234567890abcdefabcd1234567890")).as_bytes()), // <-- Incorrect origin
+                assets: vec![],
+                xcm: IGatewayV2::Xcm { kind: 0, data: symbiotic_bytes.encode().into() },
+                claimer: vec![].into(),
+                value: 0,
+                executionFee: 0,
+                relayerFee: 0,
+            },
+        };
+
+        let result = EthereumInboundQueueV2::submit(
+            OriginFor::<Runtime>::signed(AccountId::new([0; 32])),
+            Box::new(EventProof {
+                event_log: Log {
+                    address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
+                    topics: event.encode_topics().into_iter().map(|word| H256::from(word.0.0)).collect(),
+                    data: event.encode_data(),
+                },
+                proof: dummy_proof.clone(),
+            }),
+        );
+
+        assert!(matches!(result, Err(sp_runtime::DispatchError::Other(_))));
+    });
+}
+
 
 #[test]
 fn test_inbound_queue_message_symbiotic_incorrect_payload() {
