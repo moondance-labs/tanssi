@@ -16,7 +16,7 @@
 
 use {
     crate as dancelight_runtime,
-    crate::tests::common::{ExtBuilder},
+    crate::tests::common::ExtBuilder,
     dancelight_runtime::{xcm_config, AccountId, Runtime},
     frame_support::{parameter_types, BoundedVec},
     parity_scale_codec::Encode,
@@ -174,12 +174,14 @@ fn message_processor_succeeds_even_if_xcm_is_invalid() {
             <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
         >;
 
-        let result = <Processor as snowbridge_inbound_queue_primitives::v2::MessageProcessor<AccountId>>::process_message(
-            sender.clone(),
-            message.clone(),
-        );
+        let result = <Processor as snowbridge_inbound_queue_primitives::v2::MessageProcessor<
+            AccountId,
+        >>::process_message(sender.clone(), message.clone());
 
-        assert!(result.is_ok(), "Incorrect XCM still results in successful message processing");
+        assert!(
+            result.is_ok(),
+            "Incorrect XCM still results in successful message processing"
+        );
     });
 }
 
@@ -225,11 +227,13 @@ fn message_processor_fails_with_invalid_symbiotic_payload() {
             <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
         >;
 
-        let result = <Processor as snowbridge_inbound_queue_primitives::v2::MessageProcessor<AccountId>>::process_message(
-            sender.clone(),
-            message.clone(),
-        );
+        let result = <Processor as snowbridge_inbound_queue_primitives::v2::MessageProcessor<
+            AccountId,
+        >>::process_message(sender.clone(), message.clone());
 
-        assert!(result.is_err(), "Incorrect Symbiotic payload should result in error");
+        assert!(
+            result.is_err(),
+            "Incorrect Symbiotic payload should result in error"
+        );
     });
 }
