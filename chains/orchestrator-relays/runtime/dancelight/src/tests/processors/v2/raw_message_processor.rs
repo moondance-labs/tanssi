@@ -24,7 +24,7 @@ use {
     snowbridge_inbound_queue_primitives::v2::{message::Message, EthereumAsset, Payload},
     sp_core::{H160, H256},
     tanssi_runtime_common::processors::v2::{
-        MessageProcessorWithFallback, RawMessageProcessor, RawPayload,
+        MessageExtractionError, MessageProcessorWithFallback, RawMessageProcessor, RawPayload,
     },
     xcm::{
         latest::{prelude::*, Location},
@@ -234,6 +234,123 @@ fn message_processor_fails_with_invalid_symbiotic_payload() {
         assert!(
             result.is_err(),
             "Incorrect Symbiotic payload should result in error"
+        );
+    });
+}
+
+#[test]
+fn try_extract_message_fails_with_invalid_xcm_payload() {
+    ExtBuilder::default().build().execute_with(|| {
+        let origin = GatewayAddress::get();
+        let sender: AccountId = AccountId::from(ALICE);
+
+        let token: H160 = H160::random();
+        let assets = vec![EthereumAsset::NativeTokenERC20 {
+            token_id: token.into(),
+            value: 1_000_000_000_000u128,
+        }];
+
+        let claimer_acc_id = H256::random();
+        let claimer = AccountId32 {
+            network: None,
+            id: claimer_acc_id.into(),
+        };
+        let claimer_bytes = claimer.encode();
+
+        let raw_payload = RawPayload::Xcm(vec![0xAA, 0xBB, 0xCC].encode());
+
+        let message = Message {
+            gateway: origin,
+            nonce: 1,
+            origin,
+            assets: assets.clone(),
+            payload: Payload::Raw(raw_payload.encode()),
+            claimer: Some(claimer_bytes),
+            value: 1_000_000_000_000u128,
+            execution_fee: 0,
+            relayer_fee: 0,
+        };
+
+        type Processor = RawMessageProcessor<
+            Runtime,
+            GatewayAddress,
+            DefaultClaimer,
+            EthereumNetwork,
+            EthereumUniversalLocation,
+            TanssiUniversalLocation,
+            xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
+            <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+        >;
+
+        let result = <Processor as MessageProcessorWithFallback<AccountId>>::try_extract_message(
+            &sender, &message,
+        );
+
+        // Confirm that we receive InvalidMessage, so Fallback should be triggered for XCM message
+        assert!(
+            matches!(result, Err(MessageExtractionError::InvalidMessage { .. })),
+            "Invalid XCM payload should result in InvalidMessage error, got: {:?}",
+            result
+        );
+    });
+}
+
+#[test]
+fn try_extract_message_fails_with_invalid_symbiotic_payload() {
+    ExtBuilder::default().build().execute_with(|| {
+        let origin = GatewayAddress::get();
+        let sender: AccountId = AccountId::from(ALICE);
+
+        let token: H160 = H160::random();
+        let assets = vec![EthereumAsset::NativeTokenERC20 {
+            token_id: token.into(),
+            value: 1_000_000_000_000u128,
+        }];
+
+        let claimer_acc_id = H256::random();
+        let claimer = AccountId32 {
+            network: None,
+            id: claimer_acc_id.into(),
+        };
+        let claimer_bytes = claimer.encode();
+
+        let raw_payload = RawPayload::Symbiotic(vec![0xAA, 0xBB, 0xCC].encode());
+
+        let message = Message {
+            gateway: origin,
+            nonce: 1,
+            origin,
+            assets: assets.clone(),
+            payload: Payload::Raw(raw_payload.encode()),
+            claimer: Some(claimer_bytes),
+            value: 1_000_000_000_000u128,
+            execution_fee: 0,
+            relayer_fee: 0,
+        };
+
+        type Processor = RawMessageProcessor<
+            Runtime,
+            GatewayAddress,
+            DefaultClaimer,
+            EthereumNetwork,
+            EthereumUniversalLocation,
+            TanssiUniversalLocation,
+            xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
+            <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+        >;
+
+        let result = <Processor as MessageProcessorWithFallback<AccountId>>::try_extract_message(
+            &sender, &message,
+        );
+
+        // Confirm that we receive UnsupportedMessage, so Fallback won't be triggered for Symbiotic message
+        assert!(
+            matches!(
+                result,
+                Err(MessageExtractionError::UnsupportedMessage { .. })
+            ),
+            "Invalid Symbiotic payload should result in UnsupportedMessage error, got: {:?}",
+            result
         );
     });
 }
