@@ -182,3 +182,54 @@ fn message_processor_succeeds_even_if_xcm_is_invalid() {
         assert!(result.is_ok(), "Incorrect XCM still results in successful message processing");
     });
 }
+
+#[test]
+fn message_processor_fails_with_invalid_symbiotic_payload() {
+    ExtBuilder::default().build().execute_with(|| {
+        let sender: AccountId = AccountId::from(ALICE);
+        let origin = GatewayAddress::get();
+
+        let token: H160 = H160::random();
+        let assets = vec![EthereumAsset::NativeTokenERC20 {
+            token_id: token.into(),
+            value: 1_000_000_000_000u128,
+        }];
+
+        let claimer_acc_id = H256::random();
+        let claimer = AccountId32 {
+            network: None,
+            id: claimer_acc_id.into(),
+        };
+        let claimer_bytes = claimer.encode();
+        let raw_payload = RawPayload::Symbiotic(vec![0xAA, 0xBB, 0xCC].encode()); // invalid symbiotic payload
+        let message = Message {
+            gateway: origin,
+            nonce: 1,
+            origin,
+            assets: assets.clone(),
+            payload: Payload::Raw(raw_payload.encode()),
+            claimer: Some(claimer_bytes),
+            value: 1_000_000_000_000u128,
+            execution_fee: 0,
+            relayer_fee: 0,
+        };
+
+        type Processor = RawMessageProcessor<
+            Runtime,
+            GatewayAddress,
+            DefaultClaimer,
+            EthereumNetwork,
+            EthereumUniversalLocation,
+            TanssiUniversalLocation,
+            xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
+            <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+        >;
+
+        let result = <Processor as snowbridge_inbound_queue_primitives::v2::MessageProcessor<AccountId>>::process_message(
+            sender.clone(),
+            message.clone(),
+        );
+
+        assert!(result.is_err(), "Incorrect Symbiotic payload should result in error");
+    });
+}
