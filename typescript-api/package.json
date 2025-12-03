@@ -99,24 +99,24 @@
         "!**/*.tsbuildinfo"
     ],
     "dependencies": {
-        "@polkadot/api": "*",
-        "@polkadot/api-base": "*",
-        "@polkadot/api-derive": "*",
-        "@polkadot/rpc-augment": "*",
-        "@polkadot/rpc-core": "*",
-        "@polkadot/rpc-provider": "*",
-        "@polkadot/typegen": "*",
-        "@polkadot/types": "*",
-        "@polkadot/types-augment": "*",
-        "@polkadot/types-codec": "*",
-        "@polkadot/types-create": "*",
-        "@polkadot/types-known": "*",
-        "@polkadot/types-support": "*"
+        "@polkadot/api": "16.5.3",
+        "@polkadot/api-base": "16.5.3",
+        "@polkadot/api-derive": "16.5.3",
+        "@polkadot/rpc-augment": "16.5.3",
+        "@polkadot/rpc-core": "16.5.3",
+        "@polkadot/rpc-provider": "16.5.3",
+        "@polkadot/typegen": "16.5.3",
+        "@polkadot/types": "16.5.3",
+        "@polkadot/types-augment": "16.5.3",
+        "@polkadot/types-codec": "16.5.3",
+        "@polkadot/types-create": "16.5.3",
+        "@polkadot/types-known": "16.5.3",
+        "@polkadot/types-support": "16.5.3"
     },
     "devDependencies": {
-        "@types/node": "*",
+        "@types/node": "^24.10.1",
         "chalk": "^5.4.1",
-        "tsx": "*",
-        "typescript": "*"
+        "tsx": "^4.21.0",
+        "typescript": "^5.9.3"
     }
 }
