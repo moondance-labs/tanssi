@@ -142,12 +142,6 @@ describeSuite({
                 const tx3 = await polkadotJs.tx.ethereumInboundQueueV2.submit(messageExtrinsics[0]).signAsync(alice);
                 await context.createBlock([tx3], { allowFailures: false });
 
-                // await new Promise((res) => {
-                //     setTimeout(() => {
-                //         res();
-                //     }, 120000);
-                // });
-
                 const assetAccountDetailsAfter = await context
                     .polkadotJs()
                     .query.foreignAssets.account(FOREIGN_ASSET_ID, tokenReceiver);
