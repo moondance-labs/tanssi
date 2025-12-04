@@ -19,8 +19,8 @@ import {
 import type { KeyringPair } from "@moonwall/util";
 
 describeSuite({
-    id: "ETHINBV2ETH",
-    title: "Receive ETH Native Token from Ethereum",
+    id: "ETHINBV2TANSETH",
+    title: "Receive Tanssi and ETH Native Token from Ethereum",
     foundationMethods: "dev",
 
     testCases: ({ it, context }) => {
@@ -101,14 +101,20 @@ describeSuite({
 
         it({
             id: "E01",
-            title: "Receive ETH native token from Ethereum in Tanssi chain",
+            title: "Receive Tanssi+ETH tokens from Ethereum in Tanssi chain",
             test: async () => {
                 if (isStarlight) {
                     console.log("Skipping test for Starlight runtime");
                     return;
                 }
 
-                const transferAmount = BigInt(12345n);
+                const allEntries = await polkadotJs.query.ethereumSystem.nativeToForeignId.entries();
+                const tokenIds = allEntries.map(([, id]) => id.toHuman());
+
+                const tokenId = tokenIds[0];
+
+                const transferAmount = 123_456_000n;
+                const ethValue = 789_000_000n;
 
                 // Create token receiver account
                 const tokenReceiver = encodeAddress(
@@ -120,7 +126,7 @@ describeSuite({
                         DepositAsset: {
                             assets: {
                                 Wild: {
-                                    AllCounted: 1,
+                                    AllCounted: 2,
                                 },
                             },
                             beneficiary: {
@@ -140,7 +146,19 @@ describeSuite({
                     },
                 ];
 
-                const log = await generateOutboundMessageAcceptedLog(polkadotJs, 1, transferAmount, instructions);
+                const log = await generateOutboundMessageAcceptedLog(
+                    polkadotJs,
+                    1,
+                    ethValue,
+                    instructions,
+                    [],
+                    [
+                        {
+                            value: transferAmount,
+                            tokenId,
+                        },
+                    ]
+                );
 
                 const { checkpointUpdate, messageExtrinsics } = await generateUpdate(polkadotJs, [log]);
 
@@ -148,6 +166,7 @@ describeSuite({
                 const signedTx = await polkadotJs.tx.sudo.sudo(tx).signAsync(alice);
                 await context.createBlock([signedTx], { allowFailures: false });
 
+                const nativeBalanceBefore = (await polkadotJs.query.system.account(tokenReceiver)).data.free.toBigInt();
                 const assetAccountDetailsBefore = await context
                     .polkadotJs()
                     .query.foreignAssets.account(FOREIGN_ASSET_ID, tokenReceiver);
@@ -155,6 +174,9 @@ describeSuite({
 
                 const tx3 = await polkadotJs.tx.ethereumInboundQueueV2.submit(messageExtrinsics[0]).signAsync(alice);
                 await context.createBlock([tx3], { allowFailures: false });
+
+                const nativeBalanceAfter = (await polkadotJs.query.system.account(tokenReceiver)).data.free.toBigInt();
+                expect(nativeBalanceAfter - nativeBalanceBefore).to.be.eq(transferAmount);
 
                 const assetAccountDetailsAfter = await context
                     .polkadotJs()
