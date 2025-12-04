@@ -1,7 +1,10 @@
+import "@moonbeam-network/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { type KeyringPair, alith, baltathar } from "@moonwall/util";
 import { Keyring } from "@polkadot/api";
 import type { ApiPromise } from "@polkadot/api";
+import type { Option } from "@polkadot/types";
+import type { Codec } from "@polkadot/types/types";
 import { DANCELIGHT_GENESIS_HASH, TANSSI_GENESIS_HASH } from "../../../utils/constants";
 
 describeSuite({
@@ -55,12 +58,14 @@ describeSuite({
                 await context.createBlock(
                     context
                         .polkadotJs()
-                        .tx.sudo.sudo(polkadotJs.tx.parameters.setParameter(runtimeParameters))
+                        .tx.sudo.sudo(polkadotJs.tx.parameters.setParameter(runtimeParameters as unknown as string))
                         .signAsync(alice),
                     { allowFailures: false }
                 );
 
-                const onChainParameters = await polkadotJs.query.parameters.parameters({ XcmConfig: "RelayNetwork" });
+                const onChainParameters = (await polkadotJs.query.parameters.parameters({
+                    XcmConfig: "RelayNetwork",
+                })) as unknown as Option<Codec>;
 
                 const expectedParameters = {
                     XcmConfig: {
@@ -80,14 +85,16 @@ describeSuite({
                 await context.createBlock(
                     context
                         .polkadotJs()
-                        .tx.sudo.sudo(polkadotJs.tx.parameters.setParameter(updatedRuntimeParameters))
+                        .tx.sudo.sudo(
+                            polkadotJs.tx.parameters.setParameter(updatedRuntimeParameters as unknown as string)
+                        )
                         .signAsync(alice),
                     { allowFailures: false }
                 );
 
-                const onChainParametersAfterUpdate = await polkadotJs.query.parameters.parameters({
+                const onChainParametersAfterUpdate = (await polkadotJs.query.parameters.parameters({
                     XcmConfig: "RelayNetwork",
-                });
+                })) as unknown as Option<Codec>;
 
                 const expectedParametersAfterUpdate = {
                     XcmConfig: {
@@ -110,7 +117,7 @@ describeSuite({
                 };
 
                 // Try to set the parameter using non-root account (Bob)
-                const tx = polkadotJs.tx.parameters.setParameter(runtimeParameters);
+                const tx = polkadotJs.tx.parameters.setParameter(runtimeParameters as unknown as string);
                 const { result } = await context.createBlock(tx.signAsync(bob), { allowFailures: true });
 
                 expect(result.successful).toBe(false);
@@ -121,9 +128,9 @@ describeSuite({
             id: "T03",
             title: "should allow resetting RelayNetwork parameter",
             test: async () => {
-                const onChainParametersBeforeReset = await polkadotJs.query.parameters.parameters({
+                const onChainParametersBeforeReset = (await polkadotJs.query.parameters.parameters({
                     XcmConfig: "RelayNetwork",
-                });
+                })) as unknown as Option<Codec>;
                 const expectedParametersBeforeReset = {
                     XcmConfig: {
                         RelayNetwork: starlightNetworkId,
@@ -143,15 +150,17 @@ describeSuite({
                 await context.createBlock(
                     context
                         .polkadotJs()
-                        .tx.sudo.sudo(polkadotJs.tx.parameters.setParameter(emptyRuntimeParameters))
+                        .tx.sudo.sudo(
+                            polkadotJs.tx.parameters.setParameter(emptyRuntimeParameters as unknown as string)
+                        )
                         .signAsync(alice),
                     { allowFailures: false }
                 );
 
                 // Verify the parameter was reset (should be None, meaning it uses default value)
-                const onChainParametersAfterReset = await polkadotJs.query.parameters.parameters({
+                const onChainParametersAfterReset = (await polkadotJs.query.parameters.parameters({
                     XcmConfig: "RelayNetwork",
-                });
+                })) as unknown as Option<Codec>;
                 expect(onChainParametersAfterReset.isNone).toBe(true);
             },
         });
