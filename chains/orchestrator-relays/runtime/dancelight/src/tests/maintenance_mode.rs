@@ -17,7 +17,9 @@
 #![cfg(test)]
 
 use {
-    crate::{tests::common::*, Historical, MaintenanceMode, RuntimeCall, SessionKeys},
+    crate::{
+        tests::common::*, Historical, MaintenanceMode, RuntimeCall, RuntimeEvent, SessionKeys,
+    },
     alloc::vec,
     frame_support::{assert_noop, assert_ok, traits::KeyOwnerProofSystem},
     pallet_assets::Instance1,
@@ -300,6 +302,51 @@ fn test_non_filtered_calls_maintenance_mode() {
                     )),
                 },
             ));
+        });
+}
+
+#[test]
+fn test_assert_utility_does_not_bypass_filters() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_sudo(AccountId::from(ALICE))
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            assert_ok!(MaintenanceMode::enter_maintenance_mode(root_origin()));
+
+            // In this case, the call is not filtered
+            assert_call_not_filtered(RuntimeCall::Utility(
+                pallet_utility::Call::<Runtime>::batch {
+                    calls: vec![RuntimeCall::Balances(
+                        pallet_balances::Call::<Runtime>::transfer_allow_death {
+                            dest: AccountId::from(BOB).into(),
+                            value: 1 * UNIT,
+                        },
+                    )],
+                },
+            ));
+
+            let batch_interrupt_events = System::events()
+                .iter()
+                .filter(|r| {
+                    matches!(
+                        r.event,
+                        RuntimeEvent::Utility(pallet_utility::Event::BatchInterrupted { .. },)
+                    )
+                })
+                .count();
+
+            assert_eq!(
+                batch_interrupt_events, 1,
+                "batchInterrupted event should be emitted!"
+            );
         });
 }
 

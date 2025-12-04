@@ -17,7 +17,9 @@
 #![cfg(test)]
 
 use {
-    crate::{tests::common::*, Historical, MaintenanceMode, RuntimeCall, SessionKeys},
+    crate::{
+        tests::common::*, Historical, MaintenanceMode, RuntimeCall, RuntimeEvent, SessionKeys,
+    },
     alloc::vec,
     frame_support::{assert_noop, assert_ok, traits::KeyOwnerProofSystem},
     pallet_assets::Instance1,
@@ -311,7 +313,8 @@ fn test_assert_utility_does_not_bypass_filters() {
             run_to_block(2);
             assert_ok!(MaintenanceMode::enter_maintenance_mode(root_origin()));
 
-            assert_call_filtered(RuntimeCall::Utility(
+            // In this case, the call is not filtered
+            assert_call_not_filtered(RuntimeCall::Utility(
                 pallet_utility::Call::<Runtime>::batch {
                     calls: vec![RuntimeCall::Balances(
                         pallet_balances::Call::<Runtime>::transfer_allow_death {
@@ -321,6 +324,21 @@ fn test_assert_utility_does_not_bypass_filters() {
                     )],
                 },
             ));
+
+            let batch_interrupt_events = System::events()
+                .iter()
+                .filter(|r| {
+                    matches!(
+                        r.event,
+                        RuntimeEvent::Utility(pallet_utility::Event::BatchInterrupted { .. },)
+                    )
+                })
+                .count();
+
+            assert_eq!(
+                batch_interrupt_events, 1,
+                "batchInterrupted event should be emitted!"
+            );
         });
 }
 
