@@ -24,20 +24,20 @@ importers:
   test:
     dependencies:
       '@chainsafe/bls':
-        specifier: 8.2.0
-        version: 8.2.0
+        specifier: 7.1.3
+        version: 7.1.3(@chainsafe/blst@0.2.11(encoding@0.1.13))
       '@chainsafe/persistent-merkle-tree':
         specifier: ^1.0.1
         version: 1.2.1
       '@chainsafe/ssz':
-        specifier: 1.3.0
-        version: 1.3.0
+        specifier: 1.0.2
+        version: 1.0.2
       '@ethereumjs/evm':
-        specifier: 10.1.0
-        version: 10.1.0
+        specifier: 3.1.1
+        version: 3.1.1
       '@ethereumjs/rlp':
-        specifier: 10.1.0
-        version: 10.1.0
+        specifier: 5.0.2
+        version: 5.0.2
       '@ethereumjs/trie':
         specifier: 6.2.1
         version: 6.2.1
@@ -340,6 +340,9 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@chainsafe/as-sha256@1.0.0':
+    resolution: {integrity: sha512-EYw5IZ99Mhn7K8d1eDDH66AFhPy9GcD7bfiqm9mwFjsg8MViEEicGl62b5YPzufBTFh7X7qWAe6yWpr/gbaVEw==}
+
   '@chainsafe/as-sha256@1.2.0':
     resolution: {integrity: sha512-H2BNHQ5C3RS+H0ZvOdovK6GjFAyq5T6LClad8ivwj9Oaiy28uvdsGVS7gNJKuZmg0FGHAI+n7F0Qju6U0QkKDA==}
 
@@ -358,23 +361,26 @@ packages:
       '@chainsafe/blst':
         optional: true
 
-  '@chainsafe/bls@8.2.0':
-    resolution: {integrity: sha512-onCMG4K5GRWTHPf5T9DrOLsd5VoiOoL0NEpRoAigXVPqr+Gi2GyOncbvc9Vf4RjhmZGgtIJKKB4WJQbRV9Pddw==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      '@chainsafe/blst': ^1.0.0
-    peerDependenciesMeta:
-      '@chainsafe/blst':
-        optional: true
-
   '@chainsafe/blst@0.2.11':
     resolution: {integrity: sha512-URyOLq5GtxBoxibOnd2pgLydCy0UZzbiIIBcsRAvGxAsRzjZL04TsQfwRkz5aphU3a1ebeRoMmI/HHyMCiFSQg==}
+
+  '@chainsafe/hashtree-darwin-arm64@1.0.1':
+    resolution: {integrity: sha512-+KmEgQMpO7FDL3klAcpXbQ4DPZvfCe0qSaBBrtT4vLF8V1JGm3sp+j7oibtxtOsLKz7nJMiK1pZExi7vjXu8og==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [darwin]
 
   '@chainsafe/hashtree-darwin-arm64@1.0.2':
     resolution: {integrity: sha512-yIIwn9SUR5ZTl2vN1QqRtDFL/w2xYW4o68A1k8UexMbieGAnE7Ab7NvtCZRHRe8x0eONO46F/bWn5bxxyYlFXw==}
     engines: {node: '>= 18'}
     cpu: [arm64]
     os: [darwin]
+
+  '@chainsafe/hashtree-linux-arm64-gnu@1.0.1':
+    resolution: {integrity: sha512-p1hnhGq2aFY+Zhdn1Q6L/6yLYNKjqXfn/Pc8jiM0e3+Lf/hB+yCdqYVu1pto26BrZjugCFZfupHaL4DjUTDttw==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
 
   '@chainsafe/hashtree-linux-arm64-gnu@1.0.2':
     resolution: {integrity: sha512-MDz1xBRTRHw2eezGqx1Ff8NoeUUQP3bhbeeVG8ZZTkFYqvRc8O65OQOTtgO+fFGvqnDjVBSRHmiTXU5eNeH/mQ==}
@@ -386,6 +392,12 @@ packages:
     resolution: {integrity: sha512-BUy+/9brJwAFAtraro4y/1F+aP/8j/7HrnYdde8PTu7jHWAClI9xZygadaJbk0GoWxyCOUAJKUs8KHVnYxJDeg==}
     engines: {node: '>= 18'}
     cpu: [arm64]
+    os: [linux]
+
+  '@chainsafe/hashtree-linux-x64-gnu@1.0.1':
+    resolution: {integrity: sha512-uCIGuUWuWV0LiB4KLMy6JFa7Jp6NmPl3hKF5BYWu8TzUBe7vSXMZfqTzGxXPggFYN2/0KymfRdG9iDCOJfGRqg==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
     os: [linux]
 
   '@chainsafe/hashtree-linux-x64-gnu@1.0.2':
@@ -406,12 +418,22 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@chainsafe/hashtree@1.0.1':
+    resolution: {integrity: sha512-bleu9FjqBeR/l6W1u2Lz+HsS0b0LLJX2eUt3hOPBN7VqOhidx8wzkVh2S7YurS+iTQtfdK4K5QU9tcTGNrGwDg==}
+    engines: {node: '>= 18'}
+
   '@chainsafe/hashtree@1.0.2':
     resolution: {integrity: sha512-OaWjsZ6S/GaT2RvaqdpsF5Mux8qQOE2KbitX2yHmQJZNUZkdh7C3N4PA5LsvewqX+z8Nkv8mr1uSe0LSrHGiQw==}
     engines: {node: '>= 18'}
 
+  '@chainsafe/persistent-merkle-tree@1.0.1':
+    resolution: {integrity: sha512-aQtYdXHmWRowcQK0h91HfHMO3bezQLk9wjQXv2CCcTbTim31BnCbPVpNbvAUWvEbifLQYvM18moygvEtdUNhXg==}
+
   '@chainsafe/persistent-merkle-tree@1.2.1':
     resolution: {integrity: sha512-AOSEVLfaqwb9eTCKuY1ri0DrRxVQ3Rh+we1VBj1GahUGfEdE8OC3Vkbca7Up6RoI9Ip9FLnI31Y7AjKH9ZqAGA==}
+
+  '@chainsafe/ssz@1.0.2':
+    resolution: {integrity: sha512-T/hiLYRJoM0NkTgTc6XLIL5Nobc/poNqFnJ/8GlvG08czCcri5l8H5DF/6RKdL+1a++LRZCdtHElMaFryszkww==}
 
   '@chainsafe/ssz@1.3.0':
     resolution: {integrity: sha512-+O3WHnud8ZzIVF9/hSC+UazLDPgaa98quKLj/Z1PGnfGuW4JvCfS5Wh9EoZDvqGTI/AZlIbXpn4qC2s4BzQdfA==}
@@ -845,10 +867,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@ethereumjs/binarytree@10.1.0':
-    resolution: {integrity: sha512-54n24oYJqgDk6DtXVjjGohjQCFCDgcvI2+AeNGRZcsQuz6yE2HYvxWq8VrAAcR8ja/gNc9eVYL51DvU93qK8Eg==}
-    engines: {node: '>=18'}
-
   '@ethereumjs/block@4.3.0':
     resolution: {integrity: sha512-NHzfNIqadldAB91LjkHOaQgMNA/Pc7C1N9NAm/QpewW6D0B9bSIYYnxwmv3EUyd/sbfBEheLFpwrBpvkCN+iAA==}
     engines: {node: '>=14'}
@@ -864,9 +882,6 @@ packages:
   '@ethereumjs/blockchain@7.3.0':
     resolution: {integrity: sha512-UZXFb6JFeXDHobKhXGAiKf+m5n2ynCtqpgHWCl2nQ3Tol9W7C3By4UFMpAl2E6EyaFhC26Maig9kqCWxfsQ6bQ==}
     engines: {node: '>=18'}
-
-  '@ethereumjs/common@10.1.0':
-    resolution: {integrity: sha512-zIHCy0i2LFmMDp+QkENyoPGxcoD3QzeNVhx6/vE4nJk4uWGNXzO8xJ2UC4gtGW4UJTAOXja8Z1yZMVeRc2/+Ew==}
 
   '@ethereumjs/common@3.2.0':
     resolution: {integrity: sha512-pksvzI0VyLgmuEF2FA/JR/4/y6hcPq8OUail3/AvycBaW1d5VSauOZzqGvJ3RTmR4MU35lWE8KseKOsEhrFRBA==}
@@ -886,22 +901,9 @@ packages:
     resolution: {integrity: sha512-ruLYlw6lfYukFiHyoGpJTI42UciW5ASXwMCRsmng9kuxv8TyBs711SbBUlzpO/Y2bxKGWvx6XCQJGxMCd/bqzw==}
     engines: {node: '>=14'}
 
-  '@ethereumjs/evm@10.1.0':
-    resolution: {integrity: sha512-RD6tjysXEWPfyBHmMxsg3s3T2JdbPVYvsDDDUR0laFaHWtHMnOeW/EIZ5njUx75nG+i72w34Sh6NhhkpkhMGDg==}
-    engines: {node: '>=18'}
-
   '@ethereumjs/evm@3.1.1':
     resolution: {integrity: sha512-JbDXtIn0PPZFU2oqVngje0YvW/JuNa6Y+kIYp1MCh5pn9NRplR8FkBbvb991fVSSo6AzuFMHJxSwgVl+OksnvQ==}
     engines: {node: '>=18'}
-
-  '@ethereumjs/mpt@10.1.0':
-    resolution: {integrity: sha512-gWxx8n1OB2Js3EFWNeSdsUdYvw1P5WvdKxHmeq+giO03mt5fGRbuSh3ruXzreG4JRugpNSW6Dwqk+StVwjrQ4Q==}
-    engines: {node: '>=18'}
-
-  '@ethereumjs/rlp@10.1.0':
-    resolution: {integrity: sha512-r67BJbwilammAqYI4B5okA66cNdTlFzeWxPNJOolKV52ZS/flo0tUBf4x4gxWXBgh48OgsdFV1Qp5pRoSe8IhQ==}
-    engines: {node: '>=18'}
-    hasBin: true
 
   '@ethereumjs/rlp@4.0.1':
     resolution: {integrity: sha512-tqsQiBQDQdmPWE1xkkBq4rlSW5QZpLOUJ5RJh2/9fug+q9tnUhuZoVLk7s0scUIKTOzEtR72DFBXI4WiZcMpvw==}
@@ -915,9 +917,6 @@ packages:
 
   '@ethereumjs/statemanager@1.1.0':
     resolution: {integrity: sha512-yOM0Q1SMCyi0Z/D9xbXsFYdZvbXtNAYNyZ2qmEfyUk46DZHILay78/ghjPaAqszqog3zeBf7hZqzBzf2Od4o2A==}
-
-  '@ethereumjs/statemanager@10.1.0':
-    resolution: {integrity: sha512-n4AB8olDocXtq/V6SClbZ5zEDfJL7cw3MmkGUb/MVQwJBgYZ143oll4UfGaK7jWQfF5Gth68KEJZQay5Hh3h6g==}
 
   '@ethereumjs/statemanager@2.4.0':
     resolution: {integrity: sha512-IBe5kMGsDWlSvNg7QCERwO3BQE1c9hzVIZ9ktZF7xyifFEfA4VNhTMMEpwLuiAIy0l/ZzZiZ17/Iqar+SawMYA==}
@@ -936,10 +935,6 @@ packages:
 
   '@ethereumjs/tx@5.4.0':
     resolution: {integrity: sha512-SCHnK7m/AouZ7nyoR0MEXw1OO/tQojSbp88t8oxhwes5iZkZCtfFdUrJaiIb72qIpH2FVw6s1k1uP7LXuH7PsA==}
-    engines: {node: '>=18'}
-
-  '@ethereumjs/util@10.1.0':
-    resolution: {integrity: sha512-GGTCkRu1kWXbz2JoUnIYtJBOoA9T5akzsYa91Bh+DZQ3Cj4qXj3hkNU0Rx6wZlbcmkmhQfrjZfVt52eJO/y2nA==}
     engines: {node: '>=18'}
 
   '@ethereumjs/util@8.1.0':
@@ -1467,10 +1462,6 @@ packages:
 
   '@noble/curves@1.8.1':
     resolution: {integrity: sha512-warwspo+UYUPep0Q+vtdVB4Ugn8GGQj8iyB3gnRWsztmUHTI3S1nhdiWNsPUGL0vud7JlRRk1XEu7Lq1KGTnMQ==}
-    engines: {node: ^14.21.3 || >=16}
-
-  '@noble/curves@1.9.0':
-    resolution: {integrity: sha512-7YDlXiNMdO1YZeH6t/kvopHHbIZzlxrCV9WLqCY6QhcXOoXiNCMDqJIglZ9Yjx5+w7Dz30TITFrlTjnRg7sKEg==}
     engines: {node: ^14.21.3 || >=16}
 
   '@noble/curves@1.9.1':
@@ -2525,9 +2516,6 @@ packages:
   bls-eth-wasm@0.4.8:
     resolution: {integrity: sha512-ye7+G6KFLb3i9xSrLASAoYqOUK5WLB6XA5DD8Sh0UQpZ3T999ylsYbFdoOJpmvTDuBuMi23Vy8Jm0pn/GF01CA==}
 
-  bls-eth-wasm@1.4.0:
-    resolution: {integrity: sha512-9TJR3r3CUJQR97PU6zokV2kVA80H8g4tkVBnaf9HNH3lFMBZUKZETNCwIuN+exFLujdbt1K188rH3mnq8UgmKw==}
-
   bn.js@4.12.2:
     resolution: {integrity: sha512-n4DSx829VRTRByMRGdjQ9iqsN0Bh4OolPsFnaZBLcbi8iXcB+kJ9s7EnRt4wILZNV3kPLHkRVfOc/HvhC3ovDw==}
 
@@ -3056,10 +3044,6 @@ packages:
 
   ethereum-cryptography@3.1.0:
     resolution: {integrity: sha512-ZqHd92eOIH9RExpBUOgzpAgflyFv9/+Ca39G8V+oCjJPGjJUihQcG/Gl67I/Xn2HGS87dgnrCG3kb1jNClLi6g==}
-    engines: {node: ^14.21.3 || >=16, npm: '>=9'}
-
-  ethereum-cryptography@3.2.0:
-    resolution: {integrity: sha512-Urr5YVsalH+Jo0sYkTkv1MyI9bLYZwW8BENZCeE1QYaTHETEYx0Nv/SVsWkSqpYrzweg6d8KMY1wTjH/1m/BIg==}
     engines: {node: ^14.21.3 || >=16, npm: '>=9'}
 
   ethers@5.8.0:
@@ -3701,10 +3685,6 @@ packages:
 
   lru-cache@10.4.3:
     resolution: {integrity: sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ==}
-
-  lru-cache@11.0.2:
-    resolution: {integrity: sha512-123qHRfJBmo2jXDbo/a5YOQrJoHF/GNQTLzQ5+IdK5pWpceK17yRc6ozlWd25FxvGKQbIUs91fDFkXmDHTKcyA==}
-    engines: {node: 20 || >=22}
 
   lru-cache@11.2.4:
     resolution: {integrity: sha512-B5Y16Jr9LB9dHVkh6ZevG+vAbOsNOYCX+sXvFWFu7B3Iz5mijW3zdbMyhsh8ANd2mSWBYdJgnqi+mL7/LrOPYg==}
@@ -5569,6 +5549,8 @@ snapshots:
   '@biomejs/cli-win32-x64@1.9.4':
     optional: true
 
+  '@chainsafe/as-sha256@1.0.0': {}
+
   '@chainsafe/as-sha256@1.2.0': {}
 
   '@chainsafe/bls-hd-key@0.3.0':
@@ -5588,11 +5570,6 @@ snapshots:
     optionalDependencies:
       '@chainsafe/blst': 0.2.11(encoding@0.1.13)
 
-  '@chainsafe/bls@8.2.0':
-    dependencies:
-      '@chainsafe/bls-keygen': 0.4.0
-      bls-eth-wasm: 1.4.0
-
   '@chainsafe/blst@0.2.11(encoding@0.1.13)':
     dependencies:
       '@types/tar': 6.1.13
@@ -5603,13 +5580,22 @@ snapshots:
       - encoding
       - supports-color
 
+  '@chainsafe/hashtree-darwin-arm64@1.0.1':
+    optional: true
+
   '@chainsafe/hashtree-darwin-arm64@1.0.2':
+    optional: true
+
+  '@chainsafe/hashtree-linux-arm64-gnu@1.0.1':
     optional: true
 
   '@chainsafe/hashtree-linux-arm64-gnu@1.0.2':
     optional: true
 
   '@chainsafe/hashtree-linux-arm64-musl@1.0.2':
+    optional: true
+
+  '@chainsafe/hashtree-linux-x64-gnu@1.0.1':
     optional: true
 
   '@chainsafe/hashtree-linux-x64-gnu@1.0.2':
@@ -5621,6 +5607,12 @@ snapshots:
   '@chainsafe/hashtree-win32-x64-msvc@1.0.2':
     optional: true
 
+  '@chainsafe/hashtree@1.0.1':
+    optionalDependencies:
+      '@chainsafe/hashtree-darwin-arm64': 1.0.1
+      '@chainsafe/hashtree-linux-arm64-gnu': 1.0.1
+      '@chainsafe/hashtree-linux-x64-gnu': 1.0.1
+
   '@chainsafe/hashtree@1.0.2':
     optionalDependencies:
       '@chainsafe/hashtree-darwin-arm64': 1.0.2
@@ -5630,11 +5622,22 @@ snapshots:
       '@chainsafe/hashtree-linux-x64-musl': 1.0.2
       '@chainsafe/hashtree-win32-x64-msvc': 1.0.2
 
+  '@chainsafe/persistent-merkle-tree@1.0.1':
+    dependencies:
+      '@chainsafe/as-sha256': 1.0.0
+      '@chainsafe/hashtree': 1.0.1
+      '@noble/hashes': 1.8.0
+
   '@chainsafe/persistent-merkle-tree@1.2.1':
     dependencies:
       '@chainsafe/as-sha256': 1.2.0
       '@chainsafe/hashtree': 1.0.2
       '@noble/hashes': 1.8.0
+
+  '@chainsafe/ssz@1.0.2':
+    dependencies:
+      '@chainsafe/as-sha256': 1.0.0
+      '@chainsafe/persistent-merkle-tree': 1.0.1
 
   '@chainsafe/ssz@1.3.0':
     dependencies:
@@ -5909,17 +5912,6 @@ snapshots:
   '@esbuild/win32-x64@0.27.0':
     optional: true
 
-  '@ethereumjs/binarytree@10.1.0':
-    dependencies:
-      '@ethereumjs/rlp': 10.1.0
-      '@ethereumjs/util': 10.1.0
-      '@noble/hashes': 1.8.0
-      debug: 4.4.3(supports-color@8.1.1)
-      ethereum-cryptography: 3.2.0
-      lru-cache: 11.0.2
-    transitivePeerDependencies:
-      - supports-color
-
   '@ethereumjs/block@4.3.0':
     dependencies:
       '@ethereumjs/common': 3.2.0
@@ -5973,11 +5965,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@ethereumjs/common@10.1.0':
-    dependencies:
-      '@ethereumjs/util': 10.1.0
-      eventemitter3: 5.0.1
-
   '@ethereumjs/common@3.2.0':
     dependencies:
       '@ethereumjs/util': 8.1.0
@@ -6021,19 +6008,6 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@ethereumjs/evm@10.1.0':
-    dependencies:
-      '@ethereumjs/binarytree': 10.1.0
-      '@ethereumjs/common': 10.1.0
-      '@ethereumjs/statemanager': 10.1.0
-      '@ethereumjs/util': 10.1.0
-      '@noble/curves': 1.9.7
-      debug: 4.4.3(supports-color@8.1.1)
-      ethereum-cryptography: 3.2.0
-      eventemitter3: 5.0.1
-    transitivePeerDependencies:
-      - supports-color
-
   '@ethereumjs/evm@3.1.1':
     dependencies:
       '@ethereumjs/common': 4.4.0
@@ -6047,18 +6021,6 @@ snapshots:
       rustbn-wasm: 0.4.0
     transitivePeerDependencies:
       - supports-color
-
-  '@ethereumjs/mpt@10.1.0':
-    dependencies:
-      '@ethereumjs/rlp': 10.1.0
-      '@ethereumjs/util': 10.1.0
-      debug: 4.4.3(supports-color@8.1.1)
-      ethereum-cryptography: 3.2.0
-      lru-cache: 11.0.2
-    transitivePeerDependencies:
-      - supports-color
-
-  '@ethereumjs/rlp@10.1.0': {}
 
   '@ethereumjs/rlp@4.0.1': {}
 
@@ -6076,21 +6038,6 @@ snapshots:
       - bufferutil
       - supports-color
       - utf-8-validate
-
-  '@ethereumjs/statemanager@10.1.0':
-    dependencies:
-      '@ethereumjs/binarytree': 10.1.0
-      '@ethereumjs/common': 10.1.0
-      '@ethereumjs/mpt': 10.1.0
-      '@ethereumjs/rlp': 10.1.0
-      '@ethereumjs/util': 10.1.0
-      '@js-sdsl/ordered-map': 4.4.2
-      '@noble/hashes': 1.8.0
-      debug: 4.4.3(supports-color@8.1.1)
-      ethereum-cryptography: 3.2.0
-      lru-cache: 11.0.2
-    transitivePeerDependencies:
-      - supports-color
 
   '@ethereumjs/statemanager@2.4.0':
     dependencies:
@@ -6138,11 +6085,6 @@ snapshots:
       '@ethereumjs/rlp': 5.0.2
       '@ethereumjs/util': 9.1.0
       ethereum-cryptography: 2.2.1
-
-  '@ethereumjs/util@10.1.0':
-    dependencies:
-      '@ethereumjs/rlp': 10.1.0
-      ethereum-cryptography: 3.2.0
 
   '@ethereumjs/util@8.1.0':
     dependencies:
@@ -6760,7 +6702,7 @@ snapshots:
 
   '@lodestar/config@1.27.1':
     dependencies:
-      '@chainsafe/ssz': 1.3.0
+      '@chainsafe/ssz': 1.0.2
       '@lodestar/params': 1.27.1
       '@lodestar/types': 1.27.1
       '@lodestar/utils': 1.27.1
@@ -6777,7 +6719,7 @@ snapshots:
       '@chainsafe/bls': 7.1.3(@chainsafe/blst@0.2.11(encoding@0.1.13))
       '@chainsafe/blst': 0.2.11(encoding@0.1.13)
       '@chainsafe/persistent-merkle-tree': 1.2.1
-      '@chainsafe/ssz': 1.3.0
+      '@chainsafe/ssz': 1.0.2
       '@lodestar/api': 1.37.0
       '@lodestar/config': 1.27.1
       '@lodestar/params': 1.27.1
@@ -6833,7 +6775,7 @@ snapshots:
 
   '@lodestar/types@1.27.1':
     dependencies:
-      '@chainsafe/ssz': 1.3.0
+      '@chainsafe/ssz': 1.0.2
       '@lodestar/params': 1.27.1
       ethereum-cryptography: 2.2.1
 
@@ -7152,10 +7094,6 @@ snapshots:
   '@noble/curves@1.8.1':
     dependencies:
       '@noble/hashes': 1.7.1
-
-  '@noble/curves@1.9.0':
-    dependencies:
-      '@noble/hashes': 1.8.0
 
   '@noble/curves@1.9.1':
     dependencies:
@@ -8597,8 +8535,6 @@ snapshots:
 
   bls-eth-wasm@0.4.8: {}
 
-  bls-eth-wasm@1.4.0: {}
-
   bn.js@4.12.2: {}
 
   bn.js@5.2.2: {}
@@ -9165,14 +9101,6 @@ snapshots:
       '@noble/hashes': 1.7.1
       '@scure/bip32': 1.6.2
       '@scure/bip39': 1.5.4
-
-  ethereum-cryptography@3.2.0:
-    dependencies:
-      '@noble/ciphers': 1.3.0
-      '@noble/curves': 1.9.0
-      '@noble/hashes': 1.8.0
-      '@scure/bip32': 1.7.0
-      '@scure/bip39': 1.6.0
 
   ethers@5.8.0:
     dependencies:
@@ -9885,8 +9813,6 @@ snapshots:
   lru-cache@10.1.0: {}
 
   lru-cache@10.4.3: {}
-
-  lru-cache@11.0.2: {}
 
   lru-cache@11.2.4: {}
 
