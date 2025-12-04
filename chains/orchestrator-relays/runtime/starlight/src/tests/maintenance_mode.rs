@@ -295,8 +295,36 @@ fn test_non_filtered_calls_maintenance_mode() {
         });
 }
 
+#[test]
+fn test_assert_utility_does_not_bypass_filters() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_sudo(AccountId::from(ALICE))
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            assert_ok!(MaintenanceMode::enter_maintenance_mode(root_origin()));
+
+            assert_call_filtered(RuntimeCall::Utility(
+                pallet_utility::Call::<Runtime>::batch {
+                    calls: vec![RuntimeCall::Balances(
+                        pallet_balances::Call::<Runtime>::transfer_allow_death {
+                            dest: AccountId::from(BOB).into(),
+                            value: 1 * UNIT,
+                        },
+                    )],
+                },
+            ));
+        });
+}
+
 fn assert_call_filtered(call: RuntimeCall) {
-    println!("Call is not filtered {:?}", call);
     assert_noop!(
         call.dispatch(<Runtime as frame_system::Config>::RuntimeOrigin::signed(
             AccountId::from(ALICE)
