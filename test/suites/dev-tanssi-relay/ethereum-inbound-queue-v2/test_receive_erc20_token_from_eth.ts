@@ -11,6 +11,7 @@ import {
     ETHEREUM_NETWORK_TESTNET,
     generateOutboundMessageAcceptedLog,
     SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
+    ETHEREUM_NETWORK_MAINNET,
 } from "utils";
 import {
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS,
@@ -31,6 +32,7 @@ describeSuite({
         let shouldSkipStarlightETT: boolean;
         let shouldSkipStarlightForeignAssetsCreator: boolean;
         let tokenAddress: string;
+        let ethNetworkId: number;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -45,17 +47,19 @@ describeSuite({
             shouldSkipStarlightForeignAssetsCreator =
                 isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_FOREIGN_ASSETS_CREATOR.includes(specVersion);
 
+            ethNetworkId = isStarlight ? ETHEREUM_NETWORK_MAINNET : ETHEREUM_NETWORK_TESTNET;
+
             tokenAddress = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
             const erc20TokenLocation = {
                 parents: 1,
                 interior: {
                     X2: [
                         {
-                            GlobalConsensus: ETHEREUM_NETWORK_TESTNET,
+                            GlobalConsensus: ethNetworkId,
                         },
                         {
                             AccountKey20: {
-                                network: ETHEREUM_NETWORK_TESTNET,
+                                network: ethNetworkId,
                                 key: tokenAddress,
                             },
                         },
@@ -162,7 +166,6 @@ describeSuite({
                     []
                 );
 
-                console.log("log", log.toJSON());
                 await new Promise((res) => {
                     setTimeout(() => {
                         res();

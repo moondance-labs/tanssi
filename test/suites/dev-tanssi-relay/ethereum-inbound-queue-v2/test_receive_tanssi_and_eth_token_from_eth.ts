@@ -11,6 +11,7 @@ import {
     ETHEREUM_NETWORK_TESTNET,
     generateOutboundMessageAcceptedLog,
     SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
+    ETHEREUM_NETWORK_MAINNET,
 } from "utils";
 import {
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS,
@@ -30,6 +31,7 @@ describeSuite({
         let specVersion: number;
         let shouldSkipStarlightETT: boolean;
         let shouldSkipStarlightForeignAssetsCreator: boolean;
+        let ethNetworkId: number;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -44,12 +46,14 @@ describeSuite({
             shouldSkipStarlightForeignAssetsCreator =
                 isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_FOREIGN_ASSETS_CREATOR.includes(specVersion);
 
+            ethNetworkId = isStarlight ? ETHEREUM_NETWORK_MAINNET : ETHEREUM_NETWORK_TESTNET;
+
             const ethTokenLocation = {
                 parents: 1,
                 interior: {
                     X1: [
                         {
-                            GlobalConsensus: ETHEREUM_NETWORK_TESTNET,
+                            GlobalConsensus: ethNetworkId,
                         },
                     ],
                 },
