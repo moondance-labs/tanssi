@@ -84,3 +84,49 @@ fn symbiotic_try_extract_message_fails_with_invalid_symbiotic_payload() {
         );
     });
 }
+
+#[test]
+fn symbiotic_try_extract_message_fails_with_invalid_origin_payload() {
+    ExtBuilder::default().build().execute_with(|| {
+        let origin = H160::random();
+        let sender: AccountId = AccountId::from(ALICE);
+
+        let raw_payload = RawPayload::Symbiotic(vec![0xAA, 0xBB, 0xCC].encode());
+
+        let message = Message {
+            gateway: origin,
+            nonce: 1,
+            origin,
+            assets: vec![],
+            payload: Payload::Raw(raw_payload.encode()),
+            claimer: None,
+            value: 0,
+            execution_fee: 0,
+            relayer_fee: 0,
+        };
+
+        type Processor = SymbioticMessageProcessor<
+            Runtime,
+            GatewayAddress,
+            DefaultClaimer,
+            EthereumNetwork,
+            EthereumUniversalLocation,
+            TanssiUniversalLocation,
+            xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
+            <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+        >;
+
+        let result = <Processor as MessageProcessorWithFallback<AccountId>>::try_extract_message(
+            &sender, &message,
+        );
+
+        assert!(
+            matches!(
+                result,
+                Err(MessageExtractionError::InvalidMessage { .. })
+            ),
+            "Invalid Symbiotic payload should result in InvalidMessage error, got: {:?}",
+            result
+        );
+    });
+}
