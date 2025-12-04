@@ -430,13 +430,6 @@ fn test_inbound_queue_transfer_tanssi_works() {
             1
         ));
 
-        let eth_native_asset_location = Location {
-            parents: 1,
-            interior: X1([GlobalConsensus(EthereumNetwork::get())].into()),
-        };
-
-        let asset_id = 42u16;
-
         assert_ok!(
             Balances::force_set_balance(
                 root_origin(),
@@ -444,15 +437,6 @@ fn test_inbound_queue_transfer_tanssi_works() {
                 10_000_000_000_000_000_000u128
             )
         );
-
-        assert_ok!(ForeignAssetsCreator::create_foreign_asset(
-            root_origin(),
-            eth_native_asset_location.clone(),
-            asset_id,
-            AccountId::from(ALICE),
-            true,
-            1
-        ));
 
         let token_location_reanchored = token_location
             .clone()
