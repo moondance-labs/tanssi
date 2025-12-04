@@ -249,6 +249,7 @@ impl snowbridge_pallet_outbound_queue_v2::Config for Test {
     type AggregateMessageOrigin = MockAggregateMessageOrigin;
     #[cfg(feature = "runtime-benchmarks")]
     type Helper = Test;
+    type OnNewCommitment = ();
 }
 pub fn new_test_ext() -> sp_io::TestExternalities {
     let t = frame_system::GenesisConfig::<Test>::default()

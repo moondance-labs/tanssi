@@ -111,6 +111,7 @@ import type {
     PalletEthereumTokenTransfersCall,
     PalletEthereumTokenTransfersError,
     PalletEthereumTokenTransfersEvent,
+    PalletEthereumTokenTransfersOrigin,
     PalletExternalValidatorSlashesCall,
     PalletExternalValidatorSlashesError,
     PalletExternalValidatorSlashesEvent,
@@ -391,6 +392,7 @@ import type {
     SnowbridgeCoreOperatingModeBasicOperatingMode,
     SnowbridgeCorePricingPricingParameters,
     SnowbridgeCorePricingRewards,
+    SnowbridgeCoreRewardMessageId,
     SnowbridgeInboundQueuePrimitivesV1ConvertMessageError,
     SnowbridgeMilagroBlsKeysPublicKey,
     SnowbridgeOutboundQueuePrimitivesOperatingMode,
@@ -667,6 +669,7 @@ declare module "@polkadot/types/types/registry" {
         PalletEthereumTokenTransfersCall: PalletEthereumTokenTransfersCall;
         PalletEthereumTokenTransfersError: PalletEthereumTokenTransfersError;
         PalletEthereumTokenTransfersEvent: PalletEthereumTokenTransfersEvent;
+        PalletEthereumTokenTransfersOrigin: PalletEthereumTokenTransfersOrigin;
         PalletExternalValidatorSlashesCall: PalletExternalValidatorSlashesCall;
         PalletExternalValidatorSlashesError: PalletExternalValidatorSlashesError;
         PalletExternalValidatorSlashesEvent: PalletExternalValidatorSlashesEvent;
@@ -947,6 +950,7 @@ declare module "@polkadot/types/types/registry" {
         SnowbridgeCoreOperatingModeBasicOperatingMode: SnowbridgeCoreOperatingModeBasicOperatingMode;
         SnowbridgeCorePricingPricingParameters: SnowbridgeCorePricingPricingParameters;
         SnowbridgeCorePricingRewards: SnowbridgeCorePricingRewards;
+        SnowbridgeCoreRewardMessageId: SnowbridgeCoreRewardMessageId;
         SnowbridgeInboundQueuePrimitivesV1ConvertMessageError: SnowbridgeInboundQueuePrimitivesV1ConvertMessageError;
         SnowbridgeMilagroBlsKeysPublicKey: SnowbridgeMilagroBlsKeysPublicKey;
         SnowbridgeOutboundQueuePrimitivesOperatingMode: SnowbridgeOutboundQueuePrimitivesOperatingMode;
