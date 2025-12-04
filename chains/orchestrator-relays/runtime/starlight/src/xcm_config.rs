@@ -16,6 +16,9 @@
 
 //! XCM configuration for Starlight.
 
+use crate::SnowbridgeFeesAccount;
+use tanssi_runtime_common::relay::ExporterFeeHandler;
+use tp_bridge::ContainerEthereumBlobExporter;
 use {
     super::{
         parachains_origin,
@@ -59,10 +62,9 @@ use {
         ChildParachainConvertsVia, ConvertedConcreteId, DescribeAllTerminal, DescribeFamily,
         FixedWeightBounds, FrameTransactionalProcessor, FungibleAdapter, FungiblesAdapter,
         HashedDescription, IsChildSystemParachain, IsConcrete, MintLocation, NoChecking,
-        OriginToPluralityVoice, SendXcmFeeToAccount, SignedAccountId32AsNative,
-        SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
-        UsingComponents, WeightInfoBounds, WithComputedOrigin, WithUniqueTopic,
-        XcmFeeManagerFromComponents,
+        OriginToPluralityVoice, SignedAccountId32AsNative, SignedToAccountId32,
+        SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents,
+        WeightInfoBounds, WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
     },
     xcm_executor::XcmExecutor,
 };
@@ -231,9 +233,9 @@ impl xcm_executor::Config for XcmConfig {
     type MaxAssetsIntoHolding = MaxAssetsIntoHolding;
     type FeeManager = XcmFeeManagerFromComponents<
         WaivedLocations,
-        SendXcmFeeToAccount<Self::AssetTransactor, TreasuryAccount>,
+        ExporterFeeHandler<Self::AssetTransactor, SnowbridgeFeesAccount, TreasuryAccount>,
     >;
-    type MessageExporter = ();
+    type MessageExporter = ContainerToSnowbridgeMessageExporter;
     type UniversalAliases = Nothing;
     type CallDispatcher = RuntimeCall;
     type SafeCallFilter = Everything;
@@ -377,6 +379,16 @@ parameter_types! {
 pub type SnowbridgeExporter = EthereumBlobExporter<
     UniversalLocation,
     EthereumNetwork,
+    snowbridge_pallet_outbound_queue::Pallet<Runtime>,
+    EthereumSystem,
+    SnowbridgeChannelInfo,
+>;
+
+/// Exports message to the Ethereum Gateway contract.
+pub type ContainerToSnowbridgeMessageExporter = ContainerEthereumBlobExporter<
+    UniversalLocation,
+    EthereumNetwork,
+    EthereumLocation,
     snowbridge_pallet_outbound_queue::Pallet<Runtime>,
     EthereumSystem,
     SnowbridgeChannelInfo,
