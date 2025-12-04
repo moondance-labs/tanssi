@@ -114,7 +114,7 @@
         "@polkadot/types-support": "16.5.3"
     },
     "devDependencies": {
-        "@types/node": "^24.10.1",
+        "@types/node": "22.7.5",
         "chalk": "^5.4.1",
         "tsx": "^4.21.0",
         "typescript": "^5.9.3"
