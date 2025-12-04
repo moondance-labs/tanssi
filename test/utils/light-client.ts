@@ -46,7 +46,7 @@ function encodeAsNativeTokenERC20(tokenAddress: string, value: bigint): Uint8Arr
     return getBytes(encoded);
 }
 
-function encodeAsForeignTokenERC20(tokenId: Uint8Array | string, value: bigint): Uint8Array {
+function encodeAsForeignTokenERC20(tokenId: string, value: bigint): Uint8Array {
     const defaultAbiCoder = AbiCoder.defaultAbiCoder();
 
     const encoded = defaultAbiCoder.encode(["bytes32", "uint128"], [tokenId, value]);
