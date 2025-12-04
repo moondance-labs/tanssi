@@ -317,7 +317,7 @@ jobs:
                   echo "" >> runtime_size_report.md
                   cat runtime_size_report.md
             - name: Find Comment
-              uses: peter-evans/find-comment@v3
+              uses: peter-evans/find-comment@v4
               id: fc
               with:
                   issue-number: ${{ github.event.pull_request.number }}
@@ -367,7 +367,7 @@ jobs:
             fi
         - name: Find existing bot comment
           id: fc
-          uses: peter-evans/find-comment@v3
+          uses: peter-evans/find-comment@v4
           with:
             issue-number: ${{ github.event.pull_request.number }}
             comment-author: "github-actions[bot]"
