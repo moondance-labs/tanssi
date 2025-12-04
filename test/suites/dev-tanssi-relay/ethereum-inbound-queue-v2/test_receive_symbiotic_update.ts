@@ -10,10 +10,6 @@ import {
     generateOutboundMessageAcceptedLog,
     ETHEREUM_NETWORK_MAINNET,
 } from "utils";
-import {
-    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS,
-    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_FOREIGN_ASSETS_CREATOR,
-} from "helpers";
 import type { KeyringPair } from "@moonwall/util";
 
 describeSuite({
@@ -25,9 +21,6 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let isStarlight: boolean;
-        let specVersion: number;
-        let shouldSkipStarlightETT: boolean;
-        let shouldSkipStarlightForeignAssetsCreator: boolean;
         let ethNetworkId: number;
 
         beforeAll(async () => {
@@ -37,11 +30,6 @@ describeSuite({
 
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
             isStarlight = runtimeName === "starlight";
-            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
-            shouldSkipStarlightETT =
-                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS.includes(specVersion);
-            shouldSkipStarlightForeignAssetsCreator =
-                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_FOREIGN_ASSETS_CREATOR.includes(specVersion);
 
             ethNetworkId = isStarlight ? ETHEREUM_NETWORK_MAINNET : ETHEREUM_NETWORK_TESTNET;
         });
