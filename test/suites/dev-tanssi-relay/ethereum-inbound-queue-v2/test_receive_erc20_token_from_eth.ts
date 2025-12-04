@@ -166,12 +166,6 @@ describeSuite({
                     []
                 );
 
-                await new Promise((res) => {
-                    setTimeout(() => {
-                        res();
-                    }, 120000);
-                });
-
                 const { checkpointUpdate, messageExtrinsics } = await generateUpdate(polkadotJs, [log]);
 
                 const tx = polkadotJs.tx.ethereumBeaconClient.forceCheckpoint(checkpointUpdate);

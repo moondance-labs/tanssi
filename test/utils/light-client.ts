@@ -62,7 +62,55 @@ function encodeXcmMessage(api: ApiPromise, xcmInstructions): Uint8Array {
     return xcm.toU8a();
 }
 
-function encodeRawPayloadXcm(api: ApiPromise, xcmBytes: Uint8Array): Uint8Array {
+function encodeSymbioticMessage(api: ApiPromise, symbioticValidators: string[]): Uint8Array {
+    const MAGIC_BYTES = new Uint8Array([112, 21, 0, 56]);
+
+    api.registry.register({
+        SymbioticInboundCommand: {
+            _enum: {
+                ReceiveValidators: {
+                    validators: "Vec<AccountId32>",
+                    external_index: "u64",
+                },
+            },
+        },
+        SymbioticMessage: {
+            _enum: {
+                V1: "SymbioticInboundCommand",
+            },
+        },
+        SymbioticPayload: {
+            magic_bytes: "[u8; 4]",
+            message: "SymbioticMessage",
+        },
+    });
+
+    const validators = symbioticValidators.map((validator) => {
+        const hexStr = validator.startsWith("0x") ? validator.slice(2) : validator;
+        return hexStr;
+    });
+
+    const payload = api.createType("SymbioticPayload", {
+        magic_bytes: Array.from(MAGIC_BYTES),
+        message: {
+            V1: {
+                ReceiveValidators: {
+                    validators: validators,
+                    external_index: 0,
+                },
+            },
+        },
+    });
+
+    return payload.toU8a();
+}
+
+enum PayloadEnum {
+    XCM = "XCM",
+    SYMBIOTIC = "SYMBIOTIC",
+}
+
+function encodeRawPayload(api: ApiPromise, bytes: Uint8Array, payloadEnum: PayloadEnum): Uint8Array {
     api.registry.register({
         RawPayload: {
             _enum: {
@@ -72,33 +120,58 @@ function encodeRawPayloadXcm(api: ApiPromise, xcmBytes: Uint8Array): Uint8Array 
         },
     });
 
-    const rawPayload = api.createType("RawPayload", {
-        Xcm: Array.from(xcmBytes),
-    });
+    if (payloadEnum === PayloadEnum.XCM) {
+        const rawPayload = api.createType("RawPayload", {
+            Xcm: Array.from(bytes),
+        });
 
-    return rawPayload.toU8a();
+        return rawPayload.toU8a();
+    }
+
+    if (payloadEnum === PayloadEnum.SYMBIOTIC) {
+        const rawPayload = api.createType("RawPayload", {
+            Symbiotic: Array.from(bytes),
+        });
+
+        return rawPayload.toU8a();
+    }
+
+    throw new Error(`Unsupported PayloadEnum: ${payloadEnum}`);
 }
 
-function createXcmData(api: ApiPromise, xcmInstructions): Uint8Array {
+function createXcmData(api: ApiPromise, xcmInstructions: any[]): Uint8Array {
     const xcmBytes = encodeXcmMessage(api, xcmInstructions);
 
-    return encodeRawPayloadXcm(api, xcmBytes);
+    return encodeRawPayload(api, xcmBytes, PayloadEnum.XCM);
+}
+
+function createSymbioticData(api: ApiPromise, symbioticValidators: string[]) {
+    const bytes = encodeSymbioticMessage(api, symbioticValidators);
+
+    return encodeRawPayload(api, bytes, PayloadEnum.SYMBIOTIC);
 }
 
 export async function generateOutboundMessageAcceptedLog(
     api: ApiPromise,
     nonce,
     ethValue: bigint,
-    instructions,
+    instructions: any[] | null,
     nativeERC20Params: { value: bigint; tokenAddress: string }[] = [],
-    foreignTokenParams: { value: bigint; tokenId: string }[] = []
+    foreignTokenParams: { value: bigint; tokenId: string }[] = [],
+    symbioticValidators: string[] | null = null
 ) {
     const gatewayHex = "EDa338E4dC46038493b885327842fD3E301CaB39";
     const origin = `0x${gatewayHex}`;
     const gatewayAddress = Uint8Array.from(Buffer.from(gatewayHex, "hex"));
 
-    const xcmData = createXcmData(api, instructions);
     const defaultAbiCoder = AbiCoder.defaultAbiCoder();
+
+    const xcmSymbioticData = symbioticValidators !== null ? createSymbioticData(api, symbioticValidators) : null;
+    const xcmData = instructions !== null ? createXcmData(api, instructions) : null;
+
+    if (!xcmSymbioticData && !xcmData) {
+        throw new Error("You need to specify XCM instructions or Symbiotic payload!");
+    }
 
     const payload = {
         origin,
@@ -112,7 +185,7 @@ export async function generateOutboundMessageAcceptedLog(
                 data: encodeAsForeignTokenERC20(foreignTokenParam.tokenId, foreignTokenParam.value),
             })),
         ],
-        xcm: { kind: 0, data: xcmData },
+        xcm: { kind: 0, data: xcmData || xcmSymbioticData },
         claimer: "0x",
         value: ethValue,
         executionFee: 0n,
