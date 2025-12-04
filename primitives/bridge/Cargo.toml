@@ -46,6 +46,7 @@ hex-literal = { workspace = true }
 pallet-balances = { workspace = true, features = [ "std" ] }
 pallet-timestamp = { workspace = true, features = [ "std" ] }
 sp-io = { workspace = true, features = [ "std" ] }
+sp-tracing = { workspace = true }
 
 [features]
 default = [ "std" ]
@@ -76,6 +77,7 @@ std = [
 	"sp-core/std",
 	"sp-io/std",
 	"sp-runtime/std",
+	"sp-tracing/std",
 	"xcm-builder/std",
 	"xcm-executor/std",
 	"xcm/std",
