@@ -14,19 +14,19 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use crate::tests::{ethereum_chain_id, set_templates_relay_param_to_starlight};
 use {
-    crate::tests::ethereum_chain_id,
-    dancelight_emulated_chain::DancelightRelayPallet,
-    dancelight_runtime::TreasuryAccount,
-    dancelight_system_emulated_network::{
-        DancelightRelay as Dancelight, DancelightSender, FrontierTemplatePara as FrontierTemplate,
-        SimpleTemplatePara as SimpleTemplate, SimpleTemplateSender,
-    },
     frame_support::assert_ok,
     frontier_template_emulated_chain::{EthereumSender, FrontierTemplateParaPallet},
     hex_literal::hex,
     simple_template_emulated_chain::SimpleTemplateParaPallet,
     snowbridge_core::ChannelId,
+    starlight_emulated_chain::StarlightRelayPallet,
+    starlight_runtime::TreasuryAccount,
+    starlight_system_emulated_network::{
+        FrontierTemplatePara as FrontierTemplate, SimpleTemplatePara as SimpleTemplate,
+        SimpleTemplateSender, StarlightRelay as Starlight, StarlightSender,
+    },
     xcm::latest::prelude::*,
     xcm::v5::NetworkId,
     xcm_emulator::{assert_expected_events, Chain, TestExt},
@@ -43,6 +43,8 @@ const RELAY_ASSET_FEE_AMOUNT: u128 = 3_500_000_000_000;
 
 #[test]
 fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
+    set_templates_relay_param_to_starlight();
+
     let asset_sender = EthereumSender::get();
 
     let container_para_id: u32 = FrontierTemplate::execute_with(|| {
@@ -56,7 +58,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
     // Common location calculations
     let container_location = Location::new(0, Parachain(container_para_id));
     let container_sovereign_account =
-        dancelight_runtime::xcm_config::LocationConverter::convert_location(&container_location)
+        starlight_runtime::xcm_config::LocationConverter::convert_location(&container_location)
             .unwrap();
 
     let erc20_asset_id_for_container_context = Location {
@@ -100,18 +102,18 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
         interior: Here,
     };
 
-    Dancelight::execute_with(|| {
+    Starlight::execute_with(|| {
         // Setup origins
-        let root_origin = <Dancelight as Chain>::RuntimeOrigin::root();
-        let alice_origin = <Dancelight as Chain>::RuntimeOrigin::signed(DancelightSender::get());
+        let root_origin = <Starlight as Chain>::RuntimeOrigin::root();
+        let alice_origin = <Starlight as Chain>::RuntimeOrigin::signed(StarlightSender::get());
 
         // Creating foreign assets for the ERC20 tokens came from Ethereum in the Relay
         assert_ok!(
-            <Dancelight as DancelightRelayPallet>::ForeignAssetsCreator::create_foreign_asset(
+            <Starlight as StarlightRelayPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
                 erc20_asset_id_for_relay_context.clone(),
                 ERC20_ASSET_ID,
-                DancelightSender::get(),
+                StarlightSender::get(),
                 true,
                 1
             )
@@ -119,7 +121,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
 
         // Artificially minting foreign assets for the ERC20 tokens came from Ethereum to
         // the sovereign account to fake the reception of the token
-        assert_ok!(<Dancelight as DancelightRelayPallet>::ForeignAssets::mint(
+        assert_ok!(<Starlight as StarlightRelayPallet>::ForeignAssets::mint(
             alice_origin.clone(),
             ERC20_ASSET_ID,
             container_sovereign_account.clone().into(),
@@ -128,19 +130,20 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
 
         // Adding native relay tokens to the sovereign account to be able to pay fees
         assert_ok!(
-            <Dancelight as DancelightRelayPallet>::Balances::transfer_allow_death(
+            <Starlight as StarlightRelayPallet>::Balances::transfer_allow_death(
                 alice_origin.clone(),
                 container_sovereign_account.clone().into(),
-                RELAY_ASSET_FEE_AMOUNT
-                    + dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
+                RELAY_ASSET_FEE_AMOUNT + starlight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
             )
         );
 
         // Specifying the channel for the ERC20 token transfers
         assert_ok!(
-            <Dancelight as DancelightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(
+            <Starlight as StarlightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(
                 root_origin.clone(),
-                ChannelId::new(hex!("0000000000000000000000000000000000000000000000000000000000000004")),
+                ChannelId::new(hex!(
+                    "0000000000000000000000000000000000000000000000000000000000000004"
+                )),
                 hex!("0000000000000000000000000000000000000000000000000000000000000005").into(),
                 PARA_ID_FOR_CHANNEL.into()
             ),
@@ -198,9 +201,9 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
 
     // Check initial balances for the relay chain
     let mut treasury_fees_account_balance_before: u128 = 0;
-    Dancelight::execute_with(|| {
+    Starlight::execute_with(|| {
         let container_chain_sovereign_account_erc20_balance_before =
-            <Dancelight as DancelightRelayPallet>::ForeignAssets::balance(
+            <Starlight as StarlightRelayPallet>::ForeignAssets::balance(
                 ERC20_ASSET_ID,
                 container_sovereign_account.clone(),
             );
@@ -210,23 +213,23 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
         );
 
         let container_chain_sovereign_account_system_balance_before =
-            <Dancelight as DancelightRelayPallet>::System::account(
+            <Starlight as StarlightRelayPallet>::System::account(
                 container_sovereign_account.clone(),
             )
             .data
             .free;
         assert_eq!(
             container_chain_sovereign_account_system_balance_before,
-            RELAY_ASSET_FEE_AMOUNT + dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
+            RELAY_ASSET_FEE_AMOUNT + starlight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
         );
 
         treasury_fees_account_balance_before =
-            <Dancelight as DancelightRelayPallet>::System::account(TreasuryAccount::get())
+            <Starlight as StarlightRelayPallet>::System::account(TreasuryAccount::get())
                 .data
                 .free;
         assert_eq!(
             treasury_fees_account_balance_before,
-            dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
+            starlight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
         );
     });
 
@@ -260,7 +263,9 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
             parents: 0,
             interior: Junctions::X1(
                 [AccountKey20 {
-                    network: Some(container_chain_template_simple_runtime::EthereumNetwork::get()),
+                    network: Some(
+                        container_chain_template_frontier_runtime::EthereumNetwork::get(),
+                    ),
                     key: ERC20_TOKEN_ADDRESS,
                 }]
                 .into(),
@@ -275,7 +280,9 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
             parents: 0,
             interior: Junctions::X1(
                 [AccountKey20 {
-                    network: Some(container_chain_template_simple_runtime::EthereumNetwork::get()),
+                    network: Some(
+                        container_chain_template_frontier_runtime::EthereumNetwork::get(),
+                    ),
                     key: beneficiary_address,
                 }]
                 .into(),
@@ -341,40 +348,40 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
     });
 
     // Check result balances for the relay chain
-    Dancelight::execute_with(|| {
-        type RuntimeEvent = <Dancelight as Chain>::RuntimeEvent;
+    Starlight::execute_with(|| {
+        type RuntimeEvent = <Starlight as Chain>::RuntimeEvent;
         assert_expected_events!(
-            Dancelight,
+            Starlight,
             vec![
                 RuntimeEvent::EthereumOutboundQueue(snowbridge_pallet_outbound_queue::Event::MessageAccepted { nonce: 1, id: _ }) => {},
             ]
         );
 
         let container_chain_sovereign_account_erc20_balance_after =
-            <Dancelight as DancelightRelayPallet>::ForeignAssets::balance(
+            <Starlight as StarlightRelayPallet>::ForeignAssets::balance(
                 ERC20_ASSET_ID,
                 container_sovereign_account.clone(),
             );
         assert_eq!(container_chain_sovereign_account_erc20_balance_after, 0);
 
         let container_chain_sovereign_account_system_balance_after =
-            <Dancelight as DancelightRelayPallet>::System::account(
+            <Starlight as StarlightRelayPallet>::System::account(
                 container_sovereign_account.clone(),
             )
             .data
             .free;
         assert_eq!(
             container_chain_sovereign_account_system_balance_after,
-            dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
+            starlight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
         );
 
         let treasury_fees_account_balance_after =
-            <Dancelight as DancelightRelayPallet>::System::account(TreasuryAccount::get())
+            <Starlight as StarlightRelayPallet>::System::account(TreasuryAccount::get())
                 .data
                 .free;
         assert!(
             treasury_fees_account_balance_after
-                > dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
+                > starlight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
         );
 
         // Check that fees were transferred to the treasury account
@@ -384,6 +391,8 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
 
 #[test]
 fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
+    set_templates_relay_param_to_starlight();
+
     let asset_sender = SimpleTemplateSender::get();
 
     let container_para_id: u32 = SimpleTemplate::execute_with(|| {
@@ -397,7 +406,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
     // Common location calculations
     let container_location = Location::new(0, Parachain(container_para_id));
     let container_sovereign_account =
-        dancelight_runtime::xcm_config::LocationConverter::convert_location(&container_location)
+        starlight_runtime::xcm_config::LocationConverter::convert_location(&container_location)
             .unwrap();
 
     let erc20_asset_id_for_container_context = Location {
@@ -441,18 +450,18 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
         interior: Here,
     };
 
-    Dancelight::execute_with(|| {
+    Starlight::execute_with(|| {
         // Setup origins
-        let root_origin = <Dancelight as Chain>::RuntimeOrigin::root();
-        let alice_origin = <Dancelight as Chain>::RuntimeOrigin::signed(DancelightSender::get());
+        let root_origin = <Starlight as Chain>::RuntimeOrigin::root();
+        let alice_origin = <Starlight as Chain>::RuntimeOrigin::signed(StarlightSender::get());
 
         // Creating foreign assets for the ERC20 tokens came from Ethereum in the Relay
         assert_ok!(
-            <Dancelight as DancelightRelayPallet>::ForeignAssetsCreator::create_foreign_asset(
+            <Starlight as StarlightRelayPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
                 erc20_asset_id_for_relay_context.clone(),
                 ERC20_ASSET_ID,
-                DancelightSender::get(),
+                StarlightSender::get(),
                 true,
                 1
             )
@@ -460,7 +469,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
 
         // Artificially minting foreign assets for the ERC20 tokens came from Ethereum to
         // the sovereign account to fake the reception of the token
-        assert_ok!(<Dancelight as DancelightRelayPallet>::ForeignAssets::mint(
+        assert_ok!(<Starlight as StarlightRelayPallet>::ForeignAssets::mint(
             alice_origin.clone(),
             ERC20_ASSET_ID,
             container_sovereign_account.clone().into(),
@@ -469,19 +478,20 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
 
         // Adding native relay tokens to the sovereign account to be able to pay fees
         assert_ok!(
-            <Dancelight as DancelightRelayPallet>::Balances::transfer_allow_death(
+            <Starlight as StarlightRelayPallet>::Balances::transfer_allow_death(
                 alice_origin.clone(),
                 container_sovereign_account.clone().into(),
-                RELAY_ASSET_FEE_AMOUNT
-                    + dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
+                RELAY_ASSET_FEE_AMOUNT + starlight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
             )
         );
 
         // Specifying the channel for the ERC20 token transfers
         assert_ok!(
-            <Dancelight as DancelightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(
+            <Starlight as StarlightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(
                 root_origin.clone(),
-                ChannelId::new(hex!("0000000000000000000000000000000000000000000000000000000000000004")),
+                ChannelId::new(hex!(
+                    "0000000000000000000000000000000000000000000000000000000000000004"
+                )),
                 hex!("0000000000000000000000000000000000000000000000000000000000000005").into(),
                 PARA_ID_FOR_CHANNEL.into()
             ),
@@ -539,9 +549,9 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
 
     // Check initial balances for the relay chain
     let mut treasury_fees_account_balance_before: u128 = 0;
-    Dancelight::execute_with(|| {
+    Starlight::execute_with(|| {
         let container_chain_sovereign_account_erc20_balance_before =
-            <Dancelight as DancelightRelayPallet>::ForeignAssets::balance(
+            <Starlight as StarlightRelayPallet>::ForeignAssets::balance(
                 ERC20_ASSET_ID,
                 container_sovereign_account.clone(),
             );
@@ -551,23 +561,23 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
         );
 
         let container_chain_sovereign_account_system_balance_before =
-            <Dancelight as DancelightRelayPallet>::System::account(
+            <Starlight as StarlightRelayPallet>::System::account(
                 container_sovereign_account.clone(),
             )
             .data
             .free;
         assert_eq!(
             container_chain_sovereign_account_system_balance_before,
-            RELAY_ASSET_FEE_AMOUNT + dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
+            RELAY_ASSET_FEE_AMOUNT + starlight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
         );
 
         treasury_fees_account_balance_before =
-            <Dancelight as DancelightRelayPallet>::System::account(TreasuryAccount::get())
+            <Starlight as StarlightRelayPallet>::System::account(TreasuryAccount::get())
                 .data
                 .free;
         assert_eq!(
             treasury_fees_account_balance_before,
-            dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
+            starlight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
         );
     });
 
@@ -680,40 +690,40 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
     });
 
     // Check result balances for the relay chain
-    Dancelight::execute_with(|| {
-        type RuntimeEvent = <Dancelight as Chain>::RuntimeEvent;
+    Starlight::execute_with(|| {
+        type RuntimeEvent = <Starlight as Chain>::RuntimeEvent;
         assert_expected_events!(
-            Dancelight,
+            Starlight,
             vec![
                 RuntimeEvent::EthereumOutboundQueue(snowbridge_pallet_outbound_queue::Event::MessageAccepted { nonce: 1, id: _ }) => {},
             ]
         );
 
         let container_chain_sovereign_account_erc20_balance_after =
-            <Dancelight as DancelightRelayPallet>::ForeignAssets::balance(
+            <Starlight as StarlightRelayPallet>::ForeignAssets::balance(
                 ERC20_ASSET_ID,
                 container_sovereign_account.clone(),
             );
         assert_eq!(container_chain_sovereign_account_erc20_balance_after, 0);
 
         let container_chain_sovereign_account_system_balance_after =
-            <Dancelight as DancelightRelayPallet>::System::account(
+            <Starlight as StarlightRelayPallet>::System::account(
                 container_sovereign_account.clone(),
             )
             .data
             .free;
         assert_eq!(
             container_chain_sovereign_account_system_balance_after,
-            dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
+            starlight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
         );
 
         let treasury_fees_account_balance_after =
-            <Dancelight as DancelightRelayPallet>::System::account(TreasuryAccount::get())
+            <Starlight as StarlightRelayPallet>::System::account(TreasuryAccount::get())
                 .data
                 .free;
         assert!(
             treasury_fees_account_balance_after
-                > dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
+                > starlight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
         );
 
         // Check that fees were transferred to the treasury account
