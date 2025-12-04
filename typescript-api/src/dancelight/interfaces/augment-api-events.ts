@@ -24,6 +24,9 @@ import type {
 import type { ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H160, H256, Perbill } from "@polkadot/types/interfaces/runtime";
 import type {
+    BpRelayersRegistration,
+    DancelightRuntimeBridgeToEthereumConfigBridgeReward,
+    DancelightRuntimeBridgeToEthereumConfigBridgeRewardBeneficiaries,
     DancelightRuntimeProxyType,
     DancelightRuntimeRuntimeParametersKey,
     DancelightRuntimeRuntimeParametersValue,
@@ -52,7 +55,9 @@ import type {
     SnowbridgeCoreChannelId,
     SnowbridgeCoreOperatingModeBasicOperatingMode,
     SnowbridgeCorePricingPricingParameters,
+    SnowbridgeCoreRewardMessageId,
     SnowbridgeOutboundQueuePrimitivesOperatingMode,
+    SnowbridgeOutboundQueuePrimitivesV2Message,
     SpConsensusGrandpaAppPublic,
     SpRuntimeDispatchError,
     SpRuntimeDispatchErrorWithPostInfo,
@@ -228,6 +233,66 @@ declare module "@polkadot/api-base/types/events" {
              **/
             [key: string]: AugmentedEvent<ApiType>;
         };
+        bridgeRelayers: {
+            /**
+             * Relayer has been `deregistered`.
+             **/
+            Deregistered: AugmentedEvent<ApiType, [relayer: AccountId32], { relayer: AccountId32 }>;
+            /**
+             * Relayer registration has been added or updated.
+             **/
+            RegistrationUpdated: AugmentedEvent<
+                ApiType,
+                [relayer: AccountId32, registration: BpRelayersRegistration],
+                { relayer: AccountId32; registration: BpRelayersRegistration }
+            >;
+            /**
+             * Reward has been paid to the relayer.
+             **/
+            RewardPaid: AugmentedEvent<
+                ApiType,
+                [
+                    relayer: AccountId32,
+                    rewardKind: DancelightRuntimeBridgeToEthereumConfigBridgeReward,
+                    rewardBalance: u128,
+                    beneficiary: DancelightRuntimeBridgeToEthereumConfigBridgeRewardBeneficiaries,
+                ],
+                {
+                    relayer: AccountId32;
+                    rewardKind: DancelightRuntimeBridgeToEthereumConfigBridgeReward;
+                    rewardBalance: u128;
+                    beneficiary: DancelightRuntimeBridgeToEthereumConfigBridgeRewardBeneficiaries;
+                }
+            >;
+            /**
+             * Relayer reward has been registered and may be claimed later.
+             **/
+            RewardRegistered: AugmentedEvent<
+                ApiType,
+                [
+                    relayer: AccountId32,
+                    rewardKind: DancelightRuntimeBridgeToEthereumConfigBridgeReward,
+                    rewardBalance: u128,
+                ],
+                {
+                    relayer: AccountId32;
+                    rewardKind: DancelightRuntimeBridgeToEthereumConfigBridgeReward;
+                    rewardBalance: u128;
+                }
+            >;
+            /**
+             * Relayer has been slashed and `deregistered`.
+             **/
+            SlashedAndDeregistered: AugmentedEvent<
+                ApiType,
+                [relayer: AccountId32, registration: BpRelayersRegistration],
+                { relayer: AccountId32; registration: BpRelayersRegistration }
+            >;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         containerRegistrar: {
             DepositUpdated: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
             /**
@@ -366,6 +431,28 @@ declare module "@polkadot/api-base/types/events" {
              **/
             [key: string]: AugmentedEvent<ApiType>;
         };
+        ethereumInboundQueueV2: {
+            /**
+             * A message was received from Ethereum
+             **/
+            MessageReceived: AugmentedEvent<
+                ApiType,
+                [nonce: u64, messageId: U8aFixed],
+                { nonce: u64; messageId: U8aFixed }
+            >;
+            /**
+             * Set OperatingMode
+             **/
+            OperatingModeChanged: AugmentedEvent<
+                ApiType,
+                [mode: SnowbridgeCoreOperatingModeBasicOperatingMode],
+                { mode: SnowbridgeCoreOperatingModeBasicOperatingMode }
+            >;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         ethereumOutboundQueue: {
             /**
              * Message will be committed at the end of current block. From now on, to track the
@@ -376,6 +463,57 @@ declare module "@polkadot/api-base/types/events" {
              * Message has been queued and will be processed in the future
              **/
             MessageQueued: AugmentedEvent<ApiType, [id: H256], { id: H256 }>;
+            /**
+             * Some messages have been committed
+             **/
+            MessagesCommitted: AugmentedEvent<ApiType, [root: H256, count: u64], { root: H256; count: u64 }>;
+            /**
+             * Set OperatingMode
+             **/
+            OperatingModeChanged: AugmentedEvent<
+                ApiType,
+                [mode: SnowbridgeCoreOperatingModeBasicOperatingMode],
+                { mode: SnowbridgeCoreOperatingModeBasicOperatingMode }
+            >;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        ethereumOutboundQueueV2: {
+            /**
+             * Message will be committed at the end of current block. From now on, to track the
+             * progress the message, use the `nonce` or the `id`.
+             **/
+            MessageAccepted: AugmentedEvent<ApiType, [id: H256, nonce: u64], { id: H256; nonce: u64 }>;
+            /**
+             * Delivery Proof received
+             **/
+            MessageDelivered: AugmentedEvent<ApiType, [nonce: u64], { nonce: u64 }>;
+            /**
+             * Message was not committed due to being overweight or the current block is full.
+             **/
+            MessagePostponed: AugmentedEvent<
+                ApiType,
+                [payload: Bytes, reason: FrameSupportMessagesProcessMessageError],
+                { payload: Bytes; reason: FrameSupportMessagesProcessMessageError }
+            >;
+            /**
+             * Message has been queued and will be processed in the future
+             **/
+            MessageQueued: AugmentedEvent<
+                ApiType,
+                [message: SnowbridgeOutboundQueuePrimitivesV2Message],
+                { message: SnowbridgeOutboundQueuePrimitivesV2Message }
+            >;
+            /**
+             * Message was not committed due to some failure condition, like an overweight message.
+             **/
+            MessageRejected: AugmentedEvent<
+                ApiType,
+                [id: Option<H256>, payload: Bytes, error: FrameSupportMessagesProcessMessageError],
+                { id: Option<H256>; payload: Bytes; error: FrameSupportMessagesProcessMessageError }
+            >;
             /**
              * Some messages have been committed
              **/
@@ -462,6 +600,45 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [implAddress: H160, implCodeHash: H256, initializerParamsHash: Option<H256>],
                 { implAddress: H160; implCodeHash: H256; initializerParamsHash: Option<H256> }
+            >;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        ethereumSystemV2: {
+            /**
+             * Register Polkadot-native token as a wrapped ERC20 token on Ethereum
+             **/
+            RegisterToken: AugmentedEvent<
+                ApiType,
+                [location: XcmVersionedLocation, foreignTokenId: H256],
+                { location: XcmVersionedLocation; foreignTokenId: H256 }
+            >;
+            /**
+             * An SetOperatingMode message was sent to the Gateway
+             **/
+            SetOperatingMode: AugmentedEvent<
+                ApiType,
+                [mode: SnowbridgeOutboundQueuePrimitivesOperatingMode],
+                { mode: SnowbridgeOutboundQueuePrimitivesOperatingMode }
+            >;
+            /**
+             * A tip was processed for an inbound or outbound message, for relayer incentivization.
+             * It could have succeeded or failed (and then added to LostTips).
+             **/
+            TipProcessed: AugmentedEvent<
+                ApiType,
+                [sender: AccountId32, messageId: SnowbridgeCoreRewardMessageId, amount: u128, success: bool],
+                { sender: AccountId32; messageId: SnowbridgeCoreRewardMessageId; amount: u128; success: bool }
+            >;
+            /**
+             * An Upgrade message was sent to the Gateway
+             **/
+            Upgrade: AugmentedEvent<
+                ApiType,
+                [implAddress: H160, implCodeHash: H256, initializerParamsHash: H256],
+                { implAddress: H160; implCodeHash: H256; initializerParamsHash: H256 }
             >;
             /**
              * Generic event

@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+#[cfg(not(feature = "runtime-benchmarks"))]
+use crate::{match_expression, XcmConverterError};
 use {
     alloc::vec::Vec,
     core::{iter::Peekable, marker::PhantomData, slice::Iter},
@@ -175,39 +177,6 @@ where
         log::info!(target: "xcm::container_ethereum_blob_exporter", "message delivered {message_id:#?}.");
         Ok(message_id.into())
     }
-}
-
-#[cfg(not(feature = "runtime-benchmarks"))]
-/// Errors that can be thrown to the pattern matching step.
-#[derive(PartialEq, Debug)]
-enum XcmConverterError {
-    UnexpectedEndOfXcm,
-    EndOfXcmMessageExpected,
-    DepositAssetExpected,
-    ClearOriginExpected,
-    BuyExecutionExpected,
-    NoReserveAssets,
-    FilterDoesNotConsumeAllAssets,
-    TooManyAssets,
-    ZeroAssetTransfer,
-    BeneficiaryResolutionFailed,
-    AssetResolutionFailed,
-    InvalidFeeAsset,
-    SetTopicExpected,
-    ReserveAssetDepositedExpected,
-    InvalidAsset,
-    ParaIdMismatch,
-    UnexpectedInstruction,
-}
-
-#[cfg(not(feature = "runtime-benchmarks"))]
-macro_rules! match_expression {
-	($expression:expr, $(|)? $( $pattern:pat_param )|+ $( if $guard: expr )?, $value:expr $(,)?) => {
-		match $expression {
-			$( $pattern )|+ $( if $guard )? => Some($value),
-			_ => None,
-		}
-	};
 }
 
 #[cfg(feature = "runtime-benchmarks")]

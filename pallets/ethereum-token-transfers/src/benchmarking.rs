@@ -192,6 +192,25 @@ mod benchmarks {
         Ok(())
     }
 
+    #[benchmark]
+    fn add_tip() -> Result<(), BenchmarkError> {
+        let caller: T::AccountId = whitelisted_caller();
+
+        let message_id = MessageId::Inbound(1);
+        let amount = 1_000_000_000;
+
+        T::TipHandler::set_tip(
+            crate::Origin::EthereumTokenTransfers(caller.clone()).into(),
+            message_id.clone(),
+            amount,
+        );
+
+        #[extrinsic_call]
+        _(RawOrigin::Signed(caller.clone()), message_id, amount);
+
+        Ok(())
+    }
+
     impl_benchmark_test_suite!(
         EthereumTokenTransfers,
         crate::mock::new_test_ext(),

@@ -10,6 +10,7 @@ import type { Option, Vec, u128, u16, u32, u64, u8 } from "@polkadot/types-codec
 import type { Codec, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H160, Perbill, Permill } from "@polkadot/types/interfaces/runtime";
 import type {
+    DancelightRuntimeBridgeToEthereumConfigBridgeReward,
     FrameSupportPalletId,
     FrameSystemLimitsBlockLength,
     FrameSystemLimitsBlockWeights,
@@ -191,11 +192,47 @@ declare module "@polkadot/api-base/types/consts" {
              **/
             [key: string]: Codec;
         };
+        ethereumInboundQueueV2: {
+            /**
+             * The default RewardKind discriminator for rewards allocated to relayers from this pallet.
+             **/
+            defaultRewardKind: DancelightRuntimeBridgeToEthereumConfigBridgeReward & AugmentedConst<ApiType>;
+            /**
+             * Address of the Gateway contract.
+             **/
+            gatewayAddress: H160 & AugmentedConst<ApiType>;
+            /**
+             * Generic const
+             **/
+            [key: string]: Codec;
+        };
         ethereumOutboundQueue: {
             /**
              * Number of decimal places in native currency
              **/
             decimals: u8 & AugmentedConst<ApiType>;
+            /**
+             * Max bytes in a message payload
+             **/
+            maxMessagePayloadSize: u32 & AugmentedConst<ApiType>;
+            /**
+             * Max number of messages processed per block
+             **/
+            maxMessagesPerBlock: u32 & AugmentedConst<ApiType>;
+            /**
+             * Generic const
+             **/
+            [key: string]: Codec;
+        };
+        ethereumOutboundQueueV2: {
+            /**
+             * The default RewardKind discriminator for rewards allocated to relayers from this pallet.
+             **/
+            defaultRewardKind: DancelightRuntimeBridgeToEthereumConfigBridgeReward & AugmentedConst<ApiType>;
+            /**
+             * Address of the Gateway contract
+             **/
+            gatewayAddress: H160 & AugmentedConst<ApiType>;
             /**
              * Max bytes in a message payload
              **/

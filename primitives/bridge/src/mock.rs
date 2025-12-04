@@ -247,6 +247,7 @@ impl snowbridge_pallet_outbound_queue_v2::Config for Test {
     type RewardKind = ();
     type DefaultRewardKind = ();
     type AggregateMessageOrigin = MockAggregateMessageOrigin;
+    type OnNewCommitment = ();
     #[cfg(feature = "runtime-benchmarks")]
     type Helper = Test;
 }

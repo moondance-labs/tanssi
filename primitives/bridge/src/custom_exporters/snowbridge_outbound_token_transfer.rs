@@ -18,6 +18,7 @@
 // Rewrite of the following code which cause issues as Tanssi is not a parachain
 // https://github.com/moondance-labs/polkadot-sdk/blob/tanssi-polkadot-stable2412/bridges/snowbridge/primitives/router/src/outbound/mod.rs#L98
 
+use crate::{match_expression, XcmConverterError};
 use alloc::vec::Vec;
 use core::iter::Peekable;
 use core::marker::PhantomData;
@@ -169,35 +170,6 @@ where
         log::info!(target: "xcm::ethereum_blob_exporter", "message delivered {message_id:#?}.");
         Ok(message_id.into())
     }
-}
-
-/// Errors that can be thrown to the pattern matching step.
-#[derive(PartialEq, Debug)]
-pub enum XcmConverterError {
-    UnexpectedEndOfXcm,
-    EndOfXcmMessageExpected,
-    WithdrawAssetExpected,
-    DepositAssetExpected,
-    NoReserveAssets,
-    FilterDoesNotConsumeAllAssets,
-    TooManyAssets,
-    ZeroAssetTransfer,
-    BeneficiaryResolutionFailed,
-    AssetResolutionFailed,
-    InvalidFeeAsset,
-    SetTopicExpected,
-    ReserveAssetDepositedExpected,
-    InvalidAsset,
-    UnexpectedInstruction,
-}
-
-macro_rules! match_expression {
-	($expression:expr, $(|)? $( $pattern:pat_param )|+ $( if $guard: expr )?, $value:expr $(,)?) => {
-		match $expression {
-			$( $pattern )|+ $( if $guard )? => Some($value),
-			_ => None,
-		}
-	};
 }
 
 pub struct XcmConverter<'a, ConvertAssetId, Call> {

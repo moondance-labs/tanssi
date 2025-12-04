@@ -14,12 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use cumulus_primitives_core::relay_chain::AccountId;
+use snowbridge_core::ChannelId;
+use snowbridge_inbound_queue_primitives::v2;
 use {
     alloc::vec::Vec,
     frame_support::pallet_prelude::*,
     parity_scale_codec::DecodeAll,
     snowbridge_core::{Channel, PRIMARY_GOVERNANCE_CHANNEL},
-    snowbridge_inbound_queue_primitives::v1::{Envelope, MessageProcessor},
+    snowbridge_inbound_queue_primitives::{
+        v1::{Envelope, MessageProcessor},
+        v2::MessageProcessorError,
+    },
     sp_runtime::DispatchError,
 };
 
@@ -61,51 +67,59 @@ where
     },
 }
 
-pub struct SymbioticInboundMessageProcessorV1<T>(PhantomData<T>);
+pub struct SymbioticMessageProcessor<T>(PhantomData<T>);
 
-impl<T> MessageProcessor for SymbioticInboundMessageProcessorV1<T>
+impl<T> SymbioticMessageProcessor<T>
 where
     T: pallet_external_validators::Config,
 {
-    fn can_process_message(_channel: &Channel, envelope: &Envelope) -> bool {
-        let decode_result = Payload::<T>::decode_all(&mut envelope.payload.as_slice());
+    fn can_process_message(mut payload: &[u8]) -> bool {
+        let decode_result = Payload::<T>::decode_all(&mut payload);
         match decode_result {
             Ok(payload) => {
                 if payload.magic_bytes == MAGIC_BYTES {
                     true
                 } else {
-                    log::debug!("SymbioticInboundMessageProcessorV1: magic number mismatch, will try next processor: {:?}", payload.magic_bytes);
+                    log::debug!("SymbioticMessageProcessor: magic number mismatch, will try next processor: {:?}", payload.magic_bytes);
                     false
                 }
             }
             Err(e) => {
                 // Message cannot be decoded as `Payload`.
                 // This is expected if the message is intended for a different processor.
-                log::trace!("SymbioticInboundMessageProcessorV1: failed to decode payload. This is expected if the message is not for this processor. Error: {:?}", e);
+                log::trace!("SymbioticMessageProcessor: failed to decode payload. This is expected if the message is not for this processor. Error: {:?}", e);
                 false
             }
         }
     }
 
-    fn process_message(_channel: Channel, envelope: Envelope) -> Result<(), DispatchError> {
-        let decode_result = Payload::<T>::decode_all(&mut envelope.payload.as_slice());
+    fn process_message(
+        channel_id: Option<ChannelId>,
+        mut payload: &[u8],
+    ) -> Result<(), DispatchError> {
+        let decode_result = Payload::<T>::decode_all(&mut payload);
         let message = if let Ok(payload) = decode_result {
             payload.message
         } else {
             return Err(DispatchError::Other("unable to parse the envelope payload"));
         };
 
-        log::trace!("SymbioticInboundMessageProcessorV1: {:?}", message);
+        log::trace!("SymbioticMessageProcessor: {:?}", message);
 
         match message {
             Message::V1(InboundCommand::ReceiveValidators {
                 validators,
                 external_index,
             }) => {
-                if envelope.channel_id != PRIMARY_GOVERNANCE_CHANNEL {
-                    return Err(DispatchError::Other(
-                        "Received governance message from invalid channel id",
-                    ));
+                // Process message for v2 does not contain a channel-id whatsoever.
+                // We could possibly check the origin as v2 has an origin, or convert the origin into a channle or viceversa
+                // TODO for the inbound queue people
+                if let Some(channel_id) = channel_id {
+                    if channel_id != PRIMARY_GOVERNANCE_CHANNEL {
+                        return Err(DispatchError::Other(
+                            "Received governance message from invalid channel id",
+                        ));
+                    }
                 }
                 pallet_external_validators::Pallet::<T>::set_external_validators_inner(
                     validators,
@@ -114,5 +128,44 @@ where
                 Ok(())
             }
         }
+    }
+}
+
+impl<T> v2::MessageProcessor<AccountId> for SymbioticMessageProcessor<T>
+where
+    T: pallet_external_validators::Config,
+{
+    fn can_process_message(_who: &AccountId, message: &v2::Message) -> bool {
+        match &message.payload {
+            v2::message::Payload::Raw(data) => Self::can_process_message(&data),
+            v2::message::Payload::CreateAsset { .. } => false,
+        }
+    }
+
+    fn process_message(
+        _who: AccountId,
+        message: v2::Message,
+    ) -> Result<[u8; 32], MessageProcessorError> {
+        match &message.payload {
+            v2::message::Payload::Raw(data) => Self::process_message(None, &data)
+                .map(|_| [0; 32])
+                .map_err(|e| MessageProcessorError::ProcessMessage(e)),
+            v2::message::Payload::CreateAsset { .. } => Err(MessageProcessorError::ProcessMessage(
+                DispatchError::Other("Create asset is not supported"),
+            )),
+        }
+    }
+}
+
+impl<T> MessageProcessor for SymbioticMessageProcessor<T>
+where
+    T: pallet_external_validators::Config,
+{
+    fn can_process_message(_channel: &Channel, envelope: &Envelope) -> bool {
+        Self::can_process_message(&envelope.payload)
+    }
+
+    fn process_message(_channel: Channel, envelope: Envelope) -> Result<(), DispatchError> {
+        Self::process_message(Some(envelope.channel_id), &envelope.payload)
     }
 }

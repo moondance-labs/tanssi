@@ -155,6 +155,45 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             [key: string]: AugmentedError<ApiType>;
         };
+        bridgeRelayers: {
+            /**
+             * New registration lease is less than the previous one.
+             **/
+            CannotReduceRegistrationLease: AugmentedError<ApiType>;
+            /**
+             * Reward payment procedure has failed.
+             **/
+            FailedToPayReward: AugmentedError<ApiType>;
+            /**
+             * Failed to reserve enough funds on relayer account.
+             **/
+            FailedToReserve: AugmentedError<ApiType>;
+            /**
+             * Failed to `unreserve` enough funds on relayer account.
+             **/
+            FailedToUnreserve: AugmentedError<ApiType>;
+            /**
+             * The relayer has tried to register for past block or registration lease
+             * is too short.
+             **/
+            InvalidRegistrationLease: AugmentedError<ApiType>;
+            /**
+             * No reward can be claimed by given relayer.
+             **/
+            NoRewardForRelayer: AugmentedError<ApiType>;
+            /**
+             * Cannot `deregister` if not registered.
+             **/
+            NotRegistered: AugmentedError<ApiType>;
+            /**
+             * Failed to `deregister` relayer, because lease is still active.
+             **/
+            RegistrationIsStillActive: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
         collatorConfiguration: {
             /**
              * The new value for a configuration parameter is invalid.
@@ -420,6 +459,58 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             [key: string]: AugmentedError<ApiType>;
         };
+        ethereumInboundQueueV2: {
+            /**
+             * Cannot reachor a foreign ERC-20 asset location.
+             **/
+            CannotReanchor: AugmentedError<ApiType>;
+            /**
+             * The operation required fees to be paid which the initiator could not meet.
+             **/
+            FeesNotMet: AugmentedError<ApiType>;
+            /**
+             * Pallet is halted
+             **/
+            Halted: AugmentedError<ApiType>;
+            /**
+             * Invalid foreign ERC-20 token ID
+             **/
+            InvalidAsset: AugmentedError<ApiType>;
+            /**
+             * Message came from an invalid outbound channel on the Ethereum side.
+             **/
+            InvalidGateway: AugmentedError<ApiType>;
+            /**
+             * Message has an invalid envelope.
+             **/
+            InvalidMessage: AugmentedError<ApiType>;
+            /**
+             * Invalid network specified
+             **/
+            InvalidNetwork: AugmentedError<ApiType>;
+            /**
+             * Message has an unexpected nonce.
+             **/
+            InvalidNonce: AugmentedError<ApiType>;
+            /**
+             * There was some other issue (i.e. not to do with routing) in sending the message.
+             * Perhaps a lack of space for buffering the message.
+             **/
+            SendFailure: AugmentedError<ApiType>;
+            /**
+             * The desired destination was unreachable, generally because there is a no way of routing
+             * to it.
+             **/
+            Unreachable: AugmentedError<ApiType>;
+            /**
+             * Message verification error
+             **/
+            Verification: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
         ethereumOutboundQueue: {
             /**
              * The pallet is halted
@@ -433,6 +524,44 @@ declare module "@polkadot/api-base/types/errors" {
              * The message is too large
              **/
             MessageTooLarge: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
+        ethereumOutboundQueueV2: {
+            /**
+             * The pallet is halted
+             **/
+            Halted: AugmentedError<ApiType>;
+            /**
+             * Invalid Channel
+             **/
+            InvalidChannel: AugmentedError<ApiType>;
+            /**
+             * Invalid Envelope
+             **/
+            InvalidEnvelope: AugmentedError<ApiType>;
+            /**
+             * Invalid Gateway
+             **/
+            InvalidGateway: AugmentedError<ApiType>;
+            /**
+             * Pending nonce does not exist
+             **/
+            InvalidPendingNonce: AugmentedError<ApiType>;
+            /**
+             * The message is too large
+             **/
+            MessageTooLarge: AugmentedError<ApiType>;
+            /**
+             * Reward payment failed
+             **/
+            RewardPaymentFailed: AugmentedError<ApiType>;
+            /**
+             * Message verification error
+             **/
+            Verification: AugmentedError<ApiType>;
             /**
              * Generic error
              **/
@@ -455,6 +584,33 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             [key: string]: AugmentedError<ApiType>;
         };
+        ethereumSystemV2: {
+            /**
+             * The gateway contract upgrade message could not be sent due to invalid upgrade
+             * parameters.
+             **/
+            InvalidUpgradeParameters: AugmentedError<ApiType>;
+            /**
+             * A token location could not be converted to a token ID.
+             **/
+            LocationConversionFailed: AugmentedError<ApiType>;
+            /**
+             * Location could not be reachored
+             **/
+            LocationReanchorFailed: AugmentedError<ApiType>;
+            /**
+             * An XCM could not be sent, due to a `SendError`.
+             **/
+            Send: AugmentedError<ApiType>;
+            /**
+             * A `VersionedLocation` could not be converted into a `Location`.
+             **/
+            UnsupportedLocationVersion: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
         ethereumTokenTransfers: {
             /**
              * The channel's information has not been set on this pallet yet.
@@ -464,6 +620,15 @@ declare module "@polkadot/api-base/types/errors" {
              * The outbound message is invalid prior to send.
              **/
             InvalidMessage: AugmentedError<ApiType>;
+            LocationReanchorFailed: AugmentedError<ApiType>;
+            LocationToOriginConversionFailed: AugmentedError<ApiType>;
+            MinV2RewardNotAchieved: AugmentedError<ApiType>;
+            OriginConversionFailed: AugmentedError<ApiType>;
+            /**
+             * When add_tip extrinsic could not be called.
+             **/
+            TipFailed: AugmentedError<ApiType>;
+            TooManyCommands: AugmentedError<ApiType>;
             /**
              * The outbound message could not be sent.
              **/
@@ -472,6 +637,7 @@ declare module "@polkadot/api-base/types/errors" {
              * Conversion from Location to TokenId failed.
              **/
             UnknownLocationForToken: AugmentedError<ApiType>;
+            V2SendingIsNotAllowed: AugmentedError<ApiType>;
             /**
              * Generic error
              **/

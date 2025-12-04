@@ -2,7 +2,13 @@ import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { generateEventLog, generateUpdate, mockAndInsertHeadData, SNOWBRIDGE_FEES_ACCOUNT } from "utils";
+import {
+    generateEventLog,
+    generateUpdate,
+    makeSendTokenMessageFrontierTemplate,
+    mockAndInsertHeadData,
+    SNOWBRIDGE_FEES_ACCOUNT,
+} from "utils";
 import { expectEventCount, STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_TRANSFERS } from "helpers";
 import type { KeyringPair } from "@moonwall/util";
 
@@ -40,7 +46,6 @@ describeSuite({
                     );
                     return;
                 }
-                // Hard-coding payload as we do not have scale encoding-decoding
                 const log = await generateEventLog(
                     polkadotJs,
                     Uint8Array.from(Buffer.from("eda338e4dc46038493b885327842fd3e301cab39", "hex")),
@@ -51,27 +56,7 @@ describeSuite({
                         Buffer.from("0000000000000000000000000000000000000000000000000000000000000000", "hex")
                     ),
                     1,
-                    // Payload with the following shape:
-                    // let payload = VersionedXcmMessage::V1(MessageV1 {
-                    //     chain_id: 1,
-                    //     command: Command::SendNativeToken {
-                    //         token_id: 0x485f805cb9de38b4324485447c664e16035aa9d28e8723df192fa02ad3530889,
-                    //         destination: Destination::ForeignAccountId20 {
-                    //             para_id: 2001,
-                    //             id: [5u; 20],
-                    //             fee: 500_000_000_000_000,
-                    //         },
-                    //         amount: 100_000_000,
-                    //         fee: 1_500_000_000_000_000,
-                    //     },
-                    // });
-                    new Uint8Array([
-                        0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 72, 95, 128, 92, 185, 222, 56, 180, 50, 68, 133, 68, 124, 102, 78,
-                        22, 3, 90, 169, 210, 142, 135, 35, 223, 25, 47, 160, 42, 211, 83, 8, 137, 2, 209, 7, 0, 0, 5, 5,
-                        5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0, 64, 99, 82, 191, 198, 1, 0, 0, 0, 0, 0,
-                        0, 0, 0, 0, 0, 225, 245, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 192, 41, 247, 61, 84, 5, 0,
-                        0, 0, 0, 0, 0, 0, 0, 0,
-                    ])
+                    await makeSendTokenMessageFrontierTemplate(isStarlight)
                 );
                 const { checkpointUpdate, messageExtrinsics } = await generateUpdate(polkadotJs, [log]);
 

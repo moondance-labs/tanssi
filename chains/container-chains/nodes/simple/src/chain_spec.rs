@@ -15,9 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
-    container_chain_template_simple_runtime::{
-        AccountId, MaintenanceModeConfig, MigrationsConfig, PolkadotXcmConfig,
-    },
+    container_chain_template_simple_runtime::genesis_config_presets::{development, local},
     cumulus_primitives_core::ParaId,
     node_common::chain_spec::Extensions,
     sc_network::config::MultiaddrWithPeerId,
@@ -28,9 +26,6 @@ use {
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec = sc_service::GenericChainSpec<Extensions>;
 
-/// Orcherstrator's parachain id
-pub const ORCHESTRATOR: ParaId = ParaId::new(1000);
-
 pub fn development_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
@@ -39,7 +34,8 @@ pub fn development_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSpec
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), false.into());
 
-    let mut default_funded_accounts = pre_funded_accounts();
+    let mut default_funded_accounts =
+        container_chain_template_simple_runtime::genesis_config_presets::pre_funded_accounts();
     default_funded_accounts.sort();
     default_funded_accounts.dedup();
     let boot_nodes: Vec<MultiaddrWithPeerId> = boot_nodes
@@ -61,7 +57,7 @@ pub fn development_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSpec
     .with_name("Development")
     .with_id("dev")
     .with_chain_type(ChainType::Development)
-    .with_genesis_config(testnet_genesis(
+    .with_genesis_config(development(
         default_funded_accounts.clone(),
         para_id,
         Sr25519Keyring::Alice.to_account_id(),
@@ -80,7 +76,8 @@ pub fn local_testnet_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSp
     properties.insert("isEthereum".into(), false.into());
     let protocol_id = format!("container-chain-{}", para_id);
 
-    let mut default_funded_accounts = pre_funded_accounts();
+    let mut default_funded_accounts =
+        container_chain_template_simple_runtime::genesis_config_presets::pre_funded_accounts();
     default_funded_accounts.sort();
     default_funded_accounts.dedup();
     let boot_nodes: Vec<MultiaddrWithPeerId> = boot_nodes
@@ -102,7 +99,7 @@ pub fn local_testnet_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSp
     .with_name(&format!("Simple Container {}", para_id))
     .with_id(&format!("simple_container_{}", para_id))
     .with_chain_type(ChainType::Local)
-    .with_genesis_config(testnet_genesis(
+    .with_genesis_config(local(
         default_funded_accounts.clone(),
         para_id,
         Sr25519Keyring::Alice.to_account_id(),
@@ -111,52 +108,4 @@ pub fn local_testnet_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSp
     .with_protocol_id(&protocol_id)
     .with_boot_nodes(boot_nodes)
     .build()
-}
-
-fn testnet_genesis(
-    endowed_accounts: Vec<AccountId>,
-    id: ParaId,
-    root_key: AccountId,
-) -> serde_json::Value {
-    let g = container_chain_template_simple_runtime::RuntimeGenesisConfig {
-        balances: container_chain_template_simple_runtime::BalancesConfig {
-            balances: endowed_accounts
-                .iter()
-                .cloned()
-                .map(|k| (k, 1 << 60))
-                .collect(),
-            ..Default::default()
-        },
-        parachain_info: container_chain_template_simple_runtime::ParachainInfoConfig {
-            parachain_id: id,
-            ..Default::default()
-        },
-        parachain_system: Default::default(),
-        sudo: container_chain_template_simple_runtime::SudoConfig {
-            key: Some(root_key),
-        },
-        authorities_noting: container_chain_template_simple_runtime::AuthoritiesNotingConfig {
-            orchestrator_para_id: ORCHESTRATOR,
-            ..Default::default()
-        },
-        migrations: MigrationsConfig::default(),
-        maintenance_mode: MaintenanceModeConfig {
-            start_in_maintenance_mode: false,
-            ..Default::default()
-        },
-        // This should initialize it to whatever we have set in the pallet
-        polkadot_xcm: PolkadotXcmConfig::default(),
-        transaction_payment: Default::default(),
-        tx_pause: Default::default(),
-        system: Default::default(),
-    };
-
-    serde_json::to_value(g).unwrap()
-}
-
-/// Get pre-funded accounts
-pub fn pre_funded_accounts() -> Vec<AccountId> {
-    Sr25519Keyring::well_known()
-        .map(|k| k.to_account_id())
-        .collect()
 }

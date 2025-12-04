@@ -395,6 +395,7 @@ impl Default for ExtBuilder {
                     ..Default::default()
                 },
                 max_head_data_size: 20500,
+                max_downward_message_size: 1024 * 1024,
                 ..Default::default()
             },
             own_para_id: Default::default(),

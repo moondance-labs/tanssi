@@ -10,6 +10,7 @@ import {
     ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS,
     type MultiLocation,
     jumpToSession,
+    PRIMARY_GOVERNANCE_CHANNEL_ID,
 } from "utils";
 
 describeSuite({
@@ -136,14 +137,23 @@ describeSuite({
                     data: { free: balanceBefore },
                 } = await context.polkadotJs().query.system.account(sovereignAccountToCheck);
 
+                // And nonce too
+                const mainChannelNonceBefore = await context
+                    .polkadotJs()
+                    .query.ethereumOutboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID);
+
                 // We need to jump at least one era
                 await jumpToSession(context, currentIndex + sessionsPerEra.toNumber());
 
                 const {
                     data: { free: balanceAfter },
                 } = await context.polkadotJs().query.system.account(sovereignAccountToCheck);
+                const mainChannelNonceAfter = await context
+                    .polkadotJs()
+                    .query.ethereumOutboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID);
 
                 expect(balanceAfter.toBigInt()).to.be.greaterThan(balanceBefore.toBigInt());
+                expect(mainChannelNonceAfter.toNumber()).to.be.equal(mainChannelNonceBefore.toNumber() + 1);
             },
         });
     },

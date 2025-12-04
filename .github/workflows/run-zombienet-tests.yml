@@ -44,7 +44,7 @@ jobs:
       matrix: ${{ steps.set_tests.outputs.tests }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Pnpm
         uses: pnpm/action-setup@v4.2.0
@@ -102,7 +102,7 @@ jobs:
     needs: [ "get-tests" ]
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.inputs.sha || 'master' }}
 

@@ -7,6 +7,7 @@ import {
     TESTNET_ETHEREUM_NETWORK_ID,
     SNOWBRIDGE_FEES_ACCOUNT,
     waitUntilNonceForChannelChanged,
+    DANCELIGHT_GENESIS_HASH,
 } from "utils";
 
 describeSuite({
@@ -59,7 +60,7 @@ describeSuite({
                             X3: [
                                 {
                                     GlobalConsensus: {
-                                        ByGenesis: "0x983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a",
+                                        ByGenesis: DANCELIGHT_GENESIS_HASH,
                                     },
                                 },
                                 {

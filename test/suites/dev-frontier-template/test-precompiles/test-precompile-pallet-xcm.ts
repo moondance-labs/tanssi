@@ -3,7 +3,12 @@ import { beforeAll, describeSuite, expect, fetchCompiledContract } from "@moonwa
 import { ALITH_ADDRESS, BALTATHAR_ADDRESS, alith, createEthersTransaction, generateKeyringPair } from "@moonwall/util";
 import type { u16 } from "@polkadot/types-codec";
 import { expectEVMResult } from "helpers";
-import { RELAY_SOURCE_LOCATION, SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS, TESTNET_ETHEREUM_NETWORK_ID } from "utils";
+import {
+    DANCELIGHT_GENESIS_HASH,
+    RELAY_SOURCE_LOCATION,
+    SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
+    TESTNET_ETHEREUM_NETWORK_ID,
+} from "utils";
 import { encodeFunctionData } from "viem";
 import { type AssetMetadata, mockAssetCreation, relayAssetMetadata } from "../../../helpers/assets.ts";
 import { numberToHex } from "@polkadot/util";
@@ -295,8 +300,7 @@ describeSuite({
                                 {
                                     AccountKey20: {
                                         network: {
-                                            ByGenesis:
-                                                "0x983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a",
+                                            ByGenesis: DANCELIGHT_GENESIS_HASH,
                                         },
                                         key: "0xf24ff3a9cf04c71dbc94d0b566f7a27b94566cac",
                                     },
@@ -328,8 +332,7 @@ describeSuite({
                                             X3: [
                                                 {
                                                     GlobalConsensus: {
-                                                        ByGenesis:
-                                                            "0x983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a",
+                                                        ByGenesis: DANCELIGHT_GENESIS_HASH,
                                                     },
                                                 },
                                                 {
@@ -357,8 +360,7 @@ describeSuite({
                                             X3: [
                                                 {
                                                     GlobalConsensus: {
-                                                        ByGenesis:
-                                                            "0x983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a",
+                                                        ByGenesis: DANCELIGHT_GENESIS_HASH,
                                                     },
                                                 },
                                                 {

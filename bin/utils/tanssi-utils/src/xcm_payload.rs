@@ -47,7 +47,7 @@ pub enum TokenType {
 
 #[derive(Debug, clap::Parser)]
 pub struct PayloadGeneratorCmd {
-    /// token_location: "Here" or "Parachain:<id>,PalletInstance:<id>"
+    /// token_location as json
     #[arg(long)]
     pub token_location: Option<String>,
 

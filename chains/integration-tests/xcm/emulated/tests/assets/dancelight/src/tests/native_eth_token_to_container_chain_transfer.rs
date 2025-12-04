@@ -62,11 +62,12 @@ fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
     let mut receiver_native_container_balance_before = 0;
     let mut ethereum_sovereign_relay_token_balance_before = 0;
 
-    let ethereum_sovereign_account_address =
+    let ethereum_sovereign_account_address = FrontierTemplate::execute_with(|| {
         container_chain_template_frontier_runtime::xcm_config::LocationToAccountId::convert_location(
             &Location::new(2, container_chain_template_frontier_runtime::EthereumNetwork::get()),
         )
-            .unwrap();
+            .unwrap()
+    });
 
     let transfer_amount = 100_000_000;
 
@@ -213,14 +214,15 @@ fn check_native_eth_token_to_simple_container_chain_transfer_works() {
     let mut receiver_native_container_balance_before = 0;
     let mut ethereum_sovereign_relay_token_balance_before = 0;
 
-    let ethereum_sovereign_account_address =
+    let ethereum_sovereign_account_address = SimpleTemplate::execute_with(|| {
         container_chain_template_simple_runtime::xcm_config::LocationToAccountId::convert_location(
             &Location::new(
                 2,
                 container_chain_template_simple_runtime::EthereumNetwork::get(),
             ),
         )
-        .unwrap();
+        .unwrap()
+    });
 
     let transfer_amount = 100_000_000;
 
@@ -364,10 +366,16 @@ fn check_native_eth_token_to_simple_container_chain_transfer_works() {
 }
 
 pub fn make_send_token_message_simple_template() -> EventFixture {
+    /*
+    ./target/release/tanssi-utils payload-generator   --token-location '{"parents": 0, "interior": {"X2": [{"Parachain": 2002}, {"PalletInstance": 10}]}}'   --para-id 2002   --beneficiary 0x0505050505050505050505050505050505050505050505050505050505050505   --container-fee 500000000000000   --amount 100000000   --fee 1500000000000000   --destination container   --token native
+     */
     make_send_token_fixture(hex!("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000007f00010000000000000002c97f6a848a8e7895b55dc9b894e4f552ea33203bfbdb478d506f05b62d9d5fd101d2070000050505050505050505050505050505050505050505050505050505050505050500406352bfc60100000000000000000000e1f50500000000000000000000000000c029f73d540500000000000000000000").into())
 }
 
 pub fn make_send_token_message_frontier_template() -> EventFixture {
+    /*
+    ./target/release/tanssi-utils payload-generator   --token-location '{"parents": 0, "interior": {"X2": [{"Parachain": 2001}, {"PalletInstance": 10}]}}'   --para-id 2001   --beneficiary 0x0505050505050505050505050505050505050505   --container-fee 500000000000000   --amount 100000000   --fee 1500000000000000   --destination container   --token native
+    */
     make_send_token_fixture(hex!("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000007300010000000000000002485f805cb9de38b4324485447c664e16035aa9d28e8723df192fa02ad353088902d1070000050505050505050505050505050505050505050500406352bfc60100000000000000000000e1f50500000000000000000000000000c029f73d540500000000000000000000000000000000000000000000").into())
 }
 

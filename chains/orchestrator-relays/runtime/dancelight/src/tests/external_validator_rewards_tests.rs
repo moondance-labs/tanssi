@@ -17,7 +17,9 @@
 #![cfg(test)]
 
 use {
-    crate::{tests::common::*, EthereumSystem, RuntimeEvent, SessionsPerEra, System},
+    crate::{
+        tests::common::*, EthereumSystem, RuntimeEvent, SessionsPerEra, System, UseSnowbridgeV2,
+    },
     frame_support::assert_ok,
     xcm::{latest::prelude::*, VersionedLocation},
 };
@@ -125,6 +127,123 @@ fn external_validators_rewards_not_send_message_on_era_end() {
                         r.event,
                         RuntimeEvent::EthereumOutboundQueue(
                             snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                        )
+                    )
+                })
+                .count();
+
+            assert_eq!(
+                outbound_msg_queue_event_count, 0,
+                "MessageQueued event should not be emitted because there are no external validators"
+            );
+        });
+}
+
+#[test]
+fn external_validators_rewards_sends_message_on_era_end_v2() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .with_validators(vec![])
+        .with_external_validators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            UseSnowbridgeV2::set(&true);
+            let token_location: VersionedLocation = Location::here().into();
+
+            assert_ok!(EthereumSystem::register_token(
+                root_origin(),
+                Box::new(token_location),
+                snowbridge_core::AssetMetadata {
+                    name: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    decimals: 12,
+                }
+            ));
+
+            // SessionsPerEra depends on fast-runtime feature, this test should pass regardless
+            let sessions_per_era = SessionsPerEra::get();
+
+            // This will call on_era_end for era 0
+            run_to_session(sessions_per_era);
+
+            let outbound_msg_queue_event_count = System::events()
+                .iter()
+                .filter(|r| {
+                    matches!(
+                        r.event,
+                        RuntimeEvent::EthereumOutboundQueueV2(
+                            snowbridge_pallet_outbound_queue_v2::Event::MessageQueued { .. },
+                        )
+                    )
+                })
+                .count();
+
+            assert_eq!(
+                outbound_msg_queue_event_count, 1,
+                "MessageQueued event should be emitted"
+            );
+
+            let message_accepted_event_count = System::events()
+                .iter()
+                .filter(|r| {
+                    matches!(
+                        r.event,
+                        RuntimeEvent::EthereumOutboundQueueV2(
+                            snowbridge_pallet_outbound_queue_v2::Event::MessageAccepted { .. },
+                        )
+                    )
+                })
+                .count();
+
+            assert_eq!(
+                message_accepted_event_count, 1,
+                "MessageAccepted event should be emitted"
+            );
+        });
+}
+
+#[test]
+fn external_validators_rewards_not_send_message_on_era_end_v2() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .with_validators(vec![(AccountId::from(ALICE), 210 * UNIT)])
+        .with_external_validators(vec![])
+        .build()
+        .execute_with(|| {
+            let token_location: VersionedLocation = Location::here().into();
+
+            assert_ok!(EthereumSystem::register_token(
+                root_origin(),
+                Box::new(token_location),
+                snowbridge_core::AssetMetadata {
+                    name: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    decimals: 12,
+                }
+            ));
+
+            // SessionsPerEra depends on fast-runtime feature, this test should pass regardless
+            let sessions_per_era = SessionsPerEra::get();
+
+            // This will call on_era_end for era 0
+            run_to_session(sessions_per_era);
+
+            let outbound_msg_queue_event_count = System::events()
+                .iter()
+                .filter(|r| {
+                    matches!(
+                        r.event,
+                        RuntimeEvent::EthereumOutboundQueueV2(
+                            snowbridge_pallet_outbound_queue_v2::Event::MessageQueued { .. },
                         )
                     )
                 })

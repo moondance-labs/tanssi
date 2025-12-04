@@ -50,7 +50,13 @@ use {
     snowbridge_inbound_queue_primitives::v1::{
         ConvertMessage, ConvertMessageError, VersionedXcmMessage,
     },
-    snowbridge_outbound_queue_primitives::{v1::Fee, SendError},
+    snowbridge_inbound_queue_primitives::v2::{
+        ConvertMessage as ConvertMessageV2, ConvertMessageError as ConvertMessageV2Error,
+        Message as MessageV2,
+    },
+    snowbridge_outbound_queue_primitives::{
+        v1::Fee, v2::Message as SnowbridgeMessageV2, SendError,
+    },
     snowbridge_pallet_outbound_queue::send_message_impl::Ticket,
     sp_core::{blake2_256, hashing, H256},
     sp_runtime::{app_crypto::sp_core, BoundedVec, RuntimeDebug},
@@ -306,6 +312,20 @@ impl<T: snowbridge_pallet_outbound_queue::Config + snowbridge_pallet_outbound_qu
     }
 }
 
+#[cfg(not(feature = "runtime-benchmarks"))]
+impl TicketInfo for SnowbridgeMessageV2 {
+    fn message_id(&self) -> H256 {
+        self.id
+    }
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl TicketInfo for SnowbridgeMessageV2 {
+    fn message_id(&self) -> H256 {
+        H256::default()
+    }
+}
+
 // Benchmarks check message_id so it must be deterministic.
 #[cfg(feature = "runtime-benchmarks")]
 impl<T: snowbridge_pallet_outbound_queue::Config> TicketInfo for Ticket<T> {
@@ -425,6 +445,13 @@ impl ConvertMessage for DoNothingConvertMessage {
         _message: VersionedXcmMessage,
     ) -> Result<(Xcm<()>, Self::Balance), ConvertMessageError> {
         Err(ConvertMessageError::UnsupportedVersion)
+    }
+}
+
+impl ConvertMessageV2 for DoNothingConvertMessage {
+    fn convert(_: MessageV2) -> Result<Xcm<()>, ConvertMessageV2Error> {
+        // TODO: figure out what to do here
+        Err(ConvertMessageV2Error::CannotReanchor)
     }
 }
 

@@ -10,6 +10,9 @@ import {
     isStarlightRuntime,
     jumpToSession,
     TESTNET_ETHEREUM_NETWORK_ID,
+    MAINNET_ETHEREUM_NETWORK_ID,
+    DANCELIGHT_GENESIS_HASH,
+    TANSSI_GENESIS_HASH,
 } from "utils";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_EXPORTS } from "helpers";
 import type { EventRecord } from "@polkadot/types/interfaces";
@@ -78,7 +81,7 @@ describeSuite({
                     X3: [
                         {
                             GlobalConsensus: {
-                                ByGenesis: "0x983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a",
+                                ByGenesis: isStarlight ? TANSSI_GENESIS_HASH : DANCELIGHT_GENESIS_HASH,
                             },
                         },
                         {
@@ -149,7 +152,9 @@ describeSuite({
                     return;
                 }
 
-                const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
+                const ethereumNetwork = {
+                    Ethereum: { chainId: isStarlight ? MAINNET_ETHEREUM_NETWORK_ID : TESTNET_ETHEREUM_NETWORK_ID },
+                };
 
                 const xcmToExport = new XcmFragment({
                     assets: [
@@ -215,7 +220,9 @@ describeSuite({
                     return;
                 }
 
-                const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
+                const ethereumNetwork = {
+                    Ethereum: { chainId: isStarlight ? MAINNET_ETHEREUM_NETWORK_ID : TESTNET_ETHEREUM_NETWORK_ID },
+                };
 
                 const incorrectContainerAsset: any = {
                     parents: 1,
@@ -223,7 +230,7 @@ describeSuite({
                         X3: [
                             {
                                 GlobalConsensus: {
-                                    ByGenesis: "0x983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a",
+                                    ByGenesis: isStarlight ? TANSSI_GENESIS_HASH : DANCELIGHT_GENESIS_HASH,
                                 },
                             },
                             {
@@ -309,7 +316,9 @@ describeSuite({
                     return;
                 }
 
-                const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
+                const ethereumNetwork = {
+                    Ethereum: { chainId: isStarlight ? MAINNET_ETHEREUM_NETWORK_ID : TESTNET_ETHEREUM_NETWORK_ID },
+                };
 
                 const incorrectContainerAsset: any = {
                     parents: 1,
@@ -317,7 +326,7 @@ describeSuite({
                         X3: [
                             {
                                 GlobalConsensus: {
-                                    ByGenesis: "0x983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a",
+                                    ByGenesis: isStarlight ? TANSSI_GENESIS_HASH : DANCELIGHT_GENESIS_HASH,
                                 },
                             },
                             {

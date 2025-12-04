@@ -30,6 +30,8 @@ import type {
 import type { AnyNumber, IMethod, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, Call, H160, H256, MultiAddress, Perbill } from "@polkadot/types/interfaces/runtime";
 import type {
+    DancelightRuntimeBridgeToEthereumConfigBridgeReward,
+    DancelightRuntimeBridgeToEthereumConfigBridgeRewardBeneficiaries,
     DancelightRuntimeOriginCaller,
     DancelightRuntimeProxyType,
     DancelightRuntimeRuntimeParameters,
@@ -72,8 +74,10 @@ import type {
     SnowbridgeCoreChannelId,
     SnowbridgeCoreOperatingModeBasicOperatingMode,
     SnowbridgeCorePricingPricingParameters,
+    SnowbridgeCoreRewardMessageId,
     SnowbridgeOutboundQueuePrimitivesOperatingMode,
     SnowbridgeOutboundQueuePrimitivesV1MessageInitializer,
+    SnowbridgeOutboundQueuePrimitivesV2MessageInitializer,
     SnowbridgeVerificationPrimitivesEventProof,
     SpConsensusBabeDigestsNextConfigDescriptor,
     SpConsensusBeefyDoubleVotingProof,
@@ -558,6 +562,64 @@ declare module "@polkadot/api-base/types/submittable" {
              **/
             setNewGenesis: AugmentedSubmittable<
                 (delayInBlocks: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u32]
+            >;
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
+        bridgeRelayers: {
+            /**
+             * Claim accumulated rewards.
+             **/
+            claimRewards: AugmentedSubmittable<
+                (
+                    rewardKind:
+                        | DancelightRuntimeBridgeToEthereumConfigBridgeReward
+                        | "SnowbridgeRewardOutbound"
+                        | "SnowbridgeRewardInbound"
+                        | number
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [DancelightRuntimeBridgeToEthereumConfigBridgeReward]
+            >;
+            /**
+             * Claim accumulated rewards and send them to the alternative beneficiary.
+             **/
+            claimRewardsTo: AugmentedSubmittable<
+                (
+                    rewardKind:
+                        | DancelightRuntimeBridgeToEthereumConfigBridgeReward
+                        | "SnowbridgeRewardOutbound"
+                        | "SnowbridgeRewardInbound"
+                        | number
+                        | Uint8Array,
+                    beneficiary:
+                        | DancelightRuntimeBridgeToEthereumConfigBridgeRewardBeneficiaries
+                        | { LocalAccount: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [
+                    DancelightRuntimeBridgeToEthereumConfigBridgeReward,
+                    DancelightRuntimeBridgeToEthereumConfigBridgeRewardBeneficiaries,
+                ]
+            >;
+            /**
+             * `Deregister` relayer.
+             *
+             * After this call, message delivery transactions of the relayer won't get any priority
+             * boost.
+             **/
+            deregister: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+            /**
+             * Register relayer or update its registration.
+             *
+             * Registration allows relayer to get priority boost for its message delivery transactions.
+             **/
+            register: AugmentedSubmittable<
+                (validTill: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u32]
             >;
             /**
@@ -1582,6 +1644,34 @@ declare module "@polkadot/api-base/types/submittable" {
              **/
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
+        ethereumInboundQueueV2: {
+            /**
+             * Halt or resume all pallet operations. May only be called by root.
+             **/
+            setOperatingMode: AugmentedSubmittable<
+                (
+                    mode: SnowbridgeCoreOperatingModeBasicOperatingMode | "Normal" | "Halted" | number | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [SnowbridgeCoreOperatingModeBasicOperatingMode]
+            >;
+            /**
+             * Submit an inbound message originating from the Gateway contract on Ethereum
+             **/
+            submit: AugmentedSubmittable<
+                (
+                    event:
+                        | SnowbridgeVerificationPrimitivesEventProof
+                        | { eventLog?: any; proof?: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [SnowbridgeVerificationPrimitivesEventProof]
+            >;
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
         ethereumOutboundQueue: {
             /**
              * Halt or resume all pallet operations. May only be called by root.
@@ -1591,6 +1681,22 @@ declare module "@polkadot/api-base/types/submittable" {
                     mode: SnowbridgeCoreOperatingModeBasicOperatingMode | "Normal" | "Halted" | number | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [SnowbridgeCoreOperatingModeBasicOperatingMode]
+            >;
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
+        ethereumOutboundQueueV2: {
+            submitDeliveryReceipt: AugmentedSubmittable<
+                (
+                    event:
+                        | SnowbridgeVerificationPrimitivesEventProof
+                        | { eventLog?: any; proof?: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [SnowbridgeVerificationPrimitivesEventProof]
             >;
             /**
              * Generic tx
@@ -1749,7 +1855,101 @@ declare module "@polkadot/api-base/types/submittable" {
              **/
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
+        ethereumSystemV2: {
+            addTip: AugmentedSubmittable<
+                (
+                    sender: AccountId32 | string | Uint8Array,
+                    messageId:
+                        | SnowbridgeCoreRewardMessageId
+                        | { Inbound: any }
+                        | { Outbound: any }
+                        | string
+                        | Uint8Array,
+                    amount: u128 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [AccountId32, SnowbridgeCoreRewardMessageId, u128]
+            >;
+            /**
+             * Registers a Polkadot-native token as a wrapped ERC20 token on Ethereum.
+             *
+             * The system frontend pallet on AH proxies this call to BH.
+             *
+             * - `sender`: The original sender initiating the call on AH
+             * - `asset_id`: Location of the asset (relative to this chain)
+             * - `metadata`: Metadata to include in the instantiated ERC20 contract on Ethereum
+             **/
+            registerToken: AugmentedSubmittable<
+                (
+                    sender: XcmVersionedLocation | { V3: any } | { V4: any } | { V5: any } | string | Uint8Array,
+                    assetId: XcmVersionedLocation | { V3: any } | { V4: any } | { V5: any } | string | Uint8Array,
+                    metadata:
+                        | SnowbridgeCoreAssetMetadata
+                        | { name?: any; symbol?: any; decimals?: any }
+                        | string
+                        | Uint8Array,
+                    amount: u128 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [XcmVersionedLocation, XcmVersionedLocation, SnowbridgeCoreAssetMetadata, u128]
+            >;
+            /**
+             * Sends a message to the Gateway contract to change its operating mode
+             *
+             * Fee required: No
+             *
+             * - `origin`: Must be `GovernanceOrigin`
+             **/
+            setOperatingMode: AugmentedSubmittable<
+                (
+                    mode:
+                        | SnowbridgeOutboundQueuePrimitivesOperatingMode
+                        | "Normal"
+                        | "RejectingOutboundMessages"
+                        | number
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [SnowbridgeOutboundQueuePrimitivesOperatingMode]
+            >;
+            /**
+             * Sends command to the Gateway contract to upgrade itself with a new implementation
+             * contract
+             *
+             * Fee required: No
+             *
+             * - `origin`: Must be `Root`.
+             * - `impl_address`: The address of the implementation contract.
+             * - `impl_code_hash`: The codehash of the implementation contract.
+             * - `initializer`: Optionally call an initializer on the implementation contract.
+             **/
+            upgrade: AugmentedSubmittable<
+                (
+                    implAddress: H160 | string | Uint8Array,
+                    implCodeHash: H256 | string | Uint8Array,
+                    initializer:
+                        | SnowbridgeOutboundQueuePrimitivesV2MessageInitializer
+                        | { params?: any; maximumRequiredGas?: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [H160, H256, SnowbridgeOutboundQueuePrimitivesV2MessageInitializer]
+            >;
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
         ethereumTokenTransfers: {
+            addTip: AugmentedSubmittable<
+                (
+                    messageId:
+                        | SnowbridgeCoreRewardMessageId
+                        | { Inbound: any }
+                        | { Outbound: any }
+                        | string
+                        | Uint8Array,
+                    amount: u128 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [SnowbridgeCoreRewardMessageId, u128]
+            >;
             setTokenTransferChannel: AugmentedSubmittable<
                 (
                     channelId: SnowbridgeCoreChannelId | string | Uint8Array,
@@ -1764,6 +1964,14 @@ declare module "@polkadot/api-base/types/submittable" {
                     recipient: H160 | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [u128, H160]
+            >;
+            transferNativeTokenV2: AugmentedSubmittable<
+                (
+                    amount: u128 | AnyNumber | Uint8Array,
+                    recipient: H160 | string | Uint8Array,
+                    reward: u128 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u128, H160, u128]
             >;
             /**
              * Generic tx
@@ -2154,6 +2362,7 @@ declare module "@polkadot/api-base/types/submittable" {
                     proposalOrigin:
                         | DancelightRuntimeOriginCaller
                         | { system: any }
+                        | { EthereumTokenTransfers: any }
                         | { Origins: any }
                         | { OpenTechCommitteeCollective: any }
                         | { ParachainsOrigin: any }
@@ -4058,6 +4267,8 @@ declare module "@polkadot/api-base/types/submittable" {
                         | { Ump: any }
                         | { Snowbridge: any }
                         | { SnowbridgeTanssi: any }
+                        | { SnowbridgeV2: any }
+                        | { SnowbridgeTanssiV2: any }
                         | string
                         | Uint8Array,
                     page: u32 | AnyNumber | Uint8Array,
@@ -4076,6 +4287,8 @@ declare module "@polkadot/api-base/types/submittable" {
                         | { Ump: any }
                         | { Snowbridge: any }
                         | { SnowbridgeTanssi: any }
+                        | { SnowbridgeV2: any }
+                        | { SnowbridgeTanssiV2: any }
                         | string
                         | Uint8Array,
                     pageIndex: u32 | AnyNumber | Uint8Array
@@ -5559,6 +5772,7 @@ declare module "@polkadot/api-base/types/submittable" {
                     proposalOrigin:
                         | DancelightRuntimeOriginCaller
                         | { system: any }
+                        | { EthereumTokenTransfers: any }
                         | { Origins: any }
                         | { OpenTechCommitteeCollective: any }
                         | { ParachainsOrigin: any }
@@ -6679,6 +6893,7 @@ declare module "@polkadot/api-base/types/submittable" {
                     asOrigin:
                         | DancelightRuntimeOriginCaller
                         | { system: any }
+                        | { EthereumTokenTransfers: any }
                         | { Origins: any }
                         | { OpenTechCommitteeCollective: any }
                         | { ParachainsOrigin: any }
@@ -6701,6 +6916,7 @@ declare module "@polkadot/api-base/types/submittable" {
                     asOrigin:
                         | DancelightRuntimeOriginCaller
                         | { system: any }
+                        | { EthereumTokenTransfers: any }
                         | { Origins: any }
                         | { OpenTechCommitteeCollective: any }
                         | { ParachainsOrigin: any }

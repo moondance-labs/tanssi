@@ -99,8 +99,7 @@ This will get the binaries ready for benchmarking purposes.
 
 The next step is to to use the `tools/benchmarking.sh` script. There are four environmental variables you can set before using this tool:
 
-- `BINARY`: The binary you want to use for benchmarking. If not specified, by default uses `target/release/tanssi-node`
-- `CHAIN`: The chain that you want to use. By default it uses `dev`
+- `RUNTIME`: The runtime that should be benchmarked
 - `OUTPUT_PATH`: The output path for the generated benchmarks. By default it uses `tmp`
 - `TEMPLATE_PATH`: The template to use to generate the benchmarking file. By default it uses the pallet one, i.e., `benchmarking/frame-weight-pallet-template`.
 
@@ -113,37 +112,37 @@ Additional, the script is going to ask for two arguments:
 ### Benchmarking all pallets for the dancebox runtime
 
 ```
-TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs OUTPUT_PATH=runtime/dancebox/src/weights ./tools/benchmarking.sh "*" "*"
+RUNTIME=target/release/wbuild/dancebox-runtime/dancebox_runtime.wasm TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs OUTPUT_PATH=runtime/dancebox/src/weights ./tools/benchmarking.sh "*" "*"
 ```
 
 ### Benchmarking all pallets for the flashbox runtime
 
 ```
-TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs OUTPUT_PATH=runtime/flashbox/src/weights CHAIN=flashbox_dev ./tools/benchmarking.sh "*" "*"
+RUNTIME=target/release/wbuild/flashbox-runtime/flashbox_runtime.wasm OUTPUT_PATH=runtime/flashbox/src/weights ./tools/benchmarking.sh "*" "*"
 ```
 
 ### Benchmarking all pallets for the container-chain-frontier-runtime
 
 ```
-BINARY=target/release/container-chain-frontier-node TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs OUTPUT_PATH=container-chains/templates/frontier/runtime/src/weights ./tools/benchmarking.sh "*" "*"
+RUNTIME=target/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.wasm TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs OUTPUT_PATH=container-chains/templates/frontier/runtime/src/weights ./tools/benchmarking.sh "*" "*"
 ```
 
 ### Benchmarking all pallets for the container-chain-simple-runtime
 
 ```
-BINARY=target/release/container-chain-simple-node TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs OUTPUT_PATH=container-chains/templates/simple/runtime/src/weights ./tools/benchmarking.sh "*" "*"
+RUNTIME=target/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.wasm TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs OUTPUT_PATH=container-chains/templates/simple/runtime/src/weights ./tools/benchmarking.sh "*" "*"
 ```
 
 ### Generating weight info trait bound for pallet-pooled-staking
 
 ```
-TEMPLATE_PATH=benchmarking/frame-weight-pallet-template.hbs OUTPUT_PATH=pallets/pooled-staking/src/weights.rs ./tools/benchmarking.sh "pallet_pooled_staking" "*"
+RUNTIME=target/release/wbuild/dancelight-runtime/dancelight_runtime.wasm TEMPLATE_PATH=benchmarking/frame-weight-pallet-template.hbs OUTPUT_PATH=pallets/pooled-staking/src/weights.rs ./tools/benchmarking.sh "pallet_pooled_staking" "*"
 ```
 
 ### Generating weight info trait bound for pallet-cc-authorities-noting
 
 ```
-BINARY=target/release/container-chain-simple-node TEMPLATE_PATH=benchmarking/frame-weight-pallet-template.hbs OUTPUT_PATH=../dancekit/container-chain-pallets/authorities-noting/src/weights.rs ./tools/benchmarking.sh "pallet_cc_authorities_noting" "*"
+RUNTIME=target/release/wbuild/dancelight-runtime/dancelight_runtime.wasm TEMPLATE_PATH=benchmarking/frame-weight-pallet-template.hbs OUTPUT_PATH=../dancekit/container-chain-pallets/authorities-noting/src/weights.rs ./tools/benchmarking.sh "pallet_cc_authorities_noting" "*"
 ```
 
 

@@ -2,7 +2,12 @@ import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { generateEventLog, generateUpdate, SNOWBRIDGE_FEES_ACCOUNT } from "utils";
+import {
+    generateEventLog,
+    generateUpdate,
+    makeSendTokenMessageFrontierTemplateInexistingParachain,
+    SNOWBRIDGE_FEES_ACCOUNT,
+} from "utils";
 import { expectEventCount, STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_TRANSFERS } from "helpers";
 import type { KeyringPair } from "@moonwall/util";
 
@@ -51,27 +56,7 @@ describeSuite({
                         Buffer.from("0000000000000000000000000000000000000000000000000000000000000000", "hex")
                     ),
                     1,
-                    // Payload with the following shape:
-                    // let payload = VersionedXcmMessage::V1(MessageV1 {
-                    //     chain_id: 1,
-                    //     command: Command::SendNativeToken {
-                    //         token_id: 0xbd2f49affab256f40ab8f040a591576f4b84ef70dc3ccddc367a19d829f6e604,
-                    //         destination: Destination::ForeignAccountId20 {
-                    //             para_id: 5000,
-                    //             id: [5u; 20],
-                    //             fee: 500_000_000_000_000,
-                    //         },
-                    //         amount: 100_000_000,
-                    //         fee: 1_500_000_000_000_000,
-                    //     },
-                    // });
-                    new Uint8Array([
-                        0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 189, 47, 73, 175, 250, 178, 86, 244, 10, 184, 240, 64, 165, 145,
-                        87, 111, 75, 132, 239, 112, 220, 60, 205, 220, 54, 122, 25, 216, 41, 246, 230, 4, 2, 136, 19, 0,
-                        0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0, 64, 99, 82, 191, 198, 1, 0, 0,
-                        0, 0, 0, 0, 0, 0, 0, 0, 225, 245, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 192, 41, 247, 61,
-                        84, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    ])
+                    await makeSendTokenMessageFrontierTemplateInexistingParachain(isStarlight)
                 );
                 const { checkpointUpdate, messageExtrinsics } = await generateUpdate(polkadotJs, [log]);
 

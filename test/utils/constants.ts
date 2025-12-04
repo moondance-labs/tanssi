@@ -11,8 +11,10 @@ export const STATEMINT_LOCATION_EXAMPLE = {
         X3: [{ Parachain: 1000 }, { PalletInstance: 50 }, { GeneralIndex: 0n }],
     },
 };
-export const ETHEREUM_NETWORK_MAINNET = { Ethereum: { chainId: 1 } };
-export const ETHEREUM_NETWORK_TESTNET = { Ethereum: { chainId: 11155111 } };
+export const MAINNET_ETHEREUM_NETWORK_ID = 1;
+export const TESTNET_ETHEREUM_NETWORK_ID = 11155111;
+export const ETHEREUM_NETWORK_MAINNET = { Ethereum: { chainId: MAINNET_ETHEREUM_NETWORK_ID } };
+export const ETHEREUM_NETWORK_TESTNET = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
 export const FOREIGN_ASSET_ID = 42;
 
 export const PRIMARY_GOVERNANCE_CHANNEL_ID = "0x0000000000000000000000000000000000000000000000000000000000000001";
@@ -29,8 +31,6 @@ export const ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS =
 
 export const SEPOLIA_CONTAINER_SOVEREIGN_ADDRESS_FRONTIER = "0xcE796Ae65569a670D0C1cc1ac12515a3cE21B5fb";
 export const SEPOLIA_CONTAINER_SOVEREIGN_ADDRESS_SUBSTRATE = "5GjRnmh5o3usSYzVmsxBWzHEpvJyHK4tKNPhjpUR3ASrruBy";
-
-export const TESTNET_ETHEREUM_NETWORK_ID = 11155111;
 
 export const DANCELIGHT_GENESIS_HASH = "0x983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a";
 export const TANSSI_GENESIS_HASH = "0xdd6d086f75ec041b66e20c4186d327b23c8af244c534a2418de6574e8c041a60";
@@ -51,3 +51,9 @@ export const TREASURY_ADDRESS_LIGHT_CHAINS = "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG
 export const TREASURY_ADDRESS_BOX_CHAINS = "5EYCAe5jXiVvytpxmBupXPCNE9Vduq7gPeTwy9xMgQtKWMnR";
 
 export const PER_BILL_RATIO = 1000000000n;
+
+// Change this if we change the storage parameter in runtime
+// this value is a twox128(:EthereumGatewayAddress:)
+export const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
+// this value is a twox128(::UseSnowbridgeV2:)
+export const USE_V2_STORAGE_KEY = "0x6c0371aaced112cb139962c46fee0c22";

@@ -48,6 +48,7 @@ use {
     tp_bridge::{
         container_token_to_ethereum_message_exporter::ContainerEthereumBlobExporter,
         snowbridge_outbound_token_transfer::{EthereumBlobExporter, SnowbrigeTokenTransferRouter},
+        snowbridge_outbound_token_transfer_v2::EthereumBlobExporterV2,
         EthereumLocationsConverterFor,
     },
     tp_xcm_commons::{EthereumAssetReserve, NativeAssetReserve},
@@ -61,9 +62,10 @@ use {
         ChildParachainConvertsVia, ConvertedConcreteId, DescribeAllTerminal, DescribeFamily,
         FixedWeightBounds, FrameTransactionalProcessor, FungibleAdapter, FungiblesAdapter,
         HashedDescription, IsChildSystemParachain, IsConcrete, MintLocation, NoChecking,
-        OriginToPluralityVoice, SignedAccountId32AsNative, SignedToAccountId32,
-        SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents,
-        WeightInfoBounds, WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
+        OriginToPluralityVoice, SendXcmFeeToAccount, SignedAccountId32AsNative,
+        SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
+        UsingComponents, WeightInfoBounds, WithComputedOrigin, WithUniqueTopic,
+        XcmFeeManagerFromComponents,
     },
     xcm_executor::XcmExecutor,
 };
@@ -156,6 +158,8 @@ pub type PriceForChildParachainDelivery =
 pub type XcmRouter = WithUniqueTopic<(
     // Use DMP to communicate with child parachains.
     ChildParachainRouter<Runtime, XcmPallet, PriceForChildParachainDelivery>,
+    // Send Ethereum-native tokens back to Ethereum V2.
+    SnowbrigeTokenTransferRouter<SnowbridgeExporterv2, UniversalLocation>,
     // Send Ethereum-native tokens back to Ethereum.
     SnowbrigeTokenTransferRouter<SnowbridgeExporter, UniversalLocation>,
 )>;
@@ -373,6 +377,9 @@ parameter_types! {
     pub SnowbridgeChannelInfo: Option<(ChannelId, AgentId)> =
         pallet_ethereum_token_transfers::CurrentChannelInfo::<Runtime>::get()
             .map(|x| (x.channel_id, x.agent_id));
+
+    pub const MinV2Reward: u128 = 1u128;
+    pub MinSnowbridgeV2Reward: Asset = (TokenLocation::get(), MinV2Reward::get()).into();
 }
 
 /// Exports message to the Ethereum Gateway contract.
@@ -385,11 +392,32 @@ pub type SnowbridgeExporter = EthereumBlobExporter<
 >;
 
 /// Exports message to the Ethereum Gateway contract.
+pub type SnowbridgeExporterv2 = EthereumBlobExporterV2<
+    UniversalLocation,
+    EthereumNetwork,
+    snowbridge_pallet_outbound_queue_v2::Pallet<Runtime>,
+    EthereumSystem,
+    MinSnowbridgeV2Reward,
+    SendXcmFeeToAccount<LocalAssetTransactor, SnowbridgeFeesAccount>,
+>;
+
+/// Exports message to the Ethereum Gateway contract.
 pub type ContainerToSnowbridgeMessageExporter = ContainerEthereumBlobExporter<
     UniversalLocation,
     EthereumNetwork,
     EthereumLocation,
     snowbridge_pallet_outbound_queue::Pallet<Runtime>,
+    EthereumSystem,
+    SnowbridgeChannelInfo,
+>;
+
+/// Exports message to the Ethereum Gateway contract.
+/// TODO:CHANGE
+pub type ContainerToSnowbridgeMessageExporterV2 = ContainerEthereumBlobExporter<
+    UniversalLocation,
+    EthereumNetwork,
+    EthereumLocation,
+    snowbridge_pallet_outbound_queue_v2::Pallet<Runtime>,
     EthereumSystem,
     SnowbridgeChannelInfo,
 >;

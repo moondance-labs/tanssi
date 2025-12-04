@@ -15,7 +15,6 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    container_chain_template_frontier_runtime::EthereumNetwork,
     dancelight_emulated_chain::DancelightRelayPallet,
     dancelight_runtime::SnowbridgeFeesAccount,
     dancelight_system_emulated_network::{
@@ -49,6 +48,8 @@ const RELAY_TOKEN_ASSET_LOCATION: Location = Location::parent();
 
 #[test]
 fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
+    sp_tracing::try_init_simple();
+
     let token_receiver: AccountId20 = [5u8; 20].into();
 
     let container_para_id: u32 = <FrontierTemplate as xcm_emulator::Parachain>::para_id().into();
@@ -61,6 +62,9 @@ fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
     let container_sovereign_account =
         dancelight_runtime::xcm_config::LocationConverter::convert_location(&container_location)
             .unwrap();
+    let ethereum_network_id = FrontierTemplate::execute_with(|| {
+        container_chain_template_frontier_runtime::EthereumNetwork::get()
+    });
 
     Dancelight::execute_with(|| {
         let root_origin = <Dancelight as Chain>::RuntimeOrigin::root();
@@ -99,9 +103,9 @@ fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
         let erc20_asset_location_relay: Location = Location {
             parents: 1,
             interior: X2([
-                GlobalConsensus(EthereumNetwork::get()),
+                GlobalConsensus(ethereum_network_id),
                 AccountKey20 {
-                    network: Some(EthereumNetwork::get()),
+                    network: Some(ethereum_network_id),
                     key: TOKEN_ADDRESS.into(),
                 },
             ]
@@ -154,9 +158,9 @@ fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
         let erc20_asset_location_container: Location = Location {
             parents: 2,
             interior: X2([
-                GlobalConsensus(EthereumNetwork::get()),
+                GlobalConsensus(ethereum_network_id),
                 AccountKey20 {
-                    network: Some(EthereumNetwork::get()),
+                    network: Some(ethereum_network_id),
                     key: TOKEN_ADDRESS.into(),
                 },
             ]
@@ -237,6 +241,9 @@ fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
     let container_sovereign_account =
         dancelight_runtime::xcm_config::LocationConverter::convert_location(&container_location)
             .unwrap();
+    let ethereum_network_id = SimpleTemplate::execute_with(|| {
+        container_chain_template_simple_runtime::EthereumNetwork::get()
+    });
 
     let mut snowbridge_fees_account_balance_before = 0;
     let mut receiver_native_container_balance_before = 0;
@@ -279,9 +286,9 @@ fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
         let erc20_asset_location_relay: Location = Location {
             parents: 1,
             interior: X2([
-                GlobalConsensus(EthereumNetwork::get()),
+                GlobalConsensus(ethereum_network_id),
                 AccountKey20 {
-                    network: Some(EthereumNetwork::get()),
+                    network: Some(ethereum_network_id),
                     key: TOKEN_ADDRESS.into(),
                 },
             ]
@@ -334,9 +341,9 @@ fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
         let erc20_asset_location_container: Location = Location {
             parents: 2,
             interior: X2([
-                GlobalConsensus(EthereumNetwork::get()),
+                GlobalConsensus(ethereum_network_id),
                 AccountKey20 {
-                    network: Some(EthereumNetwork::get()),
+                    network: Some(ethereum_network_id),
                     key: TOKEN_ADDRESS.into(),
                 },
             ]
@@ -418,6 +425,9 @@ fn check_foreign_eth_token_container_fails_if_fees_account_has_not_enough_balanc
     let container_sovereign_account =
         dancelight_runtime::xcm_config::LocationConverter::convert_location(&container_location)
             .unwrap();
+    let ethereum_network_id = SimpleTemplate::execute_with(|| {
+        container_chain_template_simple_runtime::EthereumNetwork::get()
+    });
 
     let mut snowbridge_fees_account_balance_before = 0;
     let mut receiver_native_container_balance_before = 0;
@@ -462,9 +472,9 @@ fn check_foreign_eth_token_container_fails_if_fees_account_has_not_enough_balanc
         let erc20_asset_location_relay: Location = Location {
             parents: 1,
             interior: X2([
-                GlobalConsensus(EthereumNetwork::get()),
+                GlobalConsensus(ethereum_network_id),
                 AccountKey20 {
-                    network: Some(EthereumNetwork::get()),
+                    network: Some(ethereum_network_id),
                     key: TOKEN_ADDRESS.into(),
                 },
             ]
@@ -517,9 +527,9 @@ fn check_foreign_eth_token_container_fails_if_fees_account_has_not_enough_balanc
         let erc20_asset_location_container: Location = Location {
             parents: 2,
             interior: X2([
-                GlobalConsensus(EthereumNetwork::get()),
+                GlobalConsensus(ethereum_network_id),
                 AccountKey20 {
-                    network: Some(EthereumNetwork::get()),
+                    network: Some(ethereum_network_id),
                     key: TOKEN_ADDRESS.into(),
                 },
             ]
@@ -591,6 +601,9 @@ fn check_foreign_eth_token_container_fails_if_foreign_token_not_registered_in_re
     let container_sovereign_account =
         dancelight_runtime::xcm_config::LocationConverter::convert_location(&container_location)
             .unwrap();
+    let ethereum_network_id = SimpleTemplate::execute_with(|| {
+        container_chain_template_simple_runtime::EthereumNetwork::get()
+    });
 
     let mut snowbridge_fees_account_balance_before = 0;
     let mut receiver_native_container_balance_before = 0;
@@ -603,8 +616,10 @@ fn check_foreign_eth_token_container_fails_if_foreign_token_not_registered_in_re
         assert_ok!(
             <Dancelight as DancelightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(
                 root_origin.clone(),
-                ChannelId::new(hex!("0000000000000000000000000000000000000000000000000000000000000004")), 
-                hex!("0000000000000000000000000000000000000000000000000000000000000005").into(), 
+                ChannelId::new(hex!(
+                    "0000000000000000000000000000000000000000000000000000000000000004"
+                )),
+                hex!("0000000000000000000000000000000000000000000000000000000000000005").into(),
                 PARA_ID_FOR_CHANNEL.into()
             ),
         );
@@ -666,9 +681,9 @@ fn check_foreign_eth_token_container_fails_if_foreign_token_not_registered_in_re
         let erc20_asset_location_container: Location = Location {
             parents: 2,
             interior: X2([
-                GlobalConsensus(EthereumNetwork::get()),
+                GlobalConsensus(ethereum_network_id),
                 AccountKey20 {
-                    network: Some(EthereumNetwork::get()),
+                    network: Some(ethereum_network_id),
                     key: TOKEN_ADDRESS.into(),
                 },
             ]
@@ -729,10 +744,16 @@ fn check_foreign_eth_token_container_fails_if_foreign_token_not_registered_in_re
 }
 
 pub fn make_send_token_message_simple_template() -> EventFixture {
+    /*
+    ./target/release/tanssi-utils payload-generator   --para-id 2002   --beneficiary 0x0505050505050505050505050505050505050505050505050505050505050505   --container-fee 2000000000000000   --amount 100000000   --fee 1500000000000000   --destination container   --token erc20   --token-address 0x1111111111111111111111111111111111111111
+     */
     make_send_token_fixture(hex!("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000007300010000000000000001111111111111111111111111111111111111111101d2070000050505050505050505050505050505050505050505050505050505050505050500008d49fd1a0700000000000000000000e1f50500000000000000000000000000c029f73d540500000000000000000000000000000000000000000000").into())
 }
 
 pub fn make_send_token_message_frontier_template() -> EventFixture {
+    /*
+    ./target/release/tanssi-utils payload-generator   --para-id 2001   --beneficiary 0x0505050505050505050505050505050505050505   --container-fee 500000000000000   --amount 100000000   --fee 1500000000000000   --destination container   --token erc20   --token-address 0x1111111111111111111111111111111111111111
+    */
     make_send_token_fixture(hex!("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000006700010000000000000001111111111111111111111111111111111111111102d1070000050505050505050505050505050505050505050500406352bfc60100000000000000000000e1f50500000000000000000000000000c029f73d540500000000000000000000000000000000000000000000000000000000000000000000").into())
 }
 
