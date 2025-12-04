@@ -2,3 +2,5 @@
 /* eslint-disable */
 
 export * from "./starlight/types.js";
+
+export type PHANTOM_GENERATED = "generated";

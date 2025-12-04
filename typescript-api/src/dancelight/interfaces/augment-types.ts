@@ -232,6 +232,7 @@ import type {
     ContractContractSpecV3,
     ContractContractSpecV4,
     ContractContractSpecV5,
+    ContractContractSpecV6,
     ContractCryptoHasher,
     ContractDiscriminant,
     ContractDisplayName,
@@ -268,11 +269,14 @@ import type {
     ContractMetadataV3,
     ContractMetadataV4,
     ContractMetadataV5,
+    ContractMetadataV6,
     ContractProject,
     ContractProjectContract,
     ContractProjectInfo,
     ContractProjectSource,
     ContractProjectV0,
+    ContractReviveProjectInfo,
+    ContractReviveProjectSource,
     ContractSelector,
     ContractStorageLayout,
     ContractTypeSpec,
@@ -333,12 +337,17 @@ import type {
     BlockV0,
     BlockV1,
     BlockV2,
+    BlockV3,
     EIP1559Transaction,
     EIP2930Transaction,
+    EIP7702Transaction,
     EthAccessList,
     EthAccessListItem,
     EthAccount,
     EthAddress,
+    EthAuthorizationList,
+    EthAuthorizationListItem,
+    EthAuthorizationSignature,
     EthBlock,
     EthBloom,
     EthCallRequest,
@@ -350,10 +359,12 @@ import type {
     EthFilterTopicEntry,
     EthFilterTopicInner,
     EthHeader,
+    EthLegacyTransactionSignature,
     EthLog,
     EthReceipt,
     EthReceiptV0,
     EthReceiptV3,
+    EthReceiptV4,
     EthRichBlock,
     EthRichHeader,
     EthStorageProof,
@@ -377,6 +388,7 @@ import type {
     TransactionV0,
     TransactionV1,
     TransactionV2,
+    TransactionV3,
 } from "@polkadot/types/interfaces/eth";
 import type {
     EvmAccount,
@@ -1460,6 +1472,7 @@ declare module "@polkadot/types/types/registry" {
         BlockV0: BlockV0;
         BlockV1: BlockV1;
         BlockV2: BlockV2;
+        BlockV3: BlockV3;
         BlockWeights: BlockWeights;
         BodyId: BodyId;
         BodyIdV2: BodyIdV2;
@@ -1541,6 +1554,7 @@ declare module "@polkadot/types/types/registry" {
         ContractContractSpecV3: ContractContractSpecV3;
         ContractContractSpecV4: ContractContractSpecV4;
         ContractContractSpecV5: ContractContractSpecV5;
+        ContractContractSpecV6: ContractContractSpecV6;
         ContractCryptoHasher: ContractCryptoHasher;
         ContractDiscriminant: ContractDiscriminant;
         ContractDisplayName: ContractDisplayName;
@@ -1591,12 +1605,15 @@ declare module "@polkadot/types/types/registry" {
         ContractMetadataV3: ContractMetadataV3;
         ContractMetadataV4: ContractMetadataV4;
         ContractMetadataV5: ContractMetadataV5;
+        ContractMetadataV6: ContractMetadataV6;
         ContractProject: ContractProject;
         ContractProjectContract: ContractProjectContract;
         ContractProjectInfo: ContractProjectInfo;
         ContractProjectSource: ContractProjectSource;
         ContractProjectV0: ContractProjectV0;
         ContractReturnFlags: ContractReturnFlags;
+        ContractReviveProjectInfo: ContractReviveProjectInfo;
+        ContractReviveProjectSource: ContractReviveProjectSource;
         ContractSelector: ContractSelector;
         ContractStorageKey: ContractStorageKey;
         ContractStorageLayout: ContractStorageLayout;
@@ -1657,6 +1674,7 @@ declare module "@polkadot/types/types/registry" {
         Ed25519Signature: Ed25519Signature;
         EIP1559Transaction: EIP1559Transaction;
         EIP2930Transaction: EIP2930Transaction;
+        EIP7702Transaction: EIP7702Transaction;
         ElectionCompute: ElectionCompute;
         ElectionPhase: ElectionPhase;
         ElectionResult: ElectionResult;
@@ -1686,6 +1704,9 @@ declare module "@polkadot/types/types/registry" {
         EthAccessListItem: EthAccessListItem;
         EthAccount: EthAccount;
         EthAddress: EthAddress;
+        EthAuthorizationList: EthAuthorizationList;
+        EthAuthorizationListItem: EthAuthorizationListItem;
+        EthAuthorizationSignature: EthAuthorizationSignature;
         EthBlock: EthBlock;
         EthBloom: EthBloom;
         EthCallRequest: EthCallRequest;
@@ -1701,10 +1722,12 @@ declare module "@polkadot/types/types/registry" {
         EthFilterTopicEntry: EthFilterTopicEntry;
         EthFilterTopicInner: EthFilterTopicInner;
         EthHeader: EthHeader;
+        EthLegacyTransactionSignature: EthLegacyTransactionSignature;
         EthLog: EthLog;
         EthReceipt: EthReceipt;
         EthReceiptV0: EthReceiptV0;
         EthReceiptV3: EthReceiptV3;
+        EthReceiptV4: EthReceiptV4;
         EthRichBlock: EthRichBlock;
         EthRichHeader: EthRichHeader;
         EthStorageProof: EthStorageProof;
@@ -2478,6 +2501,7 @@ declare module "@polkadot/types/types/registry" {
         TransactionV0: TransactionV0;
         TransactionV1: TransactionV1;
         TransactionV2: TransactionV2;
+        TransactionV3: TransactionV3;
         TransactionValidity: TransactionValidity;
         TransactionValidityError: TransactionValidityError;
         TransientValidationData: TransientValidationData;
