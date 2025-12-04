@@ -46,6 +46,8 @@ use {
     },
 };
 
+const ETH_CHAIN_ID: u64 = 11155111;
+
 #[test]
 fn test_inbound_queue_message_symbiotic_passing() {
     ExtBuilder::default()
@@ -702,9 +704,9 @@ fn test_inbound_queue_transfer_erc20_works() {
         let erc20_asset_location = Location {
             parents: 1,
             interior: X2([
-                GlobalConsensus(Ethereum { chain_id: 11155111 }),
+                GlobalConsensus(Ethereum { chain_id: ETH_CHAIN_ID }),
                 AccountKey20 {
-                    network: Some(Ethereum { chain_id: 11155111 }),
+                    network: Some(Ethereum { chain_id: ETH_CHAIN_ID }),
                     key: erc20_token_id,
                 }
             ]
@@ -822,9 +824,9 @@ fn test_inbound_queue_tanssi_assets_trapped_incorrect_xcm_works() {
         let erc20_asset_location = Location {
             parents: 1,
             interior: X2([
-                GlobalConsensus(Ethereum { chain_id: 11155111 }),
+                GlobalConsensus(Ethereum { chain_id: ETH_CHAIN_ID }),
                 AccountKey20 {
-                    network: Some(Ethereum { chain_id: 11155111 }),
+                    network: Some(Ethereum { chain_id: ETH_CHAIN_ID }),
                     key: erc20_token_id,
                 }
             ]
@@ -939,9 +941,9 @@ fn test_inbound_queue_erc20_assets_trapped_incorrect_xcm_works() {
         let erc20_asset_location = Location {
             parents: 1,
             interior: X2([
-                GlobalConsensus(Ethereum { chain_id: 11155111 }),
+                GlobalConsensus(Ethereum { chain_id: ETH_CHAIN_ID }),
                 AccountKey20 {
-                    network: Some(Ethereum { chain_id: 11155111 }),
+                    network: Some(Ethereum { chain_id: ETH_CHAIN_ID }),
                     key: erc20_token_id,
                 }
             ]
@@ -1052,9 +1054,9 @@ fn test_inbound_queue_incorrect_xcm_trap_assets_works() {
         let erc20_asset_location = Location {
             parents: 1,
             interior: X2([
-                GlobalConsensus(Ethereum { chain_id: 11155111 }),
+                GlobalConsensus(Ethereum { chain_id: ETH_CHAIN_ID }),
                 AccountKey20 {
-                    network: Some(Ethereum { chain_id: 11155111 }),
+                    network: Some(Ethereum { chain_id: ETH_CHAIN_ID }),
                     key: erc20_token_id,
                 }
             ]
