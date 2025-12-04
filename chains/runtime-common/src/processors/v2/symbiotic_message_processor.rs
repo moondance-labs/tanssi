@@ -58,7 +58,7 @@ pub fn try_extract_message<T: pallet_external_validators::Config>(
                     if message.origin != gateway_proxy_address {
                         return Err(MessageExtractionError::InvalidMessage {
                             context: format!(
-                                "Symbiotic  message origin is {:?} expected {:?}",
+                                "Symbiotic message origin is {:?} expected {:?}",
                                 message.origin, gateway_proxy_address
                             ),
                             source: None,

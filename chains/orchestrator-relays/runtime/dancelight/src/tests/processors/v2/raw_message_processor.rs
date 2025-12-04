@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
+    super::ALICE,
     crate as dancelight_runtime,
     crate::tests::common::ExtBuilder,
     dancelight_runtime::{xcm_config, AccountId, Runtime},
@@ -33,14 +34,12 @@ use {
     },
 };
 
-pub const ALICE: [u8; 32] = [4u8; 32];
-
 parameter_types! {
     const EthereumNetwork: NetworkId = Ethereum { chain_id: 11155111 };
     const BridgeChannelInfo: Option<(ChannelId, AgentId)> = Some((ChannelId::new([1u8; 32]), H256([2u8; 32])));
     pub EthereumUniversalLocation: InteriorLocation = GlobalConsensus(EthereumNetwork::get()).into();
     pub TanssiUniversalLocation: InteriorLocation = GlobalConsensus(ByGenesis(dancelight_runtime_constants::DANCELIGHT_GENESIS_HASH)).into();
-    pub GatewayAddress: H160 = H160::random();
+    pub GatewayAddress: H160 = H160(hex_literal::hex!("EDa338E4dC46038493b885327842fD3E301CaB39"));
     pub DefaultClaimer: AccountId = AccountId::from(ALICE);
 }
 

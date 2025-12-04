@@ -33,6 +33,7 @@ use {
 };
 
 mod raw_message_processor;
+mod symbiotic_message_processor;
 
 // TODO: Move later to dancelight-runtime-test-utils after refactoring
 pub const ALICE: [u8; 32] = [4u8; 32];
