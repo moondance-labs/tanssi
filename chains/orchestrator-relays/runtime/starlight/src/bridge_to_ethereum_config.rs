@@ -19,10 +19,11 @@
 #[cfg(all(not(test), not(feature = "testing-helpers")))]
 use crate::EthereumBeaconClient;
 
-use pallet_ethereum_token_transfers::DenyTipHandler;
 #[cfg(not(feature = "runtime-benchmarks"))]
 use {
-    tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
+    tanssi_runtime_common::relay::{
+        NativeContainerTokensProcessor, NativeTokenTransferMessageProcessor,
+    },
     tp_bridge::{
         symbiotic_message_processor::SymbioticMessageProcessor, GenericTokenInboundMessageProcessor,
     },
@@ -37,9 +38,10 @@ use {
         TokenLocationReanchored, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
     frame_support::{
-        traits::{ConstBool, ConstU128},
+        traits::{ConstBool, ConstU128, PalletInfoAccess},
         weights::ConstantMultiplier,
     },
+    pallet_ethereum_token_transfers::DenyTipHandler,
     pallet_xcm::EnsureXcm,
     snowbridge_beacon_primitives::ForkVersions,
     snowbridge_core::{gwei, meth, PricingParameters, Rewards},
@@ -246,6 +248,10 @@ mod test_helpers {
     }
 }
 
+parameter_types! {
+    pub InboundQueuePalletInstance: u8 = <EthereumInboundQueue as PalletInfoAccess>::index() as u8;
+}
+
 type AssetTransactor = <xcm_config::XcmConfig as xcm_executor::Config>::AssetTransactor;
 
 pub type EthTokensProcessor = EthTokensLocalProcessor<
@@ -255,11 +261,20 @@ pub type EthTokensProcessor = EthTokensLocalProcessor<
     AssetTransactor,
     starlight_runtime_constants::snowbridge::EthereumLocation,
     starlight_runtime_constants::snowbridge::EthereumNetwork,
-    frame_support::traits::ConstBool<false>,
 >;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
 pub type NativeTokensProcessor = NativeTokenTransferMessageProcessor<Runtime>;
+
+#[cfg(not(feature = "runtime-benchmarks"))]
+pub type NativeContainerProcessor = NativeContainerTokensProcessor<
+    Runtime,
+    AssetTransactor,
+    starlight_runtime_constants::snowbridge::EthereumLocation,
+    starlight_runtime_constants::snowbridge::EthereumNetwork,
+    InboundQueuePalletInstance,
+    TokenLocationReanchored,
+>;
 
 impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -285,7 +300,11 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (
         SymbioticMessageProcessor<Self>,
-        GenericTokenInboundMessageProcessor<Self, NativeTokensProcessor, EthTokensProcessor>,
+        GenericTokenInboundMessageProcessor<
+            Self,
+            (NativeTokensProcessor, NativeContainerProcessor),
+            EthTokensProcessor,
+        >,
     );
     type RewardProcessor = RewardThroughFeesAccount<Self>;
     #[cfg(feature = "runtime-benchmarks")]
