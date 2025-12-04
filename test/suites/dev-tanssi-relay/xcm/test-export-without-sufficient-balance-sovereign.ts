@@ -3,7 +3,7 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { isStarlightRuntime, XcmFragment, TESTNET_ETHEREUM_NETWORK_ID } from "utils";
+import { isStarlightRuntime, XcmFragment, TESTNET_ETHEREUM_NETWORK_ID, DANCELIGHT_GENESIS_HASH } from "utils";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_EXPORTS } from "helpers";
 
 describeSuite({
@@ -65,7 +65,7 @@ describeSuite({
                     X3: [
                         {
                             GlobalConsensus: {
-                                ByGenesis: "0x983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a",
+                                ByGenesis: DANCELIGHT_GENESIS_HASH,
                             },
                         },
                         {

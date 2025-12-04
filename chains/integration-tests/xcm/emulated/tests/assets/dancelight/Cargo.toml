@@ -16,7 +16,7 @@ container-chain-template-frontier-runtime = { workspace = true, features = [ "st
 container-chain-template-simple-runtime = { workspace = true }
 cumulus-pallet-parachain-system = { workspace = true }
 dancelight-emulated-chain = { workspace = true }
-dancelight-runtime = { workspace = true, features = [ "std" ] }
+dancelight-runtime = { workspace = true, features = [ "std", "testing-helpers" ] }
 dancelight-runtime-constants = { workspace = true, features = [ "std" ] }
 dancelight-system-emulated-network  = { workspace = true }
 fp-account = { workspace = true, features = [ "serde" ] }
