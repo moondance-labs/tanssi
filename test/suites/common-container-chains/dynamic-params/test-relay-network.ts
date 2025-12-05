@@ -1,4 +1,3 @@
-import "@moonbeam-network/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { type KeyringPair, alith, baltathar } from "@moonwall/util";
 import { Keyring } from "@polkadot/api";
