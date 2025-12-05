@@ -199,6 +199,12 @@ mod benchmarks {
         let message_id = MessageId::Inbound(1);
         let amount = 1_000_000_000;
 
+        T::TipHandler::set_tip(
+            crate::Origin::EthereumTokenTransfers(caller.clone()).into(),
+            message_id.clone(),
+            amount,
+        );
+
         #[extrinsic_call]
         _(RawOrigin::Signed(caller.clone()), message_id, amount);
 

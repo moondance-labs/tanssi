@@ -57,7 +57,7 @@ pub mod weights;
 pub mod origins;
 
 use {
-    alloc::vec,
+    alloc::{vec, vec::Vec},
     frame_support::{
         pallet_prelude::*,
         traits::{
@@ -66,15 +66,22 @@ use {
             Get,
         },
     },
-    frame_system::pallet_prelude::*,
+    frame_system::{pallet_prelude::*, unique},
     snowbridge_core::{reward::MessageId, AgentId, ChannelId, ParaId, TokenId},
     snowbridge_outbound_queue_primitives::v1::{
         Command as SnowbridgeCommand, Message as SnowbridgeMessage, SendMessage,
     },
+    snowbridge_outbound_queue_primitives::v2::{
+        Command as SnowbridgeCommandV2, Message as SnowbridgeMessageV2,
+        SendMessage as SendMessageV2,
+    },
     snowbridge_outbound_queue_primitives::SendError,
     sp_core::{H160, H256},
-    sp_runtime::{traits::MaybeEquivalence, DispatchResult},
-    tp_bridge::{ChannelInfo, EthereumSystemChannelManager, TicketInfo},
+    sp_runtime::{
+        traits::{MaybeEquivalence, TryConvert},
+        DispatchResult,
+    },
+    tp_bridge::{ChannelInfo, ConvertLocation, EthereumSystemChannelManager, TicketInfo},
     xcm::prelude::*,
 };
 
@@ -90,7 +97,7 @@ pub type BalanceOf<T> =
 pub mod pallet {
     use super::*;
     pub use crate::weights::WeightInfo;
-
+    use frame_system::Config as SysConfig;
     /// The current storage version.
     const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
@@ -105,6 +112,12 @@ pub mod pallet {
 
         /// Validate and send a message to Ethereum.
         type OutboundQueue: SendMessage<Balance = BalanceOf<Self>, Ticket: TicketInfo>;
+
+        /// Validate and send a message to Ethereum V2.
+        type OutboundQueueV2: SendMessageV2<Ticket: TicketInfo>;
+
+        /// Should use v2
+        type ShouldUseV2: Get<bool>;
 
         /// Handler for EthereumSystem pallet. Commonly used to manage channel creation.
         type EthereumSystemHandler: EthereumSystemChannelManager;
@@ -121,6 +134,22 @@ pub mod pallet {
         /// How to convert from a given Location to a specific TokenId.
         type TokenIdFromLocation: MaybeEquivalence<TokenId, Location>;
 
+        /// Converts Location to H256
+        type LocationHashOf: ConvertLocation<H256>;
+
+        // The bridges configured Ethereum location
+        type EthereumLocation: Get<Location>;
+
+        /// Means of converting a runtime origin to location
+        /// Necessary to build the origin in the v2 message
+        type OriginToLocation: TryConvert<<Self as SysConfig>::RuntimeOrigin, Location>;
+
+        /// This chain's Universal Location.
+        type UniversalLocation: Get<InteriorLocation>;
+
+        /// The minimum reward for v2 transfers
+        type MinV2Reward: Get<u128>;
+
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
 
@@ -133,6 +162,8 @@ pub mod pallet {
 
     pub trait TipHandler<Origin> {
         fn add_tip(origin: Origin, message_id: MessageId, amount: u128) -> DispatchResult;
+        #[cfg(feature = "runtime-benchmarks")]
+        fn set_tip(_origin: Origin, _message_id: MessageId, _amount: u128) {}
     }
 
     // Events
@@ -166,6 +197,12 @@ pub mod pallet {
         TransferMessageNotSent(SendError),
         /// When add_tip extrinsic could not be called.
         TipFailed,
+        V2SendingIsNotAllowed,
+        TooManyCommands,
+        OriginConversionFailed,
+        LocationToOriginConversionFailed,
+        LocationReanchorFailed,
+        MinV2RewardNotAchieved,
     }
 
     #[pallet::pallet]
@@ -299,6 +336,133 @@ pub mod pallet {
 
             Ok(())
         }
+
+        #[pallet::call_index(2)]
+        #[pallet::weight(T::WeightInfo::transfer_native_token())]
+        pub fn transfer_native_token_v2(
+            origin: OriginFor<T>,
+            amount: u128,
+            recipient: H160,
+            reward: u128,
+        ) -> DispatchResult {
+            let source = ensure_signed(origin.clone())?;
+            let origin_location = T::OriginToLocation::try_convert(origin)
+                .map_err(|_| Error::<T>::OriginConversionFailed)?;
+            let origin = Self::location_to_message_origin(origin_location)?;
+
+            ensure!(T::ShouldUseV2::get(), Error::<T>::V2SendingIsNotAllowed);
+
+            // Check for minimum fee
+            ensure!(
+                reward >= T::MinV2Reward::get(),
+                Error::<T>::MinV2RewardNotAchieved
+            );
+
+            let channel_info =
+                CurrentChannelInfo::<T>::get().ok_or(Error::<T>::ChannelInfoNotSet)?;
+
+            let token_location = T::TokenLocationReanchored::get();
+            let token_id = T::TokenIdFromLocation::convert_back(&token_location)
+                .ok_or(Error::<T>::UnknownLocationForToken)?;
+
+            // Transfer amount to Ethereum's sovereign account.
+            T::Currency::transfer(
+                &source,
+                &T::EthereumSovereignAccount::get(),
+                amount.into(),
+                Preservation::Preserve,
+            )?;
+
+            // Transfer fee to fee's account.
+            T::Currency::transfer(
+                &source,
+                &T::FeesAccount::get(),
+                reward.into(),
+                Preservation::Preserve,
+            )?;
+
+            let command = SnowbridgeCommandV2::MintForeignToken {
+                token_id,
+                recipient,
+                amount,
+            };
+
+            let id = unique((origin, &command)).into();
+            let mut commands: Vec<SnowbridgeCommandV2> = Vec::new();
+            commands.push(command);
+
+            let message = SnowbridgeMessageV2 {
+                id,
+                commands: BoundedVec::try_from(commands)
+                    .map_err(|_| Error::<T>::TooManyCommands)?,
+                fee: reward,
+                origin,
+            };
+
+            let ticket = T::OutboundQueueV2::validate(&message)
+                .map_err(|err| Error::<T>::InvalidMessage(err))?;
+            let message_id = ticket.message_id();
+
+            T::OutboundQueueV2::deliver(ticket)
+                .map_err(|err| Error::<T>::TransferMessageNotSent(err))?;
+
+            Self::deposit_event(Event::<T>::NativeTokenTransferred {
+                message_id,
+                channel_id: channel_info.channel_id,
+                source,
+                recipient,
+                token_id,
+                amount,
+                fee: reward.into(),
+            });
+            Ok(())
+        }
+
+        #[pallet::call_index(3)]
+        #[pallet::weight(T::WeightInfo::add_tip())]
+        pub fn add_tip(
+            origin: OriginFor<T>,
+            message_id: MessageId,
+            amount: u128,
+        ) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            let custom_origin =
+                T::PalletOrigin::from(Origin::<T>::EthereumTokenTransfers(sender.clone()));
+
+            T::TipHandler::add_tip(custom_origin, message_id.clone(), amount)
+                .map_err(|_| Error::<T>::TipFailed)?;
+
+            Ok(())
+        }
+    }
+
+    impl<T: Config> Pallet<T> {
+        pub fn location_to_message_origin(location: Location) -> Result<H256, Error<T>> {
+            let reanchored_location = Self::reanchor(location)?;
+            T::LocationHashOf::convert_location(&reanchored_location)
+                .ok_or(Error::<T>::LocationToOriginConversionFailed)
+        }
+        /// Reanchor the `location` in context of ethereum
+        pub fn reanchor(location: Location) -> Result<Location, Error<T>> {
+            location
+                .reanchored(&T::EthereumLocation::get(), &T::UniversalLocation::get())
+                .map_err(|_| Error::<T>::LocationReanchorFailed)
+        }
+    }
+}
+
+pub struct DenyTipHandler<T>(core::marker::PhantomData<T>);
+
+impl<T, Origin> TipHandler<Origin> for DenyTipHandler<T> {
+    #[cfg(not(feature = "runtime-benchmarks"))]
+    fn add_tip(_origin: Origin, _message_id: MessageId, _amount: u128) -> DispatchResult {
+        Err("Execution is not permitted!".into())
+    }
+    // in order for the extrinsic to still be benchmarkable, we implement it empty
+    #[cfg(feature = "runtime-benchmarks")]
+    fn add_tip(_origin: Origin, _message_id: MessageId, _amount: u128) -> DispatchResult {
+        Ok(())
     }
 }
 

@@ -30,13 +30,13 @@ import type {
 import type { AnyNumber, IMethod, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, Call, H160, H256, MultiAddress, Perbill } from "@polkadot/types/interfaces/runtime";
 import type {
-    DancelightRuntimeAggregateMessageOrigin,
     DancelightRuntimeBridgeToEthereumConfigBridgeReward,
     DancelightRuntimeBridgeToEthereumConfigBridgeRewardBeneficiaries,
     DancelightRuntimeOriginCaller,
     DancelightRuntimeProxyType,
     DancelightRuntimeRuntimeParameters,
     DancelightRuntimeSessionKeys,
+    DancelightRuntimeTanssiAggregateMessageOrigin,
     DpContainerChainGenesisDataContainerChainGenesisData,
     FrameSupportPreimagesBounded,
     FrameSupportScheduleDispatchTime,
@@ -1687,6 +1687,22 @@ declare module "@polkadot/api-base/types/submittable" {
              **/
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
+        ethereumOutboundQueueV2: {
+            submitDeliveryReceipt: AugmentedSubmittable<
+                (
+                    event:
+                        | SnowbridgeVerificationPrimitivesEventProof
+                        | { eventLog?: any; proof?: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [SnowbridgeVerificationPrimitivesEventProof]
+            >;
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
         ethereumSystem: {
             /**
              * Sends a message to the Gateway contract to transfer ether from an agent to `recipient`.
@@ -1948,6 +1964,14 @@ declare module "@polkadot/api-base/types/submittable" {
                     recipient: H160 | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [u128, H160]
+            >;
+            transferNativeTokenV2: AugmentedSubmittable<
+                (
+                    amount: u128 | AnyNumber | Uint8Array,
+                    recipient: H160 | string | Uint8Array,
+                    reward: u128 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u128, H160, u128]
             >;
             /**
              * Generic tx
@@ -4239,17 +4263,19 @@ declare module "@polkadot/api-base/types/submittable" {
             executeOverweight: AugmentedSubmittable<
                 (
                     messageOrigin:
-                        | DancelightRuntimeAggregateMessageOrigin
+                        | DancelightRuntimeTanssiAggregateMessageOrigin
                         | { Ump: any }
                         | { Snowbridge: any }
                         | { SnowbridgeTanssi: any }
+                        | { SnowbridgeV2: any }
+                        | { SnowbridgeTanssiV2: any }
                         | string
                         | Uint8Array,
                     page: u32 | AnyNumber | Uint8Array,
                     index: u32 | AnyNumber | Uint8Array,
                     weightLimit: SpWeightsWeightV2Weight | { refTime?: any; proofSize?: any } | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [DancelightRuntimeAggregateMessageOrigin, u32, u32, SpWeightsWeightV2Weight]
+                [DancelightRuntimeTanssiAggregateMessageOrigin, u32, u32, SpWeightsWeightV2Weight]
             >;
             /**
              * Remove a page which has no more messages remaining to be processed or is stale.
@@ -4257,15 +4283,17 @@ declare module "@polkadot/api-base/types/submittable" {
             reapPage: AugmentedSubmittable<
                 (
                     messageOrigin:
-                        | DancelightRuntimeAggregateMessageOrigin
+                        | DancelightRuntimeTanssiAggregateMessageOrigin
                         | { Ump: any }
                         | { Snowbridge: any }
                         | { SnowbridgeTanssi: any }
+                        | { SnowbridgeV2: any }
+                        | { SnowbridgeTanssiV2: any }
                         | string
                         | Uint8Array,
                     pageIndex: u32 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [DancelightRuntimeAggregateMessageOrigin, u32]
+                [DancelightRuntimeTanssiAggregateMessageOrigin, u32]
             >;
             /**
              * Generic tx

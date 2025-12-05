@@ -31,6 +31,7 @@ use sp_version::NativeVersion;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
+pub mod genesis_config_presets;
 pub mod migrations;
 pub mod weights;
 
@@ -39,6 +40,7 @@ use {
     alloc::vec,
     alloc::vec::Vec,
     cumulus_primitives_core::AggregateMessageOrigin,
+    cumulus_primitives_core::ParaId,
     dp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
     frame_support::{
         construct_runtime,
@@ -74,7 +76,8 @@ use {
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
     sp_consensus_slots::{Slot, SlotDuration},
-    sp_core::{MaxEncodedLen, OpaqueMetadata},
+    sp_core::{Get, MaxEncodedLen, OpaqueMetadata},
+    sp_keyring::Sr25519Keyring,
     sp_runtime::{
         generic,
         generic::SignedPayload,
@@ -213,7 +216,17 @@ parameter_types! {
         /// to is the Ethereum mainnet, with chain ID 1.
         /// <https://chainlist.org/chain/1>
         /// <https://ethereum.org/en/developers/docs/apis/json-rpc/#net_version>
-        pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 11155111 };
+        pub EthereumNetwork: NetworkId = {
+            use crate::dynamic_params::xcm_config::RelayNetwork;
+            use crate::dynamic_params::EthereumNetworkChainId;
+
+            // derive chain_id from RelayNetwork
+            let chain_id = EthereumNetworkChainId::from_relay_network(&RelayNetwork::get())
+                .unwrap_or(EthereumNetworkChainId::EthereumMainnet)
+                .as_u64();
+
+            NetworkId::Ethereum { chain_id }
+        };
         pub EthereumLocation: Location = Location::new(2, EthereumNetwork::get());
 }
 
@@ -441,6 +454,40 @@ pub mod dynamic_params {
     /// The Dancelight genesis hash used as the default relay network identifier.
     pub const DANCELIGHT_GENESIS_HASH: [u8; 32] =
         hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"];
+
+    /// The Starlight genesis hash.
+    pub const TANSSI_GENESIS_HASH: [u8; 32] =
+        hex_literal::hex!["dd6d086f75ec041b66e20c4186d327b23c8af244c534a2418de6574e8c041a60"];
+
+    pub enum EthereumNetworkChainId {
+        EthereumTestnet,
+        EthereumMainnet,
+    }
+
+    pub const SEPOLIA_ETH_TESTNET_CHAIN_ID: u64 = 11155111;
+    pub const ETH_MAINNET_CHAIN_ID: u64 = 1;
+
+    impl EthereumNetworkChainId {
+        pub fn as_u64(&self) -> u64 {
+            match self {
+                EthereumNetworkChainId::EthereumTestnet => SEPOLIA_ETH_TESTNET_CHAIN_ID,
+                EthereumNetworkChainId::EthereumMainnet => ETH_MAINNET_CHAIN_ID,
+            }
+        }
+
+        /// Derive chain_id from relay network
+        pub fn from_relay_network(network: &NetworkId) -> Option<Self> {
+            match network {
+                NetworkId::ByGenesis(hash) if hash == &DANCELIGHT_GENESIS_HASH => {
+                    Some(Self::EthereumTestnet)
+                }
+                NetworkId::ByGenesis(hash) if hash == &TANSSI_GENESIS_HASH => {
+                    Some(Self::EthereumMainnet)
+                }
+                _ => None,
+            }
+        }
+    }
 
     #[dynamic_pallet_params]
     #[codec(index = 0)]
@@ -1015,11 +1062,31 @@ impl_runtime_apis! {
             build_state::<RuntimeGenesisConfig>(config)
         }
 
-        fn get_preset(id: &Option<sp_genesis_builder::PresetId>) -> Option<Vec<u8>> {
-            get_preset::<RuntimeGenesisConfig>(id, |_| None)
+       fn get_preset(id: &Option<sp_genesis_builder::PresetId>) -> Option<Vec<u8>> {
+            get_preset::<RuntimeGenesisConfig>(id, |id: &sp_genesis_builder::PresetId| {
+                let mut default_funded_accounts = genesis_config_presets::pre_funded_accounts();
+                default_funded_accounts.sort();
+                default_funded_accounts.dedup();
+                let para_id: ParaId = 2000.into();
+
+                let patch = match id.as_ref() {
+                    "development" => genesis_config_presets::development(
+                        default_funded_accounts.clone(),
+                        para_id,
+                        Sr25519Keyring::Alice.to_account_id(),
+                    ),
+                    _ => return None,
+                };
+                Some(
+                    serde_json::to_string(&patch)
+                        .expect("serialization to json is expected to work. qed.")
+                        .into_bytes(),
+                )
+            })
         }
+
         fn preset_names() -> Vec<sp_genesis_builder::PresetId> {
-            vec![]
+            vec!["development".into()]
         }
     }
 
@@ -1443,4 +1510,29 @@ cumulus_pallet_parachain_system::register_validate_block! {
     Runtime = Runtime,
     CheckInherents = CheckInherents,
     BlockExecutor = pallet_author_inherent::BlockExecutor::<Runtime, Executive>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_chain_id_derivation_dancelight() {
+        let chain_id = dynamic_params::EthereumNetworkChainId::from_relay_network(
+            &NetworkId::ByGenesis(dynamic_params::DANCELIGHT_GENESIS_HASH),
+        )
+        .unwrap()
+        .as_u64();
+        assert_eq!(chain_id, dynamic_params::SEPOLIA_ETH_TESTNET_CHAIN_ID);
+    }
+
+    #[test]
+    fn test_chain_id_derivation_starlight() {
+        let chain_id = dynamic_params::EthereumNetworkChainId::from_relay_network(
+            &NetworkId::ByGenesis(dynamic_params::TANSSI_GENESIS_HASH),
+        )
+        .unwrap()
+        .as_u64();
+        assert_eq!(chain_id, dynamic_params::ETH_MAINNET_CHAIN_ID);
+    }
 }

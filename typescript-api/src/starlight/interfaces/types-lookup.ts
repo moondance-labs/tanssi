@@ -2731,12 +2731,18 @@ declare module "@polkadot/types/lookup" {
             readonly amount: u128;
             readonly recipient: H160;
         } & Struct;
+        readonly isTransferNativeTokenV2: boolean;
+        readonly asTransferNativeTokenV2: {
+            readonly amount: u128;
+            readonly recipient: H160;
+            readonly reward: u128;
+        } & Struct;
         readonly isAddTip: boolean;
         readonly asAddTip: {
             readonly messageId: SnowbridgeCoreRewardMessageId;
             readonly amount: u128;
         } & Struct;
-        readonly type: "SetTokenTransferChannel" | "TransferNativeToken" | "AddTip";
+        readonly type: "SetTokenTransferChannel" | "TransferNativeToken" | "TransferNativeTokenV2" | "AddTip";
     }
 
     /** @name SnowbridgeCoreRewardMessageId (229) */
@@ -3938,12 +3944,12 @@ declare module "@polkadot/types/lookup" {
     interface PalletMessageQueueCall extends Enum {
         readonly isReapPage: boolean;
         readonly asReapPage: {
-            readonly messageOrigin: StarlightRuntimeAggregateMessageOrigin;
+            readonly messageOrigin: StarlightRuntimeTanssiAggregateMessageOrigin;
             readonly pageIndex: u32;
         } & Struct;
         readonly isExecuteOverweight: boolean;
         readonly asExecuteOverweight: {
-            readonly messageOrigin: StarlightRuntimeAggregateMessageOrigin;
+            readonly messageOrigin: StarlightRuntimeTanssiAggregateMessageOrigin;
             readonly page: u32;
             readonly index: u32;
             readonly weightLimit: SpWeightsWeightV2Weight;
@@ -3951,8 +3957,8 @@ declare module "@polkadot/types/lookup" {
         readonly type: "ReapPage" | "ExecuteOverweight";
     }
 
-    /** @name StarlightRuntimeAggregateMessageOrigin (329) */
-    interface StarlightRuntimeAggregateMessageOrigin extends Enum {
+    /** @name StarlightRuntimeTanssiAggregateMessageOrigin (329) */
+    interface StarlightRuntimeTanssiAggregateMessageOrigin extends Enum {
         readonly isUmp: boolean;
         readonly asUmp: PolkadotRuntimeParachainsInclusionUmpQueueId;
         readonly isSnowbridge: boolean;
@@ -6795,26 +6801,26 @@ declare module "@polkadot/types/lookup" {
         readonly isProcessingFailed: boolean;
         readonly asProcessingFailed: {
             readonly id: H256;
-            readonly origin: StarlightRuntimeAggregateMessageOrigin;
+            readonly origin: StarlightRuntimeTanssiAggregateMessageOrigin;
             readonly error: FrameSupportMessagesProcessMessageError;
         } & Struct;
         readonly isProcessed: boolean;
         readonly asProcessed: {
             readonly id: H256;
-            readonly origin: StarlightRuntimeAggregateMessageOrigin;
+            readonly origin: StarlightRuntimeTanssiAggregateMessageOrigin;
             readonly weightUsed: SpWeightsWeightV2Weight;
             readonly success: bool;
         } & Struct;
         readonly isOverweightEnqueued: boolean;
         readonly asOverweightEnqueued: {
             readonly id: U8aFixed;
-            readonly origin: StarlightRuntimeAggregateMessageOrigin;
+            readonly origin: StarlightRuntimeTanssiAggregateMessageOrigin;
             readonly pageIndex: u32;
             readonly messageIndex: u32;
         } & Struct;
         readonly isPageReaped: boolean;
         readonly asPageReaped: {
-            readonly origin: StarlightRuntimeAggregateMessageOrigin;
+            readonly origin: StarlightRuntimeTanssiAggregateMessageOrigin;
             readonly index: u32;
         } & Struct;
         readonly type: "ProcessingFailed" | "Processed" | "OverweightEnqueued" | "PageReaped";
@@ -8488,12 +8494,24 @@ declare module "@polkadot/types/lookup" {
         readonly isTransferMessageNotSent: boolean;
         readonly asTransferMessageNotSent: SnowbridgeOutboundQueuePrimitivesSendError;
         readonly isTipFailed: boolean;
+        readonly isV2SendingIsNotAllowed: boolean;
+        readonly isTooManyCommands: boolean;
+        readonly isOriginConversionFailed: boolean;
+        readonly isLocationToOriginConversionFailed: boolean;
+        readonly isLocationReanchorFailed: boolean;
+        readonly isMinV2RewardNotAchieved: boolean;
         readonly type:
             | "ChannelInfoNotSet"
             | "UnknownLocationForToken"
             | "InvalidMessage"
             | "TransferMessageNotSent"
-            | "TipFailed";
+            | "TipFailed"
+            | "V2SendingIsNotAllowed"
+            | "TooManyCommands"
+            | "OriginConversionFailed"
+            | "LocationToOriginConversionFailed"
+            | "LocationReanchorFailed"
+            | "MinV2RewardNotAchieved";
     }
 
     /** @name SpCoreCryptoKeyTypeId (702) */
@@ -9474,8 +9492,8 @@ declare module "@polkadot/types/lookup" {
 
     /** @name PalletMessageQueueNeighbours (846) */
     interface PalletMessageQueueNeighbours extends Struct {
-        readonly prev: StarlightRuntimeAggregateMessageOrigin;
-        readonly next: StarlightRuntimeAggregateMessageOrigin;
+        readonly prev: StarlightRuntimeTanssiAggregateMessageOrigin;
+        readonly next: StarlightRuntimeTanssiAggregateMessageOrigin;
     }
 
     /** @name PalletMessageQueuePage (848) */

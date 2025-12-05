@@ -25,12 +25,12 @@ import type { ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H160, H256, Perbill } from "@polkadot/types/interfaces/runtime";
 import type {
     BpRelayersRegistration,
-    DancelightRuntimeAggregateMessageOrigin,
     DancelightRuntimeBridgeToEthereumConfigBridgeReward,
     DancelightRuntimeBridgeToEthereumConfigBridgeRewardBeneficiaries,
     DancelightRuntimeProxyType,
     DancelightRuntimeRuntimeParametersKey,
     DancelightRuntimeRuntimeParametersValue,
+    DancelightRuntimeTanssiAggregateMessageOrigin,
     FrameSupportDispatchPostDispatchInfo,
     FrameSupportMessagesProcessMessageError,
     FrameSupportPreimagesBounded,
@@ -57,6 +57,7 @@ import type {
     SnowbridgeCorePricingPricingParameters,
     SnowbridgeCoreRewardMessageId,
     SnowbridgeOutboundQueuePrimitivesOperatingMode,
+    SnowbridgeOutboundQueuePrimitivesV2Message,
     SpConsensusGrandpaAppPublic,
     SpRuntimeDispatchError,
     SpRuntimeDispatchErrorWithPostInfo,
@@ -462,6 +463,57 @@ declare module "@polkadot/api-base/types/events" {
              * Message has been queued and will be processed in the future
              **/
             MessageQueued: AugmentedEvent<ApiType, [id: H256], { id: H256 }>;
+            /**
+             * Some messages have been committed
+             **/
+            MessagesCommitted: AugmentedEvent<ApiType, [root: H256, count: u64], { root: H256; count: u64 }>;
+            /**
+             * Set OperatingMode
+             **/
+            OperatingModeChanged: AugmentedEvent<
+                ApiType,
+                [mode: SnowbridgeCoreOperatingModeBasicOperatingMode],
+                { mode: SnowbridgeCoreOperatingModeBasicOperatingMode }
+            >;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        ethereumOutboundQueueV2: {
+            /**
+             * Message will be committed at the end of current block. From now on, to track the
+             * progress the message, use the `nonce` or the `id`.
+             **/
+            MessageAccepted: AugmentedEvent<ApiType, [id: H256, nonce: u64], { id: H256; nonce: u64 }>;
+            /**
+             * Delivery Proof received
+             **/
+            MessageDelivered: AugmentedEvent<ApiType, [nonce: u64], { nonce: u64 }>;
+            /**
+             * Message was not committed due to being overweight or the current block is full.
+             **/
+            MessagePostponed: AugmentedEvent<
+                ApiType,
+                [payload: Bytes, reason: FrameSupportMessagesProcessMessageError],
+                { payload: Bytes; reason: FrameSupportMessagesProcessMessageError }
+            >;
+            /**
+             * Message has been queued and will be processed in the future
+             **/
+            MessageQueued: AugmentedEvent<
+                ApiType,
+                [message: SnowbridgeOutboundQueuePrimitivesV2Message],
+                { message: SnowbridgeOutboundQueuePrimitivesV2Message }
+            >;
+            /**
+             * Message was not committed due to some failure condition, like an overweight message.
+             **/
+            MessageRejected: AugmentedEvent<
+                ApiType,
+                [id: Option<H256>, payload: Bytes, error: FrameSupportMessagesProcessMessageError],
+                { id: Option<H256>; payload: Bytes; error: FrameSupportMessagesProcessMessageError }
+            >;
             /**
              * Some messages have been committed
              **/
@@ -1401,16 +1453,26 @@ declare module "@polkadot/api-base/types/events" {
              **/
             OverweightEnqueued: AugmentedEvent<
                 ApiType,
-                [id: U8aFixed, origin: DancelightRuntimeAggregateMessageOrigin, pageIndex: u32, messageIndex: u32],
-                { id: U8aFixed; origin: DancelightRuntimeAggregateMessageOrigin; pageIndex: u32; messageIndex: u32 }
+                [
+                    id: U8aFixed,
+                    origin: DancelightRuntimeTanssiAggregateMessageOrigin,
+                    pageIndex: u32,
+                    messageIndex: u32,
+                ],
+                {
+                    id: U8aFixed;
+                    origin: DancelightRuntimeTanssiAggregateMessageOrigin;
+                    pageIndex: u32;
+                    messageIndex: u32;
+                }
             >;
             /**
              * This page was reaped.
              **/
             PageReaped: AugmentedEvent<
                 ApiType,
-                [origin: DancelightRuntimeAggregateMessageOrigin, index: u32],
-                { origin: DancelightRuntimeAggregateMessageOrigin; index: u32 }
+                [origin: DancelightRuntimeTanssiAggregateMessageOrigin, index: u32],
+                { origin: DancelightRuntimeTanssiAggregateMessageOrigin; index: u32 }
             >;
             /**
              * Message is processed.
@@ -1419,13 +1481,13 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [
                     id: H256,
-                    origin: DancelightRuntimeAggregateMessageOrigin,
+                    origin: DancelightRuntimeTanssiAggregateMessageOrigin,
                     weightUsed: SpWeightsWeightV2Weight,
                     success: bool,
                 ],
                 {
                     id: H256;
-                    origin: DancelightRuntimeAggregateMessageOrigin;
+                    origin: DancelightRuntimeTanssiAggregateMessageOrigin;
                     weightUsed: SpWeightsWeightV2Weight;
                     success: bool;
                 }
@@ -1437,12 +1499,12 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [
                     id: H256,
-                    origin: DancelightRuntimeAggregateMessageOrigin,
+                    origin: DancelightRuntimeTanssiAggregateMessageOrigin,
                     error: FrameSupportMessagesProcessMessageError,
                 ],
                 {
                     id: H256;
-                    origin: DancelightRuntimeAggregateMessageOrigin;
+                    origin: DancelightRuntimeTanssiAggregateMessageOrigin;
                     error: FrameSupportMessagesProcessMessageError;
                 }
             >;

@@ -31,12 +31,15 @@ jobs:
           fi
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ steps.branch.outputs.branch }}
 
       - name: Install GitHub CLI
         uses: ./.github/workflow-templates/gh-cli
+
+      - name: Install frame-omni-bencher
+        uses: ./.github/workflow-templates/install-frame-omni-bencher
 
       - name: Cargo build
         uses: ./.github/workflow-templates/cargo-build

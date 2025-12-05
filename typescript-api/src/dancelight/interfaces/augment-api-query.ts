@@ -28,12 +28,12 @@ import type { AccountId32, Call, H256, Perbill } from "@polkadot/types/interface
 import type {
     BinaryHeapEnqueuedOrder,
     BpRelayersRegistration,
-    DancelightRuntimeAggregateMessageOrigin,
     DancelightRuntimeBridgeToEthereumConfigBridgeReward,
     DancelightRuntimeRuntimeHoldReason,
     DancelightRuntimeRuntimeParametersKey,
     DancelightRuntimeRuntimeParametersValue,
     DancelightRuntimeSessionKeys,
+    DancelightRuntimeTanssiAggregateMessageOrigin,
     DpCollatorAssignmentAssignedCollatorsAccountId32,
     DpCollatorAssignmentAssignedCollatorsPublic,
     DpContainerChainGenesisDataContainerChainGenesisData,
@@ -131,7 +131,9 @@ import type {
     SnowbridgeCoreChannelId,
     SnowbridgeCoreOperatingModeBasicOperatingMode,
     SnowbridgeCorePricingPricingParameters,
+    SnowbridgeOutboundQueuePrimitivesV2MessageOutboundMessage,
     SnowbridgePalletOutboundQueueCommittedMessage,
+    SnowbridgePalletOutboundQueueV2PendingOrder,
     SpAuthorityDiscoveryAppPublic,
     SpConsensusBabeAppPublic,
     SpConsensusBabeBabeEpochConfiguration,
@@ -950,6 +952,48 @@ declare module "@polkadot/api-base/types/storage" {
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        ethereumOutboundQueueV2: {
+            /**
+             * Hashes of the ABI-encoded messages in the [`Messages`] storage value. Used to generate a
+             * merkle root during `on_finalize`. This storage value is killed in `on_initialize`, so state
+             * at each block contains only root hash of messages processed in that block. This also means
+             * it doesn't have to be included in PoV.
+             **/
+            messageLeaves: AugmentedQuery<ApiType, () => Observable<Vec<H256>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Messages to be committed in the current block. This storage value is killed in
+             * `on_initialize`, so will not end up bloating state.
+             *
+             * Is never read in the runtime, only by offchain message relayers.
+             * Because of this, it will never go into the PoV of a block.
+             *
+             * Inspired by the `frame_system::Pallet::Events` storage value
+             **/
+            messages: AugmentedQuery<
+                ApiType,
+                () => Observable<Vec<SnowbridgeOutboundQueuePrimitivesV2MessageOutboundMessage>>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * The current nonce for the messages
+             **/
+            nonce: AugmentedQuery<ApiType, () => Observable<u64>, []> & QueryableStorageEntry<ApiType, []>;
+            /**
+             * Pending orders to relay
+             **/
+            pendingOrders: AugmentedQuery<
+                ApiType,
+                (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<SnowbridgePalletOutboundQueueV2PendingOrder>>,
+                [u64]
+            > &
+                QueryableStorageEntry<ApiType, [u64]>;
             /**
              * Generic query
              **/
@@ -1846,16 +1890,18 @@ declare module "@polkadot/api-base/types/storage" {
                 ApiType,
                 (
                     arg:
-                        | DancelightRuntimeAggregateMessageOrigin
+                        | DancelightRuntimeTanssiAggregateMessageOrigin
                         | { Ump: any }
                         | { Snowbridge: any }
                         | { SnowbridgeTanssi: any }
+                        | { SnowbridgeV2: any }
+                        | { SnowbridgeTanssiV2: any }
                         | string
                         | Uint8Array
                 ) => Observable<PalletMessageQueueBookState>,
-                [DancelightRuntimeAggregateMessageOrigin]
+                [DancelightRuntimeTanssiAggregateMessageOrigin]
             > &
-                QueryableStorageEntry<ApiType, [DancelightRuntimeAggregateMessageOrigin]>;
+                QueryableStorageEntry<ApiType, [DancelightRuntimeTanssiAggregateMessageOrigin]>;
             /**
              * The map of page indices to pages.
              **/
@@ -1863,23 +1909,25 @@ declare module "@polkadot/api-base/types/storage" {
                 ApiType,
                 (
                     arg1:
-                        | DancelightRuntimeAggregateMessageOrigin
+                        | DancelightRuntimeTanssiAggregateMessageOrigin
                         | { Ump: any }
                         | { Snowbridge: any }
                         | { SnowbridgeTanssi: any }
+                        | { SnowbridgeV2: any }
+                        | { SnowbridgeTanssiV2: any }
                         | string
                         | Uint8Array,
                     arg2: u32 | AnyNumber | Uint8Array
                 ) => Observable<Option<PalletMessageQueuePage>>,
-                [DancelightRuntimeAggregateMessageOrigin, u32]
+                [DancelightRuntimeTanssiAggregateMessageOrigin, u32]
             > &
-                QueryableStorageEntry<ApiType, [DancelightRuntimeAggregateMessageOrigin, u32]>;
+                QueryableStorageEntry<ApiType, [DancelightRuntimeTanssiAggregateMessageOrigin, u32]>;
             /**
              * The origin at which we should begin servicing.
              **/
             serviceHead: AugmentedQuery<
                 ApiType,
-                () => Observable<Option<DancelightRuntimeAggregateMessageOrigin>>,
+                () => Observable<Option<DancelightRuntimeTanssiAggregateMessageOrigin>>,
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
