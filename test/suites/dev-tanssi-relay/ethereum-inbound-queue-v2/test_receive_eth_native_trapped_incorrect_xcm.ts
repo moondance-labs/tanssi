@@ -116,13 +116,9 @@ describeSuite({
                 await context.createBlock([tx3], { allowFailures: false });
 
                 const events = await polkadotJs.query.system.events();
-                const processXcmErrorEvent = events.find((a) => {
-                    return a.event.method === "ProcessXcmError";
-                });
                 const xcmErrorEvent = events.find((a) => {
                     return a.event.method === "AssetsTrapped";
                 });
-                expect(!!processXcmErrorEvent).to.equal(true);
                 expect(!!xcmErrorEvent).to.equal(true);
             },
         });

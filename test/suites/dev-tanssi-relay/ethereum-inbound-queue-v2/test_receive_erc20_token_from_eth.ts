@@ -148,7 +148,7 @@ describeSuite({
                     [
                         {
                             tokenAddress,
-                            value: 123_456_000n,
+                            value: transferAmount,
                         },
                     ],
                     []

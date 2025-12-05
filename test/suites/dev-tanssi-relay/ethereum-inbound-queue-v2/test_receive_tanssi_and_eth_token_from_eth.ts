@@ -174,7 +174,7 @@ describeSuite({
                     .polkadotJs()
                     .query.foreignAssets.account(FOREIGN_ASSET_ID, tokenReceiver);
                 expect(assetAccountDetailsAfter.toJSON()).to.not.be.null;
-                expect(BigInt(assetAccountDetailsAfter.toJSON().balance)).to.be.eq(transferAmount);
+                expect(BigInt(assetAccountDetailsAfter.toJSON().balance)).to.be.eq(ethValue);
             },
         });
     },
