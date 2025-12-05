@@ -401,7 +401,7 @@ fn test_parathread_that_buys_core_has_affinity_and_can_produce() {
             // This should work
             run_block();
             let availability_after = Runtime::candidates_pending_availability(1000u32.into());
-            // After the availability length is 1 as we have one candidate succesfully backed
+            // After the availability length is 1 as we have one candidate successfully backed
             assert_eq!(availability_after.len(), 1);
         })
 }
@@ -858,7 +858,7 @@ fn test_should_have_availability_for_registered_parachain() {
             assert_eq!(availability_before.len(), 0);
             run_block();
             let availability_after = Runtime::candidates_pending_availability(1000u32.into());
-            // After the availability length is 1 as we have one candidate succesfully backed
+            // After the availability length is 1 as we have one candidate successfully backed
             assert_eq!(availability_after.len(), 1);
         })
 }

@@ -175,7 +175,7 @@ export const ALITH_TRANSACTION_TEMPLATE: TransactionOptions = {
 };
 
 /// Await for a promise resolution while we wait for the tx hash to be included
-/// This will tipically be waiting for new blocks
+/// This will typically be waiting for new blocks
 export async function waitUntilEthTxIncluded(promise, web3, txHash) {
     while (((await customWeb3Request(web3, "eth_getTransactionByHash", [txHash])) as any).result.blockNumber === null) {
         await promise();

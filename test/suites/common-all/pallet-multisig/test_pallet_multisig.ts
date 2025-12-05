@@ -77,7 +77,7 @@ describeSuite({
                 });
                 expect(eventCount.length).to.be.equal(1);
 
-                // Multisig Cancelation
+                // Multisig Cancellation
                 const encodedMultisigId = createKeyMulti(
                     [alice_or_alith.address, dave_or_baltathar.address, bob_or_dorothy.address],
                     threshold

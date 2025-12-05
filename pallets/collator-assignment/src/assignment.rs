@@ -389,7 +389,7 @@ where
     ///
     /// # Returns
     ///
-    /// The collator assigment, a map from `ParaId` to `Vec<T>`.
+    /// The collator assignment, a map from `ParaId` to `Vec<T>`.
     ///
     /// Or an error if the number of collators is not enough to fill all the chains, or if the required number
     /// of collators overflows a `u32`.
