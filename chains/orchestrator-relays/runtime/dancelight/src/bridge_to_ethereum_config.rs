@@ -33,7 +33,6 @@ use pallet_ethereum_token_transfers::{
 use parity_scale_codec::{Decode, MaxEncodedLen};
 use snowbridge_core::reward::MessageId;
 
-#[cfg(not(feature = "runtime-benchmarks"))]
 use {
     tanssi_runtime_common::relay::v1::{
         NativeContainerTokensProcessor, NativeTokenTransferMessageProcessor,
