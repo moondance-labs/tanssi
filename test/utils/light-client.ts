@@ -105,12 +105,12 @@ function encodeSymbioticMessage(api: ApiPromise, symbioticValidators: string[]):
     return payload.toU8a();
 }
 
-enum PayloadEnum {
+export enum PayloadEnum {
     XCM = "XCM",
     SYMBIOTIC = "SYMBIOTIC",
 }
 
-function encodeRawPayload(api: ApiPromise, bytes: Uint8Array, payloadEnum: PayloadEnum): Uint8Array {
+export function encodeRawPayload(api: ApiPromise, bytes: Uint8Array, payloadEnum: PayloadEnum): Uint8Array {
     api.registry.register({
         RawPayload: {
             _enum: {
