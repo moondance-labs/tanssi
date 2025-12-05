@@ -196,7 +196,7 @@ jobs:
       - name: Create issue with gh CLI
         if: failure()
         run: |
-          gh issue create \
+          ~/bin/bin/gh issue create \
             --title "🚨 Zombienet Test Failure in ${{ github.workflow }}" \
             --body "Tests ${{ matrix.test_name }} failed in [${{ github.workflow }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).\n\n@moondance-labs/coredev please investigate." \
             --repo "${{ github.repository }}"
