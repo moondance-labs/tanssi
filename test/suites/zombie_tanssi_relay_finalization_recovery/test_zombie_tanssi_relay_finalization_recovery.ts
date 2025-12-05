@@ -28,50 +28,6 @@ describeSuite({
 
         it({
             id: "T01",
-            title: "Add Charlie and Dave to the validators list",
-            timeout: 240000,
-            test: async () => {
-                async function createCharlieDaveKeys() {
-                    const txs = [];
-                    const newValidators = [];
-
-                    for (const relayValidatorApi of [relayCharlieApi, relayDaveApi]) {
-                        const randomAccount = generateKeyringPair("sr25519");
-
-                        const newKey = await relayValidatorApi.rpc.author.rotateKeys();
-
-                        newValidators.push(randomAccount.address);
-                        txs.push(
-                            relayApi.tx.utility.dispatchAs(
-                                {
-                                    system: { Signed: randomAccount.address },
-                                } as any,
-                                relayApi.tx.session.setKeys(newKey, [])
-                            ),
-                            relayApi.tx.sudo.sudo(relayApi.tx.externalValidators.addWhitelisted(randomAccount.address))
-                        );
-                    }
-
-                    return [txs, newValidators];
-                }
-                const [txs, newValidators] = await createCharlieDaveKeys();
-
-                const txs3 = [];
-                for (const newAccount of newValidators) {
-                    txs3.push(relayApi.tx.balances.forceSetBalance(newAccount, 1_000_000_000_000_000n));
-                }
-                const tx3 = relayApi.tx.sudo.sudo(relayApi.tx.utility.batchAll(txs3));
-                await signAndSendAndInclude(tx3, alice);
-
-                // Maybe this match is too big because the session keys are big, if so just send the txs one by one
-                const tx = relayApi.tx.sudo.sudo(relayApi.tx.utility.batchAll(txs));
-
-                await signAndSendAndInclude(tx, alice);
-            },
-        });
-
-        it({
-            id: "T02",
             title: "Wait 2 sessions",
             timeout: 300000,
             test: async () => {
@@ -80,7 +36,7 @@ describeSuite({
         });
 
         it({
-            id: "T03",
+            id: "T02",
             title: "Add 4 external validators that will not produce blocks",
             timeout: 240000,
             test: async () => {
@@ -133,7 +89,7 @@ describeSuite({
         });
 
         it({
-            id: "T04",
+            id: "T03",
             title: "Wait 3 sessions so that finalized block gets stuck (2 sessions to apply new authority + 1 session of stuck finalization)",
             timeout: 300000,
             test: async () => {
@@ -142,7 +98,7 @@ describeSuite({
         });
 
         it({
-            id: "T05",
+            id: "T04",
             title: "Finalized block is now stuck",
             timeout: 300000,
             test: async () => {
@@ -171,7 +127,7 @@ describeSuite({
         });
 
         it({
-            id: "T06",
+            id: "T05",
             title: "Remove faulty validators and force new era",
             timeout: 300000,
             test: async () => {
@@ -189,7 +145,7 @@ describeSuite({
         });
 
         it({
-            id: "T07",
+            id: "T06",
             title: "Wait 2 sessions so that faulty validators are removed from grandpa.authorities",
             timeout: 300000,
             test: async () => {
@@ -198,7 +154,7 @@ describeSuite({
         });
 
         it({
-            id: "T08",
+            id: "T07",
             title: "Check that faulty validators have been removed from grandpa.authorities",
             timeout: 300000,
             test: async () => {
@@ -208,7 +164,7 @@ describeSuite({
         });
 
         it({
-            id: "T09",
+            id: "T08",
             title: "noteStalled",
             timeout: 300000,
             test: async () => {
@@ -227,7 +183,7 @@ describeSuite({
         });
 
         it({
-            id: "T10",
+            id: "T09",
             title: "Wait 2 sessions",
             timeout: 300000,
             test: async () => {
@@ -236,7 +192,7 @@ describeSuite({
         });
 
         it({
-            id: "T11",
+            id: "T10",
             title: "Finalization has been fixed",
             timeout: 300000,
             test: async () => {
