@@ -23,13 +23,16 @@ use {
 
 mod author_noting_tests;
 mod beefy;
+mod bridge_relayers;
 mod collator_assignment_tests;
 mod common;
 mod container_token_transfers;
 mod core_scheduling_tests;
 mod ethereum_client;
+mod ethereum_outbound_relayer_rewards;
 mod ethereum_system_v2;
 mod ethereum_token_transfers;
+mod ethereum_token_transfers_v2;
 mod external_validator_rewards_tests;
 mod external_validators_tests;
 mod inactivity_tracking;
@@ -37,6 +40,7 @@ mod inbound_queue_tests;
 mod inflation_rates;
 mod inflation_rewards;
 mod integration_test;
+mod maintenance_mode;
 mod migrations_test;
 mod offline_marking;
 mod relay_configuration;

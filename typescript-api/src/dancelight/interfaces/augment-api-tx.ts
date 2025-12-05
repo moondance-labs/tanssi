@@ -1687,6 +1687,22 @@ declare module "@polkadot/api-base/types/submittable" {
              **/
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
+        ethereumOutboundQueueV2: {
+            submitDeliveryReceipt: AugmentedSubmittable<
+                (
+                    event:
+                        | SnowbridgeVerificationPrimitivesEventProof
+                        | { eventLog?: any; proof?: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [SnowbridgeVerificationPrimitivesEventProof]
+            >;
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
         ethereumSystem: {
             /**
              * Sends a message to the Gateway contract to transfer ether from an agent to `recipient`.
@@ -1948,6 +1964,14 @@ declare module "@polkadot/api-base/types/submittable" {
                     recipient: H160 | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [u128, H160]
+            >;
+            transferNativeTokenV2: AugmentedSubmittable<
+                (
+                    amount: u128 | AnyNumber | Uint8Array,
+                    recipient: H160 | string | Uint8Array,
+                    reward: u128 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u128, H160, u128]
             >;
             /**
              * Generic tx
@@ -4243,6 +4267,8 @@ declare module "@polkadot/api-base/types/submittable" {
                         | { Ump: any }
                         | { Snowbridge: any }
                         | { SnowbridgeTanssi: any }
+                        | { SnowbridgeV2: any }
+                        | { SnowbridgeTanssiV2: any }
                         | string
                         | Uint8Array,
                     page: u32 | AnyNumber | Uint8Array,
@@ -4261,6 +4287,8 @@ declare module "@polkadot/api-base/types/submittable" {
                         | { Ump: any }
                         | { Snowbridge: any }
                         | { SnowbridgeTanssi: any }
+                        | { SnowbridgeV2: any }
+                        | { SnowbridgeTanssiV2: any }
                         | string
                         | Uint8Array,
                     pageIndex: u32 | AnyNumber | Uint8Array

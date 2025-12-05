@@ -779,18 +779,28 @@ dependencies = [
 name = "asset-starlight-integration-tests"
 version = "0.0.0"
 dependencies = [
+ "container-chain-template-frontier-runtime",
  "container-chain-template-simple-runtime",
+ "fp-account",
  "frame-support",
+ "frontier-template-emulated-chain",
+ "hex-literal",
  "pallet-message-queue",
  "pallet-xcm",
  "polkadot-primitives",
  "simple-template-emulated-chain",
+ "snowbridge-beacon-primitives",
+ "snowbridge-core",
+ "snowbridge-inbound-queue-primitives",
+ "snowbridge-pallet-outbound-queue",
+ "sp-core",
  "sp-runtime",
  "sp-tracing",
  "staging-xcm",
  "staging-xcm-executor",
  "starlight-emulated-chain",
  "starlight-runtime",
+ "starlight-runtime-constants",
  "starlight-system-emulated-network",
  "tanssi-emulated-integration-tests-common",
  "xcm-emulator",
@@ -3909,6 +3919,7 @@ dependencies = [
 name = "dancelight-runtime"
 version = "0.1.0"
 dependencies = [
+ "alloy-core",
  "alloy-sol-types 0.4.2",
  "binary-merkle-tree",
  "bitvec",
@@ -4021,6 +4032,7 @@ dependencies = [
  "snowbridge-pallet-inbound-queue-fixtures",
  "snowbridge-pallet-inbound-queue-v2",
  "snowbridge-pallet-outbound-queue",
+ "snowbridge-pallet-outbound-queue-v2",
  "snowbridge-pallet-system",
  "snowbridge-pallet-system-v2",
  "snowbridge-verification-primitives",
@@ -10367,6 +10379,7 @@ dependencies = [
  "sp-runtime",
  "sp-staking",
  "staging-xcm",
+ "staging-xcm-builder",
  "tp-bridge",
  "tp-traits",
 ]

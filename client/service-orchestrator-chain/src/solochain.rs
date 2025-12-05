@@ -96,7 +96,16 @@ pub async fn start_solochain_node(
     // And same for "network" folder
     // But zombienet will put the keys in the old path, so we need to manually copy it if we
     // are running under zombienet
-    copy_zombienet_keystore(keystore, container_chain_cli.base_path())?;
+    copy_zombienet_keystore(
+        keystore,
+        container_chain_cli.base_path(),
+        "simple_container_2000",
+    )?;
+    copy_zombienet_keystore(
+        keystore,
+        container_chain_cli.base_path(),
+        "frontier_container_2001",
+    )?;
 
     let keystore_container = KeystoreContainer::new(keystore)?;
 
@@ -560,14 +569,14 @@ pub fn dummy_config(tokio_handle: tokio::runtime::Handle, base_path: BasePath) -
 }
 
 /// Get the zombienet keystore path from the container base path.
-fn zombienet_keystore_path(container_base_path: &Path) -> PathBuf {
+fn zombienet_keystore_path(container_base_path: &Path, chain_name: &str) -> PathBuf {
     // container base path:
     // Collator-01/data/containers
     let mut zombienet_path = container_base_path.to_owned();
     zombienet_path.pop();
     // Collator-01/data/
-    zombienet_path.push("chains/simple_container_2000/keystore/");
-    // Collator-01/data/chains/simple_container_2000/keystore/
+    zombienet_path.push(format!("chains/{}/keystore/", chain_name));
+    // Collator-01/data/chains/{chain_name}/keystore/
 
     zombienet_path
 }
@@ -578,6 +587,7 @@ fn zombienet_keystore_path(container_base_path: &Path) -> PathBuf {
 pub fn copy_zombienet_keystore(
     keystore: &KeystoreConfig,
     container_base_path: sc_cli::Result<Option<BasePath>>,
+    chain_name: &str,
 ) -> std::io::Result<()> {
     let container_base_path = match container_base_path {
         Ok(Some(base_path)) => base_path,
@@ -594,7 +604,7 @@ pub fn copy_zombienet_keystore(
             return Ok(());
         }
     };
-    let zombienet_path = zombienet_keystore_path(container_base_path.path());
+    let zombienet_path = zombienet_keystore_path(container_base_path.path(), chain_name);
 
     if zombienet_path.exists() {
         // Copy to keystore folder

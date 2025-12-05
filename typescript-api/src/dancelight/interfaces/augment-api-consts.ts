@@ -224,6 +224,28 @@ declare module "@polkadot/api-base/types/consts" {
              **/
             [key: string]: Codec;
         };
+        ethereumOutboundQueueV2: {
+            /**
+             * The default RewardKind discriminator for rewards allocated to relayers from this pallet.
+             **/
+            defaultRewardKind: DancelightRuntimeBridgeToEthereumConfigBridgeReward & AugmentedConst<ApiType>;
+            /**
+             * Address of the Gateway contract
+             **/
+            gatewayAddress: H160 & AugmentedConst<ApiType>;
+            /**
+             * Max bytes in a message payload
+             **/
+            maxMessagePayloadSize: u32 & AugmentedConst<ApiType>;
+            /**
+             * Max number of messages processed per block
+             **/
+            maxMessagesPerBlock: u32 & AugmentedConst<ApiType>;
+            /**
+             * Generic const
+             **/
+            [key: string]: Codec;
+        };
         ethereumSystem: {
             /**
              * Cost of delivering a message from Ethereum

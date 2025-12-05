@@ -178,10 +178,11 @@ bp-relayers = { workspace = true }
 bridge-hub-common = { workspace = true }
 pallet-bridge-relayers = { workspace = true }
 snowbridge-pallet-inbound-queue-v2 = { workspace = true }
-# snowbridge-pallet-outbound-queue-v2 = { workspace = true }
+snowbridge-pallet-outbound-queue-v2 = { workspace = true }
 snowbridge-pallet-system-v2 = { workspace = true }
 
 [dev-dependencies]
+alloy-core = { workspace = true, features = [ "sol-types" ] }
 alloy-sol-types = { workspace = true, default-features = true }
 finality-grandpa = { workspace = true, default-features = true, features = [ "derive-codec" ] }
 milagro-bls = { workspace = true, features = [ "std" ] }
@@ -200,6 +201,7 @@ substrate-wasm-builder = { workspace = true, optional = true }
 [features]
 default = [ "std" ]
 std = [
+	"alloy-core/std",
 	"authority-discovery-primitives/std",
 	"babe-primitives/std",
 	"beefy-primitives/std",
@@ -316,9 +318,9 @@ std = [
 	"snowbridge-pallet-inbound-queue-fixtures/std",
 	"snowbridge-pallet-inbound-queue-v2/std",
 	"snowbridge-pallet-inbound-queue/std",
+	"snowbridge-pallet-outbound-queue-v2/std",
 	"snowbridge-pallet-outbound-queue/std",
 	"snowbridge-pallet-system-v2/std",
-	# "snowbridge-pallet-outbound-queue-v2/std",
 	"snowbridge-pallet-system/std",
 	"snowbridge-verification-primitives/std",
 	"sp-api/std",
@@ -431,6 +433,7 @@ runtime-benchmarks = [
 	"snowbridge-pallet-inbound-queue-fixtures/runtime-benchmarks",
 	"snowbridge-pallet-inbound-queue-v2/runtime-benchmarks",
 	"snowbridge-pallet-inbound-queue/runtime-benchmarks",
+	"snowbridge-pallet-outbound-queue-v2/runtime-benchmarks",
 	"snowbridge-pallet-outbound-queue/runtime-benchmarks",
 	"snowbridge-pallet-system-v2/runtime-benchmarks",
 	"snowbridge-pallet-system/runtime-benchmarks",
@@ -518,6 +521,7 @@ try-runtime = [
 	"snowbridge-pallet-ethereum-client/try-runtime",
 	"snowbridge-pallet-inbound-queue-v2/try-runtime",
 	"snowbridge-pallet-inbound-queue/try-runtime",
+	"snowbridge-pallet-outbound-queue-v2/try-runtime",
 	"snowbridge-pallet-outbound-queue/try-runtime",
 	"snowbridge-pallet-system-v2/try-runtime",
 	"snowbridge-pallet-system/try-runtime",
