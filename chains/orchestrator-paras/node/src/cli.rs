@@ -15,7 +15,10 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
-    node_common::{cli::BuildSpecCmd, service::node_builder::Sealing},
+    node_common::{
+        cli::{BuildSpecCmd, ExportChainSpecCmd},
+        service::node_builder::Sealing,
+    },
     std::path::PathBuf,
     tc_service_container_chain_spawner::cli::ContainerChainRunCmd,
 };
@@ -25,7 +28,13 @@ use {
 #[allow(clippy::large_enum_variant)]
 pub enum Subcommand {
     /// Build a chain specification.
+    #[deprecated(
+        note = "build-spec command will be removed after 1/04/2026. Use export-chain-spec command instead"
+    )]
     BuildSpec(BuildSpecCmdCollator),
+
+    /// Export the chain specification.
+    ExportChainSpec(ExportChainSpecCmdCollator),
 
     /// Validate blocks.
     CheckBlock(sc_cli::CheckBlockCmd),
@@ -93,7 +102,7 @@ pub struct SoloChainCmd {
 }
 
 #[derive(Debug, Clone, clap::Args)]
-pub struct BuildSpecCmdExtraFields {
+pub struct ExtraFields {
     /// List of container chain chain spec paths to add to genesis.
     #[arg(long)]
     pub add_container_chain: Option<Vec<String>>,
@@ -110,7 +119,9 @@ pub struct BuildSpecCmdExtraFields {
     pub parachain_id: Option<u32>,
 }
 
-pub type BuildSpecCmdCollator = BuildSpecCmd<BuildSpecCmdExtraFields>;
+pub type BuildSpecCmdCollator = BuildSpecCmd<ExtraFields>;
+
+pub type ExportChainSpecCmdCollator = ExportChainSpecCmd<ExtraFields>;
 
 /// Command for exporting the genesis wasm file.
 #[derive(Debug, clap::Parser)]
