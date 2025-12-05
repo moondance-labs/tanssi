@@ -48,7 +48,9 @@ describeSuite({
                 const baseWeightToFee = (
                     await polkadotJs.call.transactionPaymentApi.queryWeightToFee({
                         refTime: baseWeight,
-                        proofSize: feeInfo.weight.proofSize.toBigInt(),
+                        // Base weight represents the fixed computational cost, independent of proof size.
+                        // Setting proofSize to 0 ensures we only calculate the ref_time component of the base fee.
+                        proofSize: 0n,
                     })
                 ).toBigInt();
 

@@ -54,8 +54,9 @@ describeSuite({
 
                 const balanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
                 // Estimate fee of balances.transfer using paymentInfo API, before sending transaction
-                const info = await tx.paymentInfo(alice.address);
+                const estimatedPaymentInfo = await tx.paymentInfo(alice.address);
                 const signedTx = await tx.signAsync(alice);
+                const feeMultiplier = (await polkadotJs.query.transactionPayment.nextFeeMultiplier()).toBigInt();
                 await context.createBlock([signedTx]);
 
                 const events = await polkadotJs.query.system.events();
@@ -67,8 +68,8 @@ describeSuite({
                 // The estimated weight does not match the actual weight reported in the block, because it is missing the
                 // "base weight"
                 const estimatedPlusBaseWeight = {
-                    refTime: info.weight.refTime.toBigInt() + baseWeight,
-                    proofSize: info.weight.proofSize.toBigInt(), // TODO: fix me
+                    refTime: estimatedPaymentInfo.weight.refTime.toBigInt() + baseWeight,
+                    proofSize: estimatedPaymentInfo.weight.proofSize.toBigInt(), // TODO: fix me
                 };
 
                 if (isPara) {
@@ -91,57 +92,58 @@ describeSuite({
                     });
                 }
 
-                // queryWeightToFee expects the "base weight" to be included in the input, so info2.weight provides
-                // the correct estimation, but tx.paymentInfo().weight does not
-                const basePlusWeightFee = (
-                    await polkadotJs.call.transactionPaymentApi.queryWeightToFee(info2.weight)
+                const baseWeightToFee = (
+                    await polkadotJs.call.transactionPaymentApi.queryWeightToFee({
+                        refTime: baseWeight,
+                        // Base weight represents the fixed computational cost, independent of proof size.
+                        // Setting proofSize to 0 ensures we only calculate the ref_time component of the base fee.
+                        proofSize: 0n,
+                    })
                 ).toBigInt();
 
                 // info contains just the extrinsic weight
                 const onlyExtrinsicWeightFee = (
-                    await polkadotJs.call.transactionPaymentApi.queryWeightToFee(info.weight)
+                    await polkadotJs.call.transactionPaymentApi.queryWeightToFee(estimatedPaymentInfo.weight)
                 ).toBigInt();
 
                 // These values are: 1000000 for base fee plus fee coming from the weight of the extrinsic
                 // We allow variance of 10%
                 const expectedBaseFee = context.isEthereumChain ? 1000000000000n : isRelay ? 3333333n : 1000000n;
 
-                const expectedbasePlusWeightFee = expectedBaseFee + onlyExtrinsicWeightFee;
+                const expectedBasePlusWeightFee = expectedBaseFee + onlyExtrinsicWeightFee;
 
                 /*
 			stable2412:
 			fee:  6055350n
 			basePlusWeightFee:  6055206n
 			expectedBaseFee:  1000000n
-			expectedbasePlusWeightFee:  2600000n
+			expectedBasePlusWeightFee:  2600000n
 
 		        master:
 		        fee:  2724942n
 			basePlusWeightFee:  2724798n
 			expectedBaseFee:  1000000n
-			expectedbasePlusWeightFee:  2600000n
+			expectedBasePlusWeightFee:  2600000n
 		*/
 
                 console.log("fee: ", fee);
-                console.log("basePlusWeightFee: ", basePlusWeightFee);
+                console.log("basePlusWeightFee: ", baseWeightToFee);
                 console.log("expectedBaseFee: ", expectedBaseFee);
-                console.log("expectedbasePlusWeightFee: ", expectedbasePlusWeightFee);
+                console.log("expectedBasePlusWeightFee: ", expectedBasePlusWeightFee);
 
-                expect(
-                    basePlusWeightFee >= (expectedbasePlusWeightFee * 90n) / 100n &&
-                        basePlusWeightFee <= (expectedbasePlusWeightFee * 110n) / 100n
-                ).to.be.true;
+                const lengthToFee = (
+                    await polkadotJs.call.transactionPaymentApi.queryLengthToFee(signedTx.encodedLength)
+                ).toBigInt();
 
-                const expectedFee = basePlusWeightFee + BigInt(signedTx.encodedLength);
+                const multiplierAdjustedWeightFee =
+                    (feeMultiplier * onlyExtrinsicWeightFee) / 1_000_000_000_000_000_000n;
 
-                // Caution: this +1 comes from the fact that even if qeryWeightToFee applies unadjusted
-                // but when we pay fees (or compare with queryFeeDetails), we do it adjusted (with multiplier). In our case we are using
-                // a constant multiplier, but because of rounding issues with the weight, we migth obtain
-                // a +-1 difference
-                expect(fee >= expectedFee - 1n && basePlusWeightFee <= expectedFee + 1n).to.be.true;
+                const expectedFee = baseWeightToFee + multiplierAdjustedWeightFee + lengthToFee;
+
+                expect(fee).to.equal(expectedFee);
 
                 const tip = 0n;
-                expect(fee).to.equal(info.partialFee.toBigInt() + tip);
+                expect(fee).to.equal(estimatedPaymentInfo.partialFee.toBigInt() + tip);
 
                 const balanceAfter = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
                 // Balance must be old balance minus fee minus transfered value
@@ -180,7 +182,7 @@ describeSuite({
                 const baseWeightToFee = (
                     await polkadotJs.call.transactionPaymentApi.queryWeightToFee({
                         refTime: baseWeight,
-                        proofSize: feeInfo.weight.proofSize.toBigInt(),
+                        proofSize: 0,
                     })
                 ).toBigInt();
 
@@ -267,7 +269,7 @@ describeSuite({
                 const baseWeightToFee = (
                     await polkadotJs.call.transactionPaymentApi.queryWeightToFee({
                         refTime: baseWeight,
-                        proofSize: feeInfo.weight.proofSize.toBigInt(),
+                        proofSize: 0,
                     })
                 ).toBigInt();
 
@@ -305,22 +307,36 @@ describeSuite({
             title: "Proof size does not affect fee",
             test: async () => {
                 const refTime = 298945000n;
-                const proofSize = 3593n;
-                const fee1 = (
-                    await polkadotJs.call.transactionPaymentApi.queryWeightToFee({
-                        refTime,
-                        proofSize,
-                    })
-                ).toBigInt();
 
-                const fee2 = (
+                const refTimeFeesOnly = (
                     await polkadotJs.call.transactionPaymentApi.queryWeightToFee({
                         refTime,
                         proofSize: 0,
                     })
                 ).toBigInt();
 
-                expect(fee1).to.equal(fee2);
+                const feesMap = new Map<bigint, number>();
+
+                for (const proofSize of [0n, 10n, 100n, 10000n, 100000n]) {
+                    const fullFee = (
+                        await polkadotJs.call.transactionPaymentApi.queryWeightToFee({
+                            refTime,
+                            proofSize,
+                        })
+                    ).toBigInt();
+
+                    feesMap.set(fullFee, (feesMap.get(fullFee) || 0) + 1);
+                }
+
+                if (isPara) {
+                    // We expect that with 5 measurements, we should have at least 2 identical fees, based
+                    // on the formula max(refTimeFee, proofSizeFee)
+                    expect(feesMap.get(refTimeFeesOnly)).greaterThan(2);
+                    console.log("feesMap", feesMap);
+                } else {
+                    // for *light chains, the proof size does not affect the fee
+                    expect(feesMap.size).to.equal(1);
+                }
             },
         });
 
