@@ -1,19 +1,19 @@
 [package]
 name = "v2_processor_proc_macro"
-version = "0.1.0"
 edition = "2024"
+version = "0.1.0"
 
 [lib]
 proc-macro = true
 
 [dependencies]
-syn = { version = "2.0", features = ["full"] }
-quote = "1.0"
 proc-macro2 = "1.0"
+quote = "1.0"
+syn = { version = "2.0", features = [ "full" ] }
 
 [dev-dependencies]
-snowbridge-inbound-queue-primitives = { workspace = true, default-features = false }
-tanssi-runtime-common = { workspace = true, features = ["relay", "std"] }
-proc-macro2 = "1.0"
-sp-runtime = { workspace = true, default-features = true }
 prettyplease = "0.2.35"
+proc-macro2 = "1.0"
+snowbridge-inbound-queue-primitives = { workspace = true, default-features = false }
+sp-runtime = { workspace = true, default-features = true }
+tanssi-runtime-common = { workspace = true, features = [ "relay", "std" ] }

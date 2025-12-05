@@ -474,10 +474,6 @@ declare module "@polkadot/api-base/types/errors" {
             TipFailed: AugmentedError<ApiType>;
             TooManyCommands: AugmentedError<ApiType>;
             /**
-             * When add_tip extrinsic could not be called.
-             **/
-            TipFailed: AugmentedError<ApiType>;
-            /**
              * The outbound message could not be sent.
              **/
             TransferMessageNotSent: AugmentedError<ApiType>;

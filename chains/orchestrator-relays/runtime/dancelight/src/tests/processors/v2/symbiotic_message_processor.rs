@@ -75,10 +75,7 @@ fn symbiotic_try_extract_message_fails_with_invalid_symbiotic_payload() {
         );
 
         assert!(
-            matches!(
-                result,
-                Err(MessageExtractionError::InvalidMessage { .. })
-            ),
+            matches!(result, Err(MessageExtractionError::InvalidMessage { .. })),
             "Invalid Symbiotic payload should result in InvalidMessage error, got: {:?}",
             result
         );
@@ -121,10 +118,7 @@ fn symbiotic_try_extract_message_fails_with_invalid_origin_payload() {
         );
 
         assert!(
-            matches!(
-                result,
-                Err(MessageExtractionError::InvalidMessage { .. })
-            ),
+            matches!(result, Err(MessageExtractionError::InvalidMessage { .. })),
             "Invalid Symbiotic payload should result in InvalidMessage error, got: {:?}",
             result
         );

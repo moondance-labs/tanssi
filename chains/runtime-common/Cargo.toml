@@ -7,7 +7,7 @@ license = "GPL-3.0-only"
 version = "0.1.0"
 
 [package.metadata.docs.rs]
-targets = ["x86_64-unknown-linux-gnu"]
+targets = [ "x86_64-unknown-linux-gnu" ]
 
 [lints]
 workspace = true
@@ -15,19 +15,19 @@ workspace = true
 [dependencies]
 hex-literal = { workspace = true }
 log = { workspace = true }
-parity-scale-codec = { workspace = true, features = ["derive"] }
-scale-info = { workspace = true, features = ["derive"] }
+parity-scale-codec = { workspace = true, features = [ "derive" ] }
+scale-info = { workspace = true, features = [ "derive" ] }
 
 # Own
 pallet-configuration = { workspace = true }
 pallet-data-preservers = { workspace = true }
 pallet-foreign-asset-creator = { workspace = true }
 pallet-inactivity-tracking = { workspace = true }
-pallet-pooled-staking = { workspace = true, features = ["migrations"] }
+pallet-pooled-staking = { workspace = true, features = [ "migrations" ] }
 pallet-registrar = { workspace = true }
 pallet-services-payment = { workspace = true }
 pallet-session = { workspace = true }
-pallet-stream-payment = { workspace = true, features = ["migrations"] }
+pallet-stream-payment = { workspace = true, features = [ "migrations" ] }
 pallet-treasury = { workspace = true }
 
 # Moonkit
@@ -66,131 +66,131 @@ pallet-ethereum-token-transfers = { workspace = true, optional = true }
 pallet-external-validator-slashes = { workspace = true, optional = true }
 pallet-external-validators = { workspace = true, optional = true }
 snowbridge-pallet-inbound-queue = { workspace = true, optional = true }
-tp-bridge = { workspace = true, optional = true }
 thiserror = { workspace = true, optional = true }
+tp-bridge = { workspace = true, optional = true }
 v2_processor_proc_macro = { path = "./src/processors/v2/proc_macro" }
 
 [features]
 default = [
-    "std",
+	"std",
 ]
 std = [
-    "cumulus-pallet-xcmp-queue/std",
-    "cumulus-primitives-core/std",
-    "frame-support/std",
-    "frame-system/std",
-    "frame-try-runtime?/std",
-    "log/std",
-    "pallet-babe?/std",
-    "pallet-balances/std",
-    "pallet-beefy-mmr/std",
-    "pallet-configuration/std",
-    "pallet-data-preservers/std",
-    "pallet-ethereum-token-transfers?/std",
-    "pallet-external-validator-slashes?/std",
-    "pallet-external-validators?/std",
-    "pallet-foreign-asset-creator/std",
-    "pallet-inactivity-tracking/std",
-    "pallet-migrations/std",
-    "pallet-pooled-staking/std",
-    "pallet-registrar/std",
-    "pallet-services-payment/std",
-    "pallet-session/std",
-    "pallet-stream-payment/std",
-    "pallet-treasury/std",
-    "pallet-xcm/std",
-    "parity-scale-codec/std",
-    "runtime-parachains/std",
-    "scale-info/std",
-    "snowbridge-core/std",
-    "snowbridge-inbound-queue-primitives/std",
-    "snowbridge-pallet-inbound-queue?/std",
-    "snowbridge-pallet-system/std",
-    "snowbridge-pallet-system/std",
-    "sp-core/std",
-    "sp-io/std",
-    "sp-runtime/std",
-    "sp-staking/std",
-    "thiserror?/std",
-    "tp-bridge?/std",
-    "xcm-builder/std",
-    "xcm-executor/std",
-    "xcm/std",
+	"cumulus-pallet-xcmp-queue/std",
+	"cumulus-primitives-core/std",
+	"frame-support/std",
+	"frame-system/std",
+	"frame-try-runtime?/std",
+	"log/std",
+	"pallet-babe?/std",
+	"pallet-balances/std",
+	"pallet-beefy-mmr/std",
+	"pallet-configuration/std",
+	"pallet-data-preservers/std",
+	"pallet-ethereum-token-transfers?/std",
+	"pallet-external-validator-slashes?/std",
+	"pallet-external-validators?/std",
+	"pallet-foreign-asset-creator/std",
+	"pallet-inactivity-tracking/std",
+	"pallet-migrations/std",
+	"pallet-pooled-staking/std",
+	"pallet-registrar/std",
+	"pallet-services-payment/std",
+	"pallet-session/std",
+	"pallet-stream-payment/std",
+	"pallet-treasury/std",
+	"pallet-xcm/std",
+	"parity-scale-codec/std",
+	"runtime-parachains/std",
+	"scale-info/std",
+	"snowbridge-core/std",
+	"snowbridge-inbound-queue-primitives/std",
+	"snowbridge-pallet-inbound-queue?/std",
+	"snowbridge-pallet-system/std",
+	"snowbridge-pallet-system/std",
+	"sp-core/std",
+	"sp-io/std",
+	"sp-runtime/std",
+	"sp-staking/std",
+	"thiserror?/std",
+	"tp-bridge?/std",
+	"xcm-builder/std",
+	"xcm-executor/std",
+	"xcm/std",
 ]
 relay = [
-    "pallet-babe",
-    "pallet-ethereum-token-transfers",
-    "pallet-external-validator-slashes",
-    "pallet-external-validators",
-    "snowbridge-pallet-inbound-queue",
-    "thiserror",
-    "tp-bridge"
+	"pallet-babe",
+	"pallet-ethereum-token-transfers",
+	"pallet-external-validator-slashes",
+	"pallet-external-validators",
+	"snowbridge-pallet-inbound-queue",
+	"thiserror",
+	"tp-bridge",
 ]
 
 runtime-benchmarks = [
-    "cumulus-pallet-xcmp-queue/runtime-benchmarks",
-    "cumulus-primitives-core/runtime-benchmarks",
-    "frame-support/runtime-benchmarks",
-    "frame-system/runtime-benchmarks",
-    "pallet-babe?/runtime-benchmarks",
-    "pallet-balances/runtime-benchmarks",
-    "pallet-beefy-mmr/runtime-benchmarks",
-    "pallet-configuration/runtime-benchmarks",
-    "pallet-data-preservers/runtime-benchmarks",
-    "pallet-ethereum-token-transfers?/runtime-benchmarks",
-    "pallet-external-validator-slashes?/runtime-benchmarks",
-    "pallet-external-validators?/runtime-benchmarks",
-    "pallet-foreign-asset-creator/runtime-benchmarks",
-    "pallet-inactivity-tracking/runtime-benchmarks",
-    "pallet-migrations/runtime-benchmarks",
-    "pallet-pooled-staking/runtime-benchmarks",
-    "pallet-registrar/runtime-benchmarks",
-    "pallet-services-payment/runtime-benchmarks",
-    "pallet-stream-payment/runtime-benchmarks",
-    "pallet-treasury/runtime-benchmarks",
-    "pallet-xcm/runtime-benchmarks",
-    "runtime-parachains/runtime-benchmarks",
-    "snowbridge-core/runtime-benchmarks",
-    "snowbridge-inbound-queue-primitives/runtime-benchmarks",
-    "snowbridge-pallet-inbound-queue/runtime-benchmarks",
-    "snowbridge-pallet-inbound-queue?/runtime-benchmarks",
-    "snowbridge-pallet-system/runtime-benchmarks",
-    "snowbridge-pallet-system/runtime-benchmarks",
-    "sp-runtime/runtime-benchmarks",
-    "sp-staking/runtime-benchmarks",
-    "tp-bridge/runtime-benchmarks",
-    "xcm-builder/runtime-benchmarks",
-    "xcm-executor/runtime-benchmarks",
-    "xcm/runtime-benchmarks",
+	"cumulus-pallet-xcmp-queue/runtime-benchmarks",
+	"cumulus-primitives-core/runtime-benchmarks",
+	"frame-support/runtime-benchmarks",
+	"frame-system/runtime-benchmarks",
+	"pallet-babe?/runtime-benchmarks",
+	"pallet-balances/runtime-benchmarks",
+	"pallet-beefy-mmr/runtime-benchmarks",
+	"pallet-configuration/runtime-benchmarks",
+	"pallet-data-preservers/runtime-benchmarks",
+	"pallet-ethereum-token-transfers?/runtime-benchmarks",
+	"pallet-external-validator-slashes?/runtime-benchmarks",
+	"pallet-external-validators?/runtime-benchmarks",
+	"pallet-foreign-asset-creator/runtime-benchmarks",
+	"pallet-inactivity-tracking/runtime-benchmarks",
+	"pallet-migrations/runtime-benchmarks",
+	"pallet-pooled-staking/runtime-benchmarks",
+	"pallet-registrar/runtime-benchmarks",
+	"pallet-services-payment/runtime-benchmarks",
+	"pallet-stream-payment/runtime-benchmarks",
+	"pallet-treasury/runtime-benchmarks",
+	"pallet-xcm/runtime-benchmarks",
+	"runtime-parachains/runtime-benchmarks",
+	"snowbridge-core/runtime-benchmarks",
+	"snowbridge-inbound-queue-primitives/runtime-benchmarks",
+	"snowbridge-pallet-inbound-queue/runtime-benchmarks",
+	"snowbridge-pallet-inbound-queue?/runtime-benchmarks",
+	"snowbridge-pallet-system/runtime-benchmarks",
+	"snowbridge-pallet-system/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks",
+	"sp-staking/runtime-benchmarks",
+	"tp-bridge/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
 ]
 
 try-runtime = [
-    "cumulus-pallet-xcmp-queue/try-runtime",
-    "frame-support/try-runtime",
-    "frame-system/try-runtime",
-    "frame-try-runtime/try-runtime",
-    "pallet-babe?/try-runtime",
-    "pallet-balances/try-runtime",
-    "pallet-beefy-mmr/try-runtime",
-    "pallet-configuration/try-runtime",
-    "pallet-data-preservers/try-runtime",
-    "pallet-ethereum-token-transfers?/try-runtime",
-    "pallet-external-validator-slashes?/try-runtime",
-    "pallet-external-validators?/try-runtime",
-    "pallet-foreign-asset-creator/try-runtime",
-    "pallet-inactivity-tracking/try-runtime",
-    "pallet-migrations/try-runtime",
-    "pallet-pooled-staking/try-runtime",
-    "pallet-registrar/try-runtime",
-    "pallet-services-payment/try-runtime",
-    "pallet-session/try-runtime",
-    "pallet-stream-payment/try-runtime",
-    "pallet-treasury/try-runtime",
-    "pallet-xcm/try-runtime",
-    "runtime-parachains/try-runtime",
-    "snowbridge-pallet-inbound-queue?/try-runtime",
-    "snowbridge-pallet-system/try-runtime",
-    "sp-runtime/try-runtime",
+	"cumulus-pallet-xcmp-queue/try-runtime",
+	"frame-support/try-runtime",
+	"frame-system/try-runtime",
+	"frame-try-runtime/try-runtime",
+	"pallet-babe?/try-runtime",
+	"pallet-balances/try-runtime",
+	"pallet-beefy-mmr/try-runtime",
+	"pallet-configuration/try-runtime",
+	"pallet-data-preservers/try-runtime",
+	"pallet-ethereum-token-transfers?/try-runtime",
+	"pallet-external-validator-slashes?/try-runtime",
+	"pallet-external-validators?/try-runtime",
+	"pallet-foreign-asset-creator/try-runtime",
+	"pallet-inactivity-tracking/try-runtime",
+	"pallet-migrations/try-runtime",
+	"pallet-pooled-staking/try-runtime",
+	"pallet-registrar/try-runtime",
+	"pallet-services-payment/try-runtime",
+	"pallet-session/try-runtime",
+	"pallet-stream-payment/try-runtime",
+	"pallet-treasury/try-runtime",
+	"pallet-xcm/try-runtime",
+	"runtime-parachains/try-runtime",
+	"snowbridge-pallet-inbound-queue?/try-runtime",
+	"snowbridge-pallet-system/try-runtime",
+	"sp-runtime/try-runtime",
 ]
 
 fast-runtime = []

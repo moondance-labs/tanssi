@@ -228,7 +228,7 @@ pallet-transaction-payment = { git = "https://github.com/moondance-labs/polkadot
 pallet-treasury = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 pallet-tx-pause = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 pallet-utility = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
-parity-scale-codec = { version = "3.0.0", default-features = false, features = ["derive", "max-encoded-len"] }
+parity-scale-codec = { version = "3.0.0", default-features = false, features = [ "derive", "max-encoded-len" ] }
 sc-rpc-spec-v2 = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 scale-info = { version = "2.10.0", default-features = false }
 sp-api = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
@@ -397,7 +397,7 @@ fc-consensus = { git = "https://github.com/moondance-labs/frontier", branch = "t
 fc-db = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 fc-mapping-sync = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 fc-rpc = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", features = [
-    "rpc-binary-search-estimate",
+	"rpc-binary-search-estimate",
 ] }
 fc-rpc-core = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 fc-storage = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
@@ -566,7 +566,7 @@ sp-maybe-compressed-blob = { git = "https://github.com/moondance-labs/polkadot-s
 
 # Tanssi Relay Chain
 color-eyre = { version = "0.6.1", default-features = false }
-tikv-jemallocator = { version = "0.5.0", features = ["unprefixed_malloc_on_supported_platforms"] }
+tikv-jemallocator = { version = "0.5.0", features = [ "unprefixed_malloc_on_supported_platforms" ] }
 
 polkadot-node-core-pvf-common = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
 polkadot-node-core-pvf-execute-worker = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506-with-generic-message-processing", default-features = false }
