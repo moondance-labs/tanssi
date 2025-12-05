@@ -59,8 +59,8 @@ describeSuite({
                     encodeRawPayload(
                         polkadotJs,
                         polkadotJs
-                            .createType("Bytes", "0x1234")
-                            .toU8a(), // <-- some random bytes
+                            .createType("Bytes", "0x1234") // <-- some random bytes
+                            .toU8a(),
                         PayloadEnum.SYMBIOTIC
                     ),
                 ];
