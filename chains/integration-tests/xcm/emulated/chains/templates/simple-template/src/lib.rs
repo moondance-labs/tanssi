@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 pub mod genesis;
+use container_chain_template_simple_runtime::Parameters;
 use {
     container_chain_template_simple_runtime::{
         xcm_config, AssetRate, Balances, ForeignAssets, ForeignAssetsCreator, ParachainInfo,
@@ -65,6 +66,7 @@ decl_test_parachains! {
             ForeignAssets:  ForeignAssets,
             AssetRate:  AssetRate,
             ForeignAssetsCreator: ForeignAssetsCreator,
+            Parameters: Parameters,
         }
     }
 }

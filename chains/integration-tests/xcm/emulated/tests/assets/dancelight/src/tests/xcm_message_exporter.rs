@@ -14,12 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use pallet_xcm::ExecutionError;
 use {
     dancelight_emulated_chain::DancelightRelayPallet,
     dancelight_system_emulated_network::DancelightRelay as Dancelight,
     frame_support::weights::Weight,
-    pallet_xcm::Error,
+    pallet_xcm::{Error, ExecutionError},
     primitives::AccountId,
     sp_runtime::DispatchError,
     xcm::{latest::prelude::*, VersionedXcm},

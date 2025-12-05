@@ -18,3 +18,4 @@ export * from "./zombie";
 export * from "./light-client";
 export * from "./governance";
 export * from "./runtime";
+export * from "./snowbridgeFixtures";
