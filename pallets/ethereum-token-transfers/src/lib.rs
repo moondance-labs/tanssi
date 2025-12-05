@@ -320,24 +320,6 @@ pub mod pallet {
         }
 
         #[pallet::call_index(2)]
-        #[pallet::weight(T::WeightInfo::add_tip())]
-        pub fn add_tip(
-            origin: OriginFor<T>,
-            message_id: MessageId,
-            amount: u128,
-        ) -> DispatchResult {
-            let sender = ensure_signed(origin)?;
-
-            let custom_origin =
-                T::PalletOrigin::from(Origin::<T>::EthereumTokenTransfers(sender.clone()));
-
-            T::TipHandler::add_tip(custom_origin, message_id.clone(), amount)
-                .map_err(|_| Error::<T>::TipFailed)?;
-
-            Ok(())
-        }
-
-        #[pallet::call_index(2)]
         #[pallet::weight(T::WeightInfo::transfer_native_token())]
         pub fn transfer_native_token_v2(
             origin: OriginFor<T>,
@@ -463,13 +445,5 @@ impl<T, Origin> TipHandler<Origin> for DenyTipHandler<T> {
     #[cfg(feature = "runtime-benchmarks")]
     fn add_tip(_origin: Origin, _message_id: MessageId, _amount: u128) -> DispatchResult {
         Ok(())
-    }
-}
-
-pub struct DenyTipHandler<T>(core::marker::PhantomData<T>);
-
-impl<T, Origin> TipHandler<Origin> for DenyTipHandler<T> {
-    fn add_tip(_origin: Origin, _message_id: MessageId, _amount: u128) -> DispatchResult {
-        Err("Execution is not permitted!".into())
     }
 }

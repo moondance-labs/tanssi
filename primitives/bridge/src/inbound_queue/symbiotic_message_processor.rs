@@ -93,8 +93,11 @@ where
         }
     }
 
-    fn process_message(_channel: Channel, envelope: Envelope) -> Result<(), DispatchError> {
-        let decode_result = Payload::<T>::decode_all(&mut envelope.payload.as_slice());
+    fn process_message(
+        channel_id: Option<ChannelId>,
+        payload: &Vec<u8>,
+    ) -> Result<(), DispatchError> {
+        let decode_result = Payload::<T>::decode_all(&mut payload.as_slice());
         let message = if let Ok(payload) = decode_result {
             payload.message
         } else {

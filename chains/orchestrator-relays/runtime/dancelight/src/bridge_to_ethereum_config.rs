@@ -32,7 +32,6 @@ use pallet_ethereum_token_transfers::{
 };
 use parity_scale_codec::{Decode, MaxEncodedLen};
 use snowbridge_core::reward::MessageId;
-use snowbridge_outbound_queue_primitives::v2::{Message, SendMessage};
 
 #[cfg(not(feature = "runtime-benchmarks"))]
 use {
@@ -48,10 +47,10 @@ use {
     },
 };
 
+use crate::xcm_config::UniversalLocation;
 use crate::{AccountId, BridgeRelayers, EthereumInboundQueueV2};
 use dancelight_runtime_constants::snowbridge::EthereumLocation;
-use crate::xcm_config::UniversalLocation;
-use crate::{AccountId, BridgeRelayers};
+use snowbridge_outbound_queue_primitives::v2::ConstantGasMeter as ConstantGasMeterV2;
 
 use {
     crate::{
@@ -147,6 +146,78 @@ impl snowbridge_pallet_outbound_queue::Config for Runtime {
 pub enum BridgeReward {
     SnowbridgeRewardOutbound,
     SnowbridgeRewardInbound,
+}
+
+parameter_types! {
+    pub SnowbridgeRewardOutbound: BridgeReward = BridgeReward::SnowbridgeRewardOutbound;
+    pub SnowbridgeRewardInbound: BridgeReward = BridgeReward::SnowbridgeRewardInbound;
+}
+
+pub struct DoNothingMessageQueue;
+impl EnqueueMessage<bridge_hub_common::AggregateMessageOrigin> for DoNothingMessageQueue {
+    type MaxMessageLen = ();
+
+    fn enqueue_message(
+        _message: BoundedSlice<u8, Self::MaxMessageLen>,
+        _origin: bridge_hub_common::AggregateMessageOrigin,
+    ) {
+    }
+
+    fn enqueue_messages<'a>(
+        _messages: impl Iterator<Item = BoundedSlice<'a, u8, Self::MaxMessageLen>>,
+        _origin: bridge_hub_common::AggregateMessageOrigin,
+    ) {
+    }
+
+    fn sweep_queue(_origin: bridge_hub_common::AggregateMessageOrigin) {}
+}
+
+#[derive(
+    Clone, Debug, Decode, DecodeWithMemTracking, Encode, Eq, MaxEncodedLen, PartialEq, TypeInfo,
+)]
+pub enum BridgeRewardBeneficiaries {
+    /// A local chain account.
+    LocalAccount(AccountId),
+}
+
+impl From<sp_runtime::AccountId32> for BridgeRewardBeneficiaries {
+    fn from(value: sp_runtime::AccountId32) -> Self {
+        BridgeRewardBeneficiaries::LocalAccount(value)
+    }
+}
+
+pub struct BridgeRewardPayer;
+impl bp_relayers::PaymentProcedure<AccountId, BridgeReward, u128> for BridgeRewardPayer {
+    type Error = sp_runtime::DispatchError;
+    type Beneficiary = BridgeRewardBeneficiaries;
+
+    fn pay_reward(
+        _relayer: &AccountId,
+        reward_kind: BridgeReward,
+        _reward: u128,
+        beneficiary: BridgeRewardBeneficiaries,
+    ) -> Result<(), Self::Error> {
+        match reward_kind {
+            BridgeReward::SnowbridgeRewardInbound => {
+                match beneficiary {
+                    BridgeRewardBeneficiaries::LocalAccount(_account_id) => {
+                        // TODO: Pay relayer from reward account in ETH.
+                        // Mint reward directly with transactor
+                        Ok(())
+                    }
+                }
+            }
+            BridgeReward::SnowbridgeRewardOutbound => {
+                match beneficiary {
+                    BridgeRewardBeneficiaries::LocalAccount(_account_id) => {
+                        // TODO: Pay relayer from reward account in tanssi.
+                        // Take from ethereum fees account
+                        Ok(())
+                    }
+                }
+            }
+        }
+    }
 }
 
 pub type BridgeRelayersInstance = ();
@@ -251,10 +322,10 @@ impl TipHandler<crate::RuntimeOrigin> for EthereumTipForwarder<Runtime> {
                         .into(),
                     &dummy_context,
                 )
-                    .map_err(|e| {
-                        log::debug!("Inbound tip addition failed with error {:?}", e);
-                        sp_runtime::DispatchError::Other("TransferAsset failed for Inbound Fee")
-                    })?;
+                .map_err(|e| {
+                    log::debug!("Inbound tip addition failed with error {:?}", e);
+                    sp_runtime::DispatchError::Other("TransferAsset failed for Inbound Fee")
+                })?;
             }
             MessageId::Outbound(_) => {
                 Balances::transfer(
@@ -263,10 +334,10 @@ impl TipHandler<crate::RuntimeOrigin> for EthereumTipForwarder<Runtime> {
                     amount,
                     Preservation::Expendable,
                 )
-                    .map_err(|e| {
-                        log::debug!("Outbound tip addition failed with error {:?}", e);
-                        e
-                    })?;
+                .map_err(|e| {
+                    log::debug!("Outbound tip addition failed with error {:?}", e);
+                    e
+                })?;
             }
         };
         snowbridge_pallet_system_v2::Pallet::<Runtime>::add_tip(origin, sender, message_id, amount)

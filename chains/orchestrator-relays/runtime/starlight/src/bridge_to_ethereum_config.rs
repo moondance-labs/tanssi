@@ -19,10 +19,11 @@
 #[cfg(all(not(test), not(feature = "testing-helpers")))]
 use crate::EthereumBeaconClient;
 
-use pallet_ethereum_token_transfers::DenyTipHandler;
 #[cfg(not(feature = "runtime-benchmarks"))]
 use {
-    tanssi_runtime_common::relay::v1::NativeTokenTransferMessageProcessor,
+    tanssi_runtime_common::relay::v1::{
+        NativeContainerTokensProcessor, NativeTokenTransferMessageProcessor,
+    },
     tp_bridge::{
         symbiotic_message_processor::SymbioticMessageProcessor, GenericTokenInboundMessageProcessor,
     },
