@@ -14,6 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
+use node_common::service::node_builder::StartBootnodeParams;
+use polkadot_primitives::CollatorPair;
+use sc_sysinfo::HwBench;
 use {
     cumulus_client_cli::CollatorOptions,
     futures::FutureExt,
@@ -57,6 +60,57 @@ pub struct SolochainNodeStarted {
     pub relay_chain_interface: Arc<dyn RelayChainInterface>,
     pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     pub keystore: KeystorePtr,
+    pub start_bootnode_params: StartBootnodeParams,
+}
+
+/// Same as `NodeBuilder::build_relay_chain_interface`
+pub async fn build_relay_chain_interface_solochain(
+    parachain_config: &Configuration,
+    polkadot_config: Configuration,
+    collator_options: CollatorOptions,
+    telemetry_worker_handle: Option<sc_telemetry::TelemetryWorkerHandle>,
+    task_manager: &mut TaskManager,
+    hwbench: Option<HwBench>,
+) -> sc_service::error::Result<(
+    Arc<(dyn RelayChainInterface + 'static)>,
+    Option<CollatorPair>,
+    StartBootnodeParams,
+)> {
+    let relay_chain_fork_id = polkadot_config
+        .chain_spec
+        .fork_id()
+        .map(ToString::to_string);
+    let parachain_fork_id = parachain_config
+        .chain_spec
+        .fork_id()
+        .map(ToString::to_string);
+    let advertise_non_global_ips = parachain_config.network.allow_non_globals_in_dht;
+    let parachain_public_addresses = parachain_config.network.public_addresses.clone();
+
+    let (relay_chain_interface, collator_key, relay_chain_network, paranode_rx) =
+        cumulus_client_service::build_relay_chain_interface(
+            polkadot_config,
+            parachain_config,
+            telemetry_worker_handle.clone(),
+            task_manager,
+            collator_options.clone(),
+            hwbench.clone(),
+        )
+        .await
+        .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
+
+    let start_bootnode_params = StartBootnodeParams {
+        relay_chain_fork_id,
+        parachain_fork_id,
+        advertise_non_global_ips,
+        parachain_public_addresses,
+        relay_chain_network,
+        paranode_rx,
+        embedded_dht_bootnode: collator_options.embedded_dht_bootnode,
+        dht_bootnode_discovery: collator_options.dht_bootnode_discovery,
+    };
+
+    Ok((relay_chain_interface, collator_key, start_bootnode_params))
 }
 
 /// Start a solochain node.
@@ -133,13 +187,13 @@ pub async fn start_solochain_node(
     // Not sure if collators should implement it, maybe not, but data preservers should.
     // The problem is that at this point data preservers may not know the para id they will be
     // assigned to, and we need that for the input of `start_bootnode_tasks`
-    let (relay_chain_interface, collator_key, _relay_chain_network, _paranode_rx) =
-        cumulus_client_service::build_relay_chain_interface(
-            polkadot_config,
+    let (relay_chain_interface, collator_key, start_bootnode_params) =
+        build_relay_chain_interface_solochain(
             &dummy_parachain_config,
+            polkadot_config,
+            collator_options,
             telemetry_worker_handle.clone(),
             &mut task_manager,
-            collator_options.clone(),
             hwbench.clone(),
         )
         .await
@@ -233,6 +287,7 @@ pub async fn start_solochain_node(
                     >::new(),
                 override_sync_mode: Some(sc_cli::SyncMode::Warp),
                 phantom: PhantomData,
+                start_bootnode_params: start_bootnode_params.clone(),
             },
             state: Default::default(),
             db_folder_cleanup_done: false,
@@ -259,6 +314,7 @@ pub async fn start_solochain_node(
         relay_chain_interface,
         orchestrator_chain_interface,
         keystore: keystore_container.keystore(),
+        start_bootnode_params,
     })
 }
 
