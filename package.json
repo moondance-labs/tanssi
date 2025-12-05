@@ -40,7 +40,7 @@
     "@biomejs/biome": "1.9.4",
     "@types/node": "22.12.0",
     "tsx": "4.19.2",
-    "typescript": "5.8.3"
+    "typescript": "5.9.3"
   },
   "pnpm": {
     "overrides": {
@@ -60,16 +60,17 @@
       "@polkadot/types-known": "16.1.2",
       "@polkadot/types-support": "16.1.2",
       "@polkadot/util": "13.5.1",
-      "@polkadot/util-crypto": "13.5.1",
-      "viem": "2.38.0"
+      "@polkadot/util-crypto": "13.5.1"
     },
     "onlyBuiltDependencies": [
       "@biomejs/biome",
       "@chainsafe/blst",
+      "@parcel/watcher",
       "bigint-buffer",
       "classic-level",
       "cpu-features",
       "esbuild",
+      "msgpackr-extract",
       "protobufjs",
       "sqlite3",
       "ssh2"
