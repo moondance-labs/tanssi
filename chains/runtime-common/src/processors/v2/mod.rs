@@ -149,8 +149,8 @@ where
                 eth_chain_universal_location,
                 tanssi_chain_universal_location,
                 (AccountKey20 {
-                    network: Some(eth_network_id.clone()),
-                    key: token_id.0.clone(),
+                    network: Some(eth_network_id),
+                    key: token_id.0,
                 })
                 .into(),
             )?;
@@ -163,7 +163,7 @@ where
                 &token_id,
             )
             .ok_or(AssetDerivationError::UnableToConvertTokenId {
-                token_id: token_id.clone(),
+                token_id: *token_id,
             })?;
             let asset_location = reanchor_location_to_tanssi(
                 eth_chain_universal_location,

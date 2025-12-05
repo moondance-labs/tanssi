@@ -92,7 +92,7 @@ where
         let extracted_message: ExtractedXcmConstructionInfo<
             <T as pallet_xcm::Config>::RuntimeCall,
         > = ExtractedXcmConstructionInfo {
-            origin: message.origin.clone(),
+            origin: message.origin,
             maybe_claimer: message.claimer.clone(),
             assets: message.assets.clone(),
             eth_value: message.value,

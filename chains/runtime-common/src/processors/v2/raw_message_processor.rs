@@ -85,7 +85,7 @@ where
             match raw_payload {
                 RawPayload::Xcm(payload) => Ok(decode_raw_xcm::<T>(&payload)
                     .map(|xcm| ExtractedXcmConstructionInfo {
-                        origin: message.origin.clone(),
+                        origin: message.origin,
                         maybe_claimer: message.claimer.clone(),
                         assets: message.assets.clone(),
                         eth_value: message.value,
