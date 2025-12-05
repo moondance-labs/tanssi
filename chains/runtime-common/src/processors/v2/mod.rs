@@ -1,3 +1,19 @@
+// Copyright (C) Moondance Labs Ltd.
+// This file is part of Tanssi.
+
+// Tanssi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Tanssi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+
 extern crate alloc;
 
 mod fallback_message_processor;
@@ -28,7 +44,7 @@ use xcm::latest::prelude::*;
 use xcm_executor::traits::WeightBounds;
 
 /// Topic prefix used for generating unique identifiers for messages
-const RAW_MESSAGE_PROCESSOR_TOPIC_PREFIX: &str = "TanssiRawMessageProcessor";
+pub const RAW_MESSAGE_PROCESSOR_TOPIC_PREFIX: &str = "TanssiRawMessageProcessor";
 
 /// Wrapping parity_scale_codec::Error so that it implements Error
 #[derive(Debug)]
@@ -87,7 +103,7 @@ pub enum RawPayload {
     Symbiotic(Vec<u8>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ExtractedXcmConstructionInfo<Call> {
     pub origin: H160,
     pub maybe_claimer: Option<Vec<u8>>,
@@ -259,17 +275,17 @@ where
         execution_fee_in_eth,
     )?;
 
-    let mut instructions = vec![
-        SetHints {
-            hints: vec![AssetClaimer { location: claimer }]
-                .try_into()
-                .expect("checked statically, qed"),
-        },
-        ReserveAssetDeposited(execution_fee_asset.clone().into()),
-        PayFees {
-            asset: execution_fee_asset.clone(),
-        },
-    ];
+    let mut instructions = vec![SetHints {
+        hints: vec![AssetClaimer { location: claimer }]
+            .try_into()
+            .expect("checked statically, qed"),
+    }];
+
+    if let Fungible(amount) = execution_fee_asset.fun {
+        if amount > 0 {
+            instructions.push(ReserveAssetDeposited(execution_fee_asset.clone().into()));
+        }
+    }
 
     let mut reserve_deposit_assets = vec![];
     let mut reserve_withdraw_assets = vec![];
