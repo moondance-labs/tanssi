@@ -352,7 +352,7 @@ fn test_inbound_queue_transfer_eth_works() {
                 assets: vec![],
                 xcm: IGatewayV2::Xcm { kind: 0, data: xcm_bytes.encode().into() },
                 claimer: vec![].into(),
-                value: token_value.into(),
+                value: token_value,
                 executionFee: 0,
                 relayerFee: 0,
             },
@@ -373,7 +373,7 @@ fn test_inbound_queue_transfer_eth_works() {
 
         let foreign_asset_balance_after = ForeignAssets::balance(asset_id, AccountId::from(beneficiary.clone()));
 
-        assert_eq!(foreign_asset_balance_after - foreign_asset_balance_before, token_value.into());
+        assert_eq!(foreign_asset_balance_after - foreign_asset_balance_before, token_value);
 
         let events = frame_system::Pallet::<Runtime>::events();
 
@@ -475,7 +475,7 @@ fn test_inbound_queue_transfer_tanssi_works() {
                 assets: vec![IGatewayV2::EthereumAsset {
                     kind: 1,
                     data: asset.abi_encode().into(),
-                }].into(),
+                }],
                 xcm: IGatewayV2::Xcm { kind: 0, data: xcm_bytes.encode().into() },
                 claimer: vec![].into(),
                 value: 0,
@@ -498,7 +498,7 @@ fn test_inbound_queue_transfer_tanssi_works() {
             proof: dummy_proof.clone(),
         })), Ok(()));
         let native_balance_after = System::account(beneficiary.clone()).data.free;
-        assert_eq!(native_balance_after - native_balance_before, tanssi_token_transfer_value.into());
+        assert_eq!(native_balance_after - native_balance_before, tanssi_token_transfer_value);
 
         let events = frame_system::Pallet::<Runtime>::events();
 
@@ -617,7 +617,7 @@ fn test_inbound_queue_transfer_tanssi_and_eth_works() {
                 assets: vec![IGatewayV2::EthereumAsset {
                     kind: 1,
                     data: asset.abi_encode().into(),
-                }].into(),
+                }],
                 xcm: IGatewayV2::Xcm { kind: 0, data: xcm_bytes.encode().into() },
                 claimer: vec![].into(),
                 value: eth_value,
@@ -645,8 +645,8 @@ fn test_inbound_queue_transfer_tanssi_and_eth_works() {
         let native_balance_after = System::account(beneficiary.clone()).data.free;
         let foreign_asset_balance_after = ForeignAssets::balance(asset_id, AccountId::from(beneficiary.clone()));
 
-        assert_eq!(foreign_asset_balance_after - foreign_asset_balance_before, eth_value.into());
-        assert_eq!(native_balance_after - native_balance_before, tanssi_token_transfer_value.into());
+        assert_eq!(foreign_asset_balance_after - foreign_asset_balance_before, eth_value);
+        assert_eq!(native_balance_after - native_balance_before, tanssi_token_transfer_value);
 
         let events = frame_system::Pallet::<Runtime>::events();
 
@@ -751,7 +751,7 @@ fn test_inbound_queue_transfer_erc20_works() {
                 assets: vec![IGatewayV2::EthereumAsset {
                     kind: 0,
                     data: asset.abi_encode().into(),
-                }].into(),
+                }],
                 xcm: IGatewayV2::Xcm { kind: 0, data: xcm_bytes.encode().into() },
                 claimer: vec![].into(),
                 value: 0,
@@ -774,7 +774,7 @@ fn test_inbound_queue_transfer_erc20_works() {
             proof: dummy_proof.clone(),
         })), Ok(()));
         let foreign_asset_balance_after = ForeignAssets::balance(asset_id, AccountId::from(beneficiary.clone()));
-        assert_eq!(foreign_asset_balance_after - foreign_asset_balance_before, token_value.into());
+        assert_eq!(foreign_asset_balance_after - foreign_asset_balance_before, token_value);
 
         let events = frame_system::Pallet::<Runtime>::events();
 
@@ -861,7 +861,7 @@ fn test_inbound_queue_tanssi_assets_trapped_incorrect_xcm_works() {
                 assets: vec![IGatewayV2::EthereumAsset {
                     kind: 0,
                     data: asset.abi_encode().into(),
-                }].into(),
+                }],
                 xcm: IGatewayV2::Xcm { kind: 0, data: xcm_bytes.encode().into() },
                 claimer: vec![].into(),
                 value: 0,
@@ -974,7 +974,7 @@ fn test_inbound_queue_erc20_assets_trapped_incorrect_xcm_works() {
             nonce: nonce_val,
             payload: IGatewayV2::Payload {
                 origin: Address::from_slice(EthereumGatewayAddress::get().as_bytes()),
-                assets: vec![].into(),
+                assets: vec![],
                 xcm: IGatewayV2::Xcm { kind: 0, data: xcm_bytes.encode().into() },
                 claimer: vec![].into(),
                 value: eth_amount,
@@ -1090,7 +1090,7 @@ fn test_inbound_queue_incorrect_xcm_trap_assets_works() {
             nonce: nonce_val,
             payload: IGatewayV2::Payload {
                 origin: Address::from_slice(EthereumGatewayAddress::get().as_bytes()),
-                assets: vec![].into(),
+                assets: vec![],
                 xcm: IGatewayV2::Xcm { kind: 0, data: xcm_bytes.encode().into() },
                 claimer: vec![].into(),
                 value: eth_amount,

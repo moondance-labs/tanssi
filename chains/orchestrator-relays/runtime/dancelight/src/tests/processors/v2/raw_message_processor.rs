@@ -51,7 +51,7 @@ fn raw_message_processor_works() {
 
     let token: H160 = H160::random();
     let assets = vec![EthereumAsset::NativeTokenERC20 {
-        token_id: token.into(),
+        token_id: token,
         value: token_transfer_value,
     }];
     let relayer_reward = 1_500_000_000_000u128;
@@ -139,7 +139,7 @@ fn message_processor_succeeds_even_if_xcm_is_invalid() {
 
         let token: H160 = H160::random();
         let assets = vec![EthereumAsset::NativeTokenERC20 {
-            token_id: token.into(),
+            token_id: token,
             value: 1_000_000_000_000u128,
         }];
 
@@ -192,7 +192,7 @@ fn message_processor_fails_with_invalid_symbiotic_payload() {
 
         let token: H160 = H160::random();
         let assets = vec![EthereumAsset::NativeTokenERC20 {
-            token_id: token.into(),
+            token_id: token,
             value: 1_000_000_000_000u128,
         }];
 
@@ -245,7 +245,7 @@ fn try_extract_message_fails_with_invalid_xcm_payload() {
 
         let token: H160 = H160::random();
         let assets = vec![EthereumAsset::NativeTokenERC20 {
-            token_id: token.into(),
+            token_id: token,
             value: 1_000_000_000_000u128,
         }];
 
@@ -302,7 +302,7 @@ fn try_extract_message_fails_with_invalid_symbiotic_payload() {
 
         let token: H160 = H160::random();
         let assets = vec![EthereumAsset::NativeTokenERC20 {
-            token_id: token.into(),
+            token_id: token,
             value: 1_000_000_000_000u128,
         }];
 
