@@ -66,12 +66,13 @@ function encodeSymbioticMessage(api: ApiPromise, symbioticValidators: string[]):
     const MAGIC_BYTES = new Uint8Array([112, 21, 0, 56]);
 
     api.registry.register({
+        SymbioticReceiveValidators: {
+            validators: "Vec<AccountId32>",
+            external_index: "u64",
+        },
         SymbioticInboundCommand: {
             _enum: {
-                ReceiveValidators: {
-                    validators: "Vec<AccountId32>",
-                    external_index: "u64",
-                },
+                ReceiveValidators: "SymbioticReceiveValidators",
             },
         },
         SymbioticMessage: {
