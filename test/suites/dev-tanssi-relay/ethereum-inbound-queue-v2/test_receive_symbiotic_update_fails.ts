@@ -53,7 +53,7 @@ describeSuite({
 
                 const signature = hexToU8a("0x550e2067494b1736ea5573f2d19cdc0ac95b410fff161bf16f11c6229655ec9c");
                 const topics = [signature];
-                ////
+
                 const xcmEncoded = [
                     0,
                     encodeRawPayload(
