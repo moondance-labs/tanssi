@@ -43,7 +43,7 @@ use {
         traits::MaybeEquivalence, DispatchError::Module, FixedU128, ModuleError, TokenError,
     },
     starlight_runtime_constants::snowbridge::EthereumNetwork,
-    tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
+    tanssi_runtime_common::processors::v1::NativeTokenTransferMessageProcessor,
     xcm::{
         latest::{
             prelude::*, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, Fungibility,

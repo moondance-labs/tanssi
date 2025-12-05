@@ -26,5 +26,5 @@ std = [
 	"scale-info/std",
 	"serde/std",
 	"sp-api/std",
-	"thiserror",
+	"thiserror/std",
 ]

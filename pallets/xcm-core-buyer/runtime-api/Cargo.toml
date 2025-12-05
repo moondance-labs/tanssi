@@ -36,6 +36,6 @@ std = [
 	"sp-api/std",
 	"sp-consensus-slots/std",
 	"sp-runtime/std",
-	"thiserror",
+	"thiserror/std",
 	"tp-xcm-core-buyer/std",
 ]

@@ -73,8 +73,8 @@ impl<T> SymbioticMessageProcessor<T>
 where
     T: pallet_external_validators::Config,
 {
-    fn can_process_message(mut payload: &[u8]) -> bool {
-        let decode_result = Payload::<T>::decode_all(&mut payload);
+    fn can_process_message(payload: &Vec<u8>) -> bool {
+        let decode_result = Payload::<T>::decode_all(&mut payload.as_slice());
         match decode_result {
             Ok(payload) => {
                 if payload.magic_bytes == MAGIC_BYTES {
@@ -95,9 +95,9 @@ where
 
     fn process_message(
         channel_id: Option<ChannelId>,
-        mut payload: &[u8],
+        payload: &Vec<u8>,
     ) -> Result<(), DispatchError> {
-        let decode_result = Payload::<T>::decode_all(&mut payload);
+        let decode_result = Payload::<T>::decode_all(&mut payload.as_slice());
         let message = if let Ok(payload) = decode_result {
             payload.message
         } else {
@@ -111,9 +111,6 @@ where
                 validators,
                 external_index,
             }) => {
-                // Process message for v2 does not contain a channel-id whatsoever.
-                // We could possibly check the origin as v2 has an origin, or convert the origin into a channle or viceversa
-                // TODO for the inbound queue people
                 if let Some(channel_id) = channel_id {
                     if channel_id != PRIMARY_GOVERNANCE_CHANNEL {
                         return Err(DispatchError::Other(

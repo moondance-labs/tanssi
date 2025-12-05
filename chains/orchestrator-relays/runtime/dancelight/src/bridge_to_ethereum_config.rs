@@ -32,20 +32,25 @@ use pallet_ethereum_token_transfers::{
 };
 use parity_scale_codec::{Decode, MaxEncodedLen};
 use snowbridge_core::reward::MessageId;
-use snowbridge_outbound_queue_primitives::v2::ConstantGasMeter as ConstantGasMeterV2;
 
-#[cfg(not(feature = "runtime-benchmarks"))]
 use {
-    tanssi_runtime_common::relay::{
+    tanssi_runtime_common::relay::v1::{
         NativeContainerTokensProcessor, NativeTokenTransferMessageProcessor,
+    },
+    tanssi_runtime_common::relay::v2::{
+        RawMessageProcessor as RawMessageProcessorV2,
+        SymbioticMessageProcessor as SymbioticMessageProcessorV2,
     },
     tp_bridge::{
         symbiotic_message_processor::SymbioticMessageProcessor, GenericTokenInboundMessageProcessor,
     },
 };
 
+use crate::xcm_config::UniversalLocation;
 use crate::{AccountId, BridgeRelayers, EthereumInboundQueueV2};
 use dancelight_runtime_constants::snowbridge::EthereumLocation;
+use snowbridge_outbound_queue_primitives::v2::ConstantGasMeter as ConstantGasMeterV2;
+
 use {
     crate::{
         parameter_types, weights, xcm_config, Balance, Balances, EthereumInboundQueue,
@@ -65,7 +70,7 @@ use {
     snowbridge_pallet_outbound_queue::OnNewCommitment,
     snowbridge_pallet_outbound_queue_v2::OnNewCommitment as OnNewCommitmentV2,
     sp_core::{ConstU32, ConstU8, H160, H256},
-    tanssi_runtime_common::relay::{EthTokensLocalProcessor, RewardThroughFeesAccount},
+    tanssi_runtime_common::relay::v1::{EthTokensLocalProcessor, RewardThroughFeesAccount},
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
     xcm::latest::{Asset, XcmContext},
     xcm_executor::traits::TransactAsset,
@@ -362,6 +367,7 @@ impl TipHandler<crate::RuntimeOrigin> for EthereumTipForwarder<Runtime> {
         }
     }
 }
+
 impl pallet_ethereum_token_transfers::Config for Runtime {
     type Currency = Balances;
     type OutboundQueue = EthereumOutboundQueue;
@@ -593,16 +599,40 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type MessageProcessor = (benchmark_helper::WorstCaseMessageProcessor<EthTokensProcessor>,);
 }
 
+pub type RawMessageProcessorInboundV2 = RawMessageProcessorV2<
+    Runtime,
+    EthereumGatewayAddress,
+    TreasuryAccount,
+    dancelight_runtime_constants::snowbridge::EthereumNetwork,
+    dancelight_runtime_constants::snowbridge::EthereumUniversalLocation,
+    UniversalLocation,
+    xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
+    <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+>;
+
+pub type SymbioticInboundMessageProcessorV2 = SymbioticMessageProcessorV2<
+    Runtime,
+    EthereumGatewayAddress,
+    TreasuryAccount,
+    dancelight_runtime_constants::snowbridge::EthereumNetwork,
+    dancelight_runtime_constants::snowbridge::EthereumUniversalLocation,
+    UniversalLocation,
+    xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
+    <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+>;
+
 impl snowbridge_pallet_inbound_queue_v2::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     #[cfg(all(not(test), not(feature = "testing-helpers")))]
     type Verifier = EthereumBeaconClient;
     #[cfg(any(test, feature = "testing-helpers"))]
     type Verifier = test_helpers::MockVerifier;
-    // TODO: Revisit this when we enable xcmp messages
     type GatewayAddress = EthereumGatewayAddress;
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type MessageProcessor = (SymbioticMessageProcessor<Self>,);
+    type MessageProcessor = (
+        RawMessageProcessorInboundV2,
+        SymbioticInboundMessageProcessorV2,
+    );
     #[cfg(feature = "runtime-benchmarks")]
     type MessageProcessor =
         (benchmark_helper::WorstCaseMessageProcessor<tp_bridge::SymbioticMessageProcessor<Self>>,);
