@@ -71,6 +71,10 @@ uninlined_format_args = { level = "allow", priority = 3 }
 [workspace.lints.rust]
 unsafe-code = { level = "deny", priority = 1 }
 
+[patch."https://github.com/moondance-labs/moonkit"]
+pallet-foreign-asset-creator = { path = "../moonkit/pallets/foreign-asset-creator" }
+
+
 [workspace.dependencies]
 
 # Members

@@ -16,10 +16,11 @@
 
 use {
     crate as container_chain_template_simple_runtime,
-    crate::{AccountId, MaintenanceModeConfig, MigrationsConfig, PolkadotXcmConfig},
-    alloc::vec::Vec,
+    crate::{AccountId, MaintenanceModeConfig, MigrationsConfig, PolkadotXcmConfig, EthereumNetwork},
+    alloc::{vec, vec::Vec},
     cumulus_primitives_core::ParaId,
     sp_keyring::Sr25519Keyring,
+    cumulus_primitives_core::{Location, Junctions::X1, GlobalConsensus},
 };
 
 /// Orcherstrator's parachain id
@@ -61,7 +62,7 @@ fn testnet_genesis(
         },
         parachain_system: Default::default(),
         sudo: container_chain_template_simple_runtime::SudoConfig {
-            key: Some(root_key),
+            key: Some(root_key.clone()),
         },
         authorities_noting: container_chain_template_simple_runtime::AuthoritiesNotingConfig {
             orchestrator_para_id: ORCHESTRATOR,
@@ -71,6 +72,30 @@ fn testnet_genesis(
         maintenance_mode: MaintenanceModeConfig {
             start_in_maintenance_mode: false,
             ..Default::default()
+        },
+        foreign_assets_creator: pallet_foreign_asset_creator::GenesisConfig {
+            // foreign_asset, asset_id, admin, is_sufficient, min_balance
+            assets: vec![
+                // ETH
+                (
+                    Location {
+                        parents: 2,
+                        interior: X1([GlobalConsensus(EthereumNetwork::get())].into()),
+                    },
+                    1, // ETH local asset id
+                    root_key.clone(),
+                    true,
+                    1,
+                ),
+                // TANSSI
+                (
+                    Location::parent(), // native token of parent chain (orchestrator)
+                    2,                  // TANSSI local asset id
+                    root_key,
+                    true,
+                    1,
+                ),
+            ],
         },
         // This should initialize it to whatever we have set in the pallet
         polkadot_xcm: PolkadotXcmConfig::default(),
