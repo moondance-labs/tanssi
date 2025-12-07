@@ -33,17 +33,19 @@ use pallet_ethereum_token_transfers::{
 use parity_scale_codec::{Decode, MaxEncodedLen};
 use snowbridge_core::reward::MessageId;
 
+#[cfg(not(feature = "runtime-benchmarks"))]
 use {
     tanssi_runtime_common::relay::v1::{
         NativeContainerTokensProcessor, NativeTokenTransferMessageProcessor,
     },
-    tanssi_runtime_common::relay::v2::{
-        RawMessageProcessor as RawMessageProcessorV2,
-        SymbioticMessageProcessor as SymbioticMessageProcessorV2,
-    },
     tp_bridge::{
         symbiotic_message_processor::SymbioticMessageProcessor, GenericTokenInboundMessageProcessor,
     },
+};
+
+use tanssi_runtime_common::relay::v2::{
+    RawMessageProcessor as RawMessageProcessorV2,
+    SymbioticMessageProcessor as SymbioticMessageProcessorV2,
 };
 
 use crate::xcm_config::UniversalLocation;
