@@ -136,7 +136,7 @@ jobs:
           # …then tar them up into a gzipped archive in the workspace
           tar czf $GITHUB_WORKSPACE/runtimes/runtimes.tar.gz -T wasm_files.txt
       - name: Upload runtime archive
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: wasm-runtimes
           path: runtimes/runtimes.tar.gz
@@ -154,7 +154,7 @@ jobs:
           profile: "release"
 
       - name: Upload binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: binaries
           path: binaries
