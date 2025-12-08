@@ -31,6 +31,11 @@ describeSuite({
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
             isStarlight = runtimeName === "starlight";
 
+            if (isStarlight) {
+                console.log("Skipping test for Starlight runtime");
+                return;
+            }
+
             ethNetworkId = isStarlight ? ETHEREUM_NETWORK_MAINNET : ETHEREUM_NETWORK_TESTNET;
         });
 

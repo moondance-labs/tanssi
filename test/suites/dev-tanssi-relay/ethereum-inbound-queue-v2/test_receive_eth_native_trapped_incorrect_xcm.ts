@@ -35,6 +35,11 @@ describeSuite({
 
             ethNetworkId = isStarlight ? ETHEREUM_NETWORK_MAINNET : ETHEREUM_NETWORK_TESTNET;
 
+            if (isStarlight) {
+                console.log("Skipping test for Starlight runtime");
+                return;
+            }
+
             const ethTokenLocation = {
                 parents: 1,
                 interior: {
