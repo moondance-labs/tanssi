@@ -22,7 +22,7 @@ use {
     simple_template_emulated_chain::SimpleTemplate,
     sp_keyring::Sr25519Keyring,
     starlight_emulated_chain::Starlight,
-    tanssi_emulated_integration_tests_common::accounts::{ALICE, BOB, RANDOM},
+    tanssi_emulated_integration_tests_common::accounts::{BOB, RANDOM},
     xcm_emulator::{
         decl_test_networks, Bridge, BridgeLaneId, BridgeMessage, BridgeMessageDispatchError,
         BridgeMessageHandler, Chain, Network,
@@ -58,9 +58,14 @@ parameter_types! {
     pub StarlightEmptyReceiver: AccountId = StarlightRelay::account_id_of(RANDOM);
 
     // SimpleTemplate
-    pub SimpleTemplateSender: AccountId = AccountId::from(ALICE);
+    pub SimpleTemplateSender: AccountId = Sr25519Keyring::Alice.to_account_id();
     pub SimpleTemplateReceiver: AccountId = AccountId::from(BOB);
     pub SimpleTemplateEmptyReceiver: AccountId = SimpleTemplatePara::account_id_of(RANDOM);
+
+    // FrontierTemplate
+    pub FrontierTemplateSender: AccountId = Sr25519Keyring::Alice.to_account_id();
+    pub FrontierTemplateReceiver: AccountId = AccountId::from(BOB);
+    pub FrontierTemplateEmptyReceiver: AccountId = FrontierTemplatePara::account_id_of(RANDOM);
 }
 
 pub struct StarlightEthMockBridgeHandler;
