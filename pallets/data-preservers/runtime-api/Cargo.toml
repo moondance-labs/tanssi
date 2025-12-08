@@ -17,7 +17,6 @@ parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
 sp-api = { workspace = true }
-thiserror = { workspace = true, optional = true }
 
 [features]
 default = [ "std" ]

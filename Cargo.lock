@@ -10248,7 +10248,6 @@ dependencies = [
  "scale-info",
  "serde",
  "sp-api",
- "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -11911,7 +11910,6 @@ dependencies = [
  "sp-api",
  "sp-consensus-slots",
  "sp-runtime",
- "thiserror 2.0.17",
  "tp-xcm-core-buyer",
 ]
 

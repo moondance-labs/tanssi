@@ -21,7 +21,6 @@ serde = { workspace = true, optional = true, features = [ "derive" ] }
 sp-api = { workspace = true }
 sp-consensus-slots = { workspace = true }
 sp-runtime = { workspace = true }
-thiserror = { workspace = true, optional = true }
 tp-xcm-core-buyer = { workspace = true }
 
 [features]
