@@ -16,11 +16,13 @@
 
 use {
     crate as container_chain_template_simple_runtime,
-    crate::{AccountId, MaintenanceModeConfig, MigrationsConfig, PolkadotXcmConfig, EthereumNetwork},
+    crate::{
+        AccountId, EthereumNetwork, MaintenanceModeConfig, MigrationsConfig, PolkadotXcmConfig,
+    },
     alloc::{vec, vec::Vec},
     cumulus_primitives_core::ParaId,
+    cumulus_primitives_core::{GlobalConsensus, Junctions::X1, Location},
     sp_keyring::Sr25519Keyring,
-    cumulus_primitives_core::{Location, Junctions::X1, GlobalConsensus},
 };
 
 /// Orcherstrator's parachain id

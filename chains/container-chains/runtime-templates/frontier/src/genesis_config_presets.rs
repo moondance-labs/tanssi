@@ -17,11 +17,11 @@
 use {
     crate as container_chain_template_frontier_runtime,
     crate::{
-        AccountId, EVMChainIdConfig, EVMConfig, MaintenanceModeConfig, MigrationsConfig,
-        PolkadotXcmConfig, Precompiles, EthereumNetwork,
+        AccountId, EVMChainIdConfig, EVMConfig, EthereumNetwork, MaintenanceModeConfig,
+        MigrationsConfig, PolkadotXcmConfig, Precompiles,
     },
     alloc::{vec, vec::Vec},
-    cumulus_primitives_core::{Location, Junctions::X1, GlobalConsensus, ParaId},
+    cumulus_primitives_core::{GlobalConsensus, Junctions::X1, Location, ParaId},
     fp_evm::GenesisAccount,
     hex_literal::hex,
 };
