@@ -136,6 +136,17 @@ jobs:
             - name: Run zepter
               run: zepter run check
 
+    security-analysis-with-zizmor:
+      name: Run zizmor 🌈
+      runs-on: ubuntu-latest
+      permissions:
+        security-events: write
+        contents: read
+        actions: read
+      steps:
+        - name: Run zizmor 🌈
+          uses: zizmorcore/zizmor-action@e673c3917a1aef3c65c972347ed84ccd013ecda4
+
     toml-formatting:
         runs-on: ubuntu-latest
         needs: ["set-tags"]
