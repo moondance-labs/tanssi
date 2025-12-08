@@ -44,7 +44,7 @@ jobs:
       matrix: ${{ steps.set_tests.outputs.tests }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Pnpm
         uses: pnpm/action-setup@v4.2.0
@@ -102,7 +102,7 @@ jobs:
     needs: [ "get-tests" ]
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.inputs.sha || 'master' }}
 
@@ -136,7 +136,7 @@ jobs:
           # …then tar them up into a gzipped archive in the workspace
           tar czf $GITHUB_WORKSPACE/runtimes/runtimes.tar.gz -T wasm_files.txt
       - name: Upload runtime archive
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: wasm-runtimes
           path: runtimes/runtimes.tar.gz
@@ -154,7 +154,7 @@ jobs:
           profile: "release"
 
       - name: Upload binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: binaries
           path: binaries
@@ -196,7 +196,7 @@ jobs:
       - name: Create issue with gh CLI
         if: failure()
         run: |
-          gh issue create \
+          ~/bin/bin/gh issue create \
             --title "🚨 Zombienet Test Failure in ${{ github.workflow }}" \
             --body "Tests ${{ matrix.test_name }} failed in [${{ github.workflow }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).\n\n@moondance-labs/coredev please investigate." \
             --repo "${{ github.repository }}"

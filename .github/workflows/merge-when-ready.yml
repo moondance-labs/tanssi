@@ -25,7 +25,7 @@ jobs:
         needs: ["enforce-ready-to-merge-label"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v5
+              uses: actions/checkout@v6
               with:
                 ref: ${{ github.event.pull_request.head.sha }}
             - name: Cargo build
@@ -33,12 +33,12 @@ jobs:
               with:
                 features: "fast-runtime,metadata-hash"
             - name: Upload runtimes
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v5
               with:
                   name: runtimes
                   path: runtimes
             - name: Upload binary
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v5
               with:
                   name: binaries
                   path: binaries
@@ -55,7 +55,7 @@ jobs:
                     - zombie_tanssi_rotation
         steps:
             - name: Checkout
-              uses: actions/checkout@v5
+              uses: actions/checkout@v6
             - name: "Download binaries"
               uses: actions/download-artifact@v6
               with:
@@ -74,7 +74,7 @@ jobs:
         runs-on: self-hosted
         steps:
             - name: Checkout
-              uses: actions/checkout@v5
+              uses: actions/checkout@v6
             - name: "Download binaries"
               uses: actions/download-artifact@v6
               with:
@@ -128,18 +128,18 @@ jobs:
       runs-on: self-hosted
       steps:
         - name: Checkout
-          uses: actions/checkout@v5
+          uses: actions/checkout@v6
         - name: Cargo build
           uses: ./.github/workflow-templates/cargo-build
           with:
             features: "fast-runtime,runtime-benchmarks,metadata-hash"
         - name: Upload benchmark runtimes
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v5
           with:
             name: runtimes-benchmark
             path: runtimes
         - name: Upload binary
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v5
           with:
             name: binaries-benchmark
             path: binaries
@@ -164,7 +164,7 @@ jobs:
                       runtime: container-chain-template-frontier
         steps:
             - name: Checkout
-              uses: actions/checkout@v5
+              uses: actions/checkout@v6
             - name: "Download benchmark binaries"
               uses: actions/download-artifact@v6
               with:
@@ -198,7 +198,7 @@ jobs:
                     - stagelight_dancelight_smoke S01
         steps:
             - name: Checkout
-              uses: actions/checkout@v5
+              uses: actions/checkout@v6
 
             - name: Pnpm
               uses: pnpm/action-setup@v4.2.0

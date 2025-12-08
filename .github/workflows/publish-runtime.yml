@@ -35,14 +35,14 @@ jobs:
     outputs:
       rust_version: ${{ steps.get-version.outputs.rust_version }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Upload scripts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: original-scripts
           path: scripts
       - name: Upload tools
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: original-tools
           path: tools
@@ -59,7 +59,7 @@ jobs:
     outputs:
       matrix_tests: ${{ steps.prepare.outputs.matrix_tests }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
     # Build input dependent matrix
       - name: create matrix
@@ -110,7 +110,7 @@ jobs:
           - temp-${{ needs.setup-scripts.outputs.rust_version }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.inputs.to }}
       - name: Login to DockerHub
@@ -164,7 +164,7 @@ jobs:
           ./original-scripts/build-runtime-srtool.sh cleanup
 
       - name: Archive Artifacts for ${{ matrix.chain }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: runtime-info-${{ matrix.chain.runtime_name }}
           path: |
@@ -180,7 +180,7 @@ jobs:
       asset_upload_url: ${{ steps.create-release.outputs.upload_url }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.inputs.to }}
           fetch-depth: 0 
@@ -236,7 +236,7 @@ jobs:
         chain: ${{ fromJson(needs.matrix_prep.outputs.matrix_tests) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.inputs.to }}
           fetch-depth: 0
