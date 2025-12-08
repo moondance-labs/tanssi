@@ -147,7 +147,8 @@ jobs:
         - name: Run zizmor 🌈
           uses: zizmorcore/zizmor-action@e673c3917a1aef3c65c972347ed84ccd013ecda4
           with:
-            token: ${{ secrets.GITHUB_TOKEN }}
+            inputs: |
+              .github/workflows/
 
     toml-formatting:
         runs-on: ubuntu-latest
