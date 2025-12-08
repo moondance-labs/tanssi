@@ -464,10 +464,15 @@ declare module "@polkadot/api-base/types/errors" {
              * The outbound message is invalid prior to send.
              **/
             InvalidMessage: AugmentedError<ApiType>;
+            LocationReanchorFailed: AugmentedError<ApiType>;
+            LocationToOriginConversionFailed: AugmentedError<ApiType>;
+            MinV2RewardNotAchieved: AugmentedError<ApiType>;
+            OriginConversionFailed: AugmentedError<ApiType>;
             /**
              * When add_tip extrinsic could not be called.
              **/
             TipFailed: AugmentedError<ApiType>;
+            TooManyCommands: AugmentedError<ApiType>;
             /**
              * The outbound message could not be sent.
              **/
@@ -476,6 +481,7 @@ declare module "@polkadot/api-base/types/errors" {
              * Conversion from Location to TokenId failed.
              **/
             UnknownLocationForToken: AugmentedError<ApiType>;
+            V2SendingIsNotAllowed: AugmentedError<ApiType>;
             /**
              * Generic error
              **/
