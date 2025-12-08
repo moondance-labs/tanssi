@@ -137,6 +137,8 @@ jobs:
               run: zepter run check
 
     security-analysis-with-zizmor:
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       name: Run zizmor 🌈
       runs-on: ubuntu-latest
       permissions:
