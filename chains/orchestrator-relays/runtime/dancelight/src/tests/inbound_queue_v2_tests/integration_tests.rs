@@ -171,7 +171,7 @@ fn test_inbound_queue_message_symbiotic_incorrect_magic_bytes() {
 }
 
 #[test]
-fn test_inbound_queue_message_symbiotic_incorrect_origin() {
+fn test_inbound_queue_message_symbiotic_incorrect_gateway_origin() {
     ExtBuilder::default()
         .with_validators(
             vec![]
