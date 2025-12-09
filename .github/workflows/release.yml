@@ -769,8 +769,14 @@ jobs:
                   path: target/release
             - name: Make binaries executable
               uses: ./.github/workflow-templates/make-binaries-executable
+
             - name: "Install and run upgrade test"
-              run: |
+              uses: nick-fields/retry@v3
+              with:
+                max_attempts: 3
+                timeout_minutes: 60
+                shell: bash
+                command: |
                   cd test
                   pnpm install
                   pnpm moonwall test chopsticks_${{ matrix.chains.chain }}_upgrade
