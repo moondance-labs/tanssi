@@ -232,6 +232,8 @@ pub mod pallet {
                     )
                 });
 
+                // Parathreads are not long-lived chains and block production is much more sporadic,
+                // so for them it makes sense to "battle for existing spots".
                 pool_paras.sort_by(|a, b| {
                     T::CollatorAssignmentTip::get_para_max_tip(b.para_id)
                         .cmp(&T::CollatorAssignmentTip::get_para_max_tip(a.para_id))
