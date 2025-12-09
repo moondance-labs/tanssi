@@ -1705,10 +1705,8 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
                 | RuntimeCall::Session(..)
                 | RuntimeCall::System(..)
                 | RuntimeCall::PooledStaking(..)
-                | RuntimeCall::Utility(..)
                 | RuntimeCall::Identity(..)
                 | RuntimeCall::XcmPallet(..)
-                | RuntimeCall::EthereumBeaconClient(..)
                 | RuntimeCall::EthereumSystem(..)
                 | RuntimeCall::EthereumTokenTransfers(..)
                 | RuntimeCall::OnDemandAssignmentProvider(..)
@@ -1718,6 +1716,11 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
                 | RuntimeCall::Hrmp(..)
                 | RuntimeCall::AssetRate(..)
                 | RuntimeCall::StreamPayment(..)
+                | RuntimeCall::Treasury(..)
+                | RuntimeCall::EthereumSystemV2(..)
+                | RuntimeCall::ForeignAssets(..)
+                | RuntimeCall::ForeignAssetsCreator(..)
+                | RuntimeCall::BridgeRelayers(..)
         )
     }
 }
