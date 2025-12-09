@@ -39,7 +39,7 @@ describeSuite({
             ]);
             // Add an additional collator because we need 5 in total
             const newKey1 = await polkadotJs.rpc.author.rotateKeys();
-            await context.createBlock([await polkadotJs.tx.session.setKeys(newKey1, []).signAsync(randomAccount)]);
+            await context.createBlock([await polkadotJs.tx.session.setKeys(newKey1, "0x").signAsync(randomAccount)]);
 
             // We need to remove all the invulnerables and add to staking
             // Remove all invulnerables, otherwise they have priority
