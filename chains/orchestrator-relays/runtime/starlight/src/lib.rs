@@ -2343,7 +2343,6 @@ mod benches {
         [pallet_parameters, Parameters]
         [pallet_preimage, Preimage]
         [pallet_proxy, Proxy]
-        [pallet_ranked_collective, FellowshipCollective]
         [pallet_referenda, Referenda]
         [pallet_scheduler, Scheduler]
         [pallet_sudo, Sudo]
