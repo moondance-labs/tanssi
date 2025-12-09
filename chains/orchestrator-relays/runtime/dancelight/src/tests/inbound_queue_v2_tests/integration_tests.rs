@@ -295,18 +295,6 @@ fn test_inbound_queue_transfer_eth_works() {
         let dummy_proof = mock_snowbridge_message_proof();
         let token_location = Location::here();
 
-        assert_ok!(EthereumSystemV2::register_token(
-            root_origin(),
-            Box::new(token_location.clone().into()),
-            Box::new(token_location.clone().into()),
-            snowbridge_core::AssetMetadata {
-                name: "relay".as_bytes().to_vec().try_into().unwrap(),
-                symbol: "relay".as_bytes().to_vec().try_into().unwrap(),
-                decimals: 12,
-            },
-            1
-        ));
-
         let eth_native_asset_location = Location {
             parents: 1,
             interior: X1([GlobalConsensus(EthereumNetwork::get())].into()),
