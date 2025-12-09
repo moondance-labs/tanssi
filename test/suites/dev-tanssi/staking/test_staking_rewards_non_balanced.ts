@@ -9,7 +9,6 @@ import {
     filterRewardStakingCollator,
     filterRewardStakingDelegators,
     jumpSessions,
-    sleep,
 } from "utils";
 import { DANCE } from "utils";
 import { createBlockAndRemoveInvulnerables } from "utils";
