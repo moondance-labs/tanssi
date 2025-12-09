@@ -11,6 +11,7 @@ import {
     ETHEREUM_NETWORK_MAINNET,
 } from "utils";
 import type { KeyringPair } from "@moonwall/util";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2 } from "../../../helpers";
 
 describeSuite({
     id: "ETHINBV2SYMB",
@@ -22,6 +23,8 @@ describeSuite({
         let alice: KeyringPair;
         let isStarlight: boolean;
         let ethNetworkId: number;
+        let shouldSkipStarlightSnV2TT: boolean;
+        let specVersion: number;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -31,7 +34,11 @@ describeSuite({
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
             isStarlight = runtimeName === "starlight";
 
-            if (isStarlight) {
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightSnV2TT =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2.includes(specVersion);
+
+            if (shouldSkipStarlightSnV2TT) {
                 console.log("Skipping test for Starlight runtime");
                 return;
             }
@@ -43,7 +50,7 @@ describeSuite({
             id: "E01",
             title: "Receive Symbiotic update from Ethereum in Tanssi chain",
             test: async () => {
-                if (isStarlight) {
+                if (shouldSkipStarlightSnV2TT) {
                     console.log("Skipping test for Starlight runtime");
                     return;
                 }

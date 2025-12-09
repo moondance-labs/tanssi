@@ -293,7 +293,6 @@ fn test_inbound_queue_transfer_eth_works() {
         let nonce_val = 1u64;
 
         let dummy_proof = mock_snowbridge_message_proof();
-        let token_location = Location::here();
 
         let eth_native_asset_location = Location {
             parents: 1,
