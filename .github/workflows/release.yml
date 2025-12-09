@@ -149,7 +149,7 @@ jobs:
           with:
               ref: ${{ needs.set-tags.outputs.git_ref }}
 
-        - name: Run zizmor 🌈
+        - name: Run zizmor
           uses: zizmorcore/zizmor-action@e673c3917a1aef3c65c972347ed84ccd013ecda4
           with:
             inputs: |
