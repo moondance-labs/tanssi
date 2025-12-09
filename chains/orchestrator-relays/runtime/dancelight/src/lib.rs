@@ -179,7 +179,7 @@ mod weights;
 // Governance and configurations.
 pub mod governance;
 use {
-    governance::{councils::*, pallet_custom_origins, Treasurer, TreasurySpender},
+    governance::{councils::*, pallet_custom_origins, TreasurySpender},
     pallet_collator_assignment::CoreAllocationConfiguration,
 };
 
@@ -693,7 +693,7 @@ where
 impl pallet_treasury::Config for Runtime {
     type PalletId = TreasuryPalletId;
     type Currency = Balances;
-    type RejectOrigin = EitherOfDiverse<EnsureRoot<AccountId>, Treasurer>;
+    type RejectOrigin = EnsureRoot<AccountId>;
     type RuntimeEvent = RuntimeEvent;
     type SpendPeriod = SpendPeriod;
     type Burn = ();
@@ -2385,7 +2385,6 @@ mod benches {
         [pallet_parameters, Parameters]
         [pallet_preimage, Preimage]
         [pallet_proxy, Proxy]
-        [pallet_ranked_collective, FellowshipCollective]
         [pallet_referenda, Referenda]
         [pallet_scheduler, Scheduler]
         [pallet_sudo, Sudo]

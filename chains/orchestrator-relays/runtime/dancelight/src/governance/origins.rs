@@ -20,10 +20,7 @@ pub use pallet_custom_origins::*;
 
 #[frame_support::pallet]
 pub mod pallet_custom_origins {
-    use {
-        crate::{Balance, CENTS, GRAND},
-        frame_support::pallet_prelude::*,
-    };
+    use frame_support::pallet_prelude::*;
 
     #[pallet::config]
     pub trait Config: frame_system::Config {}
@@ -44,16 +41,8 @@ pub mod pallet_custom_origins {
     )]
     #[pallet::origin]
     pub enum Origin {
-        /// Origin for cancelling slashes.
-        StakingAdmin,
-        /// Origin for spending (any amount of) funds.
-        Treasurer,
         /// Origin for managing the composition of the fellowship.
         FellowshipAdmin,
-        /// Origin able to cancel referenda.
-        ReferendumCanceller,
-        /// Origin able to kill referenda.
-        ReferendumKiller,
         /// Origin able to dispatch a whitelisted call.
         WhitelistedCaller,
     }
@@ -88,51 +77,5 @@ pub mod pallet_custom_origins {
 		};
 		() => {}
 	}
-    decl_unit_ensures!(
-        StakingAdmin,
-        Treasurer,
-        FellowshipAdmin,
-        ReferendumCanceller,
-        ReferendumKiller,
-        WhitelistedCaller,
-    );
-
-    macro_rules! decl_ensure {
-		(
-			$vis:vis type $name:ident: EnsureOrigin<Success = $success_type:ty> {
-				$( $item:ident = $success:expr, )*
-			}
-		) => {
-			$vis struct $name;
-			impl<O: Into<Result<Origin, O>> + From<Origin>>
-				EnsureOrigin<O> for $name
-			{
-				type Success = $success_type;
-				fn try_origin(o: O) -> Result<Self::Success, O> {
-					o.into().and_then(|o| match o {
-						$(
-							Origin::$item => Ok($success),
-						)*
-						r => Err(O::from(r)),
-					})
-				}
-				#[cfg(feature = "runtime-benchmarks")]
-				fn try_successful_origin() -> Result<O, ()> {
-					// By convention the more privileged origins go later, so for greatest chance
-					// of success, we want the last one.
-					let _result: Result<O, ()> = Err(());
-					$(
-						let _result: Result<O, ()> = Ok(O::from(Origin::$item));
-					)*
-					_result
-				}
-			}
-		}
-	}
-
-    decl_ensure! {
-        pub type Spender: EnsureOrigin<Success = Balance> {
-            Treasurer = 10_000 * GRAND,
-        }
-    }
+    decl_unit_ensures!(FellowshipAdmin, WhitelistedCaller,);
 }
