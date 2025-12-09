@@ -73,8 +73,8 @@ impl<T> SymbioticMessageProcessor<T>
 where
     T: pallet_external_validators::Config,
 {
-    fn can_process_message(payload: &Vec<u8>) -> bool {
-        let decode_result = Payload::<T>::decode_all(&mut payload.as_slice());
+    fn can_process_message(mut payload: &[u8]) -> bool {
+        let decode_result = Payload::<T>::decode_all(&mut payload);
         match decode_result {
             Ok(payload) => {
                 if payload.magic_bytes == MAGIC_BYTES {
@@ -95,9 +95,9 @@ where
 
     fn process_message(
         channel_id: Option<ChannelId>,
-        payload: &Vec<u8>,
+        mut payload: &[u8],
     ) -> Result<(), DispatchError> {
-        let decode_result = Payload::<T>::decode_all(&mut payload.as_slice());
+        let decode_result = Payload::<T>::decode_all(&mut payload);
         let message = if let Ok(payload) = decode_result {
             payload.message
         } else {
