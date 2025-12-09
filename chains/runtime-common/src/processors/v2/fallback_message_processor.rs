@@ -29,6 +29,17 @@ use sp_runtime::DispatchError;
 use xcm::latest::{ExecuteXcm, InteriorLocation, NetworkId, Xcm};
 use xcm_executor::traits::WeightBounds;
 
+/// Fallback message processor that traps assets from failed Snowbridge V2 messages.
+///
+/// When a message from Ethereum cannot be processed normally, this processor will:
+/// 1. Extract assets, ETH value, and execution fees from the failed message
+/// 2. Prepare XCM instructions to trap these assets in the Tanssi relay chain
+/// 3. Execute the XCM, making trapped assets claimable by the specified claimer
+///
+/// This processor always returns success to prevent reverting the Ethereum transaction,
+/// which would leave assets in limbo on the Ethereum side. If XCM execution fails,
+/// the error is logged but the processor still returns success, allowing the claimer
+/// to recover the trapped assets later.
 pub struct AssetTrapFallbackProcessor<
     T,
     GatewayAddress,
@@ -154,9 +165,19 @@ where
     }
 }
 
-/// This fallback message processor will only attempt to trap assets if there are any, otherwise it will return
-/// an error.
-/// In simple term this is a wrapper around `AssetTrapMessageProcessor`
+/// Conditional fallback processor for Symbiotic protocol messages.
+///
+/// This is a wrapper around `AssetTrapFallbackProcessor` that only attempts to trap
+/// assets if the message contains any assets, ETH value, or execution fees.
+///
+/// The processor makes the following assumptions:
+/// - If assets are present: user mistakenly or maliciously sent a Symbiotic message
+///   → Trap assets for recovery
+/// - If no assets are present: Symbiotic middleware sent a message with incorrect semantics
+///   → Return error to signal the problem
+///
+/// This conditional behavior prevents unnecessary asset trapping for genuinely invalid
+/// Symbiotic messages while still protecting user funds in case of errors.
 pub struct SymbioticFallbackProcessor<
     T,
     AssetTrapFallbackProcessor,

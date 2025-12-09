@@ -122,6 +122,35 @@ pub fn process_message<T: pallet_external_validators::Config>(
     }
 }
 
+/// Processes Symbiotic protocol messages for external validator set management.
+///
+/// This processor handles messages from the Symbiotic middleware that controls validator
+/// registration and management. Messages must be encoded in `Payload::Raw(RawPayload::Symbiotic)`
+/// format and originate from the authorized gateway proxy address.
+///
+/// # Message Validation
+///
+/// Strictly validates incoming messages:
+/// - **Origin check**: Message must come from the configured gateway proxy address
+/// - **Asset check**: Symbiotic messages cannot contain assets, ETH value, or execution fees
+/// - **Magic bytes**: Payload must contain correct set of bytes to identify Symbiotic messages
+///
+/// # Supported Commands
+///
+/// Currently, processes `InboundCommand::ReceiveValidators` which:
+/// - Updates the external validator set via `pallet_external_validators`
+/// - Tracks validator changes by external index
+/// - Returns errors on validation failures (no asset trapping needed)
+///
+/// # Fallback Behavior
+///
+/// Uses `SymbioticFallbackProcessor` which conditionally applies asset trapping:
+/// - **If assets present**: Assumes user error → trap assets via `AssetTrapFallbackProcessor`
+/// - **If no assets**: Assumes middleware error → return error to signal the problem
+///
+/// Unlike `RawMessageProcessor`, this can safely return errors since valid Symbiotic messages
+/// never contain assets that could be lost. Errors indicate critical runtime issues that
+/// should not be silently ignored.
 #[derive(MessageProcessor)]
 pub struct SymbioticMessageProcessor<
     T,

@@ -110,6 +110,28 @@ where
     }
 }
 
+/// Processes raw XCM messages from Snowbridge V2 with automatic asset trapping fallback.
+///
+/// This processor handles messages containing user-provided XCM instructions encoded in the
+/// `Payload::Raw(RawPayload::Xcm)` format. The workflow is:
+///
+/// 1. **Extract**: Decode the `VersionedXcm` from the message payload
+/// 2. **Prepare**: Wrap user XCM
+/// 3. **Execute**: Run the prepared XCM on Tanssi relay chain
+///
+/// # Fallback Behavior
+///
+/// Uses `AssetTrapFallbackProcessor` as fallback for unsupported message types (e.g., Symbiotic).
+/// This ensures assets are never lost:
+/// - If message extraction fails → fallback traps assets for claimer recovery
+/// - If XCM execution fails → still returns success to prevent Ethereum revert, assets become
+///   trapped and claimable
+///
+/// # Error Handling
+///
+/// Always returns success even on XCM execution errors to avoid leaving assets in limbo on
+/// Ethereum. Execution errors are logged but don't cause transaction reversion. This is
+/// necessary because user XCM may contain non-revertible operations (e.g., cross-chain messages).
 #[derive(MessageProcessor)]
 pub struct RawMessageProcessor<
     T,
