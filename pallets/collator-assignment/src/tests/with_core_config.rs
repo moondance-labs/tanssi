@@ -229,14 +229,17 @@ fn test_combine_paras_with_core_config() {
         ) in table
         {
             MockData::mutate(|mock_data_config| {
-                mock_data_config.chains_that_are_tipping =
-                    tipping_chains.drain(..).map(Into::into).collect();
-                mock_data_config.apply_tip = !mock_data_config.chains_that_are_tipping.is_empty();
+                mock_data_config.chains_tip = tipping_chains
+                    .drain(..)
+                    .map(|para_id| (para_id.into(), 1000))
+                    .collect();
+                mock_data_config.apply_tip = !mock_data_config.chains_tip.is_empty();
             });
 
             let (chains, ordered_by_tip) = Pallet::<Test>::order_paras_with_core_config(
                 generated_parachains.clone(),
                 generated_parathreads.clone(),
+                &alloc::collections::BTreeSet::new(),
                 &config,
                 1,
                 number_of_collators,
