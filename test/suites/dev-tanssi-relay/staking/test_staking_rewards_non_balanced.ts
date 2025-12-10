@@ -59,14 +59,6 @@ describeSuite({
                 await polkadotJs.tx.session.setKeys(newKey4, []).signAsync(dave),
             ]);
 
-            // We will make each of them self-delegate the min amount, while
-            // we will make each of them delegate the other with 50%
-            // Alice autocompounding, Bob will be manual
-            let aliceNonce = (await polkadotJs.rpc.system.accountNextIndex(alice.address)).toNumber();
-            let bobNonce = (await polkadotJs.rpc.system.accountNextIndex(bob.address)).toNumber();
-            let charlieNonce = (await polkadotJs.rpc.system.accountNextIndex(charlie.address)).toNumber();
-            let daveNonce = (await polkadotJs.rpc.system.accountNextIndex(dave.address)).toNumber();
-
             if (shouldSkipStarlightPS) {
                 console.log(`Skipping Staking tests for Starlight version ${specVersion}`);
                 await checkCallIsFiltered(
@@ -79,32 +71,48 @@ describeSuite({
                 return;
             }
 
-            await context.createBlock([
-                await polkadotJs.tx.pooledStaking
-                    .requestDelegate(alice.address, "AutoCompounding", 18000n * DANCE)
-                    .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
-                await polkadotJs.tx.pooledStaking
-                    .requestDelegate(alice.address, "ManualRewards", 2000n * DANCE)
-                    .signAsync(context.keyring.bob, { nonce: bobNonce++ }),
-                await polkadotJs.tx.pooledStaking
-                    .requestDelegate(bob.address, "AutoCompounding", 18000n * DANCE)
-                    .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
-                await polkadotJs.tx.pooledStaking
-                    .requestDelegate(bob.address, "ManualRewards", 2000n * DANCE)
-                    .signAsync(context.keyring.bob, { nonce: bobNonce++ }),
-                await polkadotJs.tx.pooledStaking
-                    .requestDelegate(charlie.address, "AutoCompounding", 18000n * DANCE)
-                    .signAsync(context.keyring.charlie, { nonce: charlieNonce++ }),
-                await polkadotJs.tx.pooledStaking
-                    .requestDelegate(charlie.address, "ManualRewards", 2000n * DANCE)
-                    .signAsync(context.keyring.dave, { nonce: daveNonce++ }),
-                await polkadotJs.tx.pooledStaking
-                    .requestDelegate(dave.address, "AutoCompounding", 18000n * DANCE)
-                    .signAsync(context.keyring.charlie, { nonce: charlieNonce++ }),
-                await polkadotJs.tx.pooledStaking
-                    .requestDelegate(dave.address, "ManualRewards", 2000n * DANCE)
-                    .signAsync(context.keyring.dave, { nonce: daveNonce++ }),
-            ]);
+            // We will make each of them self-delegate the min amount, while
+            // we will make each of them delegate the other with 50%
+            // Alice autocompounding, Bob will be manual
+            const collators = [alice, bob, charlie, dave];
+            // Pre-fetch nonces for all collators/delegators we’ll use
+            const nonces: Record<string, number> = {};
+            for (const acc of collators) {
+                nonces[acc.address] = (await polkadotJs.rpc.system.accountNextIndex(acc.address)).toNumber();
+            }
+
+            // Delegation plan: all collators self-delegate using auto compounding
+            // And alice is a manual delegator of bob
+            const delegationPlan = [
+                { candidate: alice, autoDelegator: alice, manualDelegator: bob },
+                { candidate: bob, autoDelegator: bob, manualDelegator: bob },
+                { candidate: charlie, autoDelegator: charlie, manualDelegator: charlie },
+                { candidate: dave, autoDelegator: dave, manualDelegator: dave },
+            ];
+
+            const stakingTxs = [];
+            for (const { candidate, autoDelegator, manualDelegator } of delegationPlan) {
+                // Auto-compounding delegation
+                if (autoDelegator) {
+                    stakingTxs.push(
+                        await polkadotJs.tx.pooledStaking
+                            .requestDelegate(candidate.address, "AutoCompounding", 18000n * DANCE)
+                            .signAsync(autoDelegator, { nonce: nonces[autoDelegator.address]++ })
+                    );
+                }
+
+                // Manual rewards delegation
+                if (manualDelegator) {
+                    stakingTxs.push(
+                        await polkadotJs.tx.pooledStaking
+                            .requestDelegate(candidate.address, "ManualRewards", 2000n * DANCE)
+                            .signAsync(manualDelegator, { nonce: nonces[manualDelegator.address]++ })
+                    );
+                }
+            }
+
+            await context.createBlock(stakingTxs);
+
             // At least 2 sessions for the change to have effect
             await jumpSessions(context, 2);
             // +2 because in tanssi-relay sessions start 1 block later
@@ -120,6 +128,8 @@ describeSuite({
                     return;
                 }
                 const assignment = (await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()).toJSON();
+                // Assert 2 collators in each chain
+                expect(Object.values(assignment.containerChains).map((x) => x.length)).to.deep.equal([2, 2]);
 
                 // Find alice in list of collators
                 let paraId = null;

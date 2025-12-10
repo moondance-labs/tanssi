@@ -17,6 +17,19 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 //! Benchmarking
+//!
+//! ## Note about inherents
+//!
+//! `set_latest_author_data` is an inherent that must be included in every block, or else the block
+//! is invalid.
+//!
+//! Usually the purpose of an extrinsic weight is for the block author to be able to decide whether
+//! to include it in the block or skip it. Taking into account the fee, and the block space that
+//! will be used by that extrinsic.
+//!
+//! But in the case of inherents, there is no fee, and there is no possibility of not including it,
+//! so the weight is useless.
+
 use {
     crate::{AuthorNotingInfo, Call, Config, HeadData, Pallet, ParaId, RelayOrPara},
     alloc::{boxed::Box, vec},
@@ -61,19 +74,34 @@ mod benchmarks {
 
     #[benchmark]
     fn set_latest_author_data(x: Linear<1, 100>) -> Result<(), BenchmarkError> {
+        // This benchmarks is `set_latest_author_data` with hooks
         let mut container_chains = vec![];
+
+        // Register collators in staking pallet and initialize `ChainsToReward`.
+        // TODO: we probably need to initialize `ChainsToReward` again after advancing blocks
+        // Para ids always start at 1000
+        for para_id in 0..x {
+            let para_id = 1000u32 + para_id;
+            let para_id: ParaId = para_id.into();
+            let author: T::AccountId = account("account id", u32::from(para_id), 0u32);
+            T::AuthorNotingHook::prepare_worst_case_for_bench(&author, 1, para_id);
+        }
+
+        // Advance a few blocks and execute the pending staking operations
+        T::AuthorNotingHook::bench_advance_block();
+        T::AuthorNotingHook::bench_execute_pending();
 
         let data = if TypeId::of::<<<T as Config>::RelayOrPara as RelayOrPara>::InherentArg>()
             == TypeId::of::<tp_author_noting_inherent::OwnParachainInherentData>()
         {
-            // RELAY MODE
+            // PARA MODE
             let mut sproof_builder = test_sproof::ParaHeaderSproofBuilder::default();
 
-            // Must start at 0 in Relay mode (why?)
+            // Must start at 1000 in Para mode (why?)
             for para_id in 0..x {
-                let para_id = para_id.into();
+                let para_id = (1000u32 + para_id).into();
 
-                let author: T::AccountId = account("account id", 0u32, 0u32);
+                let author: T::AccountId = account("account id", u32::from(para_id), 0u32);
                 container_chains.push((para_id, vec![author.clone()]));
 
                 // Mock assigned authors for this para id
@@ -97,25 +125,19 @@ mod benchmarks {
                 relay_storage_proof: proof,
             };
 
-            for para_id in 0..x {
-                let para_id = para_id.into();
-                let author: T::AccountId = account("account id", 0u32, 0u32);
-
-                T::AuthorNotingHook::prepare_worst_case_for_bench(&author, 1, para_id);
-            }
-
             *(Box::new(arg) as Box<dyn Any>).downcast().unwrap()
         } else if TypeId::of::<<<T as Config>::RelayOrPara as RelayOrPara>::InherentArg>()
             == TypeId::of::<()>()
         {
-            // PARA MODE
+            // RELAY MODE
 
-            // Must start at 1 in Para mode (why?)
-            for para_id in 1..x {
+            // Must start at 1000 in Relay mode (why?)
+            for para_id in 0..x {
+                let para_id = 1000u32 + para_id;
                 let slot: crate::InherentType = 13u64.into();
                 let header = sp_runtime::generic::Header::<crate::BlockNumber, crate::BlakeTwo256> {
                     parent_hash: Default::default(),
-                    number: Default::default(),
+                    number: 1,
                     state_root: Default::default(),
                     extrinsics_root: Default::default(),
                     digest: sp_runtime::generic::Digest {
@@ -129,7 +151,7 @@ mod benchmarks {
                 let bytes = para_id.twox_64_concat();
 
                 // Mock assigned authors for this para id
-                let author: T::AccountId = account("account id", 0u32, 0u32);
+                let author: T::AccountId = account("account id", u32::from(para_id), 0u32);
 
                 container_chains.push((para_id, vec![author.clone()]));
 
@@ -144,8 +166,6 @@ mod benchmarks {
 
                 let head_data = HeadData(header.encode());
                 frame_support::storage::unhashed::put(&key, &head_data);
-
-                T::AuthorNotingHook::prepare_worst_case_for_bench(&author, 1, para_id);
             }
             let arg = ();
             *(Box::new(arg) as Box<dyn Any>).downcast().unwrap()
@@ -207,7 +227,7 @@ mod benchmarks {
         for i in 0..x {
             let para_id = (1000 + i).into();
             let block_number = 1;
-            let author: T::AccountId = account("account id", 0u32, 0u32);
+            let author: T::AccountId = account("account id", u32::from(para_id), 0u32);
             T::AuthorNotingHook::prepare_worst_case_for_bench(&author, block_number, para_id);
             infos.push(AuthorNotingInfo {
                 author,
@@ -215,6 +235,9 @@ mod benchmarks {
                 para_id,
             });
         }
+
+        T::AuthorNotingHook::bench_advance_block();
+        T::AuthorNotingHook::bench_execute_pending();
 
         #[block]
         {

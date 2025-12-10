@@ -1554,7 +1554,8 @@ impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnba
 
 impl pallet_inflation_rewards::Config for Runtime {
     type Currency = Balances;
-    type ContainerChains = Registrar;
+    type ContainerChains = CollatorAssignment;
+    type MaxContainerChains = MaxLengthParaIds;
     type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
     type InflationRate = InflationRate;
     type OnUnbalanced = OnUnbalancedInflation;

@@ -271,16 +271,36 @@ where
         // weight to read invulnerables
         total_weight.saturating_accrue(Runtime::DbWeight::get().reads(1));
         if !Invulnerables::<Runtime>::get().contains(&collator_id) {
+            // Reward non-invulnerable
             let post_info = Fallback::distribute_rewards(rewarded, amount)?;
             if let Some(weight) = post_info.actual_weight {
                 total_weight.saturating_accrue(weight);
             }
         } else {
+            // Reward invulnerable
+            // TODO: if invulnerable deletes its account, and reward is smaller than existential deposit,
+            // this could fail.
             Currency::resolve(&rewarded, amount).map_err(|_| TokenError::NotExpendable)?;
             total_weight.saturating_accrue(Runtime::WeightInfo::reward_invulnerable(
                 Runtime::MaxInvulnerables::get(),
             ))
         }
         Ok(Some(total_weight).into())
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn prepare_worst_case_for_bench(a: &AccountIdOf<Runtime>) {
+        // We assume that Fallback is always worst case
+        Fallback::prepare_worst_case_for_bench(a);
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_advance_block() {
+        Fallback::bench_advance_block();
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_execute_pending() {
+        Fallback::bench_execute_pending();
     }
 }

@@ -33,6 +33,7 @@ use {
         },
     },
     frame_system::EventRecord,
+    tp_traits::DistributeRewards,
 };
 
 /// Minimum collator candidate stake
@@ -559,48 +560,21 @@ mod benchmarks {
 
         T::EligibleCandidatesFilter::make_candidate_eligible(&caller, true);
 
-        PooledStaking::<T>::request_delegate(
-            RawOrigin::Signed(caller.clone()).into(),
-            caller.clone(),
-            ActivePoolKind::AutoCompounding,
-            source_stake,
-        )?;
-        PooledStaking::<T>::request_delegate(
-            RawOrigin::Signed(caller.clone()).into(),
-            caller.clone(),
-            ActivePoolKind::ManualRewards,
-            source_stake,
-        )?;
-
-        let timer = T::JoiningRequestTimer::now();
-
-        T::JoiningRequestTimer::skip_to_elapsed();
-
-        PooledStaking::<T>::execute_pending_operations(
-            RawOrigin::Signed(caller.clone()).into(),
-            vec![
-                PendingOperationQuery {
-                    delegator: caller.clone(),
-                    operation: JoiningAutoCompounding {
-                        candidate: caller.clone(),
-                        at: timer.clone(),
-                    },
-                },
-                PendingOperationQuery {
-                    delegator: caller.clone(),
-                    operation: JoiningManualRewards {
-                        candidate: caller.clone(),
-                        at: timer.clone(),
-                    },
-                },
-            ],
-        )?;
+        // Setup: self-delegate as `caller` in both manual rewards and auto-compounding pools.
+        // These 3 calls are separate because when this pallet is used as a hook, we may need to
+        // execute other code before/after the "bench_advance_block".
+        <Pallet<T> as DistributeRewards<_, _>>::prepare_worst_case_for_bench(&caller);
+        <Pallet<T> as DistributeRewards<_, _>>::bench_advance_block();
+        <Pallet<T> as DistributeRewards<_, _>>::bench_execute_pending();
 
         T::Currency::mint_into(&T::StakingAccount::get(), source_stake).unwrap();
 
         #[block]
         {
-            crate::pools::distribute_rewards::<T>(&caller, currency_issue::<T>(source_stake))?;
+            <Pallet<T> as DistributeRewards<_, _>>::distribute_rewards(
+                caller,
+                currency_issue::<T>(source_stake),
+            )?;
         }
 
         Ok(())
