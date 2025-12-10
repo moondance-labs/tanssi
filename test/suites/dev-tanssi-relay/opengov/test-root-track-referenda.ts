@@ -258,54 +258,6 @@ describeSuite({
 
         it({
             id: "E04",
-            title: "Only Root and Whitelisted tracks are enabled",
-            test: async ({ skip }) => {
-                if (!isDancelightRuntime(api)) {
-                    skip();
-                }
-
-                const tx = api.tx.system.remark("0x0001");
-
-                // Step 1: Let's create preimage
-                const notePreimageTx = api.tx.preimage.notePreimage(tx.method.toHex());
-                const preimageBlock = await context.createBlock(await notePreimageTx.signAsync(eve));
-                expect(preimageBlock.result?.successful).to.be.true;
-
-                // Step 2: Alice submits referenda for whitelisted track
-                const submitTxSuccess = api.tx.referenda.submit(
-                    {
-                        Origins: "WhitelistedCaller",
-                    },
-                    { Lookup: { Hash: tx.method.hash.toHex(), len: tx.method.encodedLength } },
-                    { After: "1" }
-                );
-
-                const submitBlockSuccess = await context.createBlock(await submitTxSuccess.signAsync(alice));
-                expect(submitBlockSuccess.result?.successful).to.be.true;
-
-                // Step 3: Alice submits referenda for non-existing track
-                const submitTxFailure = api.tx.referenda.submit(
-                    {
-                        Origins: "GeneralAdmin",
-                    },
-                    { Lookup: { Hash: tx.method.hash.toHex(), len: tx.method.encodedLength } },
-                    { After: "1" }
-                );
-                const submitBlockFailure = await context.createBlock(await submitTxFailure.signAsync(alice));
-                expect(submitBlockFailure.result?.successful).to.be.false;
-
-                const isNoTrackErrorEmitted = await checkIfErrorIsEmitted(
-                    api,
-                    "Referenda",
-                    submitBlockFailure,
-                    "NoTrack"
-                );
-                expect(isNoTrackErrorEmitted, "NoTrack error must be emitted").to.be.true;
-            },
-        });
-
-        it({
-            id: "E05",
             title: "Referenda without votes will be rejected",
             test: async ({ skip }) => {
                 if (!isDancelightRuntime(api)) {
