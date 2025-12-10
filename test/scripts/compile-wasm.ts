@@ -94,13 +94,13 @@ async function main(args: any) {
         } else {
             const additionalArgs = args.argv.AdditionalArgs || "";
             // Generate plain chain spec
-            const generateChainSpecCmd = `${binaryPath} build-spec --chain ${args.argv.Chain} ${additionalArgs} > tmp/${args.argv.Chain}.json`;
+            const generateChainSpecCmd = `${binaryPath} export-chain-spec --chain ${args.argv.Chain} ${additionalArgs} > tmp/${args.argv.Chain}.json`;
             console.log(`🗃️  ${generateChainSpecCmd}`);
             await spawn(generateChainSpecCmd);
 
             // Generate raw chain spec
             const generateRawChainSpecCmd =
-                `${binaryPath} build-spec --chain tmp/${args.argv.Chain}.json ` +
+                `${binaryPath} export-chain-spec --chain tmp/${args.argv.Chain}.json ` +
                 `--raw > tmp/${args.argv.Chain}-raw.json`;
             console.log(`🗃️  ${generateRawChainSpecCmd}`);
             await spawn(generateRawChainSpecCmd);
