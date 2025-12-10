@@ -19,7 +19,7 @@
 use {
     crate::{
         Authorship, BlockProductionCost, CollatorAssignmentCost, ExternalValidatorSlashes,
-        MessageQueue, Preimage, Referenda, RuntimeCall, Scheduler,
+        MessageQueue, Preimage, RuntimeCall, Scheduler,
     },
     alloc::collections::btree_map::BTreeMap,
     babe_primitives::{
@@ -41,12 +41,11 @@ use {
     },
     frame_support::{
         assert_ok,
-        traits::{OnFinalize, OnInitialize, Polling, QueryPreimage},
+        traits::{OnFinalize, OnInitialize, QueryPreimage},
         BoundedVec,
     },
     frame_system::pallet_prelude::{BlockNumberFor, HeaderFor},
     nimbus_primitives::NimbusId,
-    pallet_conviction_voting::Tally,
     pallet_referenda::{DecidingStatus, ReferendumStatus},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
@@ -1637,7 +1636,7 @@ pub fn mock_snowbridge_message_proof() -> Proof {
 pub fn note_preimage(who: AccountId, call: &[u8]) -> <Runtime as frame_system::Config>::Hash {
     assert_ok!(Preimage::note_preimage(
         RuntimeOrigin::signed(who),
-        call.clone().to_vec()
+        call.to_vec()
     ));
     let hash = BlakeTwo256::hash(&call);
     assert!(!Preimage::is_requested(&hash));
@@ -1647,7 +1646,6 @@ pub fn note_preimage(who: AccountId, call: &[u8]) -> <Runtime as frame_system::C
 pub fn wait_for_democracy_to_pass(proposal_index: pallet_referenda::ReferendumIndex) {
     while !is_deciding(proposal_index) {
         run_to_block(System::block_number() + 1);
-        let current_block_number = System::block_number();
     }
     if is_confirming(proposal_index) {
         let confirming_until = confirming_until(proposal_index);
@@ -1683,7 +1681,7 @@ fn is_confirming(i: pallet_referenda::ReferendumIndex) -> bool {
         Some(pallet_referenda::ReferendumInfo::Ongoing(
             ReferendumStatus {
                 deciding: Some(DecidingStatus {
-                    confirming: Some(until),
+                    confirming: Some(_until),
                     ..
                 }),
                 ..
