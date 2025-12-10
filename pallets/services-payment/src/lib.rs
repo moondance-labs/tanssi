@@ -646,7 +646,7 @@ impl<T: Config> CollatorAssignmentHook<BalanceOf<T>> for Pallet<T> {
 }
 
 impl<T: Config> CollatorAssignmentTip<BalanceOf<T>> for Pallet<T> {
-    fn get_para_tip(para_id: ParaId) -> Option<BalanceOf<T>> {
+    fn get_para_max_tip(para_id: ParaId) -> Option<BalanceOf<T>> {
         MaxTip::<T>::get(para_id)
     }
 }
