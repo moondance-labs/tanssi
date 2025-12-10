@@ -6,7 +6,7 @@ import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
     id: "COM0401",
-    title: "XcmExecutorUtils - Custom policies",
+    title: "Ensure assets are registered in genesis",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;

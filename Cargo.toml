@@ -71,7 +71,6 @@ uninlined_format_args = { level = "allow", priority = 3 }
 [workspace.lints.rust]
 unsafe-code = { level = "deny", priority = 1 }
 
-
 [workspace.dependencies]
 
 # Members
