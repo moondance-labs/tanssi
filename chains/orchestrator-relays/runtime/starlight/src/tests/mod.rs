@@ -35,6 +35,7 @@ mod inbound_queue_tests;
 mod inflation_rates;
 mod inflation_rewards;
 mod integration_test;
+mod maintenance_mode;
 mod migrations_test;
 mod offline_marking;
 mod relay_configuration;

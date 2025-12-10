@@ -36,6 +36,36 @@ jobs:
           else
             echo "❌ User $COLLABORATOR doesn't have enough permission: "$permission_level". Failing..." && exit 1
           fi
+
+  check-pr-source:
+    if: startsWith(github.event.comment.body, '/cmd')
+    needs: ["is-org-member"]
+    runs-on: ubuntu-latest
+    outputs:
+      is-fork: ${{ steps.check.outputs.is-fork }}
+    steps:
+      - name: Check if PR is from fork
+        id: check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=${{ github.event.issue.number }}
+          PR_DATA=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/moondance-labs/tanssi/pulls/$PR_NUMBER")
+          
+          HEAD_REPO=$(echo "$PR_DATA" | jq -r '.head.repo.full_name')
+          
+          echo "Head repository: $HEAD_REPO"
+          
+          if [[ "$HEAD_REPO" == "moondance-labs/tanssi" ]]; then
+            echo "is-fork=false" >> $GITHUB_OUTPUT
+            echo "✅ PR is from the main repository"
+          else
+            echo "is-fork=true" >> $GITHUB_OUTPUT
+            echo "⚠️ PR is from a fork: $HEAD_REPO"
+          fi
+
   acknowledge:
     if: startsWith(github.event.comment.body, '/cmd')
     needs: ["is-org-member"]
@@ -54,7 +84,7 @@ jobs:
             })
 
   update_typescript_api_augment:
-    needs: ["is-org-member"]
+    needs: ["is-org-member", "check-pr-source"]
     runs-on: self-hosted
     env:
       RUSTC_WRAPPER: "sccache"
@@ -62,10 +92,10 @@ jobs:
       SCCACHE_CACHE_SIZE: "100GB"
       SCCACHE_GHA_ENABLED: "true"
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    if: ${{ github.event.comment.body == '/cmd generate-ts-api' }}
+    if: ${{ github.event.comment.body == '/cmd generate-ts-api' && needs.check-pr-source.outputs.is-fork == 'false' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: refs/pull/${{ github.event.issue.number }}/head
 
@@ -144,4 +174,33 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               content: '+1'
+            })
+
+  fork-notification:
+    needs: ["is-org-member", "check-pr-source"]
+    runs-on: ubuntu-latest
+    if: ${{ github.event.comment.body == '/cmd generate-ts-api' && needs.check-pr-source.outputs.is-fork == 'true' }}
+    steps:
+      - name: Comment on PR about fork limitation
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ The `/cmd generate-ts-api` command cannot be executed on PRs from forks due to permission restrictions. Please create a PR from a branch in the main repository to use this command.'
+            })
+
+      - name: Add warning reaction
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.reactions.createForIssueComment({
+              comment_id: ${{ github.event.comment.id }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              content: '-1'
             })

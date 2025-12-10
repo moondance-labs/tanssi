@@ -14,13 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use crate::tests::set_templates_relay_param_to_starlight;
 use {
-    dancelight_emulated_chain::DancelightRelayPallet,
-    dancelight_runtime::SnowbridgeFeesAccount,
-    dancelight_system_emulated_network::{
-        DancelightRelay as Dancelight, DancelightSender, FrontierTemplatePara as FrontierTemplate,
-        SimpleTemplatePara as SimpleTemplate, SimpleTemplateReceiver, SimpleTemplateSender,
-    },
     fp_account::AccountId20,
     frame_support::{
         assert_ok, pallet_prelude::DispatchResult, traits::fungible::Mutate,
@@ -37,6 +32,12 @@ use {
     sp_core::H160,
     sp_core::U256,
     sp_runtime::{AccountId32, FixedU128},
+    starlight_emulated_chain::StarlightRelayPallet,
+    starlight_runtime::SnowbridgeFeesAccount,
+    starlight_system_emulated_network::{
+        FrontierTemplatePara as FrontierTemplate, SimpleTemplatePara as SimpleTemplate,
+        SimpleTemplateReceiver, SimpleTemplateSender, StarlightRelay as Starlight, StarlightSender,
+    },
     xcm::latest::prelude::*,
     xcm_emulator::{Chain, TestExt},
     xcm_executor::traits::ConvertLocation,
@@ -48,6 +49,8 @@ const RELAY_TOKEN_ASSET_LOCATION: Location = Location::parent();
 
 #[test]
 fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
+    set_templates_relay_param_to_starlight();
+
     const PARA_ID_FOR_CHANNEL: u32 = 2000;
 
     const CONTAINER_PARA_ID: u32 = 2001;
@@ -71,8 +74,8 @@ fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
 
     let transfer_amount = 100_000_000;
 
-    Dancelight::execute_with(|| {
-        let root_origin = <Dancelight as Chain>::RuntimeOrigin::root();
+    Starlight::execute_with(|| {
+        let root_origin = <Starlight as Chain>::RuntimeOrigin::root();
 
         let asset_location = Location {
             parents: 0,
@@ -80,15 +83,18 @@ fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
         };
 
         assert_ok!(
-            <Dancelight as DancelightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(
+            <Starlight as StarlightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(
                 root_origin.clone(),
-                ChannelId::new(hex!("0000000000000000000000000000000000000000000000000000000000000004")), 
-                hex!("0000000000000000000000000000000000000000000000000000000000000005").into(), 
-                PARA_ID_FOR_CHANNEL.into()),
-            );
+                ChannelId::new(hex!(
+                    "0000000000000000000000000000000000000000000000000000000000000004"
+                )),
+                hex!("0000000000000000000000000000000000000000000000000000000000000005").into(),
+                PARA_ID_FOR_CHANNEL.into()
+            ),
+        );
 
         assert_ok!(
-            <Dancelight as DancelightRelayPallet>::EthereumSystem::register_token(
+            <Starlight as StarlightRelayPallet>::EthereumSystem::register_token(
                 root_origin.clone(),
                 Box::new(asset_location.into()),
                 snowbridge_core::AssetMetadata {
@@ -100,12 +106,11 @@ fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
         );
 
         // Add funds in snowbridge fees account
-        assert_ok!(
-            <<Dancelight as DancelightRelayPallet>::Balances as Mutate<_>>::mint_into(
-                &SnowbridgeFeesAccount::get(),
-                CONTAINER_FEE * 2
-            )
-        );
+        assert_ok!(<<Starlight as StarlightRelayPallet>::Balances as Mutate<
+            _,
+        >>::mint_into(
+            &SnowbridgeFeesAccount::get(), CONTAINER_FEE * 2
+        ));
     });
 
     FrontierTemplate::execute_with(|| {
@@ -159,7 +164,7 @@ fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
         );
     });
 
-    Dancelight::execute_with(|| {
+    Starlight::execute_with(|| {
         assert_ok!(send_inbound_message(
             make_send_token_message_frontier_template()
         ));
@@ -204,6 +209,8 @@ fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
 
 #[test]
 fn check_native_eth_token_to_simple_container_chain_transfer_works() {
+    set_templates_relay_param_to_starlight();
+
     const PARA_ID_FOR_CHANNEL: u32 = 2000;
 
     const CONTAINER_PARA_ID: u32 = 2002;
@@ -226,8 +233,8 @@ fn check_native_eth_token_to_simple_container_chain_transfer_works() {
 
     let transfer_amount = 100_000_000;
 
-    Dancelight::execute_with(|| {
-        let root_origin = <Dancelight as Chain>::RuntimeOrigin::root();
+    Starlight::execute_with(|| {
+        let root_origin = <Starlight as Chain>::RuntimeOrigin::root();
 
         let asset_location = Location {
             parents: 0,
@@ -235,15 +242,18 @@ fn check_native_eth_token_to_simple_container_chain_transfer_works() {
         };
 
         assert_ok!(
-            <Dancelight as DancelightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(
+            <Starlight as StarlightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(
                 root_origin.clone(),
-                ChannelId::new(hex!("0000000000000000000000000000000000000000000000000000000000000004")),
+                ChannelId::new(hex!(
+                    "0000000000000000000000000000000000000000000000000000000000000004"
+                )),
                 hex!("0000000000000000000000000000000000000000000000000000000000000005").into(),
-                PARA_ID_FOR_CHANNEL.into()),
-            );
+                PARA_ID_FOR_CHANNEL.into()
+            ),
+        );
 
         assert_ok!(
-            <Dancelight as DancelightRelayPallet>::EthereumSystem::register_token(
+            <Starlight as StarlightRelayPallet>::EthereumSystem::register_token(
                 root_origin.clone(),
                 Box::new(asset_location.into()),
                 snowbridge_core::AssetMetadata {
@@ -255,12 +265,11 @@ fn check_native_eth_token_to_simple_container_chain_transfer_works() {
         );
 
         // Add funds in snowbridge fees account
-        assert_ok!(
-            <<Dancelight as DancelightRelayPallet>::Balances as Mutate<_>>::mint_into(
-                &SnowbridgeFeesAccount::get(),
-                CONTAINER_FEE * 2
-            )
-        );
+        assert_ok!(<<Starlight as StarlightRelayPallet>::Balances as Mutate<
+            _,
+        >>::mint_into(
+            &SnowbridgeFeesAccount::get(), CONTAINER_FEE * 2
+        ));
     });
 
     SimpleTemplate::execute_with(|| {
@@ -322,7 +331,7 @@ fn check_native_eth_token_to_simple_container_chain_transfer_works() {
         );
     });
 
-    Dancelight::execute_with(|| {
+    Starlight::execute_with(|| {
         assert_ok!(send_inbound_message(
             make_send_token_message_simple_template()
         ));
@@ -367,16 +376,16 @@ fn check_native_eth_token_to_simple_container_chain_transfer_works() {
 
 pub fn make_send_token_message_simple_template() -> EventFixture {
     /*
-    ./target/release/tanssi-utils payload-generator   --token-location '{"parents": 0, "interior": {"X2": [{"Parachain": 2002}, {"PalletInstance": 10}]}}'   --para-id 2002   --beneficiary 0x0505050505050505050505050505050505050505050505050505050505050505   --container-fee 500000000000000   --amount 100000000   --fee 1500000000000000   --destination container   --token native
+    ./target/release/tanssi-utils payload-generator   --token-location '{"parents": 0, "interior": {"X2": [{"Parachain": 2002}, {"PalletInstance": 10}]}}'   --para-id 2002   --beneficiary 0x0505050505050505050505050505050505050505050505050505050505050505   --container-fee 500000000000000   --amount 100000000   --fee 1500000000000000   --destination container   --token native --genesis-hash dd6d086f75ec041b66e20c4186d327b23c8af244c534a2418de6574e8c041a60
      */
-    make_send_token_fixture(hex!("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000007f00010000000000000002c97f6a848a8e7895b55dc9b894e4f552ea33203bfbdb478d506f05b62d9d5fd101d2070000050505050505050505050505050505050505050505050505050505050505050500406352bfc60100000000000000000000e1f50500000000000000000000000000c029f73d540500000000000000000000").into())
+    make_send_token_fixture(hex!("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000007f000100000000000000023af7ce8179aa015d51510ecc51d09882cadc3103a0038c3b09b33544f2f350e801d2070000050505050505050505050505050505050505050505050505050505050505050500406352bfc60100000000000000000000e1f50500000000000000000000000000c029f73d540500000000000000000000").into())
 }
 
 pub fn make_send_token_message_frontier_template() -> EventFixture {
     /*
-    ./target/release/tanssi-utils payload-generator   --token-location '{"parents": 0, "interior": {"X2": [{"Parachain": 2001}, {"PalletInstance": 10}]}}'   --para-id 2001   --beneficiary 0x0505050505050505050505050505050505050505   --container-fee 500000000000000   --amount 100000000   --fee 1500000000000000   --destination container   --token native
-    */
-    make_send_token_fixture(hex!("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000007300010000000000000002485f805cb9de38b4324485447c664e16035aa9d28e8723df192fa02ad353088902d1070000050505050505050505050505050505050505050500406352bfc60100000000000000000000e1f50500000000000000000000000000c029f73d540500000000000000000000000000000000000000000000").into())
+    ./target/release/tanssi-utils payload-generator   --token-location '{"parents": 0, "interior": {"X2": [{"Parachain": 2001}, {"PalletInstance": 10}]}}'   --para-id 2001   --beneficiary 0x0505050505050505050505050505050505050505   --container-fee 500000000000000   --amount 100000000   --fee 1500000000000000   --destination container   --token native --genesis-hash dd6d086f75ec041b66e20c4186d327b23c8af244c534a2418de6574e8c041a60
+     */
+    make_send_token_fixture(hex!("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000007300010000000000000002f0bc0f912407e1bc37bbd931f67bf0c7727b413d96a7d4663a6f0c1b00abb80002d1070000050505050505050505050505050505050505050500406352bfc60100000000000000000000e1f50500000000000000000000000000c029f73d540500000000000000000000000000000000000000000000").into())
 }
 
 pub fn make_send_token_fixture(data: Vec<u8>) -> EventFixture {
@@ -466,13 +475,13 @@ pub fn make_send_token_fixture(data: Vec<u8>) -> EventFixture {
 }
 
 pub fn send_inbound_message(fixture: EventFixture) -> DispatchResult {
-    dancelight_runtime::EthereumBeaconClient::store_finalized_header(
+    starlight_runtime::EthereumBeaconClient::store_finalized_header(
         fixture.finalized_header,
         fixture.block_roots_root,
     )
     .unwrap();
-    <Dancelight as DancelightRelayPallet>::EthereumInboundQueue::submit(
-        <Dancelight as Chain>::RuntimeOrigin::signed(DancelightSender::get()),
+    <Starlight as StarlightRelayPallet>::EthereumInboundQueue::submit(
+        <Starlight as Chain>::RuntimeOrigin::signed(StarlightSender::get()),
         fixture.event,
     )
 }
