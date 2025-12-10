@@ -94,7 +94,7 @@ describeSuite({
 
                 // +1 because the test was failing for starlight
                 console.log("issuance, dust", issuance, dust);
-                expectedAmountParachainBond += (issuance * 3n) / 10n + dust + 1;
+                expectedAmountParachainBond += (issuance * 3n) / 10n + dust + 1n;
                 await context.createBlock();
 
                 expect(dancelightBondBalanceAfter - dancelightBondBalanceBefore).to.equal(expectedAmountParachainBond);
