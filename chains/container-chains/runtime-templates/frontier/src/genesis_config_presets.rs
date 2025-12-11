@@ -17,11 +17,11 @@
 use {
     crate as container_chain_template_frontier_runtime,
     crate::{
-        AccountId, EVMChainIdConfig, EVMConfig, EthereumNetwork, MaintenanceModeConfig,
-        MigrationsConfig, PolkadotXcmConfig, Precompiles,
+        dynamic_params::SEPOLIA_ETH_TESTNET_CHAIN_ID, AccountId, EVMChainIdConfig, EVMConfig,
+        MaintenanceModeConfig, MigrationsConfig, PolkadotXcmConfig, Precompiles,
     },
     alloc::{vec, vec::Vec},
-    cumulus_primitives_core::{GlobalConsensus, Junctions::X1, Location, ParaId},
+    cumulus_primitives_core::{GlobalConsensus, Junctions::X1, Location, NetworkId, ParaId},
     fp_evm::GenesisAccount,
     hex_literal::hex,
 };
@@ -120,7 +120,10 @@ fn testnet_genesis(
                 (
                     Location {
                         parents: 2,
-                        interior: X1([GlobalConsensus(EthereumNetwork::get())].into()),
+                        interior: X1([GlobalConsensus(NetworkId::Ethereum {
+                            chain_id: SEPOLIA_ETH_TESTNET_CHAIN_ID,
+                        })]
+                        .into()),
                     },
                     1, // ETH local asset id
                     root_key,
