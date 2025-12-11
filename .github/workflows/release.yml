@@ -137,7 +137,7 @@ jobs:
               run: zepter run check
 
     security-analysis-with-zizmor:
-      name: Run zizmor 🌈
+      name: Run zizmor
       runs-on: ubuntu-latest
       permissions:
         security-events: write
