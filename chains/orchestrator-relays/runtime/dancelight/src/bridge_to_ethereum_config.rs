@@ -619,12 +619,10 @@ mod benchmark_helper {
             validators.push(max_account.clone());
         }
 
-        let validators_bounded = vec::Vec::from(validators);
-
         let symbiotic_payload = SymbioticPayload {
             magic_bytes: MAGIC_BYTES,
             message: SymbioticMessage::V1(InboundCommand::<Runtime>::ReceiveValidators {
-                validators: validators_bounded,
+                validators,
                 external_index: u64::MAX,
             }),
         };
