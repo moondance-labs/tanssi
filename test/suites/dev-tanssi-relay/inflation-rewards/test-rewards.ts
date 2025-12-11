@@ -12,12 +12,13 @@ import {
     filterRewardFromContainer,
     jumpToSession,
     jumpSessions,
+    perbillMul,
 } from "utils";
 //5EYCAe5cHUC3LZehbwavqEb95LcNnpBzfQTsAxeUibSo1Gtb
 
 describeSuite({
     id: "DEVT0701",
-    title: "Dancelight: InflationRewards test suite",
+    title: "InflationRewards test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
@@ -25,6 +26,7 @@ describeSuite({
         let bob: KeyringPair;
         let charlie: KeyringPair;
         let dave: KeyringPair;
+        let isStarlight: boolean;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -32,6 +34,8 @@ describeSuite({
             bob = context.keyring.bob;
             charlie = context.keyring.charlie;
             dave = context.keyring.dave;
+            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            isStarlight = runtimeName === "starlight";
 
             // Add keys to pallet session. In dancebox they are already there in genesis.
             // We need 4 collators because we have 2 chains with 2 collators per chain.
@@ -56,7 +60,7 @@ describeSuite({
 
         it({
             id: "E01",
-            title: "Parachain bond receives 30% of the inflation and pending rewards plus division dust",
+            title: "Parachain bond receives pending rewards plus non-reward part of new inflation",
             test: async () => {
                 await context.createBlock();
 
@@ -79,23 +83,35 @@ describeSuite({
 
                 await context.createBlock();
 
-                const currentChainRewards = await polkadotJs.query.inflationRewards.chainsToReward();
                 const events = await polkadotJs.query.system.events();
                 const issuance = await fetchIssuance(events).amount.toBigInt();
-
-                let dust = 0n;
-                if (currentChainRewards.isSome) {
-                    const currentRewardPerChain = currentChainRewards.unwrap().rewardsPerChain.toBigInt();
-                    dust = (issuance * 7n) / 10n - 2n * currentRewardPerChain;
+                // collator reward is different in dancelight and in starlight
+                // dancelight: 70%
+                // starlight: 4/7 of 100%
+                let chainRewards: bigint;
+                if (isStarlight) {
+                    const BILLION = 1_000_000_000n;
+                    const perBill = (4n * BILLION) / 7n;
+                    chainRewards = perbillMul(issuance, perBill);
+                } else {
+                    // dancelight
+                    const BILLION = 1_000_000_000n;
+                    const perBill = (7n * BILLION) / 10n;
+                    chainRewards = perbillMul(issuance, perBill);
                 }
+                // Chain rewards must be a multiple of number of chains. There may be some dust left over.
+                chainRewards = chainRewards - (chainRewards % 2n);
+                const currentChainRewards = await polkadotJs.query.inflationRewards.chainsToReward();
+                // Sanity check: calculated chainRewards matches on chain
+                const currentRewardPerChain = currentChainRewards.unwrap().rewardsPerChain.toBigInt();
+                const realRewardsMulChains = currentRewardPerChain * 2n;
+                expect(realRewardsMulChains).to.equal(chainRewards);
+
+                expectedAmountParachainBond += issuance - chainRewards;
+
                 const dancelightBondBalanceAfter = (
                     await polkadotJs.query.system.account(DANCELIGHT_BOND)
                 ).data.free.toBigInt();
-
-                // +1 because the test was failing for starlight
-                console.log("issuance, dust", issuance, dust);
-                expectedAmountParachainBond += (issuance * 3n) / 10n + dust + 1n;
-                await context.createBlock();
 
                 expect(dancelightBondBalanceAfter - dancelightBondBalanceBefore).to.equal(expectedAmountParachainBond);
             },
