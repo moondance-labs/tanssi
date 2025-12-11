@@ -214,12 +214,12 @@ jobs:
               with:
                 features: "fast-runtime,metadata-hash"
             - name: Upload runtimes
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v5
               with:
                   name: runtimes
                   path: runtimes
             - name: Upload binary
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v5
               with:
                   name: binaries
                   path: binaries
@@ -317,7 +317,7 @@ jobs:
                   echo "" >> runtime_size_report.md
                   cat runtime_size_report.md
             - name: Find Comment
-              uses: peter-evans/find-comment@v3
+              uses: peter-evans/find-comment@v4
               id: fc
               with:
                   issue-number: ${{ github.event.pull_request.number }}
@@ -367,7 +367,7 @@ jobs:
             fi
         - name: Find existing bot comment
           id: fc
-          uses: peter-evans/find-comment@v3
+          uses: peter-evans/find-comment@v4
           with:
             issue-number: ${{ github.event.pull_request.number }}
             comment-author: "github-actions[bot]"
@@ -825,7 +825,7 @@ jobs:
                   MOST_RECENT_ZOMBIE_DIR=$(ls -td /tmp/zombie-* | head -n 1)
                   find $MOST_RECENT_ZOMBIE_DIR -maxdepth 1 -type f -name '*.log' -exec zip -r $NODE_LOGS_ZIP {} \;
                   echo "NODE_LOGS_ZIP=${NODE_LOGS_ZIP}" >> $GITHUB_ENV
-            - uses: actions/upload-artifact@v4
+            - uses: actions/upload-artifact@v5
               if: failure()
               with:
                   name: failed-node-logs
