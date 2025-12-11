@@ -10,6 +10,7 @@ import {
     fetchIssuance,
     fetchRewardAuthorContainers,
     PER_BILL_RATIO,
+    perbillMul,
     STARLIGHT_BLOCK_INFLATION_PERBILL,
     STARLIGHT_REWARDS_PORTION_PER_BILL_RATIO,
 } from "utils";
@@ -22,17 +23,21 @@ describeSuite({
     testCases: ({ it, context, log }) => {
         let apiAt: ApiDecoration<"promise">;
         let api: ApiPromise;
+        let isStarlight: boolean;
         let numberOfChains: number;
         beforeAll(async () => {
             api = context.polkadotJs();
             const latestBlock = await api.rpc.chain.getBlock();
             const latestBlockHash = latestBlock.block.hash;
+            isStarlight = isStarlightRuntime(api);
 
             // ApiAt to evaluate rewards
             apiAt = await api.at(latestBlockHash);
 
-            // If the number of registered chains is 0, there is no point on running this
-            numberOfChains = (await apiAt.query.containerRegistrar.registeredParaIds()).length;
+            // If the number of chains with collators is 0, there is no point on running this
+            numberOfChains = Object.entries(
+                (await apiAt.query.tanssiCollatorAssignment.collatorContainerChain()).toJSON().containerChains
+            ).length;
         });
 
         it({
@@ -45,11 +50,23 @@ describeSuite({
                 const tolerancePerBill = 1n; // = 0.0000001%
                 const events = await apiAt.query.system.events();
                 const issuance = fetchIssuance(events).amount.toBigInt();
-                const chainRewards = isStarlightRuntime(api)
-                    ? (issuance * STARLIGHT_REWARDS_PORTION_PER_BILL_RATIO[0]) /
-                      STARLIGHT_REWARDS_PORTION_PER_BILL_RATIO[1]
-                    : (issuance * DANCELIGHT_REWARDS_PORTION_PER_BILL_RATIO[0]) /
-                      DANCELIGHT_REWARDS_PORTION_PER_BILL_RATIO[1];
+                let chainRewards: bigint;
+                if (isStarlight) {
+                    const BILLION = 1_000_000_000n;
+                    const perBill =
+                        (STARLIGHT_REWARDS_PORTION_PER_BILL_RATIO[0] * BILLION) /
+                        STARLIGHT_REWARDS_PORTION_PER_BILL_RATIO[1];
+                    chainRewards = perbillMul(issuance, perBill);
+                } else {
+                    // dancelight
+                    const BILLION = 1_000_000_000n;
+                    const perBill =
+                        (DANCELIGHT_REWARDS_PORTION_PER_BILL_RATIO[0] * BILLION) /
+                        DANCELIGHT_REWARDS_PORTION_PER_BILL_RATIO[1];
+                    chainRewards = perbillMul(issuance, perBill);
+                }
+                // Chain rewards must be a multiple of number of chains.
+                chainRewards = chainRewards - (chainRewards % BigInt(numberOfChains));
                 const expectedChainReward = chainRewards / BigInt(numberOfChains);
                 const rewardEvents = fetchRewardAuthorContainers(events);
                 const toleranceDiff = (expectedChainReward * tolerancePerBill) / PER_BILL_RATIO;
@@ -110,7 +127,7 @@ describeSuite({
         it({
             id: "C03",
             title: "Dancelight bond receives dust plus 30% plus non-distributed rewards",
-            test: async () => {
+            test: async ({ skip }) => {
                 const latestBlock = await api.rpc.chain.getBlock();
 
                 const latestBlockHash = latestBlock.block.hash;
@@ -123,8 +140,15 @@ describeSuite({
                 // Pending chains to reward should be read with previous api
                 const pendingChainRewards = await apiAtIssuanceBefore.query.inflationRewards.chainsToReward();
                 const numberOfChains = BigInt(
-                    (await apiAtIssuanceBefore.query.containerRegistrar.registeredParaIds()).length
+                    Object.entries(
+                        (await apiAtIssuanceBefore.query.tanssiCollatorAssignment.collatorContainerChain()).toJSON()
+                            .containerChains
+                    ).length
                 );
+                // Issuance is 0 when number of chain is 0
+                if (numberOfChains === 0n) {
+                    skip();
+                }
 
                 if (pendingChainRewards.isSome) {
                     const rewardPerChain = pendingChainRewards.unwrap().rewardsPerChain.toBigInt();
@@ -139,17 +163,28 @@ describeSuite({
                 const currentChainRewards = await apiAtIssuanceAfter.query.inflationRewards.chainsToReward();
                 const events = await apiAtIssuanceAfter.query.system.events();
                 const issuance = fetchIssuance(events).amount.toBigInt();
-
                 // Dust from computations also goes to parachainBond
-                let dust = 0n;
-                if (currentChainRewards.isSome) {
-                    const currentRewardPerChain = currentChainRewards.unwrap().rewardsPerChain.toBigInt();
-                    dust = (issuance * 7n) / 10n - numberOfChains * currentRewardPerChain;
+                let chainRewards: bigint;
+                if (isStarlight) {
+                    const BILLION = 1_000_000_000n;
+                    const perBill =
+                        (STARLIGHT_REWARDS_PORTION_PER_BILL_RATIO[0] * BILLION) /
+                        STARLIGHT_REWARDS_PORTION_PER_BILL_RATIO[1];
+                    chainRewards = perbillMul(issuance, perBill);
+                } else {
+                    // dancelight
+                    const BILLION = 1_000_000_000n;
+                    const perBill =
+                        (DANCELIGHT_REWARDS_PORTION_PER_BILL_RATIO[0] * BILLION) /
+                        DANCELIGHT_REWARDS_PORTION_PER_BILL_RATIO[1];
+                    chainRewards = perbillMul(issuance, perBill);
                 }
+                // Chain rewards must be a multiple of number of chains.
+                chainRewards = chainRewards - (chainRewards % BigInt(numberOfChains));
                 const parachainBondBalanceAfter = (
                     await apiAtIssuanceAfter.query.system.account(DANCELIGHT_BOND)
                 ).data.free.toBigInt();
-                expectedAmountParachainBond += (issuance * 3n) / 10n + dust;
+                expectedAmountParachainBond += issuance - chainRewards;
 
                 // we know there might be rounding errors, so we always check it is in the range +-1
                 expect(

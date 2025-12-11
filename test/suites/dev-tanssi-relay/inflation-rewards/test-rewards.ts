@@ -99,7 +99,7 @@ describeSuite({
                     const perBill = (7n * BILLION) / 10n;
                     chainRewards = perbillMul(issuance, perBill);
                 }
-                // Chain rewards must be a multiple of number of chains. There may be some dust left over.
+                // Chain rewards must be a multiple of number of chains.
                 chainRewards = chainRewards - (chainRewards % 2n);
                 const currentChainRewards = await polkadotJs.query.inflationRewards.chainsToReward();
                 // Sanity check: calculated chainRewards matches on chain

@@ -169,7 +169,7 @@ describeSuite({
                     const perBill = (7n * BILLION) / 10n;
                     chainRewards = perbillMul(issuance, perBill);
                 }
-                // Chain rewards must be a multiple of number of chains. There may be some dust left over.
+                // Chain rewards must be a multiple of number of chains.
                 chainRewards = chainRewards - (chainRewards % 2n);
                 const expectedContainerReward = chainRewards / 2n;
                 const rewards = fetchRewardAuthorContainers(events);
