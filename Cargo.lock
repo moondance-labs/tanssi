@@ -21093,6 +21093,7 @@ dependencies = [
 name = "tp-xcm-commons"
 version = "0.1.0"
 dependencies = [
+ "dp-xcm-reserve",
  "frame-support",
  "log",
  "staging-xcm",
