@@ -18,46 +18,8 @@
 
 use frame_support::traits::Get;
 use xcm::latest::prelude::*;
-trait Parse {
-    /// Returns the "chain" location part. It could be parent, sibling
-    /// parachain, or child parachain.
-    fn chain_part(&self) -> Option<Location>;
-}
 
-impl Parse for Location {
-    fn chain_part(&self) -> Option<Location> {
-        match (self.parents, self.first_interior()) {
-            // sibling parachain
-            (1, Some(Parachain(id))) => Some(Location::new(1, [Parachain(*id)])),
-            // parent
-            (1, _) => Some(Location::parent()),
-            // children parachain
-            (0, Some(Parachain(id))) => Some(Location::new(0, [Parachain(*id)])),
-            _ => None,
-        }
-    }
-}
-
-pub struct NativeAssetReserve;
-impl frame_support::traits::ContainsPair<Asset, Location> for NativeAssetReserve {
-    fn contains(asset: &Asset, origin: &Location) -> bool {
-        log::trace!(target: "xcm::contains", "NativeAssetReserve asset: {:?}, origin: {:?}", asset, origin);
-        let reserve = if asset.id.0.parents == 0
-            && !matches!(asset.id.0.first_interior(), Some(Parachain(_)))
-        {
-            Some(Location::here())
-        } else {
-            asset.id.0.chain_part()
-        };
-
-        if let Some(ref reserve) = reserve {
-            if reserve == origin {
-                return true;
-            }
-        }
-        false
-    }
-}
+pub use dp_xcm_reserve::NativeAssetReserve;
 
 /// Filter to ensure an ETH asset is coming from a trusted Ethereum location.
 pub struct EthereumAssetReserve<EthereumLocation, EthereumNetwork>(
