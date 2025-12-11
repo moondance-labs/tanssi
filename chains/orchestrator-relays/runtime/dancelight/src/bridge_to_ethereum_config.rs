@@ -407,7 +407,7 @@ mod benchmark_helper {
         snowbridge_beacon_primitives::BeaconHeader,
         snowbridge_core::Channel,
         snowbridge_inbound_queue_primitives::v2::{
-            EthereumAsset, Message, MessageProcessor as ProcessorV2, MessageProcessorError, Payload,
+            Message, MessageProcessor as ProcessorV2, MessageProcessorError, Payload,
         },
         snowbridge_inbound_queue_primitives::{
             v1::{Envelope, MessageProcessor},
@@ -422,12 +422,9 @@ mod benchmark_helper {
         tp_bridge::symbiotic_message_processor::{
             InboundCommand, Message as SymbioticMessage, Payload as SymbioticPayload, MAGIC_BYTES,
         },
-        xcm::{
-            latest::{
-                prelude::{Junctions::*, *},
-                Location,
-            },
-            VersionedXcm,
+        xcm::latest::{
+            prelude::{Junctions::*, *},
+            Location,
         },
     };
 

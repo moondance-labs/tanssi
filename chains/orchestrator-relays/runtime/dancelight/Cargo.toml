@@ -178,9 +178,9 @@ bp-relayers = { workspace = true }
 bridge-hub-common = { workspace = true }
 pallet-bridge-relayers = { workspace = true }
 snowbridge-pallet-inbound-queue-v2 = { workspace = true }
+snowbridge-pallet-inbound-queue-v2-fixtures = { workspace = true, optional = true }
 snowbridge-pallet-outbound-queue-v2 = { workspace = true }
 snowbridge-pallet-system-v2 = { workspace = true }
-snowbridge-pallet-inbound-queue-v2-fixtures = { workspace = true, optional = true }
 
 [dev-dependencies]
 alloy-core = { workspace = true, features = [ "sol-types" ] }
