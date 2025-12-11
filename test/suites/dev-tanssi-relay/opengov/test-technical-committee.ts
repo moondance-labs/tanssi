@@ -3,10 +3,7 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { KeyringPair } from "@polkadot/keyring/types";
-import {
-    checkIfErrorIsEmitted,
-    isStarlightRuntime,
-} from "../../../utils";
+import { checkIfErrorIsEmitted, isStarlightRuntime } from "../../../utils";
 import type { H256 } from "@polkadot/types/interfaces";
 
 export type ProposedEventDataType = {

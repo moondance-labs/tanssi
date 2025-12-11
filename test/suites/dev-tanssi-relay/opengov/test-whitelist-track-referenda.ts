@@ -64,7 +64,9 @@ describeSuite({
 
             await context.createBlock(await whitelistCallProposal.signAsync(charlie));
 
-            const isCallWhitelistedAfterProposal = await api.query.whitelist.whitelistedCall(call.method.hash.toHex());
+            const isCallWhitelistedAfterProposal = (await api.query.whitelist.whitelistedCall(
+                call.method.hash.toHex()
+            )) as any;
             expect(isCallWhitelistedAfterProposal.isSome, "The call should be whitelisted");
         });
 
@@ -147,9 +149,9 @@ describeSuite({
                 expect(missingReferendumDecisionEvents).toEqual([]);
 
                 // 7. Verify the call is no longer whitelisted and the dispatch was successful
-                const isCallWhitelistedAfterFailedWhitelistDispatchTx = await api.query.whitelist.whitelistedCall(
+                const isCallWhitelistedAfterFailedWhitelistDispatchTx = (await api.query.whitelist.whitelistedCall(
                     call.method.hash.toHex()
-                );
+                )) as any;
                 expect(
                     isCallWhitelistedAfterFailedWhitelistDispatchTx.isNone,
                     "The call should not be whitelisted anymore"
