@@ -339,9 +339,6 @@ async fn try_spawn<
         .database_params
         .database = Some(Database::ParityDb);
 
-    // TODO: need to modify anything from here?
-    //start_bootnode_params;
-
     let keep_db = container_chain_cli.base.keep_db;
 
     // Get a closure that checks if db_path exists.Need this to know when to use full sync instead of warp sync.

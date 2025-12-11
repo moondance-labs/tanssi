@@ -261,7 +261,7 @@ pub fn start_node_impl_container<
             prometheus_registry: prometheus_registry.as_ref(),
         })?;
 
-        if data_preserver {
+        {
             let StartBootnodeParams {
                 relay_chain_fork_id,
                 parachain_fork_id,
@@ -269,41 +269,16 @@ pub fn start_node_impl_container<
                 parachain_public_addresses,
                 relay_chain_network,
                 paranode_rx,
-                embedded_dht_bootnode,
+                mut embedded_dht_bootnode,
                 dht_bootnode_discovery,
             } = start_bootnode_params;
 
-            // Advertise parachain bootnode address in relay chain DHT
-            start_bootnode_tasks(StartBootnodeTasksParams {
-                embedded_dht_bootnode,
-                dht_bootnode_discovery,
-                para_id,
-                task_manager: &mut node_builder.task_manager,
-                relay_chain_interface: relay_chain_interface.clone(),
-                relay_chain_fork_id,
-                relay_chain_network,
-                request_receiver: paranode_rx,
-                parachain_network: node_builder.network.network.clone(),
-                advertise_non_global_ips,
-                parachain_genesis_hash: node_builder.client.chain_info().genesis_hash,
-                parachain_fork_id,
-                parachain_public_addresses,
-            });
-        } else {
-            // Collators don't advertise their IP address, but they still discover other advertised
-            // full nodes and data preservers for this para id
-            let StartBootnodeParams {
-                relay_chain_fork_id,
-                parachain_fork_id,
-                advertise_non_global_ips,
-                parachain_public_addresses,
-                relay_chain_network,
-                paranode_rx,
-                dht_bootnode_discovery,
-                embedded_dht_bootnode: _,
-            } = start_bootnode_params;
-
-            let embedded_dht_bootnode = false;
+            if !data_preserver {
+                // not data_preserver = collator
+                // Collators don't advertise their IP address, but they still discover other advertised
+                // full nodes and data preservers for this para id
+                embedded_dht_bootnode = false;
+            }
 
             // Advertise parachain bootnode address in relay chain DHT
             start_bootnode_tasks(StartBootnodeTasksParams {
