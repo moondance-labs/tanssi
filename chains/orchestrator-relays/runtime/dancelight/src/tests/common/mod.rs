@@ -1662,7 +1662,7 @@ pub fn wait_for_democracy_to_pass(proposal_index: pallet_referenda::ReferendumIn
 }
 
 fn is_deciding(i: pallet_referenda::ReferendumIndex) -> bool {
-    let status = pallet_referenda::ReferendumInfoFor::<Runtime>::get(i.clone());
+    let status = pallet_referenda::ReferendumInfoFor::<Runtime>::get(i);
     println!("status {:?}", status);
     matches!(
         pallet_referenda::ReferendumInfoFor::<Runtime>::get(i),
