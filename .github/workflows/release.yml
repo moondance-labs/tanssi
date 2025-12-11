@@ -771,9 +771,9 @@ jobs:
               uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Install and run upgrade test"
               run: |
-                cd test
-                pnpm install
-                pnpm moonwall test chopsticks_${{ matrix.chains.chain }}_upgrade
+                  cd test
+                  pnpm install
+                  pnpm moonwall test chopsticks_${{ matrix.chains.chain }}_upgrade
 
     zombienet-test-upgrade:
         runs-on: ubuntu-latest
