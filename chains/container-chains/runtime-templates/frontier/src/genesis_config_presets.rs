@@ -100,7 +100,7 @@ fn testnet_genesis(
         base_fee: Default::default(),
         transaction_payment: Default::default(),
         sudo: container_chain_template_frontier_runtime::SudoConfig {
-            key: Some(root_key.clone()),
+            key: Some(root_key),
         },
         authorities_noting: container_chain_template_frontier_runtime::AuthoritiesNotingConfig {
             orchestrator_para_id: ORCHESTRATOR,
@@ -123,7 +123,7 @@ fn testnet_genesis(
                         interior: X1([GlobalConsensus(EthereumNetwork::get())].into()),
                     },
                     1, // ETH local asset id
-                    root_key.clone(),
+                    root_key,
                     true,
                     1,
                 ),
