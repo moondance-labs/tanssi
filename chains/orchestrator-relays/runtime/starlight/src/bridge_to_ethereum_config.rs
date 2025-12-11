@@ -21,10 +21,11 @@ use crate::EthereumBeaconClient;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
 use {
-    tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
+    tanssi_runtime_common::relay::{
+        NativeContainerTokensProcessor, NativeTokenTransferMessageProcessor,
+    },
     tp_bridge::{
-        symbiotic_message_processor::SymbioticInboundMessageProcessorV1,
-        GenericTokenInboundMessageProcessor,
+        symbiotic_message_processor::SymbioticMessageProcessor, GenericTokenInboundMessageProcessor,
     },
 };
 
@@ -36,7 +37,11 @@ use {
         Runtime, RuntimeEvent, SnowbridgeFeesAccount, TanssiAggregateMessageOrigin,
         TokenLocationReanchored, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
-    frame_support::weights::ConstantMultiplier,
+    frame_support::{
+        traits::{ConstBool, ConstU128, PalletInfoAccess},
+        weights::ConstantMultiplier,
+    },
+    pallet_ethereum_token_transfers::DenyTipHandler,
     pallet_xcm::EnsureXcm,
     snowbridge_beacon_primitives::ForkVersions,
     snowbridge_core::{gwei, meth, PricingParameters, Rewards},
@@ -129,6 +134,21 @@ impl snowbridge_pallet_system::Config for Runtime {
     type WeightInfo = crate::weights::snowbridge_pallet_system::SubstrateWeight<Runtime>;
 }
 
+pub struct ForbidOutboundQueueV2;
+impl snowbridge_outbound_queue_primitives::v2::SendMessage for ForbidOutboundQueueV2 {
+    type Ticket = ();
+
+    fn validate(
+        _: &snowbridge_outbound_queue_primitives::v2::Message,
+    ) -> Result<Self::Ticket, snowbridge_outbound_queue_primitives::SendError> {
+        Err(snowbridge_outbound_queue_primitives::SendError::Halted)
+    }
+
+    fn deliver(_: Self::Ticket) -> Result<H256, snowbridge_outbound_queue_primitives::SendError> {
+        Err(snowbridge_outbound_queue_primitives::SendError::Halted)
+    }
+}
+
 impl pallet_ethereum_token_transfers::Config for Runtime {
     type Currency = Balances;
     type OutboundQueue = EthereumOutboundQueue;
@@ -137,9 +157,18 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
     type FeesAccount = SnowbridgeFeesAccount;
     type TokenLocationReanchored = TokenLocationReanchored;
     type TokenIdFromLocation = EthereumSystem;
+    type ShouldUseV2 = ConstBool<false>;
+    type LocationHashOf = tp_bridge::TanssiAgentIdOf;
+    type EthereumLocation = starlight_runtime_constants::snowbridge::EthereumLocation;
+    type MinV2Reward = ConstU128<1>;
+    type OriginToLocation = xcm_config::LocalOriginToLocation;
+    type UniversalLocation = xcm_config::UniversalLocation;
+    type OutboundQueueV2 = ForbidOutboundQueueV2;
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = tp_bridge::EthereumTokenTransfersBenchHelper<Runtime>;
     type WeightInfo = crate::weights::pallet_ethereum_token_transfers::SubstrateWeight<Runtime>;
+    type TipHandler = DenyTipHandler<Runtime>;
+    type PalletOrigin = Self::RuntimeOrigin;
 }
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmark_helper {
@@ -219,6 +248,10 @@ mod test_helpers {
     }
 }
 
+parameter_types! {
+    pub InboundQueuePalletInstance: u8 = <EthereumInboundQueue as PalletInfoAccess>::index() as u8;
+}
+
 type AssetTransactor = <xcm_config::XcmConfig as xcm_executor::Config>::AssetTransactor;
 
 pub type EthTokensProcessor = EthTokensLocalProcessor<
@@ -228,11 +261,20 @@ pub type EthTokensProcessor = EthTokensLocalProcessor<
     AssetTransactor,
     starlight_runtime_constants::snowbridge::EthereumLocation,
     starlight_runtime_constants::snowbridge::EthereumNetwork,
-    frame_support::traits::ConstBool<false>,
 >;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
 pub type NativeTokensProcessor = NativeTokenTransferMessageProcessor<Runtime>;
+
+#[cfg(not(feature = "runtime-benchmarks"))]
+pub type NativeContainerProcessor = NativeContainerTokensProcessor<
+    Runtime,
+    AssetTransactor,
+    starlight_runtime_constants::snowbridge::EthereumLocation,
+    starlight_runtime_constants::snowbridge::EthereumNetwork,
+    InboundQueuePalletInstance,
+    TokenLocationReanchored,
+>;
 
 impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -253,13 +295,16 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type Helper = benchmark_helper::EthSystemBenchHelper;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
-    // TODO: Revisit this when we enable xcmp messages
     type MaxMessageSize = ConstU32<2048>;
     type AssetTransactor = AssetTransactor;
     #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (
-        SymbioticInboundMessageProcessorV1<Self>,
-        GenericTokenInboundMessageProcessor<Self, NativeTokensProcessor, EthTokensProcessor>,
+        SymbioticMessageProcessor<Self>,
+        GenericTokenInboundMessageProcessor<
+            Self,
+            (NativeTokensProcessor, NativeContainerProcessor),
+            EthTokensProcessor,
+        >,
     );
     type RewardProcessor = RewardThroughFeesAccount<Self>;
     #[cfg(feature = "runtime-benchmarks")]

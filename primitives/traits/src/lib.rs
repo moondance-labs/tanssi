@@ -88,11 +88,12 @@ impl<Balance> CollatorAssignmentHook<Balance> for Tuple {
 /// Tips paras are willing to pay for collator assignment in case of collators demand
 /// surpasses the offer.
 pub trait CollatorAssignmentTip<Balance> {
-    fn get_para_tip(a: ParaId) -> Option<Balance>;
+    /// Return the amount this para is willing to tip to be included.
+    fn get_para_max_tip(a: ParaId) -> Option<Balance>;
 }
 
 impl<Balance> CollatorAssignmentTip<Balance> for () {
-    fn get_para_tip(_: ParaId) -> Option<Balance> {
+    fn get_para_max_tip(_: ParaId) -> Option<Balance> {
         None
     }
 }

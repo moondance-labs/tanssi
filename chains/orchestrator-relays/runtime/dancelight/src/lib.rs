@@ -156,6 +156,9 @@ pub use {
 
 #[cfg(feature = "runtime-benchmarks")]
 use {
+    pallet_bridge_relayers::benchmarking::{
+        Config as BridgeRelayersConfig, Pallet as BridgeRelayersBench,
+    },
     snowbridge_core::{AgentId, TokenId},
     xcm::latest::Junctions::*,
 };
@@ -252,6 +255,14 @@ pub enum TanssiAggregateMessageOrigin {
     /// This will be processed by `CustomProcessSnowbridgeMessage`.
     #[codec(index = 2)]
     SnowbridgeTanssi(ChannelId),
+
+    /// The message came from a snowbridge channel. It will be processed by `snowbridge_pallet_outbound_queue_v2`.
+    #[codec(index = 3)]
+    SnowbridgeV2(H256),
+
+    /// The message came from a snowbridge channel. It will be processed by `snowbridge_pallet_outbound_queue_v2`.
+    #[codec(index = 4)]
+    SnowbridgeTanssiV2(H256),
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -268,6 +279,12 @@ impl From<ParaInclusionAggregateMessageOrigin> for TanssiAggregateMessageOrigin 
             ParaInclusionAggregateMessageOrigin::Ump(UmpQueueId::Para(p)) => p,
         };
         Self::Ump(UmpQueueId::Para(para))
+    }
+}
+
+impl From<H256> for TanssiAggregateMessageOrigin {
+    fn from(origin: H256) -> Self {
+        TanssiAggregateMessageOrigin::SnowbridgeV2(origin)
     }
 }
 
@@ -306,6 +323,12 @@ pub struct GetAggregateMessageOriginTanssi;
 impl Convert<ChannelId, TanssiAggregateMessageOrigin> for GetAggregateMessageOriginTanssi {
     fn convert(channel_id: ChannelId) -> TanssiAggregateMessageOrigin {
         TanssiAggregateMessageOrigin::SnowbridgeTanssi(channel_id)
+    }
+}
+
+impl Convert<H256, TanssiAggregateMessageOrigin> for GetAggregateMessageOriginTanssi {
+    fn convert(origin: H256) -> TanssiAggregateMessageOrigin {
+        TanssiAggregateMessageOrigin::SnowbridgeTanssiV2(origin)
     }
 }
 
@@ -1118,8 +1141,18 @@ impl ProcessMessage for MessageProcessor {
                     message, origin, meter, id,
                 )
             }
+            TanssiAggregateMessageOrigin::SnowbridgeV2(_) => {
+                snowbridge_pallet_outbound_queue_v2::Pallet::<Runtime>::process_message(
+                    message, origin, meter, id,
+                )
+            }
             TanssiAggregateMessageOrigin::SnowbridgeTanssi(_) => {
                 tp_bridge::TanssiOutboundEthMessageProcessorV1::<Runtime>::process_message(
+                    message, origin, meter, id,
+                )
+            }
+            TanssiAggregateMessageOrigin::SnowbridgeTanssiV2(_) => {
+                tp_bridge::TanssiOutboundEthMessageProcessorV2::<Runtime, TokenLocationReanchored>::process_message(
                     message, origin, meter, id,
                 )
             }
@@ -1501,6 +1534,8 @@ parameter_types! {
         &EthereumLocation::get(),
         &xcm_config::UniversalLocation::get()
     ).expect("unable to reanchor reward token");
+
+    pub storage UseSnowbridgeV2: bool = false;
 }
 
 pub struct GetWhitelistedValidators;
@@ -1535,9 +1570,13 @@ impl pallet_external_validators_rewards::Config for Runtime {
     type ExternalIndexProvider = ExternalValidators;
     type GetWhitelistedValidators = GetWhitelistedValidators;
     type Hashing = Keccak256;
-    type ValidateMessage = tp_bridge::TanssiEthMessageValidatorV1<Runtime>;
+    type ValidateMessage = tp_bridge::VersionedTanssiEthMessageValidator<
+        Runtime,
+        TokenLocationReanchored,
+        UseSnowbridgeV2,
+    >;
     type OutboundQueue =
-        tp_bridge::TanssiEthMessageSenderV1<Runtime, GetAggregateMessageOriginTanssi>;
+        tp_bridge::VersionedTanssiEthMessageSender<Runtime, GetAggregateMessageOriginTanssi>;
     type Currency = Balances;
     type RewardsEthereumSovereignAccount = EthereumSovereignAccount;
     type TokenLocationReanchored = TokenLocationReanchored;
@@ -1556,9 +1595,13 @@ impl pallet_external_validator_slashes::Config for Runtime {
     type SessionInterface = DancelightSessionInterface;
     type EraIndexProvider = ExternalValidators;
     type InvulnerablesProvider = ExternalValidators;
-    type ValidateMessage = tp_bridge::TanssiEthMessageValidatorV1<Runtime>;
+    type ValidateMessage = tp_bridge::VersionedTanssiEthMessageValidator<
+        Runtime,
+        TokenLocationReanchored,
+        UseSnowbridgeV2,
+    >;
     type OutboundQueue =
-        tp_bridge::TanssiEthMessageSenderV1<Runtime, GetAggregateMessageOriginTanssi>;
+        tp_bridge::VersionedTanssiEthMessageSender<Runtime, GetAggregateMessageOriginTanssi>;
     type ExternalIndexProvider = ExternalValidators;
     type QueuedSlashesProcessedPerBlock = ConstU32<10>;
     type WeightInfo = weights::pallet_external_validator_slashes::SubstrateWeight<Runtime>;
@@ -1662,10 +1705,8 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
                 | RuntimeCall::Session(..)
                 | RuntimeCall::System(..)
                 | RuntimeCall::PooledStaking(..)
-                | RuntimeCall::Utility(..)
                 | RuntimeCall::Identity(..)
                 | RuntimeCall::XcmPallet(..)
-                | RuntimeCall::EthereumBeaconClient(..)
                 | RuntimeCall::EthereumSystem(..)
                 | RuntimeCall::EthereumTokenTransfers(..)
                 | RuntimeCall::OnDemandAssignmentProvider(..)
@@ -1675,6 +1716,11 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
                 | RuntimeCall::Hrmp(..)
                 | RuntimeCall::AssetRate(..)
                 | RuntimeCall::StreamPayment(..)
+                | RuntimeCall::Treasury(..)
+                | RuntimeCall::EthereumSystemV2(..)
+                | RuntimeCall::ForeignAssets(..)
+                | RuntimeCall::ForeignAssetsCreator(..)
+                | RuntimeCall::BridgeRelayers(..)
         )
     }
 }
@@ -2031,6 +2077,12 @@ construct_runtime! {
         Migrations: pallet_migrations = 120,
         MultiBlockMigrations: pallet_multiblock_migrations = 121,
         MaintenanceMode: pallet_maintenance_mode = 122,
+
+        // Bridge v2
+        EthereumOutboundQueueV2: snowbridge_pallet_outbound_queue_v2 = 123,
+        EthereumInboundQueueV2: snowbridge_pallet_inbound_queue_v2 = 124,
+        EthereumSystemV2: snowbridge_pallet_system_v2 = 125,
+        BridgeRelayers: pallet_bridge_relayers = 126,
 
         // BEEFY Bridges support.
         Beefy: pallet_beefy = 240,
@@ -2391,7 +2443,10 @@ mod benches {
         [snowbridge_pallet_ethereum_client, EthereumBeaconClient]
         [snowbridge_pallet_outbound_queue, EthereumOutboundQueue]
         [snowbridge_pallet_system, EthereumSystem]
+        [snowbridge_pallet_system_v2, EthereumSystemV2]
+        [pallet_bridge_relayers, BridgeRelayersBench::<Runtime>]
         [snowbridge_pallet_inbound_queue, EthereumInboundQueue]
+        [snowbridge_pallet_outbound_queue_v2, EthereumOutboundQueueV2]
     );
 }
 
@@ -3448,6 +3503,36 @@ sp_api::impl_runtime_apis! {
                 fn alias_origin() -> Result<(Location, Location), BenchmarkError> {
                     // The XCM executor of Dancelight doesn't have a configured `Aliasers`
                     Err(BenchmarkError::Skip)
+                }
+            }
+
+            impl BridgeRelayersConfig<bridge_to_ethereum_config::BridgeRelayersInstance> for Runtime {
+                fn bench_reward() -> Self::Reward {
+                    // TODO: analyze if the outbound is the worst case once we implement rewarding.
+                    bridge_to_ethereum_config::BridgeReward::SnowbridgeRewardOutbound
+                }
+
+                fn prepare_rewards_account(
+                    reward_kind: Self::Reward,
+                    reward: Balance,
+                ) -> Option<pallet_bridge_relayers::BeneficiaryOf<Runtime, bridge_to_ethereum_config::BridgeRelayersInstance>> {
+                    use frame_support::traits::fungible::Mutate;
+                    match reward_kind {
+                        bridge_to_ethereum_config::BridgeReward::SnowbridgeRewardOutbound => {
+                          // it is the snowbridge fees account that pays rewards, and in tanssi tokens
+                          Balances::mint_into(&SnowbridgeFeesAccount::get(), reward.saturating_add(ExistentialDeposit::get())).unwrap();
+                        },
+                        _ => {},
+                    }
+                    let account = AccountId::from([1u8; 32]);
+                    // the account needs to exist at least, hence pushing ed
+                    Balances::mint_into(&account, ExistentialDeposit::get()).unwrap();
+                    Some(bridge_to_ethereum_config::BridgeRewardBeneficiaries::LocalAccount(account))
+                }
+
+                fn deposit_account(account: AccountId, balance: Balance) {
+                    use frame_support::traits::fungible::Mutate;
+                    Balances::mint_into(&account, balance.saturating_add(ExistentialDeposit::get())).unwrap();
                 }
             }
 

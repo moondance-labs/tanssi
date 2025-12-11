@@ -42,10 +42,13 @@ use sp_runtime::{DispatchError, TransactionOutcome};
 
 pub mod weights;
 
+pub mod genesis_config_presets;
+
 #[cfg(test)]
 mod tests;
 
 use {
+    alloc::string::ToString,
     alloc::{
         collections::{btree_map::BTreeMap, btree_set::BTreeSet},
         vec,
@@ -71,8 +74,8 @@ use {
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
                 WEIGHT_REF_TIME_PER_SECOND,
             },
-            ConstantMultiplier, Weight, WeightToFeeCoefficient, WeightToFeeCoefficients,
-            WeightToFeePolynomial,
+            ConstantMultiplier, FeePolynomial, Weight, WeightToFeeCoefficient,
+            WeightToFeeCoefficients, WeightToFeePolynomial,
         },
         PalletId,
     },
@@ -196,13 +199,45 @@ pub mod currency {
 ///   - Setting it to `0` will essentially disable the weight fee.
 ///   - Setting it to `1` will cause the literal `#[weight = x]` values to be charged.
 pub struct WeightToFee;
-impl WeightToFeePolynomial for WeightToFee {
+impl frame_support::weights::WeightToFee for WeightToFee {
+    type Balance = Balance;
+
+    fn weight_to_fee(weight: &Weight) -> Self::Balance {
+        let time_poly: FeePolynomial<Balance> = RefTimeToFee::polynomial().into();
+        let proof_poly: FeePolynomial<Balance> = ProofSizeToFee::polynomial().into();
+
+        // Take the maximum instead of the sum to charge by the more scarce resource.
+        time_poly
+            .eval(weight.ref_time())
+            .max(proof_poly.eval(weight.proof_size()))
+    }
+}
+pub struct RefTimeToFee;
+impl WeightToFeePolynomial for RefTimeToFee {
     type Balance = Balance;
     fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
         // in Rococo, extrinsic base weight (smallest non-zero weight) is mapped to 1 MILLIUNIT:
         // in our template, we map to 1/10 of that, or 1/10 MILLIUNIT
         let p = MILLIUNIT / 10;
         let q = 100 * Balance::from(ExtrinsicBaseWeight::get().ref_time());
+        smallvec![WeightToFeeCoefficient {
+            degree: 1,
+            negative: false,
+            coeff_frac: Perbill::from_rational(p % q, q),
+            coeff_integer: p / q,
+        }]
+    }
+}
+
+/// Maps the proof size component of `Weight` to a fee.
+pub struct ProofSizeToFee;
+impl WeightToFeePolynomial for ProofSizeToFee {
+    type Balance = Balance;
+    fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
+        // Map 10kb proof to 1 CENT.
+        let p = MILLIUNIT / 10;
+        let q = 10_000;
+
         smallvec![WeightToFeeCoefficient {
             degree: 1,
             negative: false,
@@ -1662,11 +1697,31 @@ impl_runtime_apis! {
             build_state::<RuntimeGenesisConfig>(config)
         }
 
-        fn get_preset(id: &Option<sp_genesis_builder::PresetId>) -> Option<Vec<u8>> {
-            get_preset::<RuntimeGenesisConfig>(id, |_| None)
+       fn get_preset(id: &Option<sp_genesis_builder::PresetId>) -> Option<Vec<u8>> {
+            get_preset::<RuntimeGenesisConfig>(id, |id: &sp_genesis_builder::PresetId| {
+                let para_id: ParaId = 1000.into();
+                let mock_container_chains: Vec<ParaId> =
+                    vec![2000, 2001].iter().map(|&x| x.into()).collect();
+                let invulnerables = vec![
+                    "Alice".to_string(),
+                    "Bob".to_string(),
+                    "Charlie".to_string(),
+                    "Dave".to_string(),
+                ];
+
+                let patch = match id.as_ref() {
+                    "development" => genesis_config_presets::development(para_id, vec![], mock_container_chains, invulnerables),
+                    _ => return None,
+                };
+                Some(
+                    serde_json::to_string(&patch)
+                        .expect("serialization to json is expected to work. qed.")
+                        .into_bytes(),
+                )
+            })
         }
         fn preset_names() -> Vec<sp_genesis_builder::PresetId> {
-            vec![]
+            vec!["development".into()]
         }
     }
 
