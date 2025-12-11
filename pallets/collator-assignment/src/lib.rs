@@ -74,6 +74,8 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+const LOG_TARGET: &str = "collator-assignment";
+
 #[derive(Encode, Decode, Debug, TypeInfo)]
 pub struct CoreAllocationConfiguration {
     pub core_count: u32,
@@ -189,6 +191,7 @@ pub mod pallet {
         pub(crate) fn order_paras_with_core_config(
             mut bulk_paras: Vec<ChainNumCollators>,
             mut pool_paras: Vec<ChainNumCollators>,
+            old_assigned_para_ids: &BTreeSet<ParaId>,
             core_allocation_configuration: &CoreAllocationConfiguration,
             target_session_index: T::SessionIndex,
             number_of_collators: u32,
@@ -222,17 +225,23 @@ pub mod pallet {
             // which means even when we have some parathread cores empty we cannot schedule parachain there.
             if should_charge_tip {
                 bulk_paras.sort_by(|a, b| {
-                    T::CollatorAssignmentTip::get_para_tip(b.para_id)
-                        .cmp(&T::CollatorAssignmentTip::get_para_tip(a.para_id))
+                    order_old_assigned_first_then_by_max_tip::<T>(
+                        a.para_id,
+                        b.para_id,
+                        old_assigned_para_ids,
+                    )
                 });
 
+                // Parathreads are not long-lived chains and block production is much more sporadic,
+                // so for them it makes sense to "battle for existing spots".
                 pool_paras.sort_by(|a, b| {
-                    T::CollatorAssignmentTip::get_para_tip(b.para_id)
-                        .cmp(&T::CollatorAssignmentTip::get_para_tip(a.para_id))
+                    T::CollatorAssignmentTip::get_para_max_tip(b.para_id)
+                        .cmp(&T::CollatorAssignmentTip::get_para_max_tip(a.para_id))
                 });
             }
 
             bulk_paras.truncate(max_number_of_bulk_paras as usize);
+
             // We are not truncating pool paras, since their workload is not continuous one core
             // can be shared by many paras during the session.
 
@@ -244,6 +253,7 @@ pub mod pallet {
         pub(crate) fn order_paras(
             bulk_paras: Vec<ChainNumCollators>,
             pool_paras: Vec<ChainNumCollators>,
+            old_assigned_para_ids: &BTreeSet<ParaId>,
             target_session_index: T::SessionIndex,
             number_of_collators: u32,
             collators_per_container: u32,
@@ -265,8 +275,11 @@ pub mod pallet {
             // As of now this doesn't distinguish between bulk paras and pool paras
             if !enough_collators_for_all_chain {
                 chains.sort_by(|a, b| {
-                    T::CollatorAssignmentTip::get_para_tip(b.para_id)
-                        .cmp(&T::CollatorAssignmentTip::get_para_tip(a.para_id))
+                    order_old_assigned_first_then_by_max_tip::<T>(
+                        a.para_id,
+                        b.para_id,
+                        old_assigned_para_ids,
+                    )
                 });
             }
 
@@ -310,14 +323,47 @@ pub mod pallet {
             let old_assigned_para_ids: BTreeSet<ParaId> =
                 old_assigned.container_chains.keys().cloned().collect();
 
+            let old_assigned_para_ids_with_collators: BTreeSet<_> = old_assigned
+                .container_chains
+                .iter()
+                .filter_map(|(k, v)| (!v.is_empty()).then_some(k))
+                .cloned()
+                .collect();
+
+            let collators_len = collators.len();
+
+            log::trace!(
+                target: LOG_TARGET,
+                "assign_collators: start: {} collators, {} parachains, {} parathreads",
+                collators_len,
+                container_chain_ids.len(),
+                parathreads.len(),
+            );
+
+            log::trace!(
+                target: LOG_TARGET,
+                "assign_collators: old: {} parachains (including {} with assigned collators)",
+                old_assigned_para_ids.len(),
+                old_assigned_para_ids_with_collators.len(),
+            );
+
             // Remove the containerChains that do not have enough credits for block production
             T::ParaIdAssignmentHooks::pre_assignment(
                 &mut container_chain_ids,
                 &old_assigned_para_ids,
             );
+
             // TODO: parathreads should be treated a bit differently, they don't need to have the same amount of credits
             // as parathreads because they will not be producing blocks on every slot.
             T::ParaIdAssignmentHooks::pre_assignment(&mut parathreads, &old_assigned_para_ids);
+
+            log::trace!(
+                target: LOG_TARGET,
+                "assign_collators: after pre_assignment: {} collators, {} parachains, {} parathreads",
+                collators.len(),
+                container_chain_ids.len(),
+                parathreads.len(),
+            );
 
             let mut shuffle_collators = None;
             // If the random_seed is all zeros, we don't shuffle the list of collators nor the list
@@ -382,6 +428,7 @@ pub mod pallet {
                     Self::order_paras_with_core_config(
                         bulk_paras,
                         pool_paras,
+                        &old_assigned_para_ids_with_collators,
                         &core_allocation_configuration,
                         target_session_index,
                         collators.len() as u32,
@@ -392,6 +439,7 @@ pub mod pallet {
                     Self::order_paras(
                         bulk_paras,
                         pool_paras,
+                        &old_assigned_para_ids_with_collators,
                         target_session_index,
                         collators.len() as u32,
                         collators_per_container,
@@ -399,19 +447,29 @@ pub mod pallet {
                     )
                 };
 
+            log::trace!(
+                target: LOG_TARGET,
+                "assign_collators: after order_paras: {} collators, {} chains, need to charge tip: {}",
+                collators.len(),
+                chains.len(),
+                need_to_charge_tip,
+            );
+
             // We assign new collators
             // we use the config scheduled at the target_session_index
             let full_rotation =
                 T::ShouldRotateAllCollators::should_rotate_all_collators(target_session_index);
             if full_rotation {
-                log::info!(
-                    "Collator assignment: rotating collators. Session {:?}, Seed: {:?}",
+                log::debug!(
+                    target: LOG_TARGET,
+                    "assign_collators: rotating collators. Session {:?}, Seed: {:?}",
                     current_session_index.encode(),
                     random_seed
                 );
             } else {
-                log::info!(
-                    "Collator assignment: keep old assigned. Session {:?}, Seed: {:?}",
+                log::debug!(
+                    target: LOG_TARGET,
+                    "assign_collators: keep old assigned. Session {:?}, Seed: {:?}",
                     current_session_index.encode(),
                     random_seed
                 );
@@ -452,8 +510,27 @@ pub mod pallet {
                 }
             };
 
+            // Containers only with assigned collators to call post_assignment (for payment).
             let mut assigned_containers = new_assigned.container_chains.clone();
             assigned_containers.retain(|_, v| !v.is_empty());
+
+            // Helpers for logs
+            let count_collators = |new_assigned: &AssignedCollators<_>| {
+                new_assigned.orchestrator_chain.len().saturating_add(
+                    new_assigned
+                        .container_chains
+                        .values()
+                        .map(|x| x.len())
+                        .sum(),
+                )
+            };
+
+            log::trace!(
+                target: LOG_TARGET,
+                "assign_collators: after assign. {} collators, {} chains",
+                count_collators(&new_assigned),
+                new_assigned.container_chains.len(),
+            );
 
             // On congestion, prioritized chains need to pay the minimum tip of the prioritized chains
             let maybe_tip: Option<BalanceOf<T>> = if !need_to_charge_tip {
@@ -461,9 +538,14 @@ pub mod pallet {
             } else {
                 assigned_containers
                     .into_keys()
-                    .filter_map(T::CollatorAssignmentTip::get_para_tip)
+                    .filter_map(T::CollatorAssignmentTip::get_para_max_tip)
                     .min()
             };
+
+            log::trace!(
+                target: LOG_TARGET,
+                "Tip to be charged: {maybe_tip:?}",
+            );
 
             // TODO: this probably is asking for a refactor
             // only apply the onCollatorAssignedHook if sufficient collators
@@ -471,6 +553,15 @@ pub mod pallet {
                 &old_assigned_para_ids,
                 &mut new_assigned.container_chains,
                 &maybe_tip,
+            );
+
+            log::trace!(
+                target: LOG_TARGET,
+                "assign_collators: post_assignment summary. {}/{} collators, {}/{} chains",
+                count_collators(&new_assigned),
+                collators_len,
+                new_assigned.container_chains.len(),
+                num_total_registered_paras,
             );
 
             Self::store_collator_fullness(
@@ -492,6 +583,7 @@ pub mod pallet {
                 pending_changed = true;
             }
             // Update PendingCollatorContainerChain, if it changed
+            log::trace!("assign_collators: pending_changed? {}", pending_changed);
             if pending_changed {
                 PendingCollatorContainerChain::<T>::put(pending);
             }
@@ -793,4 +885,26 @@ where
 
         T::get()
     }
+}
+
+fn order_old_assigned_first_then_by_max_tip<T: Config>(
+    a: ParaId,
+    b: ParaId,
+    old_assigned_para_ids: &BTreeSet<ParaId>,
+) -> core::cmp::Ordering {
+    // old assigned comes first
+    let old_assigned_first = old_assigned_para_ids
+        .contains(&a)
+        .cmp(&old_assigned_para_ids.contains(&b))
+        .reverse();
+
+    // higher tip comes first
+    let higher_tip_first = || {
+        T::CollatorAssignmentTip::get_para_max_tip(a)
+            .cmp(&T::CollatorAssignmentTip::get_para_max_tip(b))
+            .reverse()
+    };
+
+    // order first by old assigned, if equal order by higher tip
+    old_assigned_first.then_with(higher_tip_first)
 }
