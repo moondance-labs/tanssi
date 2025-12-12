@@ -2206,6 +2206,14 @@ fn test_reward_to_invulnerable() {
             (AccountId::from(BOB), 100 * UNIT),
             (AccountId::from(CHARLIE), 100 * UNIT),
         ])
+        // set 1 collator per chain
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 1,
+            max_orchestrator_collators: 1,
+            collators_per_container: 1,
+            ..Default::default()
+        })
         .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
@@ -2217,6 +2225,18 @@ fn test_reward_to_invulnerable() {
 
             // wait for next session so that ALICE is elected
             run_to_session(4u32);
+
+            // Verify that all chains have collators
+            let collator_assignment = CollatorAssignment::collator_container_chain();
+            // 2 container chains total
+            assert_eq!(collator_assignment.container_chains.len(), 2);
+            // 1 collator on orchestrator
+            assert_eq!(collator_assignment.orchestrator_chain.len(), 1);
+            // 1 collator per container chain
+            assert!(collator_assignment
+                .container_chains
+                .values()
+                .all(|cs| cs.len() == 1));
 
             let account: AccountId = ALICE.into();
             let balance_before = System::account(account.clone()).data.free;
@@ -2255,7 +2275,19 @@ fn test_reward_to_invulnerable_with_key_change() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+        ])
+        // set 1 collator per chain
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 1,
+            max_orchestrator_collators: 1,
+            collators_per_container: 1,
+            ..Default::default()
+        })
         .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
@@ -2275,6 +2307,18 @@ fn test_reward_to_invulnerable_with_key_change() {
 
             run_to_session(4u32);
 
+            // Verify that all chains have collators
+            let collator_assignment = CollatorAssignment::collator_container_chain();
+            // 2 container chains total
+            assert_eq!(collator_assignment.container_chains.len(), 2);
+            // 1 collator on orchestrator
+            assert_eq!(collator_assignment.orchestrator_chain.len(), 1);
+            // 1 collator per container chain
+            assert!(collator_assignment
+                .container_chains
+                .values()
+                .all(|cs| cs.len() == 1));
+
             let account: AccountId = ALICE.into();
             let balance_before = System::account(account.clone()).data.free;
 
@@ -2290,6 +2334,103 @@ fn test_reward_to_invulnerable_with_key_change() {
                 orchestrator_rewards,
                 balance_after - balance_before,
                 "alice should get the correct reward portion"
+            );
+        });
+}
+
+#[test]
+fn test_reward_chain_without_collators() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_empty_parachains(vec![1001, 1002])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            let account: AccountId = ALICE.into();
+            let balance_before = System::account(account.clone()).data.free;
+
+            let summary = run_block();
+            assert_eq!(summary.author_id, ALICE.into());
+
+            let balance_after = System::account(account).data.free;
+
+            let all_rewards = RewardsPortion::get() * summary.inflation;
+            let alice_rewards = balance_after - balance_before;
+
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(assignment.container_chains.len(), 2);
+            assert_eq!(
+                assignment.container_chains[&1001u32.into()],
+                vec![CHARLIE.into(), DAVE.into()]
+            );
+            // The other chain has 0 collators
+            assert_eq!(assignment.container_chains[&1002u32.into()], vec![]);
+
+            // There are 2 registered chains but only 1 has collators. So we mint tokens for 2
+            // chains (orchestrator + 1 container). So Alice gets 1/2 instead of 1/3.
+            assert_eq!(
+                alice_rewards,
+                all_rewards / 2,
+                "alice should get half of the rewards when there is 1 container chain with collators",
+            );
+        });
+}
+
+#[test]
+fn test_reward_no_container_chains_still_has_inflation() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 1,
+            max_orchestrator_collators: 1,
+            collators_per_container: 1,
+            ..Default::default()
+        })
+        .with_empty_parachains(vec![1001, 1002])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            let account: AccountId = ALICE.into();
+            let balance_before = System::account(account.clone()).data.free;
+
+            let summary = run_block();
+            assert_eq!(summary.author_id, ALICE.into());
+
+            let balance_after = System::account(account).data.free;
+
+            let all_rewards = RewardsPortion::get() * summary.inflation;
+            let alice_rewards = balance_after - balance_before;
+
+            // All container chains have 0 collators
+            let assignment = CollatorAssignment::collator_container_chain();
+            // There are 2 chains registered
+            assert_eq!(assignment.container_chains.len(), 2);
+            // But they don't have collators
+            assert!(assignment.container_chains.values().all(|cs| cs.len() == 0));
+
+            // But we always reward orchestrator chain, so there is always inflation minted
+            // and the 100% goes to Alice
+            assert_eq!(
+                alice_rewards, all_rewards,
+                "alice should get the full reward when there are no container chains with collators",
             );
         });
 }
@@ -3605,7 +3746,7 @@ fn test_slow_adjusting_multiplier_changes_in_response_to_consumed_weight() {
 }
 
 #[test]
-fn test_collator_assignment_tip_priority_on_congestion() {
+fn test_collator_assignment_tip_dont_have_priority_on_congestion() {
     ExtBuilder::default()
         .with_balances(vec![
             (AccountId::from(ALICE), 210_000 * UNIT),
@@ -3650,32 +3791,43 @@ fn test_collator_assignment_tip_priority_on_congestion() {
             assert_eq!(
                 CollatorAssignment::collator_container_chain().container_chains[&para_id.into()]
                     .len(),
-                2,
+                0,
             );
         });
 }
 
 #[test]
-fn test_collator_assignment_tip_charged_on_congestion() {
+fn test_collator_assignment_tip_charged_on_congestion_assigned_before() {
     ExtBuilder::default()
+        // We need enough collators for the orchestrator + 2 container chains to be assigned 2 collators
+        // each AND being not enough collators for all chains to have congestion. Since orchestrator takes 2
+        // colators we need 6 collators in total to have 1001 and 1002 assigned but not 1003 due to congestion.
+        //
+        // 1002 is already assigned without tip, and we ensure that 1002 tipping moves it first AND
+        // tip is payed. We cannot test with 1003 as it was not assigned before, AND already assigned
+        // chains are prioritized.
         .with_balances(vec![
             (AccountId::from(ALICE), 210_000 * UNIT),
             (AccountId::from(BOB), 100_000 * UNIT),
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
+            (AccountId::from(EVE), 100_000 * UNIT),
+            (AccountId::from(FERDIE), 100_000 * UNIT),
         ])
         .with_collators(vec![
             (AccountId::from(ALICE), 210 * UNIT),
             (AccountId::from(BOB), 100 * UNIT),
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
+            (AccountId::from(EVE), 100 * UNIT),
+            (AccountId::from(FERDIE), 100 * UNIT),
         ])
         .with_empty_parachains(vec![1001, 1002, 1003])
         .build()
         .execute_with(|| {
             let tank_funds = 100 * UNIT;
             let max_tip = 1 * UNIT;
-            let para_id = 1003u32;
+            let para_id = 1002u32;
 
             // Send funds to tank
             assert_ok!(ServicesPayment::purchase_credits(
@@ -3768,7 +3920,7 @@ fn test_collator_assignment_tip_only_charge_willing_paras() {
         .execute_with(|| {
             let tank_funds = 100 * UNIT;
             let max_tip = 1 * UNIT;
-            let para_id_with_tip = 1003u32;
+            let para_id_with_tip = 1002u32;
             let para_id_without_tip = 1001u32;
 
             // Send funds to tank to both paras
@@ -3783,7 +3935,7 @@ fn test_collator_assignment_tip_only_charge_willing_paras() {
                 tank_funds,
             ));
 
-            // Only set tip for 1003
+            // Only set tip for 1002
             assert_ok!(ServicesPayment::set_max_tip(
                 root_origin(),
                 para_id_with_tip.into(),
@@ -3835,15 +3987,15 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
         .build()
         .execute_with(|| {
             let tank_funds = 100 * UNIT;
-            let max_tip_1003 = 3 * UNIT;
+            let max_tip_1001 = 3 * UNIT;
             let max_tip_1002 = 2 * UNIT;
-            let para_id_1003 = 1003u32;
+            let para_id_1001 = 1001u32;
             let para_id_1002 = 1002u32;
 
             // Send funds to tank to both paras
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
-                para_id_1003.into(),
+                para_id_1001.into(),
                 tank_funds,
             ));
             assert_ok!(ServicesPayment::purchase_credits(
@@ -3855,8 +4007,8 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
             // Set tips
             assert_ok!(ServicesPayment::set_max_tip(
                 root_origin(),
-                para_id_1003.into(),
-                Some(max_tip_1003),
+                para_id_1001.into(),
+                Some(max_tip_1001),
             ));
             assert_ok!(ServicesPayment::set_max_tip(
                 root_origin(),
@@ -3868,7 +4020,7 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
 
             assert_eq!(
                 CollatorAssignment::collator_container_chain().container_chains
-                    [&para_id_1003.into()]
+                    [&para_id_1001.into()]
                     .len(),
                 2
             );
@@ -3881,7 +4033,7 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
 
             // Should have withdrawn the lowest tip from both paras
             assert_eq!(
-                Balances::usable_balance(ServicesPayment::parachain_tank(para_id_1003.into())),
+                Balances::usable_balance(ServicesPayment::parachain_tank(para_id_1001.into())),
                 tank_funds - max_tip_1002 * 2,
             );
 

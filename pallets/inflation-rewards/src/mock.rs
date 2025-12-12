@@ -31,6 +31,8 @@ use {
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage, Perbill,
     },
+    std::collections::BTreeSet,
+    tp_traits::ForSession,
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -161,18 +163,29 @@ impl Default for Mocks {
 
 pub struct MockContainerChainGetter;
 
-impl tp_traits::GetCurrentContainerChains for MockContainerChainGetter {
-    type MaxContainerChains = ConstU32<5>;
+impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChainGetter {
+    fn container_chains_with_collators(_for_session: ForSession) -> Vec<(ParaId, Vec<AccountId>)> {
+        MockData::mock()
+            .container_chains
+            .into_iter()
+            .map(|x| {
+                // The list of collators is not used by this pallet
+                let mock_collators = vec![2];
+                (x, mock_collators)
+            })
+            .collect()
+    }
 
-    fn current_container_chains() -> BoundedVec<ParaId, Self::MaxContainerChains> {
-        MockData::mock().container_chains
+    fn get_all_collators_assigned_to_chains(_for_session: ForSession) -> BTreeSet<AccountId> {
+        unimplemented!("not needed for test")
     }
 
     #[cfg(feature = "runtime-benchmarks")]
-    fn set_current_container_chains(container_chains: &[ParaId]) {
-        MockData::mutate(|m| {
-            m.container_chains = container_chains.to_vec().try_into().unwrap();
-        });
+    fn set_container_chains_with_collators(
+        _for_session: ForSession,
+        _container_chains: &[(ParaId, Vec<AccountId>)],
+    ) {
+        unimplemented!("not needed for test")
     }
 }
 
@@ -217,6 +230,7 @@ parameter_types! {
 impl pallet_inflation_rewards::Config for Test {
     type Currency = Balances;
     type ContainerChains = MockContainerChainGetter;
+    type MaxContainerChains = ConstU32<5>;
     type GetSelfChainBlockAuthor = MockGetSelfChainBlockAuthor;
     type InflationRate = InflationRate;
     type OnUnbalanced = OnUnbalancedInflation;
