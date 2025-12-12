@@ -11,6 +11,7 @@ import {
     getBlockNumberForDebug,
     PARACHAIN_BOND,
     PER_BILL_RATIO,
+    perbillMul,
 } from "utils";
 
 const BLOCK_NUMBER_TO_DEBUG = getBlockNumberForDebug();
@@ -51,11 +52,20 @@ describeSuite({
                 const currentSession = await apiAt.query.session.currentIndex();
                 const keys = await apiAt.query.authorityMapping.authorityIdMapping(currentSession);
                 const account = keys.toJSON()[author];
+                // +1 for orchestrator chain
+                const numberOfChains =
+                    Object.entries(
+                        (await apiAt.query.collatorAssignment.collatorContainerChain()).toJSON().containerChains
+                    ).length + 1;
                 // 70% is distributed across all rewards
                 const issuance = await fetchIssuance(events).amount.toBigInt();
-                const chainRewards = (issuance * 7n) / 10n;
-                const numberOfChains = await apiAt.query.registrar.registeredParaIds();
-                const expectedOrchestratorReward = chainRewards / BigInt(numberOfChains.length + 1);
+                let chainRewards: bigint;
+                const BILLION = 1_000_000_000n;
+                const perBill = (7n * BILLION) / 10n;
+                chainRewards = perbillMul(issuance, perBill);
+                // Chain rewards must be a multiple of number of chains.
+                chainRewards = chainRewards - (chainRewards % BigInt(numberOfChains));
+                const expectedOrchestratorReward = chainRewards / BigInt(numberOfChains);
                 const reward = await filterRewardFromOrchestratorWithFailure(events, account);
                 // we know there might be rounding errors, so we always check it is in the range +-1
                 expect(
@@ -74,10 +84,19 @@ describeSuite({
                 }
                 // 70% is distributed across all rewards
                 const events = await apiAt.query.system.events();
+                // +1 for orchestrator chain
+                const numberOfChains =
+                    Object.entries(
+                        (await apiAt.query.collatorAssignment.collatorContainerChain()).toJSON().containerChains
+                    ).length + 1;
                 const issuance = await fetchIssuance(events).amount.toBigInt();
-                const chainRewards = (issuance * 7n) / 10n;
-                const numberOfChains = await apiAt.query.registrar.registeredParaIds();
-                const expectedChainReward = chainRewards / BigInt(numberOfChains.length + 1);
+                let chainRewards: bigint;
+                const BILLION = 1_000_000_000n;
+                const perBill = (7n * BILLION) / 10n;
+                chainRewards = perbillMul(issuance, perBill);
+                // Chain rewards must be a multiple of number of chains.
+                chainRewards = chainRewards - (chainRewards % BigInt(numberOfChains));
+                const expectedChainReward = chainRewards / BigInt(numberOfChains);
                 const rewardEvents = await fetchRewardAuthorContainers(events);
                 for (const index in rewardEvents) {
                     expect(
@@ -165,15 +184,16 @@ describeSuite({
                 const issuance = await fetchIssuance(events).amount.toBigInt();
 
                 // Dust from computations also goes to parachainBond
-                let dust = 0n;
-                if (currentChainRewards.isSome) {
-                    const currentRewardPerChain = currentChainRewards.unwrap().rewardsPerChain.toBigInt();
-                    dust = (issuance * 7n) / 10n - numberOfChains * currentRewardPerChain;
-                }
+                let chainRewards: bigint;
+                const BILLION = 1_000_000_000n;
+                const perBill = (7n * BILLION) / 10n;
+                chainRewards = perbillMul(issuance, perBill);
+                // Chain rewards must be a multiple of number of chains.
+                chainRewards = chainRewards - (chainRewards % BigInt(numberOfChains));
                 const parachainBondBalanceAfter = (
                     await apiAtIssuanceAfter.query.system.account(PARACHAIN_BOND)
                 ).data.free.toBigInt();
-                expectedAmountParachainBond += (issuance * 3n) / 10n + dust;
+                expectedAmountParachainBond += issuance - chainRewards;
 
                 // we know there might be rounding errors, so we always check it is in the range +-1
                 expect(
