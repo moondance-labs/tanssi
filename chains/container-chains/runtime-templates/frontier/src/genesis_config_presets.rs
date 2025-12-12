@@ -116,6 +116,14 @@ fn testnet_genesis(
         foreign_assets_creator: pallet_foreign_asset_creator::GenesisConfig {
             // foreign_asset, asset_id, admin, is_sufficient, min_balance
             assets: vec![
+                // TANSSI
+                (
+                    Location::parent(), // native token of parent chain (orchestrator)
+                    0xffff,             // TANSSI local asset id
+                    root_key,
+                    true,
+                    1,
+                ),
                 // ETH
                 (
                     Location {
@@ -125,15 +133,7 @@ fn testnet_genesis(
                         })]
                         .into()),
                     },
-                    1, // ETH local asset id
-                    root_key,
-                    true,
-                    1,
-                ),
-                // TANSSI
-                (
-                    Location::parent(), // native token of parent chain (orchestrator)
-                    2,                  // TANSSI local asset id
+                    0xfffe, // ETH local asset id
                     root_key,
                     true,
                     1,

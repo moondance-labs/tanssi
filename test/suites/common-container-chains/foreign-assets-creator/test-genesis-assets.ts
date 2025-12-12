@@ -23,7 +23,7 @@ describeSuite({
             id: "T01",
             title: "Genesis should register ETH tokens",
             test: async () => {
-                const assetId = "1";
+                const assetId = "65534";
                 const assetLocation = {
                     interior: {
                         x1: [
@@ -44,7 +44,7 @@ describeSuite({
 
                 const mappedIdFromLocation =
                     await polkadotJs.query.foreignAssetsCreator.foreignAssetToAssetId(assetLocation);
-                expect(mappedIdFromLocation.toHuman()).to.eq(assetId);
+                expect(`${mappedIdFromLocation.toJSON()}`).to.eq(assetId);
 
                 const assetDetails = (await polkadotJs.query.foreignAssets.asset(assetId)).unwrap();
                 expect(assetDetails.admin.toHuman()).to.eq(alice.address);
@@ -57,7 +57,7 @@ describeSuite({
             id: "T02",
             title: "Genesis should register TANSSI tokens",
             test: async () => {
-                const assetId = "2";
+                const assetId = "65535";
                 const assetLocation = {
                     interior: { here: null },
 
@@ -69,7 +69,7 @@ describeSuite({
 
                 const mappedIdFromLocation =
                     await polkadotJs.query.foreignAssetsCreator.foreignAssetToAssetId(assetLocation);
-                expect(mappedIdFromLocation.toHuman()).to.eq(assetId);
+                expect(`${mappedIdFromLocation.toJSON()}`).to.eq(assetId);
 
                 const assetDetails = (await polkadotJs.query.foreignAssets.asset(assetId)).unwrap();
                 expect(assetDetails.admin.toHuman()).to.eq(alice.address);
