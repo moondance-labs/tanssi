@@ -32,6 +32,7 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 use tp_traits::BlockNumber;
 use {
+    alloc::vec::Vec,
     dp_core::ParaId,
     frame_support::{
         pallet_prelude::*,
@@ -47,8 +48,8 @@ use {
         Perbill,
     },
     tp_traits::{
-        AuthorNotingHook, AuthorNotingInfo, DistributeRewards, GetCurrentContainerChains,
-        MaybeSelfChainBlockAuthor,
+        AuthorNotingHook, AuthorNotingInfo, DistributeRewards, ForSession,
+        GetContainerChainsWithCollators, MaybeSelfChainBlockAuthor,
     },
 };
 
@@ -91,15 +92,27 @@ pub mod pallet {
 
             // Get the number of chains at this block (tanssi + container chain blocks)
             weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 1));
-            // TODO: this should be container_chains_with_collators to match author_noting
-            // With the current impl we mint tokens for chains that don't have collators assigned
-            // in the case where there aren't enough collators for all chains.
-            // Or maybe that's desired, because it makes inflation depend on number of registered
-            // chains.
-            let registered_para_ids =
-                bounded_vec_into_bounded_btree_set(T::ContainerChains::current_container_chains());
+            let container_chains_to_check_unbounded: Vec<_> =
+                T::ContainerChains::container_chains_with_collators(ForSession::Current)
+                    .into_iter()
+                    .filter_map(|(para_id, collators)| (!collators.is_empty()).then_some(para_id))
+                    .collect();
 
-            let mut number_of_chains: BalanceOf<T> = (registered_para_ids.len() as u32).into();
+            // Convert to BoundedBTreeSet. If the number of chains is greater than the limit, truncate
+            // and emit a warning. This should never happen because we assume that
+            // MaxContainerChains has the same value in all the pallets, but that's not enforced.
+            // A better solution would be for container_chains_with_collators to return an already
+            // bounded data structure.
+            let unbounded_len = container_chains_to_check_unbounded.len();
+            let container_chains_to_check = bounded_vec_into_bounded_btree_set(
+                BoundedVec::truncate_from(container_chains_to_check_unbounded),
+            );
+            if container_chains_to_check.len() != unbounded_len {
+                log::warn!("inflation_rewards: got more chains than max. ")
+            }
+
+            let mut number_of_chains: BalanceOf<T> =
+                (container_chains_to_check.len() as u32).into();
 
             // We only add 1 extra chain to number_of_chains if we are
             // in a parachain context with an orchestrator configured.
@@ -138,7 +151,7 @@ pub mod pallet {
 
                 // Keep track of chains to reward
                 ChainsToReward::<T>::put(ChainsToRewardValue {
-                    para_ids: registered_para_ids,
+                    para_ids: container_chains_to_check,
                     rewards_per_chain,
                 });
 
@@ -159,7 +172,12 @@ pub mod pallet {
     pub trait Config: frame_system::Config {
         type Currency: Inspect<Self::AccountId> + Balanced<Self::AccountId>;
 
-        type ContainerChains: GetCurrentContainerChains;
+        /// Get container chains with collators. The number of chains returned affects inflation:
+        /// we mint tokens to reward the collator of each chain.
+        type ContainerChains: GetContainerChainsWithCollators<Self::AccountId>;
+
+        /// Hard limit on number of container chains with collators. Used to define bounded storage.
+        type MaxContainerChains: Get<u32>;
 
         /// Get block author for self chain
         type GetSelfChainBlockAuthor: MaybeSelfChainBlockAuthor<Self::AccountId>;
@@ -214,10 +232,7 @@ pub mod pallet {
     )]
     #[scale_info(skip_type_params(T))]
     pub struct ChainsToRewardValue<T: Config> {
-        pub para_ids: BoundedBTreeSet<
-            ParaId,
-            <T::ContainerChains as GetCurrentContainerChains>::MaxContainerChains,
-        >,
+        pub para_ids: BoundedBTreeSet<ParaId, <T as Config>::MaxContainerChains>,
         pub rewards_per_chain: BalanceOf<T>,
     }
 

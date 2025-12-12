@@ -42,6 +42,10 @@ decl_test_relay_chains! {
             EthereumInboundQueue: starlight_runtime::EthereumInboundQueue,
             EthereumSystem: starlight_runtime::EthereumSystem,
             ExternalValidators: starlight_runtime::ExternalValidators,
+            EthereumTokenTransfers: starlight_runtime::EthereumTokenTransfers,
+            ForeignAssets: starlight_runtime::ForeignAssets,
+            ForeignAssetsCreator: starlight_runtime::ForeignAssetsCreator,
+            AssetRate: starlight_runtime::AssetRate,
         }
     }
 }

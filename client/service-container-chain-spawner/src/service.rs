@@ -17,6 +17,7 @@
 use {
     crate::cli::ContainerChainCli,
     crate::rpc::generate_rpc_builder::{GenerateRpcBuilder, GenerateRpcBuilderParams},
+    cumulus_client_bootnodes::{start_bootnode_tasks, StartBootnodeTasksParams},
     cumulus_client_consensus_common::{
         ParachainBlockImport as TParachainBlockImport, ParachainBlockImportMarker,
     },
@@ -34,7 +35,7 @@ use {
     dp_slot_duration_runtime_api::TanssiSlotDurationApi,
     nimbus_primitives::{NimbusId, NimbusPair},
     node_common::service::node_builder::{
-        MinimalCumulusRuntimeApi, NodeBuilder, NodeBuilderConfig,
+        MinimalCumulusRuntimeApi, NodeBuilder, NodeBuilderConfig, StartBootnodeParams,
     },
     sc_basic_authorship::ProposerFactory,
     sc_consensus::{BasicQueue, BlockImport},
@@ -174,6 +175,7 @@ pub fn start_node_impl_container<
     generate_rpc_builder: TGenerateRpcBuilder,
     container_chain_cli: &'a ContainerChainCli,
     data_preserver: bool,
+    start_bootnode_params: StartBootnodeParams,
 ) -> impl std::future::Future<
     Output = sc_service::error::Result<(
         TaskManager,
@@ -258,6 +260,43 @@ pub fn start_node_impl_container<
             sync_service: node_builder.network.sync_service.clone(),
             prometheus_registry: prometheus_registry.as_ref(),
         })?;
+
+        {
+            let StartBootnodeParams {
+                relay_chain_fork_id,
+                parachain_fork_id,
+                advertise_non_global_ips,
+                parachain_public_addresses,
+                relay_chain_network,
+                paranode_rx,
+                mut embedded_dht_bootnode,
+                dht_bootnode_discovery,
+            } = start_bootnode_params;
+
+            if !data_preserver {
+                // not data_preserver = collator
+                // Collators don't advertise their IP address, but they still discover other advertised
+                // full nodes and data preservers for this para id
+                embedded_dht_bootnode = false;
+            }
+
+            // Advertise parachain bootnode address in relay chain DHT
+            start_bootnode_tasks(StartBootnodeTasksParams {
+                embedded_dht_bootnode,
+                dht_bootnode_discovery,
+                para_id,
+                task_manager: &mut node_builder.task_manager,
+                relay_chain_interface: relay_chain_interface.clone(),
+                relay_chain_fork_id,
+                relay_chain_network,
+                request_receiver: paranode_rx,
+                parachain_network: node_builder.network.network.clone(),
+                advertise_non_global_ips,
+                parachain_genesis_hash: node_builder.client.chain_info().genesis_hash,
+                parachain_fork_id,
+                parachain_public_addresses,
+            });
+        }
 
         if let Some(collation_params) = collation_params {
             let node_spawn_handle = node_builder.task_manager.spawn_handle().clone();

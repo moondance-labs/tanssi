@@ -20,9 +20,9 @@ jobs:
   setup-scripts:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Upload tools
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: original-tools
           path: tools
@@ -32,12 +32,12 @@ jobs:
     runs-on: tanssi-release
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Download binaries
         run:  |
           ./test/scripts/download-latest-rt-binaries.sh ${{ github.event.inputs.binaries }} --include-all-archs --tag ${{ github.event.inputs.docker_tag }}        
       - name: Upload binaries
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: binaries
           path: test/tmp/
@@ -51,7 +51,7 @@ jobs:
       asset_upload_url: ${{ steps.create-release.outputs.upload_url }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Use Node.js 22.x
         uses: actions/setup-node@v6
         with:

@@ -1678,10 +1678,8 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
                 | RuntimeCall::Session(..)
                 | RuntimeCall::System(..)
                 | RuntimeCall::PooledStaking(..)
-                | RuntimeCall::Utility(..)
                 | RuntimeCall::Identity(..)
                 | RuntimeCall::XcmPallet(..)
-                | RuntimeCall::EthereumBeaconClient(..)
                 | RuntimeCall::EthereumSystem(..)
                 | RuntimeCall::EthereumTokenTransfers(..)
                 | RuntimeCall::OnDemandAssignmentProvider(..)
@@ -1691,6 +1689,9 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
                 | RuntimeCall::Hrmp(..)
                 | RuntimeCall::AssetRate(..)
                 | RuntimeCall::StreamPayment(..)
+                | RuntimeCall::Treasury(..)
+                | RuntimeCall::ForeignAssets(..)
+                | RuntimeCall::ForeignAssetsCreator(..)
         )
     }
 }
@@ -1834,7 +1835,8 @@ impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnba
 // Pallet to reward container chains collators.
 impl pallet_inflation_rewards::Config for Runtime {
     type Currency = Balances;
-    type ContainerChains = ContainerRegistrar;
+    type ContainerChains = TanssiCollatorAssignment;
+    type MaxContainerChains = MaxLengthParaIds;
     type GetSelfChainBlockAuthor = ();
     type InflationRate = CollatorsInflationRatePerBlock;
     type OnUnbalanced = OnUnbalancedInflation;

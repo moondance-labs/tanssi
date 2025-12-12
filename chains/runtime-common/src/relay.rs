@@ -707,7 +707,6 @@ pub struct EthTokensLocalProcessor<
     AssetTransactor,
     EthereumLocation,
     EthereumNetwork,
-    ContainerTransfersEnabled, // TODO: remove this when all runtimes support container transfers
 >(
     PhantomData<(
         T,
@@ -716,19 +715,11 @@ pub struct EthTokensLocalProcessor<
         AssetTransactor,
         EthereumLocation,
         EthereumNetwork,
-        ContainerTransfersEnabled,
     )>,
 );
 
-impl<
-        T,
-        XcmProcessor,
-        XcmWeigher,
-        AssetTransactor,
-        EthereumLocation,
-        EthereumNetwork,
-        ContainerTransfersEnabled,
-    > MessageProcessor
+impl<T, XcmProcessor, XcmWeigher, AssetTransactor, EthereumLocation, EthereumNetwork>
+    MessageProcessor
     for EthTokensLocalProcessor<
         T,
         XcmProcessor,
@@ -736,7 +727,6 @@ impl<
         AssetTransactor,
         EthereumLocation,
         EthereumNetwork,
-        ContainerTransfersEnabled,
     >
 where
     T: snowbridge_pallet_inbound_queue::Config
@@ -750,7 +740,6 @@ where
     AssetTransactor: TransactAsset,
     EthereumLocation: Get<Location>,
     EthereumNetwork: Get<NetworkId>,
-    ContainerTransfersEnabled: Get<bool>,
     cumulus_primitives_core::Location:
         EncodeLike<<T as pallet_foreign_asset_creator::Config>::ForeignAsset>,
 {
@@ -788,12 +777,7 @@ where
                 Self::process_xcm_local_native_eth_transfer(eth_transfer_data)
             }
             Destination::ForeignAccountId32 { .. } | Destination::ForeignAccountId20 { .. } => {
-                if ContainerTransfersEnabled::get() {
-                    Self::process_xcm_container_eth_transfer(eth_transfer_data)
-                } else {
-                    log::error!("EthTokensLocalProcessor: container transfers not supported yet");
-                    return Ok(());
-                }
+                Self::process_xcm_container_eth_transfer(eth_transfer_data)
             }
         }
     }
@@ -805,15 +789,7 @@ pub struct EthTransferData {
     pub amount: u128,
 }
 
-impl<
-        T,
-        XcmProcessor,
-        XcmWeigher,
-        AssetTransactor,
-        EthereumLocation,
-        EthereumNetwork,
-        ContainerTransfersEnabled,
-    >
+impl<T, XcmProcessor, XcmWeigher, AssetTransactor, EthereumLocation, EthereumNetwork>
     EthTokensLocalProcessor<
         T,
         XcmProcessor,
@@ -821,7 +797,6 @@ impl<
         AssetTransactor,
         EthereumLocation,
         EthereumNetwork,
-        ContainerTransfersEnabled,
     >
 where
     T: frame_system::Config + pallet_xcm::Config + pallet_ethereum_token_transfers::Config,
@@ -832,7 +807,6 @@ where
     AssetTransactor: TransactAsset,
     EthereumLocation: Get<Location>,
     EthereumNetwork: Get<NetworkId>,
-    ContainerTransfersEnabled: Get<bool>,
 {
     pub fn decode_message_for_eth_transfer(mut payload: &[u8]) -> Option<EthTransferData> {
         match VersionedXcmMessage::decode_all(&mut payload) {
