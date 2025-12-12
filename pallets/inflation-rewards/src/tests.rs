@@ -129,12 +129,13 @@ fn test_reward_container_chain_author() {
         let new_supply_1 = total_supply_1 - total_supply_0;
 
         // Note container author
-        let registered_para_ids = <Test as Config>::ContainerChains::current_container_chains();
+        let registered_para_ids =
+            <Test as Config>::ContainerChains::container_chains_with_collators(ForSession::Current);
         <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
             AuthorNotingInfo {
                 author: container_author,
                 block_number: 1,
-                para_id: registered_para_ids[0],
+                para_id: registered_para_ids[0].0,
             },
         ]);
 
@@ -154,7 +155,7 @@ fn test_reward_container_chain_author() {
             AuthorNotingInfo {
                 author: container_author_2,
                 block_number: 2,
-                para_id: registered_para_ids[0],
+                para_id: registered_para_ids[0].0,
             },
         ]);
 
@@ -180,12 +181,13 @@ fn test_cannot_reward_twice_in_same_tanssi_block() {
         let new_supply_1 = total_supply_1 - total_supply_0;
 
         // Note container author
-        let registered_para_ids = <Test as Config>::ContainerChains::current_container_chains();
+        let registered_para_ids =
+            <Test as Config>::ContainerChains::container_chains_with_collators(ForSession::Current);
         <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
             AuthorNotingInfo {
                 author: container_author,
                 block_number: 1,
-                para_id: registered_para_ids[0],
+                para_id: registered_para_ids[0].0,
             },
         ]);
 
@@ -194,7 +196,7 @@ fn test_cannot_reward_twice_in_same_tanssi_block() {
             AuthorNotingInfo {
                 author: container_author,
                 block_number: 2,
-                para_id: registered_para_ids[0],
+                para_id: registered_para_ids[0].0,
             },
         ]);
 
