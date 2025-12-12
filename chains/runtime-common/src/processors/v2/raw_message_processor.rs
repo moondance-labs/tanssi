@@ -157,6 +157,7 @@ pub struct RawMessageProcessor<
 
 impl<
         T,
+        AccountId,
         GatewayAddress,
         DefaultClaimer,
         EthereumNetwork,
@@ -164,7 +165,7 @@ impl<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
-    > MessageProcessorWithFallback<<T as frame_system::Config>::AccountId>
+    > MessageProcessorWithFallback<AccountId>
     for RawMessageProcessor<
         T,
         GatewayAddress,
@@ -201,16 +202,16 @@ where
     type ExtractedMessage = ExtractedXcmConstructionInfo<<T as pallet_xcm::Config>::RuntimeCall>;
 
     fn try_extract_message(
-        _sender: &<T as frame_system::Config>::AccountId,
+        _sender: &AccountId,
         message: &Message,
     ) -> Result<Self::ExtractedMessage, MessageExtractionError> {
         try_extract_message::<T>(message)
     }
 
     fn process_extracted_message(
-        _sender: <T as frame_system::Config>::AccountId,
+        _sender: AccountId,
         extracted_message: Self::ExtractedMessage,
-    ) -> Result<[u8; 32], MessageProcessorError> {
+    ) -> Result<(), MessageProcessorError> {
         let prepared_xcm = prepare_raw_message_xcm_instructions::<T>(
             EthereumNetwork::get(),
             &EthereumUniversalLocation::get(),
@@ -260,6 +261,6 @@ where
             );
         }
 
-        Ok([0; 32])
+        Ok(())
     }
 }

@@ -20,7 +20,8 @@ use crate::processors::v2::fallback_message_processor::{
     AssetTrapFallbackProcessor, SymbioticFallbackProcessor,
 };
 use crate::processors::v2::{
-    CodecError, FallbackMessageProcessor, MessageExtractionError, MessageProcessorWithFallback,
+    CodecError, FallbackMessageProcessor, MessageExtractionError,
+    MessageProcessorWithFallback,
 };
 use alloc::boxed::Box;
 use alloc::format;
@@ -242,7 +243,7 @@ where
     fn process_extracted_message(
         _sender: AccountId,
         extracted_message: Self::ExtractedMessage,
-    ) -> Result<[u8; 32], MessageProcessorError> {
-        process_message(extracted_message).map(|_| [0; 32])
+    ) -> Result<(), MessageProcessorError> {
+        process_message(extracted_message)
     }
 }

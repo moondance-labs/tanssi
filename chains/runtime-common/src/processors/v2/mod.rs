@@ -269,11 +269,6 @@ where
         assets,
         eth_value,
     )?;
-    let execution_fee_asset = derive_asset_for_native_eth(
-        eth_chain_universal_location,
-        tanssi_chain_universal_location,
-        execution_fee_in_eth,
-    )?;
 
     let mut instructions = vec![SetHints {
         hints: vec![AssetClaimer { location: claimer }]
@@ -281,10 +276,13 @@ where
             .expect("checked statically, qed"),
     }];
 
-    if let Fungible(amount) = execution_fee_asset.fun {
-        if amount > 0 {
-            instructions.push(ReserveAssetDeposited(execution_fee_asset.clone().into()));
-        }
+    if execution_fee_in_eth > 0 {
+        let execution_fee_asset = derive_asset_for_native_eth(
+            eth_chain_universal_location,
+            tanssi_chain_universal_location,
+            execution_fee_in_eth,
+        )?;
+        instructions.push(ReserveAssetDeposited(execution_fee_asset.clone().into()));
     }
 
     let mut reserve_deposit_assets = vec![];
@@ -345,8 +343,12 @@ where
         .ensure_complete()
 }
 
+fn calculate_message_hash(message: &Message) -> [u8; 32] {
+    blake2_256(message.encode().as_slice())
+}
+
 pub trait FallbackMessageProcessor<AccountId> {
-    fn handle_message(who: AccountId, message: Message) -> Result<[u8; 32], MessageProcessorError>;
+    fn handle_message(who: AccountId, message: Message) -> Result<(), MessageProcessorError>;
 }
 
 pub trait MessageProcessorWithFallback<AccountId> {
@@ -361,7 +363,11 @@ pub trait MessageProcessorWithFallback<AccountId> {
     fn process_extracted_message(
         sender: AccountId,
         extracted_message: Self::ExtractedMessage,
-    ) -> Result<[u8; 32], MessageProcessorError>;
+    ) -> Result<(), MessageProcessorError>;
+
+    fn calculate_message_id(message: &Message) -> [u8; 32] {
+        calculate_message_hash(message)
+    }
 }
 
 #[cfg(test)]
