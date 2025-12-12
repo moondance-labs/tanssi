@@ -786,7 +786,7 @@ declare module "@polkadot/api-base/types/consts" {
              **/
             freeBlockProductionCredits: u32 & AugmentedConst<ApiType>;
             /**
-             * The maximum number of collator assigment production credits that can be accumulated
+             * The maximum number of collator assignment production credits that can be accumulated
              **/
             freeCollatorAssignmentCredits: u32 & AugmentedConst<ApiType>;
             /**
