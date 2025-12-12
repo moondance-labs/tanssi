@@ -73,7 +73,7 @@ describeSuite({
                 const pendingChainRewards = await polkadotJs.query.inflationRewards.chainsToReward();
                 if (pendingChainRewards.isSome) {
                     const rewardPerChain = pendingChainRewards.unwrap().rewardsPerChain.toBigInt();
-                    const pendingChainsToReward = BigInt(pendingChainRewards.unwrap().paraIds.length);
+                    const pendingChainsToReward = BigInt(pendingChainRewards.unwrap().paraIds.size);
                     expectedAmountParachainBond += pendingChainsToReward * rewardPerChain;
                 }
 
