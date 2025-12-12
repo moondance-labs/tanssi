@@ -9000,7 +9000,7 @@ declare module "@polkadot/types/lookup" {
 
     /** @name PalletInflationRewardsChainsToRewardValue (730) */
     interface PalletInflationRewardsChainsToRewardValue extends Struct {
-        readonly paraIds: Vec<u32>;
+        readonly paraIds: BTreeSet<u32>;
         readonly rewardsPerChain: u128;
     }
 
