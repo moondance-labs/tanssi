@@ -26,6 +26,31 @@ pub fn message_processor_trait_derive(input: TokenStream) -> TokenStream {
     message_processor_trait_derive_impl(ast).into()
 }
 
+/// Generates the implementation of the `MessageProcessor` trait for a given type.
+///
+/// This function is the core implementation behind the `#[derive(MessageProcessor)]` macro.
+/// It automatically generates boilerplate code for processing messages by implementing
+/// the `MessageProcessor<AccountId>` trait.
+///
+/// # Generated Code
+///
+/// The macro generates an implementation with two methods:
+///
+/// ## `can_process_message`
+/// Determines whether this processor can handle a specific message by attempting to extract it.
+/// Returns `true` in three cases:
+/// - Message extraction succeeds (`Ok`)
+/// - Message is invalid (`InvalidMessage`) - handled by fallback processor
+/// - Internal error occurs (`Other`) - handled by fallback processor
+/// Returns `false` only for `UnsupportedMessage`, allowing the next processor in the chain to try.
+///
+/// ## `process_message`
+/// Processes the message and returns a message ID on success. The flow is:
+/// 1. Attempts to extract the message using `try_extract_message`
+/// 2. Calculates the message ID using `calculate_message_id`
+/// 3. On success: processes the extracted message
+/// 4. On `InvalidMessage`: delegates to the configured `Fallback` processor
+/// 5. On other errors: returns the error
 fn message_processor_trait_derive_impl(ast: DeriveInput) -> proc_macro2::TokenStream {
     // Get the name of the struct/enum
     let name = &ast.ident;
