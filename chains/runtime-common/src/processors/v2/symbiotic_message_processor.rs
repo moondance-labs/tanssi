@@ -20,8 +20,7 @@ use crate::processors::v2::fallback_message_processor::{
     AssetTrapFallbackProcessor, SymbioticFallbackProcessor,
 };
 use crate::processors::v2::{
-    CodecError, FallbackMessageProcessor, MessageExtractionError,
-    MessageProcessorWithFallback,
+    CodecError, FallbackMessageProcessor, MessageExtractionError, MessageProcessorWithFallback,
 };
 use alloc::boxed::Box;
 use alloc::format;
