@@ -16,6 +16,8 @@
 
 pub mod rpc;
 
+use cumulus_client_bootnodes::{start_bootnode_tasks, StartBootnodeTasksParams};
+use node_common::service::node_builder::StartBootnodeParams;
 use sc_client_api::TrieCacheContext;
 use {
     cumulus_client_cli::CollatorOptions,
@@ -92,6 +94,7 @@ pub struct ParachainNodeStarted {
     pub relay_chain_interface: Arc<dyn RelayChainInterface>,
     pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     pub keystore: KeystorePtr,
+    pub start_bootnode_params: StartBootnodeParams,
 }
 
 /// Start a parachain node.
@@ -326,7 +329,7 @@ where
 
     let (block_import, import_queue) = import_queue(&parachain_config, &node_builder);
 
-    let (relay_chain_interface, collator_key) = node_builder
+    let (relay_chain_interface, collator_key, start_bootnode_params) = node_builder
         .build_relay_chain_interface(&parachain_config, polkadot_config, collator_options.clone())
         .await?;
 
@@ -401,6 +404,36 @@ where
         sync_service: node_builder.network.sync_service.clone(),
         prometheus_registry: node_builder.prometheus_registry.as_ref(),
     })?;
+
+    {
+        let StartBootnodeParams {
+            relay_chain_fork_id,
+            parachain_fork_id,
+            advertise_non_global_ips,
+            parachain_public_addresses,
+            relay_chain_network,
+            paranode_rx,
+            embedded_dht_bootnode,
+            dht_bootnode_discovery,
+        } = start_bootnode_params.clone();
+
+        // Advertise parachain bootnode address in relay chain DHT
+        start_bootnode_tasks(StartBootnodeTasksParams {
+            embedded_dht_bootnode,
+            dht_bootnode_discovery,
+            para_id,
+            task_manager: &mut node_builder.task_manager,
+            relay_chain_interface: relay_chain_interface.clone(),
+            relay_chain_fork_id,
+            relay_chain_network,
+            request_receiver: paranode_rx,
+            parachain_network: node_builder.network.network.clone(),
+            advertise_non_global_ips,
+            parachain_genesis_hash: node_builder.client.chain_info().genesis_hash,
+            parachain_fork_id,
+            parachain_public_addresses,
+        });
+    }
 
     let orchestrator_chain_interface_builder = OrchestratorChainInProcessInterfaceBuilder {
         client: node_builder.client.clone(),
@@ -528,6 +561,7 @@ where
                         dancebox_runtime::RuntimeApi,
                     >::new(),
                 override_sync_mode: Some(sc_cli::SyncMode::Warp),
+                start_bootnode_params: start_bootnode_params.clone(),
                 phantom: PhantomData,
             },
             state: Default::default(),
@@ -556,6 +590,7 @@ where
         relay_chain_interface,
         orchestrator_chain_interface,
         keystore: node_builder.keystore_container.keystore(),
+        start_bootnode_params,
     })
 }
 
