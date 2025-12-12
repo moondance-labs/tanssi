@@ -128,9 +128,12 @@ describeSuite({
                 await context.createBlock([tx3], { allowFailures: false });
 
                 const events = await polkadotJs.query.system.events();
-                const xcmErrorEvent = events.find((a) => {
-                    return a.event.method === "AssetsTrapped";
-                });
+                const xcmErrorEvent = events.find(
+                    (event) =>
+                        event.toHuman().event.method === "AssetsTrapped" &&
+                        BigInt(event.toHuman().event.data.assets.V5[0].fun.Fungible.replace(/,/g, "")) ===
+                            transferAmount
+                );
                 expect(!!xcmErrorEvent).to.equal(true);
             },
         });
