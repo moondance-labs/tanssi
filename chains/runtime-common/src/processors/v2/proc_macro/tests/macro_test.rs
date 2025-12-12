@@ -43,15 +43,12 @@ use v2_processor_proc_macro::MessageProcessor as MessageProcessorDerive;
 struct TestFallback1;
 
 impl<AccountId> FallbackMessageProcessor<AccountId> for TestFallback1 {
-    fn handle_message(
-        _who: AccountId,
-        message: Message,
-    ) -> Result<[u8; 32], MessageProcessorError> {
+    fn handle_message(_who: AccountId, message: Message) -> Result<(), MessageProcessorError> {
         match message.execution_fee {
             1 => Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
                 "TestFallback1ProcessorError",
             ))),
-            _ => Ok([10u8; 32]),
+            _ => Ok(()),
         }
     }
 }
@@ -59,7 +56,10 @@ impl<AccountId> FallbackMessageProcessor<AccountId> for TestFallback1 {
 #[derive(MessageProcessorDerive)]
 struct TestImpl1;
 
-impl<AccountId> MessageProcessorWithFallback<AccountId> for TestImpl1 {
+impl<AccountId> MessageProcessorWithFallback<AccountId> for TestImpl1
+where
+    AccountId: From<[u8; 32]>,
+{
     type Fallback = TestFallback1;
     type ExtractedMessage = u128;
 
@@ -87,12 +87,24 @@ impl<AccountId> MessageProcessorWithFallback<AccountId> for TestImpl1 {
     fn process_extracted_message(
         _sender: AccountId,
         extracted_message: Self::ExtractedMessage,
-    ) -> Result<[u8; 32], MessageProcessorError> {
+    ) -> Result<(), MessageProcessorError> {
         match extracted_message {
-            2 => Ok([0u8; 32]),
+            2 => Ok(()),
             _ => Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
                 "TestImpl1MainProcessorError",
             ))),
+        }
+    }
+
+    fn calculate_message_id(message: &Message) -> [u8; 32] {
+        let response = Self::try_extract_message(&AccountId::from([1u8; 32]), message);
+        match response {
+            Ok(value) => [value as u8; 32],
+            Err(MessageExtractionError::UnsupportedMessage { .. }) => [0; 32],
+            Err(MessageExtractionError::InvalidMessage { .. }) => {
+                [(message.execution_fee + 1) as u8; 32]
+            }
+            _ => [0u8; 32],
         }
     }
 }
@@ -100,15 +112,12 @@ impl<AccountId> MessageProcessorWithFallback<AccountId> for TestImpl1 {
 struct TestFallback2;
 
 impl<AccountId> FallbackMessageProcessor<AccountId> for TestFallback2 {
-    fn handle_message(
-        _who: AccountId,
-        message: Message,
-    ) -> Result<[u8; 32], MessageProcessorError> {
+    fn handle_message(_who: AccountId, message: Message) -> Result<(), MessageProcessorError> {
         match message.execution_fee {
             2 => Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
                 "TestFallback1ProcessorError",
             ))),
-            _ => Ok([11u8; 32]),
+            _ => Ok(()),
         }
     }
 }
@@ -116,7 +125,10 @@ impl<AccountId> FallbackMessageProcessor<AccountId> for TestFallback2 {
 #[derive(MessageProcessorDerive)]
 struct TestImpl2;
 
-impl<AccountId> MessageProcessorWithFallback<AccountId> for TestImpl2 {
+impl<AccountId> MessageProcessorWithFallback<AccountId> for TestImpl2
+where
+    AccountId: From<[u8; 32]>,
+{
     type Fallback = TestFallback2;
     type ExtractedMessage = u128;
 
@@ -144,12 +156,22 @@ impl<AccountId> MessageProcessorWithFallback<AccountId> for TestImpl2 {
     fn process_extracted_message(
         _sender: AccountId,
         extracted_message: Self::ExtractedMessage,
-    ) -> Result<[u8; 32], MessageProcessorError> {
+    ) -> Result<(), MessageProcessorError> {
         match extracted_message {
-            4 => Ok([1u8; 32]),
+            4 => Ok(()),
             _ => Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
                 "TestImpl2MainProcessorError",
             ))),
+        }
+    }
+
+    fn calculate_message_id(message: &Message) -> [u8; 32] {
+        let response = Self::try_extract_message(&AccountId::from([1u8; 32]), message);
+        match response {
+            Ok(value) => [value as u8; 32],
+            Err(MessageExtractionError::UnsupportedMessage { .. }) => [0; 32],
+            Err(MessageExtractionError::InvalidMessage { .. }) => [(message.value + 1) as u8; 32],
+            _ => [0u8; 32],
         }
     }
 }
@@ -258,7 +280,7 @@ fn test_macro_process_message_semantics() {
                 "Other error: TestImpl1ExtractionError. due to None",
             ))),
         ),
-        (1, 0, Ok([10u8; 32])),
+        (1, 0, Ok([1u8; 32])),
         (
             1,
             1,
@@ -266,10 +288,10 @@ fn test_macro_process_message_semantics() {
                 "TestFallback1ProcessorError",
             ))),
         ),
-        (1, 2, Ok([10u8; 32])),
-        (2, 0, Ok([0u8; 32])),
-        (2, 1, Ok([0u8; 32])),
-        (2, 2, Ok([0u8; 32])),
+        (1, 2, Ok([3u8; 32])),
+        (2, 0, Ok([2u8; 32])),
+        (2, 1, Ok([2u8; 32])),
+        (2, 2, Ok([2u8; 32])),
         (
             3,
             0,
@@ -421,8 +443,8 @@ fn test_macro_process_message_semantics() {
                 "Unsupported Message: TestImpl2ExtractionError12 due to None",
             ))),
         ),
-        (3, 0, Ok([11u8; 32])),
-        (3, 1, Ok([11u8; 32])),
+        (3, 0, Ok([4u8; 32])),
+        (3, 1, Ok([4u8; 32])),
         (
             3,
             2,
@@ -430,9 +452,9 @@ fn test_macro_process_message_semantics() {
                 "TestFallback1ProcessorError",
             ))),
         ),
-        (4, 0, Ok([1u8; 32])),
-        (4, 1, Ok([1u8; 32])),
-        (4, 2, Ok([1u8; 32])),
+        (4, 0, Ok([4u8; 32])),
+        (4, 1, Ok([4u8; 32])),
+        (4, 2, Ok([4u8; 32])),
         (
             5,
             0,

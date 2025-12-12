@@ -96,10 +96,7 @@ where
     XcmProcessor: ExecuteXcm<<T as pallet_xcm::Config>::RuntimeCall>,
     XcmWeigher: WeightBounds<<T as pallet_xcm::Config>::RuntimeCall>,
 {
-    fn handle_message(
-        _who: AccountId,
-        message: Message,
-    ) -> Result<[u8; 32], MessageProcessorError> {
+    fn handle_message(_who: AccountId, message: Message) -> Result<(), MessageProcessorError> {
         let extracted_message: ExtractedXcmConstructionInfo<
             <T as pallet_xcm::Config>::RuntimeCall,
         > = ExtractedXcmConstructionInfo {
@@ -161,7 +158,7 @@ where
             );
         }
 
-        Ok([0; 32])
+        Ok(())
     }
 }
 
@@ -239,7 +236,7 @@ where
     XcmProcessor: ExecuteXcm<<T as pallet_xcm::Config>::RuntimeCall>,
     XcmWeigher: WeightBounds<<T as pallet_xcm::Config>::RuntimeCall>,
 {
-    fn handle_message(who: AccountId, message: Message) -> Result<[u8; 32], MessageProcessorError> {
+    fn handle_message(who: AccountId, message: Message) -> Result<(), MessageProcessorError> {
         // It is highly likey that:
         // If any assets are associated with the message, a user mistakenly or maliciously sent Symbiotic message
         // If no assets are associated with the message, the symbiotic middleware sent the message with wrong semantics

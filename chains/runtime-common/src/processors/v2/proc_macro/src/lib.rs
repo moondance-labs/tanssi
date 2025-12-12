@@ -17,7 +17,7 @@
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
-use syn::{DeriveInput, GenericParam, WhereClause, parse_macro_input, parse_quote};
+use syn::{parse_macro_input, parse_quote, DeriveInput, GenericParam, WhereClause};
 
 #[proc_macro_derive(MessageProcessor)]
 pub fn message_processor_trait_derive(input: TokenStream) -> TokenStream {
@@ -76,9 +76,10 @@ fn message_processor_trait_derive_impl(ast: DeriveInput) -> proc_macro2::TokenSt
             fn process_message(who: AccountId, message: Message) -> Result<[u8; 32], snowbridge_inbound_queue_primitives::v2::MessageProcessorError> {
                 // Do extraction
                 let result = #name::try_extract_message(&who, &message);
+                let message_id = #name::calculate_message_id(&message);
                 match result {
-                    Ok(extracted_message) => #name::process_extracted_message(who, extracted_message),
-                    Err(MessageExtractionError::InvalidMessage { .. }) => <#name #ty_generics as MessageProcessorWithFallback<AccountId>>::Fallback::handle_message(who, message),
+                    Ok(extracted_message) => #name::process_extracted_message(who, extracted_message).map(|_| message_id),
+                    Err(MessageExtractionError::InvalidMessage { .. }) => <#name #ty_generics as MessageProcessorWithFallback<AccountId>>::Fallback::handle_message(who, message).map(|_| message_id),
                     Err(message_extraction_error) => Err(message_extraction_error.into())
                 }
             }
@@ -137,9 +138,11 @@ where
         snowbridge_inbound_queue_primitives::v2::MessageProcessorError,
     > {
         let result = TestProcessor::try_extract_message(&who, &message);
+        let message_id = TestProcessor::calculate_message_id(&message);
         match result {
             Ok(extracted_message) => {
                 TestProcessor::process_extracted_message(who, extracted_message)
+                    .map(|_| message_id)
             }
             Err(MessageExtractionError::InvalidMessage { .. }) => {
                 <TestProcessor<
@@ -149,6 +152,7 @@ where
                 > as MessageProcessorWithFallback<
                     AccountId,
                 >>::Fallback::handle_message(who, message)
+                    .map(|_| message_id)
             }
             Err(message_extraction_error) => Err(message_extraction_error.into()),
         }
