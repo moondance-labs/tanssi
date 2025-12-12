@@ -17,6 +17,21 @@
 //! # Inflation Rewards Pallet
 //!
 //! This pallet handle native token inflation and rewards distribution.
+//!
+//! Inflation is minted once in `on_initialize`, using
+//! `T::Currency::issue(T::InflationRate::get() * T::Currency::total_issuance());`.
+//!
+//! Note that this is `Perbill` `Mul`, so it rounds to the nearest integer.
+//! Search for `rational_mul_correction` in polkadot-sdk for more info.
+//!
+//! Then, the inflation is split into 2 parts based on `T::RewardsPortion::get()`.
+//! The rewards portion is transferred first to `T::PendingRewardsAccount` in `on_initialize`,
+//! and then to each collator in `on_container_authors_noted`. If a chain doesn't produce blocks,
+//! the reward stays in that account and is transferred to `T::OnUnbalanced` on the next block
+//! `on_initialize`.
+//!
+//! The `T::OnUnbalanced` handles inflation that doesn't go to block rewards, this is usually the
+//! parachain bond account.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 extern crate alloc;
