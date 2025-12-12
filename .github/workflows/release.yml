@@ -139,6 +139,7 @@ jobs:
     security-analysis-with-zizmor:
       name: Run zizmor
       runs-on: ubuntu-latest
+      needs: ["set-tags"]
       permissions:
         security-events: write
         contents: read
