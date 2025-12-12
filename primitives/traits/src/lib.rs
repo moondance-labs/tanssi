@@ -47,7 +47,6 @@ use {
             Decode, DecodeWithMemTracking, DispatchResultWithPostInfo, Encode, Get, MaxEncodedLen,
             Weight,
         },
-        BoundedVec,
     },
     scale_info::TypeInfo,
     serde::{Deserialize, Serialize},
@@ -137,16 +136,6 @@ impl<AccountId, Imbalance> DistributeRewards<AccountId, Imbalance> for () {
     fn distribute_rewards(_rewarded: AccountId, _amount: Imbalance) -> DispatchResultWithPostInfo {
         Ok(().into())
     }
-}
-
-/// Get the current list of container chains parachain ids.
-pub trait GetCurrentContainerChains {
-    type MaxContainerChains: Get<u32>;
-
-    fn current_container_chains() -> BoundedVec<ParaId, Self::MaxContainerChains>;
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn set_current_container_chains(container_chains: &[ParaId]);
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]

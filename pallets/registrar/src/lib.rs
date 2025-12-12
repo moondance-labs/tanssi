@@ -66,9 +66,8 @@ use {
         Saturating,
     },
     tp_traits::{
-        GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId,
-        ParathreadParams as ParathreadParamsTy, RegistrarHandler, RelayStorageRootProvider,
-        SessionContainerChains, SlotFrequency,
+        GetSessionContainerChains, GetSessionIndex, ParaId, ParathreadParams as ParathreadParamsTy,
+        RegistrarHandler, RelayStorageRootProvider, SessionContainerChains, SlotFrequency,
     },
 };
 
@@ -1483,21 +1482,6 @@ pub mod pallet {
 
         pub fn registrar_deposit(para_id: ParaId) -> Option<DepositInfo<T>> {
             RegistrarDeposit::<T>::get(para_id)
-        }
-    }
-
-    impl<T: Config> GetCurrentContainerChains for Pallet<T> {
-        type MaxContainerChains = T::MaxLengthParaIds;
-
-        fn current_container_chains() -> BoundedVec<ParaId, Self::MaxContainerChains> {
-            Self::registered_para_ids()
-        }
-
-        #[cfg(feature = "runtime-benchmarks")]
-        fn set_current_container_chains(container_chains: &[ParaId]) {
-            let paras: BoundedVec<ParaId, T::MaxLengthParaIds> =
-                container_chains.to_vec().try_into().unwrap();
-            RegisteredParaIds::<T>::put(paras);
         }
     }
 
