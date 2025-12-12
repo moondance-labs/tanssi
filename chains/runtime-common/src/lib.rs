@@ -23,6 +23,9 @@ pub mod migrations;
 #[cfg(feature = "relay")]
 pub mod relay;
 
+#[cfg(feature = "relay")]
+pub mod processors;
+
 pub mod universal_aliases;
 
 use core::marker::PhantomData;

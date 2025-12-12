@@ -43,7 +43,7 @@ use {
     snowbridge_inbound_queue_primitives::{EventProof, Log},
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
-    tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
+    tanssi_runtime_common::processors::v1::NativeTokenTransferMessageProcessor,
     xcm::{
         latest::{
             prelude::*, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, Fungibility,

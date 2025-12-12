@@ -39,6 +39,191 @@ function defaultBeaconBlockHeader(slot: Slot): deneb.LightClientHeader {
     return header;
 }
 
+function encodeAsNativeTokenERC20(tokenAddress: string, value: bigint): Uint8Array {
+    const defaultAbiCoder = AbiCoder.defaultAbiCoder();
+
+    const encoded = defaultAbiCoder.encode(["address", "uint128"], [tokenAddress, value]);
+    return getBytes(encoded);
+}
+
+function encodeAsForeignTokenERC20(tokenId: string, value: bigint): Uint8Array {
+    const defaultAbiCoder = AbiCoder.defaultAbiCoder();
+
+    const encoded = defaultAbiCoder.encode(["bytes32", "uint128"], [tokenId, value]);
+
+    return getBytes(encoded);
+}
+
+function encodeXcmMessage(api: ApiPromise, xcmInstructions): Uint8Array {
+    const xcm = api.createType("XcmVersionedXcm", {
+        V5: xcmInstructions,
+    });
+
+    return xcm.toU8a();
+}
+
+function encodeSymbioticMessage(api: ApiPromise, symbioticValidators: string[]): Uint8Array {
+    const MAGIC_BYTES = new Uint8Array([112, 21, 0, 56]);
+
+    api.registry.register({
+        SymbioticReceiveValidators: {
+            validators: "Vec<AccountId32>",
+            external_index: "u64",
+        },
+        SymbioticInboundCommand: {
+            _enum: {
+                ReceiveValidators: "SymbioticReceiveValidators",
+            },
+        },
+        SymbioticMessage: {
+            _enum: {
+                V1: "SymbioticInboundCommand",
+            },
+        },
+        SymbioticPayload: {
+            magic_bytes: "[u8; 4]",
+            message: "SymbioticMessage",
+        },
+    });
+
+    const validators = symbioticValidators.map((validator) => {
+        const hexStr = validator.startsWith("0x") ? validator.slice(2) : validator;
+        return hexStr;
+    });
+
+    const payload = api.createType("SymbioticPayload", {
+        magic_bytes: Array.from(MAGIC_BYTES),
+        message: {
+            V1: {
+                ReceiveValidators: {
+                    validators: validators,
+                    external_index: 0,
+                },
+            },
+        },
+    });
+
+    return payload.toU8a();
+}
+
+export enum PayloadEnum {
+    XCM = "XCM",
+    SYMBIOTIC = "SYMBIOTIC",
+}
+
+export function encodeRawPayload(api: ApiPromise, bytes: Uint8Array, payloadEnum: PayloadEnum): Uint8Array {
+    api.registry.register({
+        RawPayload: {
+            _enum: {
+                Xcm: "Vec<u8>",
+                Symbiotic: "Vec<u8>",
+            },
+        },
+    });
+
+    if (payloadEnum === PayloadEnum.XCM) {
+        const rawPayload = api.createType("RawPayload", {
+            Xcm: Array.from(bytes),
+        });
+
+        return rawPayload.toU8a();
+    }
+
+    if (payloadEnum === PayloadEnum.SYMBIOTIC) {
+        const rawPayload = api.createType("RawPayload", {
+            Symbiotic: Array.from(bytes),
+        });
+
+        return rawPayload.toU8a();
+    }
+
+    throw new Error(`Unsupported PayloadEnum: ${payloadEnum}`);
+}
+
+function createXcmData(api: ApiPromise, xcmInstructions: any[]): Uint8Array {
+    const xcmBytes = encodeXcmMessage(api, xcmInstructions);
+
+    return encodeRawPayload(api, xcmBytes, PayloadEnum.XCM);
+}
+
+function createSymbioticData(api: ApiPromise, symbioticValidators: string[]) {
+    const bytes = encodeSymbioticMessage(api, symbioticValidators);
+
+    return encodeRawPayload(api, bytes, PayloadEnum.SYMBIOTIC);
+}
+
+export async function generateOutboundMessageAcceptedLog(
+    api: ApiPromise,
+    nonce,
+    ethValue: bigint,
+    instructions: any[] | null,
+    nativeERC20Params: { value: bigint; tokenAddress: string }[] = [],
+    foreignTokenParams: { value: bigint; tokenId: string }[] = [],
+    symbioticValidators: string[] | null = null
+) {
+    const gatewayHex = "EDa338E4dC46038493b885327842fD3E301CaB39";
+    const origin = `0x${gatewayHex}`;
+    const gatewayAddress = Uint8Array.from(Buffer.from(gatewayHex, "hex"));
+
+    const defaultAbiCoder = AbiCoder.defaultAbiCoder();
+
+    const xcmSymbioticData = symbioticValidators !== null ? createSymbioticData(api, symbioticValidators) : null;
+    const xcmData = instructions !== null ? createXcmData(api, instructions) : null;
+
+    if (!xcmSymbioticData && !xcmData) {
+        throw new Error("You need to specify XCM instructions or Symbiotic payload!");
+    }
+
+    const payload = {
+        origin,
+        assets: [
+            ...nativeERC20Params.map((nativeTokenParam) => ({
+                kind: 0,
+                data: encodeAsNativeTokenERC20(nativeTokenParam.tokenAddress, nativeTokenParam.value),
+            })),
+            ...foreignTokenParams.map((foreignTokenParam) => ({
+                kind: 1,
+                data: encodeAsForeignTokenERC20(foreignTokenParam.tokenId, foreignTokenParam.value),
+            })),
+        ],
+        xcm: { kind: 0, data: xcmData || xcmSymbioticData },
+        claimer: "0x",
+        value: ethValue,
+        executionFee: 0n,
+        relayerFee: 0n,
+    };
+
+    // Signature for event OutboundMessageAccepted(uint64 nonce, Payload payload) - fixed value
+    const signature = hexToU8a("0x550e2067494b1736ea5573f2d19cdc0ac95b410fff161bf16f11c6229655ec9c");
+    const topics = [signature];
+    const assetsEncoded = payload.assets.map((asset) => [asset.kind, asset.data]);
+    const xcmEncoded = [payload.xcm.kind, payload.xcm.data];
+
+    const encodedDataString = defaultAbiCoder.encode(
+        ["uint64", "tuple(address,tuple(uint8,bytes)[],tuple(uint8,bytes),bytes,uint128,uint128,uint128)"],
+        [
+            nonce,
+            [
+                payload.origin,
+                assetsEncoded,
+                xcmEncoded,
+                payload.claimer,
+                payload.value,
+                payload.executionFee,
+                payload.relayerFee,
+            ],
+        ]
+    );
+
+    const encodedData = getBytes(encodedDataString);
+
+    return api.createType<SnowbridgeVerificationPrimitivesLog>("SnowbridgeVerificationPrimitivesLog", {
+        address: gatewayAddress,
+        topics,
+        data: [].slice.call(encodedData),
+    });
+}
+
 function createSyncCommittee(seed: number) {
     const skBytes: Buffer[] = [];
     for (let i = seed; i < seed + SYNC_COMMITTEE_SIZE; i++) {
