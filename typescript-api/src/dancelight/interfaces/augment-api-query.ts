@@ -82,10 +82,7 @@ import type {
     PalletPreimageRequestStatus,
     PalletProxyAnnouncement,
     PalletProxyProxyDefinition,
-    PalletRankedCollectiveMemberRecord,
-    PalletRankedCollectiveVoteRecord,
-    PalletReferendaReferendumInfoConvictionVotingTally,
-    PalletReferendaReferendumInfoRankedCollectiveTally,
+    PalletReferendaReferendumInfo,
     PalletRegistrarDepositInfo,
     PalletSchedulerRetryConfig,
     PalletSchedulerScheduled,
@@ -1208,122 +1205,6 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
-            /**
-             * Generic query
-             **/
-            [key: string]: QueryableStorageEntry<ApiType>;
-        };
-        fellowshipCollective: {
-            /**
-             * The index of each ranks's member into the group of members who have at least that rank.
-             **/
-            idToIndex: AugmentedQuery<
-                ApiType,
-                (
-                    arg1: u16 | AnyNumber | Uint8Array,
-                    arg2: AccountId32 | string | Uint8Array
-                ) => Observable<Option<u32>>,
-                [u16, AccountId32]
-            > &
-                QueryableStorageEntry<ApiType, [u16, AccountId32]>;
-            /**
-             * The members in the collective by index. All indices in the range `0..MemberCount` will
-             * return `Some`, however a member's index is not guaranteed to remain unchanged over time.
-             **/
-            indexToId: AugmentedQuery<
-                ApiType,
-                (
-                    arg1: u16 | AnyNumber | Uint8Array,
-                    arg2: u32 | AnyNumber | Uint8Array
-                ) => Observable<Option<AccountId32>>,
-                [u16, u32]
-            > &
-                QueryableStorageEntry<ApiType, [u16, u32]>;
-            /**
-             * The number of members in the collective who have at least the rank according to the index
-             * of the vec.
-             **/
-            memberCount: AugmentedQuery<ApiType, (arg: u16 | AnyNumber | Uint8Array) => Observable<u32>, [u16]> &
-                QueryableStorageEntry<ApiType, [u16]>;
-            /**
-             * The current members of the collective.
-             **/
-            members: AugmentedQuery<
-                ApiType,
-                (arg: AccountId32 | string | Uint8Array) => Observable<Option<PalletRankedCollectiveMemberRecord>>,
-                [AccountId32]
-            > &
-                QueryableStorageEntry<ApiType, [AccountId32]>;
-            /**
-             * Votes on a given proposal, if it is ongoing.
-             **/
-            voting: AugmentedQuery<
-                ApiType,
-                (
-                    arg1: u32 | AnyNumber | Uint8Array,
-                    arg2: AccountId32 | string | Uint8Array
-                ) => Observable<Option<PalletRankedCollectiveVoteRecord>>,
-                [u32, AccountId32]
-            > &
-                QueryableStorageEntry<ApiType, [u32, AccountId32]>;
-            votingCleanup: AugmentedQuery<
-                ApiType,
-                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<Bytes>>,
-                [u32]
-            > &
-                QueryableStorageEntry<ApiType, [u32]>;
-            /**
-             * Generic query
-             **/
-            [key: string]: QueryableStorageEntry<ApiType>;
-        };
-        fellowshipReferenda: {
-            /**
-             * The number of referenda being decided currently.
-             **/
-            decidingCount: AugmentedQuery<ApiType, (arg: u16 | AnyNumber | Uint8Array) => Observable<u32>, [u16]> &
-                QueryableStorageEntry<ApiType, [u16]>;
-            /**
-             * The metadata is a general information concerning the referendum.
-             * The `Hash` refers to the preimage of the `Preimages` provider which can be a JSON
-             * dump or IPFS hash of a JSON file.
-             *
-             * Consider a garbage collection for a metadata of finished referendums to `unrequest` (remove)
-             * large preimages.
-             **/
-            metadataOf: AugmentedQuery<
-                ApiType,
-                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<H256>>,
-                [u32]
-            > &
-                QueryableStorageEntry<ApiType, [u32]>;
-            /**
-             * The next free referendum index, aka the number of referenda started so far.
-             **/
-            referendumCount: AugmentedQuery<ApiType, () => Observable<u32>, []> & QueryableStorageEntry<ApiType, []>;
-            /**
-             * Information concerning any given referendum.
-             **/
-            referendumInfoFor: AugmentedQuery<
-                ApiType,
-                (
-                    arg: u32 | AnyNumber | Uint8Array
-                ) => Observable<Option<PalletReferendaReferendumInfoRankedCollectiveTally>>,
-                [u32]
-            > &
-                QueryableStorageEntry<ApiType, [u32]>;
-            /**
-             * The sorted list of referenda ready to be decided but not yet being decided, ordered by
-             * conviction-weighted approvals.
-             *
-             * This should be empty if `DecidingCount` is less than `TrackInfo::max_deciding`.
-             **/
-            trackQueue: AugmentedQuery<
-                ApiType,
-                (arg: u16 | AnyNumber | Uint8Array) => Observable<Vec<ITuple<[u32, u32]>>>,
-                [u16]
-            > &
-                QueryableStorageEntry<ApiType, [u16]>;
             /**
              * Generic query
              **/
@@ -2850,9 +2731,7 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             referendumInfoFor: AugmentedQuery<
                 ApiType,
-                (
-                    arg: u32 | AnyNumber | Uint8Array
-                ) => Observable<Option<PalletReferendaReferendumInfoConvictionVotingTally>>,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<PalletReferendaReferendumInfo>>,
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;

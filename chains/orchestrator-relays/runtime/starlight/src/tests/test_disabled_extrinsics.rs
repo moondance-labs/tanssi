@@ -52,29 +52,6 @@ fn test_disabled_some_extrinsics_democracy() {
         );
 
         assert_noop!(
-            RuntimeCall::FellowshipCollective(pallet_ranked_collective::Call::add_member {
-                who: sp_runtime::MultiAddress::Id(sp_runtime::AccountId32::from(BOB))
-            })
-            .dispatch(<Runtime as frame_system::Config>::RuntimeOrigin::signed(
-                AccountId::from(ALICE)
-            )),
-            frame_system::Error::<Runtime>::CallFiltered
-        );
-
-        assert_noop!(
-            RuntimeCall::FellowshipReferenda(pallet_referenda::Call::<
-                Runtime,
-                pallet_referenda::Instance2,
-            >::cancel {
-                index: 0u32
-            })
-            .dispatch(<Runtime as frame_system::Config>::RuntimeOrigin::signed(
-                AccountId::from(ALICE)
-            )),
-            frame_system::Error::<Runtime>::CallFiltered
-        );
-
-        assert_noop!(
             RuntimeCall::Whitelist(pallet_whitelist::Call::whitelist_call {
                 call_hash: Default::default()
             })

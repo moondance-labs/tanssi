@@ -23,17 +23,10 @@ use {
 };
 
 mod origins;
-pub use origins::{
-    pallet_custom_origins, AuctionAdmin, Fellows, FellowshipAdmin, FellowshipExperts,
-    FellowshipInitiates, FellowshipMasters, GeneralAdmin, LeaseAdmin, ReferendumCanceller,
-    ReferendumKiller, Spender, StakingAdmin, Treasurer, WhitelistedCaller,
-};
+pub use origins::{pallet_custom_origins, WhitelistedCaller};
 mod tracks;
 pub use tracks::TracksInfo;
 pub mod councils;
-mod fellowship;
-
-pub use fellowship::{FellowshipCollectiveInstance, FellowshipReferendaInstance};
 
 parameter_types! {
     pub const VoteLockingPeriod: BlockNumber = 7 * DAYS;
@@ -61,7 +54,7 @@ parameter_types! {
 parameter_types! {
     pub const MaxBalance: Balance = Balance::MAX;
 }
-pub type TreasurySpender = EitherOf<EnsureRootWithSuccess<AccountId, MaxBalance>, Spender>;
+pub type TreasurySpender = EnsureRootWithSuccess<AccountId, MaxBalance>;
 
 impl origins::pallet_custom_origins::Config for Runtime {}
 
@@ -89,8 +82,8 @@ impl pallet_referenda::Config for Runtime {
     type Scheduler = Scheduler;
     type Currency = Balances;
     type SubmitOrigin = frame_system::EnsureSigned<AccountId>;
-    type CancelOrigin = EitherOf<EnsureRoot<AccountId>, ReferendumCanceller>;
-    type KillOrigin = EitherOf<EnsureRoot<AccountId>, ReferendumKiller>;
+    type CancelOrigin = EnsureRoot<AccountId>;
+    type KillOrigin = EnsureRoot<AccountId>;
     type Slash = Treasury;
     type Votes = pallet_conviction_voting::VotesOf<Runtime>;
     type Tally = pallet_conviction_voting::TallyOf<Runtime>;

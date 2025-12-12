@@ -20,11 +20,11 @@ use {
     super::{
         parachains_origin,
         weights::{self, xcm::XcmWeight},
-        AccountId, AllPalletsWithSystem, Balance, Balances, Dmp, Fellows, ForeignAssets,
+        AccountId, AllPalletsWithSystem, Balance, Balances, Dmp, ForeignAssets,
         ForeignAssetsCreator, ParaId, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin,
         TransactionByteFee, Treasury, WeightToFee, XcmPallet,
     },
-    crate::{governance::StakingAdmin, EthereumSystem, SnowbridgeFeesAccount},
+    crate::{EthereumSystem, SnowbridgeFeesAccount},
     dancelight_runtime_constants::{
         currency::CENTS,
         snowbridge::{EthereumLocation, EthereumNetwork},
@@ -62,10 +62,9 @@ use {
         ChildParachainConvertsVia, ConvertedConcreteId, DescribeAllTerminal, DescribeFamily,
         FixedWeightBounds, FrameTransactionalProcessor, FungibleAdapter, FungiblesAdapter,
         HashedDescription, IsChildSystemParachain, IsConcrete, MintLocation, NoChecking,
-        OriginToPluralityVoice, SendXcmFeeToAccount, SignedAccountId32AsNative,
-        SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
-        UsingComponents, WeightInfoBounds, WithComputedOrigin, WithUniqueTopic,
-        XcmFeeManagerFromComponents,
+        SendXcmFeeToAccount, SignedAccountId32AsNative, SignedToAccountId32,
+        SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents,
+        WeightInfoBounds, WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
     },
     xcm_executor::XcmExecutor,
 };
@@ -251,35 +250,11 @@ impl xcm_executor::Config for XcmConfig {
     type XcmEventEmitter = XcmPallet;
 }
 
-parameter_types! {
-    pub const CollectiveBodyId: BodyId = BodyId::Unit;
-    // StakingAdmin pluralistic body.
-    pub const StakingAdminBodyId: BodyId = BodyId::Defense;
-    // Fellows pluralistic body.
-    pub const FellowsBodyId: BodyId = BodyId::Technical;
-}
-
 /// Type to convert an `Origin` type value into a `Location` value which represents an interior
 /// location of this chain.
 pub type LocalOriginToLocation = (
     // And a usual Signed origin to be used in XCM as a corresponding AccountId32
     SignedToAccountId32<RuntimeOrigin, AccountId, ThisNetwork>,
-);
-
-/// Type to convert the `StakingAdmin` origin to a Plurality `Location` value.
-pub type StakingAdminToPlurality =
-    OriginToPluralityVoice<RuntimeOrigin, StakingAdmin, StakingAdminBodyId>;
-
-/// Type to convert the Fellows origin to a Plurality `Location` value.
-pub type FellowsToPlurality = OriginToPluralityVoice<RuntimeOrigin, Fellows, FellowsBodyId>;
-
-/// Type to convert a pallet `Origin` type value into a `Location` value which represents an
-/// interior location of this chain for a destination chain.
-pub type LocalPalletOriginToLocation = (
-    // StakingAdmin origin to be used in XCM as a corresponding Plurality `Location` value.
-    StakingAdminToPlurality,
-    // Fellows origin to be used in XCM as a corresponding Plurality `Location` value.
-    FellowsToPlurality,
 );
 
 impl pallet_xcm::Config for Runtime {
