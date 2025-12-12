@@ -85,12 +85,16 @@ pub mod pallet {
                         Preservation::Expendable,
                         Fortitude::Force,
                     )
-                    .unwrap_or(CreditOf::<T>::zero())
+                    .unwrap_or_else(|_e| {
+                        log::debug!("failed to withdraw from PendingRewardsAccount");
+
+                        CreditOf::<T>::zero()
+                    })
                 } else {
                     CreditOf::<T>::zero()
                 };
 
-            // Get the number of chains at this block (tanssi + container chain blocks)
+            // Get the number of chains at this block (container chain blocks)
             weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 1));
             let container_chains_to_check_unbounded: Vec<_> =
                 T::ContainerChains::container_chains_with_collators(ForSession::Current)
@@ -108,7 +112,7 @@ pub mod pallet {
                 BoundedVec::truncate_from(container_chains_to_check_unbounded),
             );
             if container_chains_to_check.len() != unbounded_len {
-                log::warn!("inflation_rewards: got more chains than max. ")
+                log::warn!("inflation_rewards: got more chains than max");
             }
 
             let mut number_of_chains: BalanceOf<T> =
@@ -134,10 +138,17 @@ pub mod pallet {
                     .peek()
                     .checked_div(&number_of_chains)
                     .unwrap_or_else(|| {
+                        // This is unreachable because we checked `number_of_chains.is_zero()` above
                         log::error!("Rewards per chain is zero");
                         BalanceOf::<T>::zero()
                     });
-                let (mut total_reminder, staking_rewards) = rewards_credit.split_merge(
+                // rewards_credit must be a multiple of number_of_chains, because the reward is split
+                // evenly between all chains. So take the remainder (total_rewards % number_of_chains)
+                // and move it to total_remainder, like this:
+                // total_remainder = reminder_credit + (total_rewards % number_of_chains)
+                // staking_rewards = rewards_credit - (total_rewards % number_of_chains)
+                // This guarantees that `staking_rewards - rewards_per_chain * number_of_chains == 0`
+                let (mut total_remainder, staking_rewards) = rewards_credit.split_merge(
                     total_rewards % number_of_chains,
                     (reminder_credit, CreditOf::<T>::zero()),
                 );
@@ -146,7 +157,10 @@ pub mod pallet {
                 if let Err(undistributed_rewards) =
                     T::Currency::resolve(&T::PendingRewardsAccount::get(), staking_rewards)
                 {
-                    total_reminder = total_reminder.merge(undistributed_rewards);
+                    // This error can happen if `PendingRewardsAccount` has 0 balance and
+                    // `staking_rewards` is less than existential deposit. In that case, we won't
+                    // be able to reward collators, and the reward will go to `OnUnbalanced`.
+                    total_remainder = total_remainder.merge(undistributed_rewards);
                 }
 
                 // Keep track of chains to reward
@@ -155,11 +169,14 @@ pub mod pallet {
                     rewards_per_chain,
                 });
 
-                // Let the runtime handle the non-staking part
-                T::OnUnbalanced::on_unbalanced(not_distributed_rewards.merge(total_reminder));
+                // Let the runtime handle the non-staking part, plus the non distributed rewards
+                // from the previous block, plus the dust from total_rewards % number_of_chains.
+                T::OnUnbalanced::on_unbalanced(not_distributed_rewards.merge(total_remainder));
 
                 // We don't reward the orchestrator in solochain mode
                 if let Some(orchestrator_author) = T::GetSelfChainBlockAuthor::get_block_author() {
+                    // Container chain authors get rewarded later in inherent, but orchestrator
+                    // author is rewarded now.
                     weight.saturating_accrue(Self::reward_orchestrator_author(orchestrator_author));
                 }
             }
@@ -241,21 +258,30 @@ pub mod pallet {
             let mut total_weight = T::DbWeight::get().reads(1);
             if let Some(chains_to_reward) = ChainsToReward::<T>::get() {
                 total_weight.saturating_accrue(T::DbWeight::get().reads(1));
+                let actual_reward = T::Currency::withdraw(
+                    &T::PendingRewardsAccount::get(),
+                    chains_to_reward.rewards_per_chain,
+                    Precision::BestEffort,
+                    Preservation::Expendable,
+                    Fortitude::Force,
+                )
+                .unwrap_or_else(|_e| {
+                    log::debug!("failed to withdraw from PendingRewardsAccount");
+
+                    CreditOf::<T>::zero()
+                });
+                let actual_reward_for_event = actual_reward.peek();
+                if actual_reward_for_event != chains_to_reward.rewards_per_chain {
+                    log::warn!("collator reward different than expected");
+                }
                 match T::StakingRewardsDistributor::distribute_rewards(
                     orchestrator_author.clone(),
-                    T::Currency::withdraw(
-                        &T::PendingRewardsAccount::get(),
-                        chains_to_reward.rewards_per_chain,
-                        Precision::BestEffort,
-                        Preservation::Expendable,
-                        Fortitude::Force,
-                    )
-                    .unwrap_or(CreditOf::<T>::zero()),
+                    actual_reward,
                 ) {
                     Ok(frame_support::dispatch::PostDispatchInfo { actual_weight, .. }) => {
                         Self::deposit_event(Event::RewardedOrchestrator {
                             account_id: orchestrator_author,
-                            balance: chains_to_reward.rewards_per_chain,
+                            balance: actual_reward_for_event,
                         });
 
                         if let Some(weight) = actual_weight {
@@ -291,25 +317,34 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
                 let author = &info.author;
                 let para_id = info.para_id;
 
-                // If we find the index is because we still have not rewarded it
+                // If we find the para id is because we still have not rewarded it
                 // this makes sure we dont reward it twice in the same block
                 if container_chains_to_reward.para_ids.remove(&para_id) {
                     // we distribute rewards to the author
+                    let actual_reward = T::Currency::withdraw(
+                        &T::PendingRewardsAccount::get(),
+                        container_chains_to_reward.rewards_per_chain,
+                        Precision::BestEffort,
+                        Preservation::Expendable,
+                        Fortitude::Force,
+                    )
+                    .unwrap_or_else(|_e| {
+                        log::debug!("failed to withdraw from PendingRewardsAccount");
+
+                        CreditOf::<T>::zero()
+                    });
+                    let actual_reward_for_event = actual_reward.peek();
+                    if actual_reward_for_event != container_chains_to_reward.rewards_per_chain {
+                        log::warn!("collator reward different than expected");
+                    }
                     match T::StakingRewardsDistributor::distribute_rewards(
                         author.clone(),
-                        T::Currency::withdraw(
-                            &T::PendingRewardsAccount::get(),
-                            container_chains_to_reward.rewards_per_chain,
-                            Precision::BestEffort,
-                            Preservation::Expendable,
-                            Fortitude::Force,
-                        )
-                        .unwrap_or(CreditOf::<T>::zero()),
+                        actual_reward,
                     ) {
                         Ok(frame_support::dispatch::PostDispatchInfo { actual_weight, .. }) => {
                             Self::deposit_event(Event::RewardedContainer {
                                 account_id: author.clone(),
-                                balance: container_chains_to_reward.rewards_per_chain,
+                                balance: actual_reward_for_event,
                                 para_id,
                             });
                             if let Some(weight) = actual_weight {
@@ -320,6 +355,11 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
                             log::warn!("Fail to distribute rewards: {:?}", e)
                         }
                     }
+                } else {
+                    // para id not found in list, either
+                    // * tried to reward a chain that doesn't have any collators assigned
+                    // * tried to reward the same chain twice in the same block
+                    log::warn!("ChainsToReward: para id not found");
                 }
             }
 
@@ -327,12 +367,8 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
             // Keep track of chains to reward
             ChainsToReward::<T>::put(container_chains_to_reward);
         } else {
-            // Should never happen because `AuthorNotingInfo` is created from the same list of
-            // para_ids as the one we use in pallet_inflation_rewards::OnInitialize, so they cannot
-            // mismatch.
-            // TODO: actually it is not the same list, but the author_noting list is a subset of
-            // this one, so the warning cannot happen. See TODO in this pallet on_initialize
-            log::warn!("AuthorNoting inherent tried to reward a chain that was not assigned collators. This is a bug.");
+            // Unreachable because we always write ChainsToReward in on_initialize
+            log::warn!("ChainsToReward is None");
         }
 
         total_weight
