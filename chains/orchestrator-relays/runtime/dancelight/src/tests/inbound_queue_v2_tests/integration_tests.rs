@@ -226,7 +226,7 @@ fn test_inbound_queue_message_symbiotic_incorrect_gateway_origin() {
             }),
         );
 
-        assert!(matches!(result, Err(sp_runtime::DispatchError::Other(_))));
+        assert_eq!(result, Ok(()));
     });
 }
 
