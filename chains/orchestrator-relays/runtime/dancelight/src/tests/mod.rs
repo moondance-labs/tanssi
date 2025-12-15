@@ -52,6 +52,7 @@ mod session_keys;
 mod slashes;
 mod staking;
 mod sudo;
+mod tmp_fuzzing;
 
 #[macro_export]
 macro_rules! filter_events {
