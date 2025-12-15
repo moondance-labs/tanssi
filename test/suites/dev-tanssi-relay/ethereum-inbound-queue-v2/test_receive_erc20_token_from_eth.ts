@@ -12,6 +12,7 @@ import {
     generateOutboundMessageAcceptedLog,
     SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
     ETHEREUM_NETWORK_MAINNET,
+    ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS,
 } from "utils";
 import type { KeyringPair } from "@moonwall/util";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2 } from "../../../helpers";
@@ -29,6 +30,7 @@ describeSuite({
         let ethNetworkId: number;
         let shouldSkipStarlightSnV2TT: boolean;
         let specVersion: number;
+        let sovereignAccountAddress: string;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -37,6 +39,10 @@ describeSuite({
 
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
             isStarlight = runtimeName === "starlight";
+
+            sovereignAccountAddress = isStarlight
+                ? SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS
+                : ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS;
 
             ethNetworkId = isStarlight ? ETHEREUM_NETWORK_MAINNET : ETHEREUM_NETWORK_TESTNET;
 
@@ -101,12 +107,7 @@ describeSuite({
             });
 
             const transferFeesAccountTx = await polkadotJs.tx.sudo
-                .sudo(
-                    polkadotJs.tx.balances.forceSetBalance(
-                        SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
-                        10_000_000_000_000_000_000n
-                    )
-                )
+                .sudo(polkadotJs.tx.balances.forceSetBalance(sovereignAccountAddress, 10_000_000_000_000_000_000n))
                 .signAsync(alice);
             await context.createBlock([transferFeesAccountTx], { allowFailures: false });
         });

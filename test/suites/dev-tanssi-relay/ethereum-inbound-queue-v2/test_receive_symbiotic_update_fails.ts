@@ -10,6 +10,8 @@ import {
     ETHEREUM_NETWORK_MAINNET,
     encodeRawPayload,
     PayloadEnum,
+    SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
+    ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS,
 } from "utils";
 import type { KeyringPair } from "@moonwall/util";
 import { hexToU8a } from "@polkadot/util";
@@ -29,6 +31,7 @@ describeSuite({
         let ethNetworkId: number;
         let shouldSkipStarlightSnV2TT: boolean;
         let specVersion: number;
+        let sovereignAccountAddress: string;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -37,6 +40,10 @@ describeSuite({
 
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
             isStarlight = runtimeName === "starlight";
+
+            sovereignAccountAddress = isStarlight
+                ? SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS
+                : ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS;
 
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
             shouldSkipStarlightSnV2TT =
