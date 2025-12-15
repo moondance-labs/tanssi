@@ -20,7 +20,6 @@ use crate::processors::v2::{
     execute_xcm, reanchor_location_to_tanssi, ExtractedXcmConstructionInfo,
     FallbackMessageProcessor,
 };
-use alloc::format;
 use core::marker::PhantomData;
 use frame_support::__private::Get;
 use snowbridge_inbound_queue_primitives::v2::{Message, MessageProcessorError};
@@ -118,13 +117,13 @@ where
             crate::processors::v2::RAW_MESSAGE_PROCESSOR_TOPIC_PREFIX,
             extracted_message,
         )
-        .map_err(|asset_derivation_error| {
+        .map_err(|location_conversion_error| {
+            log::error!(
+                "Error while preparing xcm instructions: {:?}",
+                location_conversion_error
+            );
             MessageProcessorError::ProcessMessage(DispatchError::Other(
-                format!(
-                    "Error while preparing xcm instructions: {:?}",
-                    asset_derivation_error
-                )
-                .leak(),
+                "Error while preparing xcm instructions",
             ))
         })?
         .into();
@@ -134,13 +133,13 @@ where
             &TanssiUniversalLocation::get(),
             ().into(),
         )
-        .map_err(|asset_derivation_error| {
+        .map_err(|location_conversion_error| {
+            log::error!(
+                "Unable to reanchor eth location to tanssi: {:?}",
+                location_conversion_error
+            );
             MessageProcessorError::ProcessMessage(DispatchError::Other(
-                format!(
-                    "Unable to reanchor eth location to tanssi: {:?}",
-                    asset_derivation_error
-                )
-                .leak(),
+                "Unable to reanchor eth location to tanssi",
             ))
         })?;
 
