@@ -40,8 +40,8 @@ describeSuite({
             isStarlight = runtimeName === "starlight";
 
             sovereignAccountAddress = isStarlight
-                ? SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS
-                : ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS;
+                ? ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS
+                : SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS;
 
             ethNetworkId = isStarlight ? ETHEREUM_NETWORK_MAINNET : ETHEREUM_NETWORK_TESTNET;
 

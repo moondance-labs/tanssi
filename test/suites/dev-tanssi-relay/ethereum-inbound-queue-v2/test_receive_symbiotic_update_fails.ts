@@ -42,8 +42,8 @@ describeSuite({
             isStarlight = runtimeName === "starlight";
 
             sovereignAccountAddress = isStarlight
-                ? SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS
-                : ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS;
+                ? ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS
+                : SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS;
 
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
             shouldSkipStarlightSnV2TT =
