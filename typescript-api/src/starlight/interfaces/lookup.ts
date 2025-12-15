@@ -2805,7 +2805,7 @@ export default {
      * Lookup266: starlight_runtime::governance::origins::pallet_custom_origins::Origin
      **/
     StarlightRuntimeGovernanceOriginsPalletCustomOriginsOrigin: {
-        _enum: ["FellowshipAdmin", "WhitelistedCaller"],
+        _enum: ["WhitelistedCaller"],
     },
     /**
      * Lookup267: polkadot_runtime_parachains::origin::pallet::Origin

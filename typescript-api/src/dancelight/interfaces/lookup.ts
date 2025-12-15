@@ -2805,7 +2805,7 @@ export default {
      * Lookup266: dancelight_runtime::governance::origins::pallet_custom_origins::Origin
      **/
     DancelightRuntimeGovernanceOriginsPalletCustomOriginsOrigin: {
-        _enum: ["FellowshipAdmin", "WhitelistedCaller"],
+        _enum: ["WhitelistedCaller"],
     },
     /**
      * Lookup267: pallet_collective::RawOrigin<sp_core::crypto::AccountId32, I>

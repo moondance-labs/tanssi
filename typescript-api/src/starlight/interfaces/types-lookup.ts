@@ -3145,9 +3145,8 @@ declare module "@polkadot/types/lookup" {
 
     /** @name StarlightRuntimeGovernanceOriginsPalletCustomOriginsOrigin (266) */
     interface StarlightRuntimeGovernanceOriginsPalletCustomOriginsOrigin extends Enum {
-        readonly isFellowshipAdmin: boolean;
         readonly isWhitelistedCaller: boolean;
-        readonly type: "FellowshipAdmin" | "WhitelistedCaller";
+        readonly type: "WhitelistedCaller";
     }
 
     /** @name PolkadotRuntimeParachainsOriginPalletOrigin (267) */

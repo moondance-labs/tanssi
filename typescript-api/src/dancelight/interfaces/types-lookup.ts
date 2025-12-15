@@ -3153,9 +3153,8 @@ declare module "@polkadot/types/lookup" {
 
     /** @name DancelightRuntimeGovernanceOriginsPalletCustomOriginsOrigin (266) */
     interface DancelightRuntimeGovernanceOriginsPalletCustomOriginsOrigin extends Enum {
-        readonly isFellowshipAdmin: boolean;
         readonly isWhitelistedCaller: boolean;
-        readonly type: "FellowshipAdmin" | "WhitelistedCaller";
+        readonly type: "WhitelistedCaller";
     }
 
     /** @name PalletCollectiveRawOrigin (267) */
