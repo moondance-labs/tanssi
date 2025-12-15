@@ -1462,18 +1462,22 @@ impl_runtime_apis! {
             }
 
             impl pallet_xcm_benchmarks::fungible::Config for Runtime {
-                type TransactAsset = ForeignAssets;
+                type TransactAsset = Balances;
 
                 type CheckedAccount = LocalCheckingAccount;
                 type TrustedTeleporter = ();
                 type TrustedReserve = TrustedReserve;
 
                 fn get_asset() -> Asset {
-                    use frame_support::{assert_ok, traits::fungibles::Mutate};
+                    use frame_support::{assert_ok, traits::tokens::fungible::Mutate};
                     let (account, _) = pallet_xcm_benchmarks::account_and_location::<Runtime>(1);
 
+                    assert_ok!(<Balances as Mutate<_>>::mint_into(
+                        &account,
+                        crate::currency::MICROUNIT * 10000,
+                    ));
+
                     let asset_id = 42u16;
-                    let amount = crate::currency::MICROUNIT * 10000;
 
                     // Use runtime-derived Ethereum network
                     let ethereum_network = EthereumNetwork::get();
@@ -1499,17 +1503,10 @@ impl_runtime_apis! {
                         1u128,
                     ));
 
-                    // Mint the foreign asset to the account to match TransactAsset = ForeignAssets
-                    assert_ok!(<ForeignAssets as Mutate<_>>::mint_into(
-                        asset_id,
-                        &account,
-                        amount,
-                    ));
-
-                    // Return the foreign asset that matches TransactAsset = ForeignAssets
+                    // Return the foreign asset
                     Asset {
                         id: AssetId(asset_location),
-                        fun: Fungible(amount),
+                        fun: Fungible(crate::currency::MICROUNIT * 10000),
                     }
                 }
             }
