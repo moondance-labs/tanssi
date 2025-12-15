@@ -114,7 +114,7 @@ describeSuite({
 
                 const transferAmount = BigInt(12345n);
 
-                // Let's use empty XCM to tokens should be trapped
+                // Let's use empty XCM so tokens should be trapped
                 const instructions = [];
 
                 const log = await generateOutboundMessageAcceptedLog(polkadotJs, 1, transferAmount, instructions);
