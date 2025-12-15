@@ -17,11 +17,11 @@
 use {
     crate as container_chain_template_frontier_runtime,
     crate::{
-        AccountId, EVMChainIdConfig, EVMConfig, MaintenanceModeConfig, MigrationsConfig,
-        PolkadotXcmConfig, Precompiles,
+        dynamic_params::SEPOLIA_ETH_TESTNET_CHAIN_ID, AccountId, EVMChainIdConfig, EVMConfig,
+        MaintenanceModeConfig, MigrationsConfig, PolkadotXcmConfig, Precompiles,
     },
     alloc::{vec, vec::Vec},
-    cumulus_primitives_core::ParaId,
+    cumulus_primitives_core::{GlobalConsensus, Junctions::X1, Location, NetworkId, ParaId},
     fp_evm::GenesisAccount,
     hex_literal::hex,
 };
@@ -112,6 +112,33 @@ fn testnet_genesis(
         maintenance_mode: MaintenanceModeConfig {
             start_in_maintenance_mode: false,
             ..Default::default()
+        },
+        foreign_assets_creator: pallet_foreign_asset_creator::GenesisConfig {
+            // foreign_asset, asset_id, admin, is_sufficient, min_balance
+            assets: vec![
+                // TANSSI
+                (
+                    Location::parent(), // native token of parent chain (orchestrator)
+                    0xffff,             // TANSSI local asset id
+                    root_key,
+                    true,
+                    1,
+                ),
+                // ETH
+                (
+                    Location {
+                        parents: 2,
+                        interior: X1([GlobalConsensus(NetworkId::Ethereum {
+                            chain_id: SEPOLIA_ETH_TESTNET_CHAIN_ID,
+                        })]
+                        .into()),
+                    },
+                    0xfffe, // ETH local asset id
+                    root_key,
+                    true,
+                    1,
+                ),
+            ],
         },
         // This should initialize it to whatever we have set in the pallet
         polkadot_xcm: PolkadotXcmConfig::default(),

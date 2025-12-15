@@ -27,7 +27,7 @@ if [[ -n $duplicates ]]; then
     echo "$deps"
     echo ""
     echo "Help: use this command to update polkadot-sdk to the latest commit:"
-    echo "cargo update -p sp_core"
+    echo "cargo update -p sp-core"
     exit 1
 else
     echo "No duplicates found. All good!"
