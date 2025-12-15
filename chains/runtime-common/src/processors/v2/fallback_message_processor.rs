@@ -168,9 +168,9 @@ where
 /// assets if the message contains any assets, ETH value, or execution fees.
 ///
 /// The processor makes the following assumptions:
-/// - If assets are present: user mistakenly or maliciously sent a Symbiotic message
+/// - If origin is not gateway proxy: user mistakenly or maliciously sent a Symbiotic message
 ///   → Trap assets for recovery
-/// - If no assets are present: Symbiotic middleware sent a message with incorrect semantics
+/// - If origin is gateway proxy: Symbiotic middleware sent a message with incorrect semantics
 ///   → Return error to signal the problem
 ///
 /// This conditional behavior prevents unnecessary asset trapping for genuinely invalid
@@ -237,11 +237,10 @@ where
     XcmWeigher: WeightBounds<<T as pallet_xcm::Config>::RuntimeCall>,
 {
     fn handle_message(who: AccountId, message: Message) -> Result<(), MessageProcessorError> {
-        // It is highly likey that:
-        // If any assets are associated with the message, a user mistakenly or maliciously sent Symbiotic message
-        // If no assets are associated with the message, the symbiotic middleware sent the message with wrong semantics
+        // If origin is not gateway proxy, a user mistakenly or maliciously sent Symbiotic message
+        // If origin is gateway proxy, the symbiotic middleware sent the message with wrong semantics
         // Based on above assumption we do conditional fallback
-        if !message.assets.is_empty() || message.value > 0 || message.execution_fee > 0 {
+        if message.origin != GatewayAddress::get() {
             AssetTrapFallbackProcessor::handle_message(who, message)
         } else {
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(

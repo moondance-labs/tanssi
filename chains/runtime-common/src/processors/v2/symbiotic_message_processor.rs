@@ -145,11 +145,11 @@ pub fn process_message<T: pallet_external_validators::Config>(
 /// # Fallback Behavior
 ///
 /// Uses `SymbioticFallbackProcessor` which conditionally applies asset trapping:
-/// - **If assets present**: Assumes user error → trap assets via `AssetTrapFallbackProcessor`
-/// - **If no assets**: Assumes middleware error → return error to signal the problem
+/// - **If origin is not gateway**: Assumes user error or malicious behaviour → trap assets via `AssetTrapFallbackProcessor`
+/// - **If origin is gateway**: Assumes middleware error → return error to signal the problem
 ///
-/// Unlike `RawMessageProcessor`, this can safely return errors since valid Symbiotic messages
-/// never contain assets that could be lost. Errors indicate critical runtime issues that
+/// Unlike `RawMessageProcessor`, this can safely return errors in case origin is gateway since valid Symbiotic messages
+/// from middleware never contain assets that could be lost. And error in that case indicate critical runtime issues that
 /// should not be silently ignored.
 #[derive(MessageProcessor)]
 pub struct SymbioticMessageProcessor<
