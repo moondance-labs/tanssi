@@ -900,7 +900,7 @@ describeSuite({
                                 weight_limit: "Unlimited",
                             },
                         },
-                        // We don't set the fees mode here on purpose. 
+                        // We don't set the fees mode here on purpose.
                         // The execution should still succeed as we have enough fees in holding.
                         // {
                         //     SetFeesMode: {
