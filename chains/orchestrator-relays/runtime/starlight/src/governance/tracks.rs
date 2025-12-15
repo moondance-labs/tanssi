@@ -62,6 +62,8 @@ const TRACKS_DATA: [pallet_referenda::Track<u16, Balance, BlockNumber>; 2] = [
 ];
 
 pub struct TracksInfo;
+#[allow(unreachable_patterns)]
+// Allow unreachable patterns for potentially future origin tracks
 impl pallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
     type Id = u16;
     type RuntimeOrigin = <RuntimeOrigin as frame_support::traits::OriginTrait>::PalletsOrigin;

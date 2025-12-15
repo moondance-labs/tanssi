@@ -52,6 +52,8 @@ pub mod pallet_custom_origins {
 				EnsureOrigin<O> for $name
 			{
 				type Success = $success_type;
+				// Allow unreachable patterns for potentially future origins
+				#[allow(unreachable_patterns)]
 				fn try_origin(o: O) -> Result<Self::Success, O> {
 					o.into().and_then(|o| match o {
 						Origin::$name => Ok($success),
