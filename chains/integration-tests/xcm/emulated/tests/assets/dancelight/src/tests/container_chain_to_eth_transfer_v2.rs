@@ -307,8 +307,8 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple_snowbridge
                 root_origin.clone(),
                 Box::new(asset_location.into()),
                 snowbridge_core::AssetMetadata {
-                    name: "container2000".as_bytes().to_vec().try_into().unwrap(),
-                    symbol: "container2000".as_bytes().to_vec().try_into().unwrap(),
+                    name: "container2002".as_bytes().to_vec().try_into().unwrap(),
+                    symbol: "container2002".as_bytes().to_vec().try_into().unwrap(),
                     decimals: 18,
                 }
             )

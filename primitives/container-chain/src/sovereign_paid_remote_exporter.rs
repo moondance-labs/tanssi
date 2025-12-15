@@ -100,7 +100,9 @@ where
             xcm: xcm.clone(),
         };
 
-        // Check if xcm contains AliasOrigin instruction
+        // Check if xcm contains AliasOrigin instruction.
+        // We use the presence of an AliasOrigin instruction to distinguish
+        // between Snowbridge V2 and Snowbridge V1 messages.
         let has_alias_origin = xcm
             .0
             .iter()

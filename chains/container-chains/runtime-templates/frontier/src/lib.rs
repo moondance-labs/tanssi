@@ -1479,12 +1479,14 @@ impl_runtime_apis! {
 
                     let asset_id = 42u16;
 
+                    // Use runtime-derived Ethereum network
+                    let ethereum_network = EthereumNetwork::get();
                     let asset_location = Location {
                         parents: 2,
                         interior: X2([
-                            GlobalConsensus(NetworkId::Ethereum { chain_id: 1 }),
+                            GlobalConsensus(ethereum_network),
                             AccountKey20 {
-                                network: Some(NetworkId::Ethereum { chain_id: 1 }),
+                                network: Some(ethereum_network),
                                 key: [0; 20],
                             },
                         ]

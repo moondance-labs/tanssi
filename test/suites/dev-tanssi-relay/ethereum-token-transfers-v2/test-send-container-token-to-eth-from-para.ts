@@ -52,7 +52,7 @@ describeSuite({
             shouldSkipStarlightContainerExport =
                 isStarlight &&
                 (STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_EXPORTS.includes(specVersion) ||
-                    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2);
+                    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2.includes(specVersion));
 
             if (shouldSkipStarlightContainerExport) {
                 console.log(`Skipping XCM tests for Starlight version ${specVersion}`);
@@ -71,7 +71,7 @@ describeSuite({
             };
 
             const locationToAccountResult = await polkadotJs.call.locationToAccountApi.convertLocation(location);
-            expect(locationToAccountResult.isOk);
+            expect(locationToAccountResult.isOk).to.be.true;
 
             sovAddress = locationToAccountResult.asOk.toJSON();
             sovAddressHex = "0x70617261d0070000000000000000000000000000000000000000000000000000";
@@ -458,8 +458,8 @@ describeSuite({
                 };
 
                 // This fee only covers XCM execution on Tanssi.
-                // It doesn't cover the export fee, but the outbound sending should still succeed
-                // due to SetFeesMode.
+                // It doesn't cover the export fee, and since SetFeesMode is not set,
+                // the outbound sending is expected to fail.
                 const overalFeeAmount = 70_000_000n;
 
                 const feeAssetToWithdraw = {
@@ -767,7 +767,7 @@ describeSuite({
                     snowbridgeFeesAccountBalanceBefore + exportFeeAmount
                 );
                 const roundingNonExporterFees = 80_000_000n;
-                expect(containerSovereignAccountBalanceAfter).toBeGreaterThan(
+                expect(containerSovereignAccountBalanceAfter).to.be.greaterThan(
                     containerSovereignAccountBalanceBefore - exportFeeAmount - roundingNonExporterFees
                 );
                 expect(pendingOrder.unwrap().fee.toBigInt()).to.be.equal(exportFeeAmount);
@@ -975,7 +975,7 @@ describeSuite({
                     snowbridgeFeesAccountBalanceBefore + exportFeeAmount
                 );
                 const roundingNonExporterFees = 80_000_000n;
-                expect(containerSovereignAccountBalanceAfter).toBeGreaterThan(
+                expect(containerSovereignAccountBalanceAfter).to.be.greaterThan(
                     containerSovereignAccountBalanceBefore - exportFeeAmount - roundingNonExporterFees
                 );
                 expect(pendingOrder.unwrap().fee.toBigInt()).to.be.equal(exportFeeAmount);

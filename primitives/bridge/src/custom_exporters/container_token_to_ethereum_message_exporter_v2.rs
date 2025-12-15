@@ -97,7 +97,7 @@ where
         let expected_network = EthereumNetwork::get();
         let universal_location = UniversalLocation::get();
 
-        log::info!("validate params: network={network:?}, universal_source={universal_source:?}, destination={destination:?}, message={message:?}");
+        log::trace!("validate params: network={network:?}, universal_source={universal_source:?}, destination={destination:?}, message={message:?}");
 
         if network != expected_network {
             log::trace!(target: "xcm::ethereum_blob_exporter", "skipped due to unmatched bridge network {network:?}.");
@@ -161,7 +161,7 @@ where
         let dest_junction: Junction = expected_network.into();
         let dest_location = dest_junction.into_exterior(1);
         let min_reward_destination_view = MinReward::get().reanchored(&dest_location, &UniversalLocation::get()).map_err(|err| {
-            log::error!(target: "xcm::ethereum_blob_exporter", "OutboundQueue validation of message failed. {err:?}");
+            log::error!(target: "xcm::ethereum_blob_exporter", "failed to reanchor MinReward to destination view. {err:?}");
             NotApplicable
         })?;
 
