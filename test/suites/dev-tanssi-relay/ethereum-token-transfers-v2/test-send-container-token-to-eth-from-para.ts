@@ -251,11 +251,11 @@ describeSuite({
                     interior: { Here: null },
                 };
 
-                const overalFeeAmount = 500_000_000n;
+                const overallFeeAmount = 500_000_000n;
 
                 const feeAssetToWithdraw = {
                     id: feeTokenLocation,
-                    fun: { Fungible: overalFeeAmount },
+                    fun: { Fungible: overallFeeAmount },
                 };
 
                 const xcmMessage = {
@@ -344,7 +344,7 @@ describeSuite({
                 expect(snowbridgeFeesAccountBalanceAfter).to.be.eq(snowbridgeFeesAccountBalanceBefore);
                 expect(
                     containerSovereignAccountBalanceBefore - containerSovereignAccountBalanceAfter
-                ).to.be.lessThanOrEqual(overalFeeAmount);
+                ).to.be.lessThanOrEqual(overallFeeAmount);
 
                 expect(pendingOrder.toHuman()).to.be.null;
             },
@@ -460,11 +460,11 @@ describeSuite({
                 // This fee only covers XCM execution on Tanssi.
                 // It doesn't cover the export fee, and since SetFeesMode is not set,
                 // the outbound sending is expected to fail.
-                const overalFeeAmount = 70_000_000n;
+                const overallFeeAmount = 70_000_000n;
 
                 const feeAssetToWithdraw = {
                     id: feeTokenLocation,
-                    fun: { Fungible: overalFeeAmount },
+                    fun: { Fungible: overallFeeAmount },
                 };
 
                 const xcmMessage = {
@@ -556,7 +556,7 @@ describeSuite({
                 expect(snowbridgeFeesAccountBalanceAfter).to.be.eq(snowbridgeFeesAccountBalanceBefore);
                 expect(
                     containerSovereignAccountBalanceBefore - containerSovereignAccountBalanceAfter
-                ).to.be.lessThanOrEqual(overalFeeAmount);
+                ).to.be.lessThanOrEqual(overallFeeAmount);
 
                 expect(pendingOrder.toHuman()).to.be.null;
             },
@@ -672,11 +672,11 @@ describeSuite({
                 // This fee only covers XCM execution on Tanssi.
                 // It doesn't cover the export fee, but the outbound sending should still succeed
                 // due to SetFeesMode.
-                const overalFeeAmount = 70_000_000n;
+                const overallFeeAmount = 70_000_000n;
 
                 const feeAssetToWithdraw = {
                     id: feeTokenLocation,
-                    fun: { Fungible: overalFeeAmount },
+                    fun: { Fungible: overallFeeAmount },
                 };
 
                 const xcmMessage = {
@@ -776,7 +776,7 @@ describeSuite({
 
         it({
             id: "T04",
-            title: "Should succeed sending container token to eth from container 2000",
+            title: "Succeed sending token from container 2000 if export fee is in holding and SetFeesMode is not set",
             test: async () => {
                 if (shouldSkipStarlightContainerExport) {
                     console.log(`Skipping XCM tests for Starlight version ${specVersion}`);
@@ -880,11 +880,13 @@ describeSuite({
                     parents: 0,
                     interior: { Here: null },
                 };
-                const overalFeeAmount = 2_700_000_000_000n;
+
+                // Enough to cover XCM execution + export fee.
+                const overallFeeAmount = 2_700_000_000_000n;
 
                 const feeAssetToWithdraw = {
                     id: feeTokenLocation,
-                    fun: { Fungible: overalFeeAmount },
+                    fun: { Fungible: overallFeeAmount },
                 };
 
                 const xcmMessage = {
@@ -898,11 +900,13 @@ describeSuite({
                                 weight_limit: "Unlimited",
                             },
                         },
-                        {
-                            SetFeesMode: {
-                                jit_withdraw: true,
-                            },
-                        },
+                        // We don't set the fees mode here on purpose. 
+                        // The execution should still succeed as we have enough fees in holding.
+                        // {
+                        //     SetFeesMode: {
+                        //         jit_withdraw: true,
+                        //     },
+                        // },
                         {
                             SetAppendix: [
                                 {
