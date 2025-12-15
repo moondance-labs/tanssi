@@ -648,8 +648,10 @@ fn test_set_fees_mode_payment_succeeds_container_chain_to_eth_transfer_v2() {
             // Define parachain 2000 location for DescendOrigin
             let parachain_2000_location = Junctions::X1([Parachain(2000)].into());
 
-            // Define Tanssi asset to withdraw
-            let fee_amount_withdrawn = 2_700_000_000_000u128;
+            // Define Tanssi asset to withdraw.
+            // We use a fee of 0 as root pays for the xcm execution and not the
+            // containersovereign account.
+            let fee_amount_withdrawn = 0u128;
             let fee_asset_withdrawn =
                 AssetId(Location::here()).into_asset(Fungibility::Fungible(fee_amount_withdrawn));
 
@@ -769,21 +771,13 @@ fn test_set_fees_mode_payment_succeeds_container_chain_to_eth_transfer_v2() {
             let final_sovereign_balance = Balances::balance(&container_sovereign_account);
             let total_deducted = initial_sovereign_balance - final_sovereign_balance;
 
-            // The export_fee_amount should have been deducted from the container sovereign account.
+            // As root is paying for the xcm execution, we check that only the export fee is deducted
+            // from the container sovereign account.
             assert!(
-                total_deducted >= export_fee_amount,
-                "Expected at least {} to be deducted, but only {} was deducted",
+                total_deducted == export_fee_amount,
+                "Expected {} to be deducted, but {} was deducted",
                 export_fee_amount,
                 total_deducted
-            );
-
-            // Check that the deducted amount includes both the export fee and some execution costs
-            // but also accounts for potential refunds.
-            assert!(
-                total_deducted < (fee_amount_withdrawn + export_fee_amount),
-                "Total deducted {} should not exceed the total withdrawn amount {}",
-                total_deducted,
-                (fee_amount_withdrawn + export_fee_amount)
             );
 
             // Verify that a message was queued for Ethereum
