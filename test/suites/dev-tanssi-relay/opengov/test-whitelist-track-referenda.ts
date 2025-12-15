@@ -237,7 +237,7 @@ describeSuite({
                 expect(missingReferendumDecisionEvents).toEqual([]);
 
                 // 7. Confirm proxy is not added
-                const proxyInfo = await api.query.proxy.proxies(bob.address);
+                const proxyInfo = await api.query.proxy.proxies(dave.address);
                 const [delegates] = proxyInfo.toJSON() as { delegate: string }[][];
                 const added = delegates.find((d: any) => d.delegate === delegate);
                 expect(added).not.to.exist;

@@ -41,8 +41,6 @@ pub mod pallet_custom_origins {
     )]
     #[pallet::origin]
     pub enum Origin {
-        /// Origin for managing the composition of the fellowship.
-        FellowshipAdmin,
         /// Origin able to dispatch a whitelisted call.
         WhitelistedCaller,
     }
@@ -77,5 +75,5 @@ pub mod pallet_custom_origins {
 		};
 		() => {}
 	}
-    decl_unit_ensures!(FellowshipAdmin, WhitelistedCaller,);
+    decl_unit_ensures!(WhitelistedCaller);
 }

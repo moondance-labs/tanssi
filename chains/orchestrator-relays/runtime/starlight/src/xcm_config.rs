@@ -248,14 +248,6 @@ impl xcm_executor::Config for XcmConfig {
     type XcmEventEmitter = XcmPallet;
 }
 
-parameter_types! {
-    pub const CollectiveBodyId: BodyId = BodyId::Unit;
-    // StakingAdmin pluralistic body.
-    pub const StakingAdminBodyId: BodyId = BodyId::Defense;
-    // Fellows pluralistic body.
-    pub const FellowsBodyId: BodyId = BodyId::Technical;
-}
-
 /// Type to convert an `Origin` type value into a `Location` value which represents an interior
 /// location of this chain.
 pub type LocalOriginToLocation = (
