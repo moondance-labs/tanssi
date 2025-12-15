@@ -124,8 +124,8 @@ describeSuite({
             const initialBalance = 100_000_000_000_000n;
 
             const containerTokenMetadata = {
-                name: "para2001",
-                symbol: "para2001",
+                name: "para2000",
+                symbol: "para2000",
                 decimals: 12,
             };
 

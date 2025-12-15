@@ -122,7 +122,46 @@ impl WeighAssets for AssetFilter {
                     AssetTypes::Unknown => Weight::MAX,
                 })
                 .fold(Weight::zero(), |acc, x| acc.saturating_add(x)),
-            Self::Wild(AllOf { .. } | AllOfCounted { .. }) => balances_weight,
+            Self::Wild(AllOf { id, fun }) => {
+                // Inspect the asset id to determine the appropriate weight
+                let asset = Asset {
+                    id: id.clone(),
+                    fun: match fun {
+                        WildFungibility::Fungible => Fungible(0),
+                        WildFungibility::NonFungible => NonFungible(AssetInstance::Undefined),
+                    },
+                };
+                let asset_type = AssetTypes::from(&asset);
+                match asset_type {
+                    AssetTypes::Balances => balances_weight,
+                    AssetTypes::Ethereum => balances_weight,
+                    AssetTypes::Relay => balances_weight,
+                    AssetTypes::SiblingParachain => balances_weight,
+                    AssetTypes::GrandParent => balances_weight,
+                    AssetTypes::Unknown => Weight::MAX,
+                }
+            }
+            Self::Wild(AllOfCounted { id, fun, count }) => {
+                // Same logic as AllOf but multiply by count
+                let asset = Asset {
+                    id: id.clone(),
+                    fun: match fun {
+                        WildFungibility::Fungible => Fungible(0),
+                        WildFungibility::NonFungible => NonFungible(AssetInstance::Undefined),
+                    },
+                };
+                let asset_type = AssetTypes::from(&asset);
+                let per_asset_weight = match asset_type {
+                    AssetTypes::Balances => balances_weight,
+                    AssetTypes::Ethereum => balances_weight,
+                    AssetTypes::Relay => balances_weight,
+                    AssetTypes::SiblingParachain => balances_weight,
+                    AssetTypes::GrandParent => balances_weight,
+                    AssetTypes::Unknown => Weight::MAX,
+                };
+                // Multiply the per-asset weight by count
+                per_asset_weight.saturating_mul(u64::from(*count))
+            }
             Self::Wild(AllCounted(count)) => {
                 balances_weight.saturating_mul(MAX_ASSETS.min(u64::from(*count)))
             }
