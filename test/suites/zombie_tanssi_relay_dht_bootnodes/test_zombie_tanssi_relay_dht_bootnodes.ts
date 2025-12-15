@@ -216,7 +216,10 @@ describeSuite({
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
                 // Read raw chain spec file
-                const spec2002 = await fs.readFile("./specs/single-container-template-container-2002-no-bootnodes.json", "utf8");
+                const spec2002 = await fs.readFile(
+                    "./specs/single-container-template-container-2002-no-bootnodes.json",
+                    "utf8"
+                );
                 const headData2002 = await fs.readFile("./specs/para-2002-genesis-state", "utf8");
 
                 const header2002 = await getHeaderFromRelay(relayApi, 2002);
