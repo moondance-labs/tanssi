@@ -18,6 +18,7 @@
 
 extern crate alloc;
 
+use crate::processors::v1::GatewayAndChannelValidator;
 use alloc::{vec, vec::Vec};
 use core::marker::PhantomData;
 use frame_support::{
@@ -59,45 +60,6 @@ pub mod v1 {
 #[cfg(feature = "relay")]
 pub mod v2 {
     pub use crate::processors::v2::{RawMessageProcessor, SymbioticMessageProcessor};
-}
-
-/// Validates the gateway and channel of an inbound envelope
-pub struct GatewayAndChannelValidator<T>(PhantomData<T>);
-impl<T> GatewayAndChannelValidator<T>
-where
-    T: snowbridge_pallet_inbound_queue::Config + pallet_ethereum_token_transfers::Config,
-{
-    pub fn validate_gateway_and_channel(channel: &Channel, envelope: &Envelope) -> bool {
-        // Ensure that the message is intended for the current channel, para_id and agent_id
-        if let Some(channel_info) = pallet_ethereum_token_transfers::CurrentChannelInfo::<T>::get()
-        {
-            if envelope.channel_id != channel_info.channel_id
-                || channel.para_id != channel_info.para_id
-                || channel.agent_id != channel_info.agent_id
-            {
-                log::debug!(
-                    "Unexpected channel id: {:?} != {:?}",
-                    (envelope.channel_id, channel.para_id, channel.agent_id),
-                    (
-                        channel_info.channel_id,
-                        channel_info.para_id,
-                        channel_info.agent_id
-                    )
-                );
-                return false;
-            }
-        } else {
-            log::warn!("CurrentChannelInfo not set in storage");
-            return false;
-        }
-
-        // Check it is from the right gateway
-        if envelope.gateway != T::GatewayAddress::get() {
-            log::warn!("Wrong gateway address: {:?}", envelope.gateway);
-            return false;
-        }
-        true
-    }
 }
 
 /// Information needed to process a native token transfer message from ethereum.
@@ -191,7 +153,7 @@ where
         if let Some(token_data) =
             NativeTokenTransferData::decode_native_token_message(&envelope.payload)
         {
-            log::trace!("NativeTokenTransferMessageProcessor: processing token transfer: token_id={:?}, amount={}, destination={:?}", 
+            log::trace!("NativeTokenTransferMessageProcessor: processing token transfer: token_id={:?}, amount={}, destination={:?}",
                 token_data.token_id, token_data.amount, token_data.destination);
 
             match token_data.destination {
