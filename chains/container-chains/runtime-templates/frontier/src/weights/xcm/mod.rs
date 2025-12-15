@@ -29,7 +29,7 @@ use {
     },
 };
 
-const MAX_ASSETS: u64 = 64;
+const MAX_ASSETS: u64 = 1;
 
 pub enum AssetTypes {
     Balances,
