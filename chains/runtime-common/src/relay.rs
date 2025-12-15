@@ -18,8 +18,7 @@
 
 extern crate alloc;
 
-use crate::processors::v1::GatewayAndChannelValidator;
-use alloc::{vec, vec::Vec};
+use alloc::vec::Vec;
 use core::marker::PhantomData;
 use frame_support::{
     pallet_prelude::Zero,
@@ -29,23 +28,15 @@ use frame_support::{
     },
 };
 use frame_system::pallet_prelude::BlockNumberFor;
-use parity_scale_codec::{DecodeAll, Encode};
+use parity_scale_codec::Encode;
 use snowbridge_core::Channel;
+use snowbridge_inbound_queue_primitives::EventProof as Message;
 use snowbridge_pallet_inbound_queue::RewardProcessor;
-use sp_core::{Get, H256};
-use sp_runtime::{
-    traits::{Hash as _, MaybeEquivalence},
-    DispatchError, DispatchResult,
-};
+use sp_core::Get;
+use sp_runtime::{traits::Hash as _, DispatchResult};
 use xcm::latest::{prelude::*, Assets as XcmAssets};
 use xcm_builder::{deposit_or_burn_fee, HandleFee};
 use xcm_executor::traits::{FeeReason, TransactAsset};
-use {
-    snowbridge_inbound_queue_primitives::v1::{
-        Command, Destination, Envelope, MessageProcessor, MessageV1, VersionedXcmMessage,
-    },
-    snowbridge_inbound_queue_primitives::EventProof as Message,
-};
 
 #[cfg(feature = "relay")]
 pub mod v1 {
