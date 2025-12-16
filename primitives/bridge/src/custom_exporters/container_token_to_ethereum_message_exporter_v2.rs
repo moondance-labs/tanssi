@@ -479,9 +479,6 @@ where
 
         log::trace!(target: "xcm::snowbridge_v2::make_mint_foreign_token_command", "asset_id={asset_id:?}");
 
-        // NOTE: For now we have hardcoded RelayNetwork to the DANCELIGHT_GENESIS_HASH,
-        // so asset_id won't work with Starlight runtime, but after we add pallet parameters and make the
-        // RelayNetwork parameter dynamic, it will work with both
         let token_id = ConvertAssetId::convert_back(&asset_id).ok_or(InvalidAsset)?;
 
         // Check if there is a SetTopic and skip over it if found.
