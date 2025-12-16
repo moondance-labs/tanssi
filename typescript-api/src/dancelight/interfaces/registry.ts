@@ -226,22 +226,14 @@ import type {
     PalletProxyError,
     PalletProxyEvent,
     PalletProxyProxyDefinition,
-    PalletRankedCollectiveCall,
-    PalletRankedCollectiveError,
-    PalletRankedCollectiveEvent,
-    PalletRankedCollectiveMemberRecord,
-    PalletRankedCollectiveTally,
-    PalletRankedCollectiveVoteRecord,
     PalletReferendaCall,
     PalletReferendaCurve,
     PalletReferendaDecidingStatus,
     PalletReferendaDeposit,
     PalletReferendaError,
     PalletReferendaEvent,
-    PalletReferendaReferendumInfoConvictionVotingTally,
-    PalletReferendaReferendumInfoRankedCollectiveTally,
-    PalletReferendaReferendumStatusConvictionVotingTally,
-    PalletReferendaReferendumStatusRankedCollectiveTally,
+    PalletReferendaReferendumInfo,
+    PalletReferendaReferendumStatus,
     PalletReferendaTrackDetails,
     PalletRegistrarCall,
     PalletRegistrarDepositInfo,
@@ -811,22 +803,14 @@ declare module "@polkadot/types/types/registry" {
         PalletProxyError: PalletProxyError;
         PalletProxyEvent: PalletProxyEvent;
         PalletProxyProxyDefinition: PalletProxyProxyDefinition;
-        PalletRankedCollectiveCall: PalletRankedCollectiveCall;
-        PalletRankedCollectiveError: PalletRankedCollectiveError;
-        PalletRankedCollectiveEvent: PalletRankedCollectiveEvent;
-        PalletRankedCollectiveMemberRecord: PalletRankedCollectiveMemberRecord;
-        PalletRankedCollectiveTally: PalletRankedCollectiveTally;
-        PalletRankedCollectiveVoteRecord: PalletRankedCollectiveVoteRecord;
         PalletReferendaCall: PalletReferendaCall;
         PalletReferendaCurve: PalletReferendaCurve;
         PalletReferendaDecidingStatus: PalletReferendaDecidingStatus;
         PalletReferendaDeposit: PalletReferendaDeposit;
         PalletReferendaError: PalletReferendaError;
         PalletReferendaEvent: PalletReferendaEvent;
-        PalletReferendaReferendumInfoConvictionVotingTally: PalletReferendaReferendumInfoConvictionVotingTally;
-        PalletReferendaReferendumInfoRankedCollectiveTally: PalletReferendaReferendumInfoRankedCollectiveTally;
-        PalletReferendaReferendumStatusConvictionVotingTally: PalletReferendaReferendumStatusConvictionVotingTally;
-        PalletReferendaReferendumStatusRankedCollectiveTally: PalletReferendaReferendumStatusRankedCollectiveTally;
+        PalletReferendaReferendumInfo: PalletReferendaReferendumInfo;
+        PalletReferendaReferendumStatus: PalletReferendaReferendumStatus;
         PalletReferendaTrackDetails: PalletReferendaTrackDetails;
         PalletRegistrarCall: PalletRegistrarCall;
         PalletRegistrarDepositInfo: PalletRegistrarDepositInfo;
