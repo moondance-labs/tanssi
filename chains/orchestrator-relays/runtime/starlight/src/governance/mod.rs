@@ -18,10 +18,7 @@
 
 use {
     super::*,
-    frame_support::{
-        parameter_types,
-        traits::{ConstU16, EitherOf},
-    },
+    frame_support::{parameter_types, traits::EitherOf},
     frame_system::EnsureRootWithSuccess,
 };
 
