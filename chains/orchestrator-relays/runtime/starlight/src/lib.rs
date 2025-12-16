@@ -44,7 +44,7 @@ use {
         traits::{
             fungible::Inspect,
             tokens::{PayFromAccount, UnityAssetBalanceConversion},
-            ConstBool, Contains, EverythingBut, InsideBoth,
+            ConstBool, Contains, EitherOf, EverythingBut, InsideBoth,
         },
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
@@ -181,7 +181,7 @@ mod weights;
 // Governance and configurations.
 pub mod governance;
 use {
-    governance::{pallet_custom_origins, TreasurySpender},
+    governance::{councils::*, pallet_custom_origins, TreasurySpender},
     pallet_collator_assignment::CoreAllocationConfiguration,
 };
 
@@ -943,6 +943,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				RuntimeCall::ConvictionVoting(..) |
 				RuntimeCall::Referenda(..) |
 				RuntimeCall::Whitelist(..) |
+                RuntimeCall::OpenTechCommitteeCollective(..) |
 				RuntimeCall::Utility(..) |
 				RuntimeCall::Identity(..) |
 				RuntimeCall::Scheduler(..) |
@@ -962,7 +963,8 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 					// OpenGov calls
 					RuntimeCall::ConvictionVoting(..) |
 					RuntimeCall::Referenda(..) |
-					RuntimeCall::Whitelist(..)
+					RuntimeCall::Whitelist(..) |
+                    RuntimeCall::OpenTechCommitteeCollective(..)
             ),
             ProxyType::IdentityJudgement => matches!(
                 c,
@@ -1696,7 +1698,10 @@ type NormalFilter = EverythingBut<(
 impl pallet_maintenance_mode::Config for Runtime {
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
-    type MaintenanceOrigin = EnsureRoot<AccountId>;
+    type MaintenanceOrigin = EitherOf<
+        EnsureRoot<AccountId>,
+        pallet_collective::EnsureProportionAtLeast<AccountId, OpenTechCommitteeInstance, 5, 9>,
+    >;
     type XcmExecutionManager = ();
 }
 
@@ -1983,6 +1988,7 @@ construct_runtime! {
         Referenda: pallet_referenda = 42,
         Origins: pallet_custom_origins = 45,
         Whitelist: pallet_whitelist = 46,
+        OpenTechCommitteeCollective: pallet_collective::<Instance3> = 47,
 
         // Parachains pallets. Start indices at 50 to leave room.
         ParachainsOrigin: parachains_origin = 50,
@@ -2349,6 +2355,7 @@ mod benches {
         [pallet_sudo, Sudo]
         [frame_system, SystemBench::<Runtime>]
         [frame_system_extensions, frame_system_benchmarking::extensions::Pallet::<Runtime>]
+        [pallet_collective, OpenTechCommitteeCollective]
         [pallet_timestamp, Timestamp]
         [pallet_transaction_payment, TransactionPayment]
         [pallet_treasury, Treasury]
