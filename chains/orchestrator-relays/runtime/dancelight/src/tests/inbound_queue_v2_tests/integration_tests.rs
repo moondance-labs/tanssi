@@ -14,8 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::RuntimeCall;
-use frame_support::dispatch::CallableCallFor;
+use crate::{RuntimeCall, UncheckedExtrinsic};
+use frame_support::dispatch::{CallableCallFor, GetDispatchInfo};
+use sp_runtime::traits::Dispatchable;
 use {
     crate::{
         bridge_to_ethereum_config::EthereumGatewayAddress,
@@ -992,7 +993,7 @@ fn test_inbound_queue_xcm_transact_system_remark_as_msg_sender_works() {
         let foreign_asset_balance_before = ForeignAssets::balance(asset_id, AccountId::from(beneficiary.clone()));
         // relayer can be anything
         let relayer = AccountId::new([0xaa; 32]);
-        assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(relayer), Box::new(EventProof {
+        let call = RuntimeCall::EthereumInboundQueueV2(CallableCallFor::<EthereumInboundQueueV2, Runtime>::submit { event: Box::new(EventProof {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
                 topics: event
@@ -1003,7 +1004,16 @@ fn test_inbound_queue_xcm_transact_system_remark_as_msg_sender_works() {
                 data: event.encode_data(),
             },
             proof: dummy_proof.clone(),
-        })), Ok(()));
+        })});
+        let info = call.get_dispatch_info();
+        assert!(info.call_weight.ref_time() > 0, "weight is zero");
+        let post = call.dispatch(
+            <Runtime as frame_system::Config>::RuntimeOrigin::signed(relayer)
+        );
+        assert_ok!(post);
+        let used = post.unwrap().actual_weight.unwrap_or(info.call_weight);
+        assert!(used.ref_time() > 0, "actual weight is zero");
+        println!("used weight: {:?}", used);
         let events = frame_system::Pallet::<Runtime>::events();
 
         println!("{:?}", events);
