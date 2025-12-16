@@ -148,7 +148,7 @@ jobs:
             uses: ludeeus/action-shellcheck@master
             with:
               severity: error
-              scandir: './test/scripts'
+              scandir: './test/scripts ./tools'
 
     security-analysis-with-zizmor:
       name: Run zizmor

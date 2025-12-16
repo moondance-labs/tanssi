@@ -125,17 +125,17 @@ function bench {
     fi
 }
 
-if [[ "${@}" =~ "--help" ]]; then
+if [[ "${*}" =~ "--help" ]]; then
     help
 else
     CHECK=0
-    if [[ "${@}" =~ "--check" ]]; then
+    if [[ "${*}" =~ "--check" ]]; then
         CHECK=1
-        set -o noglob && set -- ${@/'--check'} && set +o noglob
+        set -o noglob && set -- ${*//'--check'} && set +o noglob
     fi
 
     ALL=0
-    if [[ "${@}" =~ "--all" ]]; then
+    if [[ "${*}" =~ "--all" ]]; then
         ALL=1
     fi
 
