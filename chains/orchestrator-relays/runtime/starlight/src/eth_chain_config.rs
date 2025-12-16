@@ -17,13 +17,13 @@
 use hex_literal::hex;
 use snowbridge_beacon_primitives::{Fork, ForkVersions};
 
-enum BuildEnv {
+pub enum BuildEnv {
     Prod,
     Benchmark,
     TestLike,
 }
 
-const fn current_env() -> BuildEnv {
+pub const fn current_env() -> BuildEnv {
     if cfg!(feature = "runtime-benchmarks") {
         BuildEnv::Benchmark
     } else if cfg!(any(feature = "std", feature = "fast-runtime", test)) {

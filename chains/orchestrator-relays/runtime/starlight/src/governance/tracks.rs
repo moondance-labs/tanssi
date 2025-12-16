@@ -18,6 +18,8 @@
 
 use super::*;
 
+use crate::eth_chain_config::{current_env, BuildEnv};
+
 const fn percent(x: u128) -> sp_arithmetic::FixedI64 {
     sp_arithmetic::FixedI64::from_rational(x, 100)
 }
@@ -29,6 +31,37 @@ const APP_WHITELISTED_CALLER: Curve =
     Curve::make_reciprocal(16, 28 * 24, percent(96), percent(50), percent(100));
 const SUP_WHITELISTED_CALLER: Curve =
     Curve::make_reciprocal(1, 28, percent(20), percent(5), percent(50));
+
+const TRACKS_DATA_PROD: [pallet_referenda::Track<u16, Balance, BlockNumber>; 2] = [
+    pallet_referenda::Track {
+        id: 0,
+        info: pallet_referenda::TrackInfo {
+            name: s("root"),
+            max_deciding: 1,
+            decision_deposit: 500 * GRAND,
+            prepare_period: 1 * DAYS,
+            decision_period: 14 * DAYS,
+            confirm_period: 1 * DAYS,
+            min_enactment_period: 1 * DAYS,
+            min_approval: APP_ROOT,
+            min_support: SUP_ROOT,
+        },
+    },
+    pallet_referenda::Track {
+        id: 1,
+        info: pallet_referenda::TrackInfo {
+            name: s("whitelisted_caller"),
+            max_deciding: 100,
+            decision_deposit: 10 * GRAND,
+            prepare_period: 10 * MINUTES,
+            decision_period: 14 * DAYS,
+            confirm_period: 10 * MINUTES,
+            min_enactment_period: 30 * MINUTES,
+            min_approval: APP_WHITELISTED_CALLER,
+            min_support: SUP_WHITELISTED_CALLER,
+        },
+    },
+];
 
 const TRACKS_DATA: [pallet_referenda::Track<u16, Balance, BlockNumber>; 2] = [
     pallet_referenda::Track {
@@ -68,7 +101,10 @@ impl pallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
     type Id = u16;
     type RuntimeOrigin = <RuntimeOrigin as frame_support::traits::OriginTrait>::PalletsOrigin;
     fn tracks() -> impl Iterator<Item = Cow<'static, Track<Self::Id, Balance, BlockNumber, 25>>> {
-        TRACKS_DATA.iter().map(Cow::Borrowed)
+        match current_env() {
+            BuildEnv::Prod => TRACKS_DATA_PROD.iter().map(Cow::Borrowed),
+            _ => TRACKS_DATA.iter().map(Cow::Borrowed),
+        }
     }
     fn track_for(id: &Self::RuntimeOrigin) -> Result<Self::Id, ()> {
         if let Ok(system_origin) = frame_system::RawOrigin::try_from(id.clone()) {

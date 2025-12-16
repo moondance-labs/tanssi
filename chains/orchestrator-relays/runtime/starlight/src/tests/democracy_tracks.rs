@@ -18,33 +18,18 @@
 
 use {
     crate::{
-        bridge_to_ethereum_config::{EthereumGatewayAddress, InboundQueuePalletInstance},
-        filter_events,
-        tests::common::*,
-        xcm_config::UniversalLocation,
-        ConvictionVoting, EthereumInboundQueue, EthereumLocation, EthereumSystem,
-        EthereumTokenTransfers, OpenTechCommitteeCollective, Paras, Referenda, RuntimeCall,
-        RuntimeEvent, SnowbridgeFeesAccount, XcmPallet,
+        tests::common::*, ConvictionVoting, OpenTechCommitteeCollective, Referenda, RuntimeCall,
     },
     alloc::vec,
-    alloy_sol_types::SolEvent,
     frame_support::{
-        assert_noop, assert_ok,
+        assert_ok,
         traits::{schedule::DispatchTime, Bounded},
+        weights::Weight,
     },
-    hex_literal::hex,
     pallet_referenda::TracksInfo,
     parity_scale_codec::Encode,
-    polkadot_parachain_primitives::primitives::HeadData,
-    snowbridge_core::{AgentId, Channel, ChannelId, ParaId},
-    snowbridge_inbound_queue_primitives::v1::{
-        Command, Destination, Envelope, MessageProcessor, MessageV1, OutboundMessageAccepted,
-        VersionedXcmMessage,
-    },
-    snowbridge_inbound_queue_primitives::{EventProof, Log},
-    sp_core::{H160, H256},
-    sp_runtime::traits::{BlakeTwo256, Hash, MaybeEquivalence},
-    xcm::latest::{prelude::*, Asset as XcmAsset, Junctions::*, Location},
+    sp_core::H256,
+    sp_runtime::traits::{BlakeTwo256, Hash},
 };
 
 #[test]
@@ -92,6 +77,8 @@ fn test_root_track_executes_with_root_origin() {
                 .unwrap()
                 .min_enactment_period;
             run_to_block(current_block + enactment_period);
+
+            // We assert the call went through
             assert!(System::authorized_upgrade().is_some());
         });
 }
@@ -112,6 +99,8 @@ fn test_whitelist_track_executes_with_whitelist_origin_but_fails_if_not_whitelis
                 });
 
             let proposal_call_hash = BlakeTwo256::hash(&proposal_call.encode());
+
+            // We propose the whitelist call dispatch in the referenda but we will never whitelist it
             let whitelist_call = RuntimeCall::Whitelist(
                 pallet_whitelist::Call::<Runtime>::dispatch_whitelisted_call {
                     call_hash: proposal_call_hash,
@@ -216,8 +205,9 @@ fn test_whitelist_track_executes_with_whitelist_origin_works_if_whitelisted() {
                 RuntimeCall::Whitelist(pallet_whitelist::Call::<Runtime>::whitelist_call {
                     call_hash: authorize_hash,
                 });
+
             // let's waitlist!
-            // Let's first set alice as the committee member
+            // Alice should be enough as threshold is one
             assert_ok!(OpenTechCommitteeCollective::propose(
                 origin_of(ALICE.into()),
                 //threshold
@@ -228,7 +218,6 @@ fn test_whitelist_track_executes_with_whitelist_origin_works_if_whitelisted() {
 
             assert!(pallet_whitelist::WhitelistedCall::<Runtime>::get(authorize_hash).is_some());
 
-            // THE CALL WAS WHITELISTED!
             wait_for_democracy_to_pass(index);
 
             // Now we need to wait for the enactment period
