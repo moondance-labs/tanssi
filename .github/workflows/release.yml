@@ -144,11 +144,16 @@ jobs:
             uses: actions/checkout@v6
             with:
                 ref: ${{ needs.set-tags.outputs.git_ref }}
-          - name: Run Shellcheck
+          - name: Run Shellcheck for test scripts
             uses: ludeeus/action-shellcheck@master
             with:
               severity: error
-              scandir: './test/scripts ./tools'
+              scandir: './test/scripts'
+          - name: Run Shellcheck for tools
+            uses: ludeeus/action-shellcheck@master
+            with:
+              severity: error
+              scandir: './tools'
 
     security-analysis-with-zizmor:
       name: Run zizmor
