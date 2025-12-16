@@ -124,7 +124,7 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit, HoldConsideration},
-            EitherOf, EitherOfDiverse, EnsureOriginWithArg, InstanceFilter, KeyOwnerProofSystem,
+            EitherOfDiverse, EnsureOriginWithArg, InstanceFilter, KeyOwnerProofSystem,
             LinearStoragePrice, PrivilegeCmp, ProcessMessage, ProcessMessageError,
         },
         weights::{ConstantMultiplier, WeightMeter, WeightToFee as _},
@@ -181,9 +181,7 @@ mod weights;
 // Governance and configurations.
 pub mod governance;
 use {
-    governance::{
-        pallet_custom_origins, AuctionAdmin, Fellows, GeneralAdmin, Treasurer, TreasurySpender,
-    },
+    governance::{pallet_custom_origins, TreasurySpender},
     pallet_collator_assignment::CoreAllocationConfiguration,
 };
 
@@ -321,8 +319,6 @@ impl Contains<RuntimeCall> for IsDemocracyExtrinsics {
             RuntimeCall::Treasury(_)
                 | RuntimeCall::ConvictionVoting(_)
                 | RuntimeCall::Referenda(_)
-                | RuntimeCall::FellowshipCollective(_)
-                | RuntimeCall::FellowshipReferenda(_)
                 | RuntimeCall::Whitelist(_)
                 | RuntimeCall::Preimage(_)
         )
@@ -464,9 +460,7 @@ impl pallet_scheduler::Config for Runtime {
     type PalletsOrigin = OriginCaller;
     type RuntimeCall = RuntimeCall;
     type MaximumWeight = MaximumSchedulerWeight;
-    // The goal of having ScheduleOrigin include AuctionAdmin is to allow the auctions track of
-    // OpenGov to schedule periodic auctions.
-    type ScheduleOrigin = EitherOf<EnsureRoot<AccountId>, AuctionAdmin>;
+    type ScheduleOrigin = EnsureRoot<AccountId>;
     type MaxScheduledPerBlock = MaxScheduledPerBlock;
     type WeightInfo = weights::pallet_scheduler::SubstrateWeight<Runtime>;
     type OriginPrivilegeCmp = OriginPrivilegeCmp;
@@ -694,7 +688,7 @@ where
 impl pallet_treasury::Config for Runtime {
     type PalletId = TreasuryPalletId;
     type Currency = Balances;
-    type RejectOrigin = EitherOfDiverse<EnsureRoot<AccountId>, Treasurer>;
+    type RejectOrigin = EnsureRoot<AccountId>;
     type RuntimeEvent = RuntimeEvent;
     type SpendPeriod = SpendPeriod;
     type Burn = ();
@@ -842,8 +836,8 @@ impl pallet_identity::Config for Runtime {
     type IdentityInformation = IdentityInfo<MaxAdditionalFields>;
     type MaxRegistrars = MaxRegistrars;
     type Slashed = Treasury;
-    type ForceOrigin = EitherOf<EnsureRoot<Self::AccountId>, GeneralAdmin>;
-    type RegistrarOrigin = EitherOf<EnsureRoot<Self::AccountId>, GeneralAdmin>;
+    type ForceOrigin = EnsureRoot<Self::AccountId>;
+    type RegistrarOrigin = EnsureRoot<Self::AccountId>;
     type OffchainSignature = Signature;
     type SigningPublicKey = <Signature as Verify>::Signer;
     type UsernameAuthorityOrigin = EnsureRoot<Self::AccountId>;
@@ -948,8 +942,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				RuntimeCall::Treasury(..) |
 				RuntimeCall::ConvictionVoting(..) |
 				RuntimeCall::Referenda(..) |
-				RuntimeCall::FellowshipCollective(..) |
-				RuntimeCall::FellowshipReferenda(..) |
 				RuntimeCall::Whitelist(..) |
 				RuntimeCall::Utility(..) |
 				RuntimeCall::Identity(..) |
@@ -970,8 +962,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 					// OpenGov calls
 					RuntimeCall::ConvictionVoting(..) |
 					RuntimeCall::Referenda(..) |
-					RuntimeCall::FellowshipCollective(..) |
-					RuntimeCall::FellowshipReferenda(..) |
 					RuntimeCall::Whitelist(..)
             ),
             ProxyType::IdentityJudgement => matches!(
@@ -1835,7 +1825,8 @@ impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnba
 // Pallet to reward container chains collators.
 impl pallet_inflation_rewards::Config for Runtime {
     type Currency = Balances;
-    type ContainerChains = ContainerRegistrar;
+    type ContainerChains = TanssiCollatorAssignment;
+    type MaxContainerChains = MaxLengthParaIds;
     type GetSelfChainBlockAuthor = ();
     type InflationRate = CollatorsInflationRatePerBlock;
     type OnUnbalanced = OnUnbalancedInflation;
@@ -1990,10 +1981,6 @@ construct_runtime! {
         Treasury: pallet_treasury = 40,
         ConvictionVoting: pallet_conviction_voting = 41,
         Referenda: pallet_referenda = 42,
-        //	pub type FellowshipCollectiveInstance = pallet_ranked_collective::Instance1;
-        FellowshipCollective: pallet_ranked_collective::<Instance1> = 43,
-        // pub type FellowshipReferendaInstance = pallet_referenda::Instance2;
-        FellowshipReferenda: pallet_referenda::<Instance2> = 44,
         Origins: pallet_custom_origins = 45,
         Whitelist: pallet_whitelist = 46,
 
@@ -2357,7 +2344,6 @@ mod benches {
         [pallet_parameters, Parameters]
         [pallet_preimage, Preimage]
         [pallet_proxy, Proxy]
-        [pallet_ranked_collective, FellowshipCollective]
         [pallet_referenda, Referenda]
         [pallet_scheduler, Scheduler]
         [pallet_sudo, Sudo]
