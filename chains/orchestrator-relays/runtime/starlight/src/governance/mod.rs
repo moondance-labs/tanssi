@@ -29,6 +29,7 @@ mod origins;
 pub use origins::{pallet_custom_origins, WhitelistedCaller};
 mod tracks;
 pub use tracks::TracksInfo;
+pub mod councils;
 
 parameter_types! {
     pub const VoteLockingPeriod: BlockNumber = 7 * DAYS;
@@ -64,7 +65,15 @@ impl pallet_whitelist::Config for Runtime {
     type WeightInfo = weights::pallet_whitelist::SubstrateWeight<Runtime>;
     type RuntimeCall = RuntimeCall;
     type RuntimeEvent = RuntimeEvent;
-    type WhitelistOrigin = EnsureRootWithSuccess<Self::AccountId, ConstU16<65535>>;
+    type WhitelistOrigin = EitherOf<
+        EnsureRoot<Self::AccountId>,
+        pallet_collective::EnsureProportionAtLeast<
+            Self::AccountId,
+            councils::OpenTechCommitteeInstance,
+            5,
+            9,
+        >,
+    >;
     type DispatchWhitelistedOrigin = EitherOf<EnsureRoot<Self::AccountId>, WhitelistedCaller>;
     type Preimages = Preimage;
 }
