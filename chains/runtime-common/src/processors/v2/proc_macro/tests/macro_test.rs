@@ -263,21 +263,21 @@ fn test_macro_process_message_semantics() {
             0,
             0,
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Other error: TestImpl1ExtractionError. due to None",
+                "Other error while processing v2 message",
             ))),
         ),
         (
             0,
             1,
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Other error: TestImpl1ExtractionError. due to None",
+                "Other error while processing v2 message",
             ))),
         ),
         (
             0,
             2,
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Other error: TestImpl1ExtractionError. due to None",
+                "Other error while processing v2 message",
             ))),
         ),
         (1, 0, Ok([1u8; 32])),
@@ -296,63 +296,63 @@ fn test_macro_process_message_semantics() {
             3,
             0,
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Unsupported Message: TestImpl1ExtractionError34 due to None",
+                "Unsupported v2 message",
             ))),
         ),
         (
             3,
             1,
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Unsupported Message: TestImpl1ExtractionError34 due to None",
+                "Unsupported v2 message",
             ))),
         ),
         (
             3,
             2,
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Unsupported Message: TestImpl1ExtractionError34 due to None",
+                "Unsupported v2 message",
             ))),
         ),
         (
             4,
             0,
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Unsupported Message: TestImpl1ExtractionError34 due to None",
+                "Unsupported v2 message",
             ))),
         ),
         (
             4,
             1,
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Unsupported Message: TestImpl1ExtractionError34 due to None",
+                "Unsupported v2 message",
             ))),
         ),
         (
             4,
             2,
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Unsupported Message: TestImpl1ExtractionError34 due to None",
+                "Unsupported v2 message",
             ))),
         ),
         (
             5,
             0,
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Other error: TestImpl1ExtractionError. due to None",
+                "Other error while processing v2 message",
             ))),
         ),
         (
             5,
             1,
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Other error: TestImpl1ExtractionError. due to None",
+                "Other error while processing v2 message",
             ))),
         ),
         (
             5,
             2,
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Other error: TestImpl1ExtractionError. due to None",
+                "Other error while processing v2 message",
             ))),
         ),
     ];
@@ -384,63 +384,63 @@ fn test_macro_process_message_semantics() {
             0,
             0,
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Other error: TestImpl2ExtractionError. due to None",
+                "Other error while processing v2 message",
             ))),
         ),
         (
             0,
             1,
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Other error: TestImpl2ExtractionError. due to None",
+                "Other error while processing v2 message",
             ))),
         ),
         (
             0,
             2,
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Other error: TestImpl2ExtractionError. due to None",
+                "Other error while processing v2 message",
             ))),
         ),
         (
             1,
             0,
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Unsupported Message: TestImpl2ExtractionError12 due to None",
+                "Unsupported v2 message",
             ))),
         ),
         (
             1,
             1,
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Unsupported Message: TestImpl2ExtractionError12 due to None",
+                "Unsupported v2 message",
             ))),
         ),
         (
             1,
             2,
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Unsupported Message: TestImpl2ExtractionError12 due to None",
+                "Unsupported v2 message",
             ))),
         ),
         (
             2,
             0,
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Unsupported Message: TestImpl2ExtractionError12 due to None",
+                "Unsupported v2 message",
             ))),
         ),
         (
             2,
             1,
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Unsupported Message: TestImpl2ExtractionError12 due to None",
+                "Unsupported v2 message",
             ))),
         ),
         (
             2,
             2,
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Unsupported Message: TestImpl2ExtractionError12 due to None",
+                "Unsupported v2 message",
             ))),
         ),
         (3, 0, Ok([4u8; 32])),
@@ -459,21 +459,21 @@ fn test_macro_process_message_semantics() {
             5,
             0,
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Other error: TestImpl2ExtractionError. due to None",
+                "Other error while processing v2 message",
             ))),
         ),
         (
             5,
             1,
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Other error: TestImpl2ExtractionError. due to None",
+                "Other error while processing v2 message",
             ))),
         ),
         (
             5,
             2,
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Other error: TestImpl2ExtractionError. due to None",
+                "Other error while processing v2 message",
             ))),
         ),
     ];
@@ -512,7 +512,7 @@ fn test_macro_process_message_semantics() {
             } else {
                 match &impl_1_table.2 {
                     Err(MessageProcessorError::ProcessMessage(DispatchError::Other(error))) => {
-                        if error.contains("Unsupported Message") {
+                        if error.contains("Unsupported") {
                             match &impl_2_table.2 {
                                 Ok(_) => impl_2_table.2.clone(),
                                 Err(MessageProcessorError::ProcessMessage(
