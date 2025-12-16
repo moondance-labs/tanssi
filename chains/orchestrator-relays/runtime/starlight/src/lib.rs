@@ -3634,7 +3634,7 @@ impl ParaIdAssignmentHooksImpl {
         para_id: ParaId,
         currently_assigned: &BTreeSet<ParaId>,
         maybe_tip: &Option<BalanceOf<Runtime>>,
-    ) -> Result<Weight, DispatchError> {
+    ) -> Result<(), DispatchError> {
         use frame_support::traits::Currency;
         type ServicePaymentCurrency = <Runtime as pallet_services_payment::Config>::Currency;
 
@@ -3697,8 +3697,8 @@ impl ParaIdAssignmentHooksImpl {
             remaining_to_pay,
         )
         .into_result(true)?;
-        // TODO: Have proper weight
-        Ok(Weight::zero())
+
+        Ok(())
     }
 }
 
@@ -3724,9 +3724,8 @@ impl<AC> ParaIdAssignmentHooks<BalanceOf<Runtime>, AC> for ParaIdAssignmentHooks
         current_assigned: &BTreeSet<ParaId>,
         new_assigned: &mut BTreeMap<ParaId, Vec<AC>>,
         maybe_tip: &Option<BalanceOf<Runtime>>,
-    ) -> Weight {
+    ) {
         let blocks_per_session = EpochDurationInBlocks::get();
-        let mut total_weight = Weight::zero();
         new_assigned.retain(|&para_id, collators| {
             // Short-circuit in case collators are empty
             if collators.is_empty() {
@@ -3740,12 +3739,8 @@ impl<AC> ParaIdAssignmentHooks<BalanceOf<Runtime>, AC> for ParaIdAssignmentHooks
                     maybe_tip,
                 )
             })
-            .inspect(|weight| {
-                total_weight += *weight;
-            })
             .is_ok()
         });
-        total_weight
     }
 
     /// Make those para ids valid by giving them enough credits, for benchmarking.

@@ -314,7 +314,7 @@ pub trait ParaIdAssignmentHooks<B, AC> {
         current_assigned: &BTreeSet<ParaId>,
         new_assigned: &mut BTreeMap<ParaId, Vec<AC>>,
         maybe_tip: &Option<B>,
-    ) -> Weight;
+    );
 
     /// Make those para ids valid by giving them enough credits, for benchmarking.
     #[cfg(feature = "runtime-benchmarks")]
@@ -328,8 +328,7 @@ impl<B, AC> ParaIdAssignmentHooks<B, AC> for () {
         _current_assigned: &BTreeSet<ParaId>,
         _new_assigned: &mut BTreeMap<ParaId, Vec<AC>>,
         _maybe_tip: &Option<B>,
-    ) -> Weight {
-        Default::default()
+    ) {
     }
 
     #[cfg(feature = "runtime-benchmarks")]
