@@ -3321,7 +3321,7 @@ fn test_add_tip_for_ethereum_token_transfers_succeeded_inbound() {
                 1
             ));
 
-            // Give tokens to BOB so that it does not dissappear his account
+            // Give tokens to BOB so that it does not disappear his account
             ForeignAssets::mint_into(asset_id, &AccountId::from(CHARLIE), amount + 10)
                 .expect("to mint amount");
 

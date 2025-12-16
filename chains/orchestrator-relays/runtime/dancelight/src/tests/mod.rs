@@ -28,6 +28,7 @@ mod collator_assignment_tests;
 mod common;
 mod container_token_transfers;
 mod core_scheduling_tests;
+mod democracy_tracks;
 mod ethereum_client;
 mod ethereum_outbound_relayer_rewards;
 mod ethereum_system_v2;
