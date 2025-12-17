@@ -228,8 +228,26 @@ fn test_inbound_queue_message_symbiotic_incorrect_gateway_origin() {
                 proof: dummy_proof.clone(),
             }),
         );
-
         assert_eq!(result, Ok(()));
+
+        // Validators have not been set
+        let validators = pallet_external_validators::ExternalValidators::<Runtime>::get();
+        assert_ne!(validators, payload_validators);
+
+        // And no events from pallet external validators have been emitted
+        let events = frame_system::Pallet::<Runtime>::events();
+
+        for record in events {
+            match &record.event {
+                RuntimeEvent::ExternalValidators(
+                    ..
+                ) => {
+                    panic!("Got unexpected ExternalValidators event: {:?}", record.event);
+                }
+
+                _ => {}
+            }
+        }
     });
 }
 
