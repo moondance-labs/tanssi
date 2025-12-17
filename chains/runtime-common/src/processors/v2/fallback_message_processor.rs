@@ -22,6 +22,7 @@ use crate::processors::v2::{
 };
 use core::marker::PhantomData;
 use frame_support::__private::Get;
+use frame_support::weights::Weight;
 use snowbridge_inbound_queue_primitives::v2::{Message, MessageProcessorError};
 use sp_core::H160;
 use sp_runtime::DispatchError;
@@ -48,6 +49,7 @@ pub struct AssetTrapFallbackProcessor<
     TanssiUniversalLocation,
     XcmProcessor,
     XcmWeigher,
+    MaxXcmExecutionWeight,
 >(
     PhantomData<(
         T,
@@ -58,6 +60,7 @@ pub struct AssetTrapFallbackProcessor<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmExecutionWeight,
     )>,
 );
 
@@ -71,6 +74,7 @@ impl<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmExecutionWeight,
     > FallbackMessageProcessor<AccountId>
     for AssetTrapFallbackProcessor<
         T,
@@ -81,6 +85,7 @@ impl<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmExecutionWeight,
     >
 where
     T: snowbridge_pallet_inbound_queue::Config
@@ -94,6 +99,7 @@ where
     TanssiUniversalLocation: Get<InteriorLocation>,
     XcmProcessor: ExecuteXcm<<T as pallet_xcm::Config>::RuntimeCall>,
     XcmWeigher: WeightBounds<<T as pallet_xcm::Config>::RuntimeCall>,
+    MaxXcmExecutionWeight: Get<Weight>,
 {
     fn handle_message(_who: AccountId, message: Message) -> Result<(), MessageProcessorError> {
         let extracted_message: ExtractedXcmConstructionInfo<
@@ -150,6 +156,7 @@ where
         if let Err(instruction_error) = execute_xcm::<T, XcmProcessor, XcmWeigher>(
             eth_location_reanchored_to_tanssi,
             prepared_xcm,
+            MaxXcmExecutionWeight::get(),
         ) {
             log::error!(
                 "Error while executing xcm in fallback message processor: {:?}",
@@ -184,6 +191,7 @@ pub struct SymbioticFallbackProcessor<
     TanssiUniversalLocation,
     XcmProcessor,
     XcmWeigher,
+    MaxXcmExecutionWeight,
 >(
     PhantomData<(
         T,
@@ -195,6 +203,7 @@ pub struct SymbioticFallbackProcessor<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmExecutionWeight,
     )>,
 );
 
@@ -209,6 +218,7 @@ impl<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmExecutionWeight,
     > FallbackMessageProcessor<AccountId>
     for SymbioticFallbackProcessor<
         T,
@@ -220,6 +230,7 @@ impl<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmExecutionWeight,
     >
 where
     T: snowbridge_pallet_inbound_queue::Config
@@ -234,6 +245,7 @@ where
     TanssiUniversalLocation: Get<InteriorLocation>,
     XcmProcessor: ExecuteXcm<<T as pallet_xcm::Config>::RuntimeCall>,
     XcmWeigher: WeightBounds<<T as pallet_xcm::Config>::RuntimeCall>,
+    MaxXcmExecutionWeight: Get<Weight>,
 {
     fn handle_message(who: AccountId, message: Message) -> Result<(), MessageProcessorError> {
         // If origin is not gateway proxy, a user mistakenly or maliciously sent Symbiotic message

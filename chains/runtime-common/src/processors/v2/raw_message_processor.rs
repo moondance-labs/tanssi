@@ -25,6 +25,7 @@ use crate::processors::v2::{reanchor_location_to_tanssi, RAW_MESSAGE_PROCESSOR_T
 use alloc::boxed::Box;
 use alloc::string::ToString;
 use core::marker::PhantomData;
+use frame_support::weights::Weight;
 use parity_scale_codec::{Decode, DecodeLimit};
 use snowbridge_inbound_queue_primitives::v2::{message::Message, MessageProcessorError, Payload};
 use sp_core::{Get, H160};
@@ -141,6 +142,7 @@ pub struct RawMessageProcessor<
     TanssiUniversalLocation,
     XcmProcessor,
     XcmWeigher,
+    MaxXcmExecutionWeight,
 >(
     PhantomData<(
         T,
@@ -151,6 +153,7 @@ pub struct RawMessageProcessor<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmExecutionWeight,
     )>,
 );
 
@@ -164,6 +167,7 @@ impl<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmExecutionWeight,
     > MessageProcessorWithFallback<AccountId>
     for RawMessageProcessor<
         T,
@@ -174,6 +178,7 @@ impl<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmExecutionWeight,
     >
 where
     T: snowbridge_pallet_inbound_queue::Config
@@ -187,6 +192,7 @@ where
     TanssiUniversalLocation: Get<InteriorLocation>,
     XcmProcessor: ExecuteXcm<<T as pallet_xcm::Config>::RuntimeCall>,
     XcmWeigher: WeightBounds<<T as pallet_xcm::Config>::RuntimeCall>,
+    MaxXcmExecutionWeight: Get<Weight>,
 {
     type Fallback = AssetTrapFallbackProcessor<
         T,
@@ -197,6 +203,7 @@ where
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmExecutionWeight,
     >;
     type ExtractedMessage = ExtractedXcmConstructionInfo<<T as pallet_xcm::Config>::RuntimeCall>;
 
@@ -253,6 +260,7 @@ where
         if let Err(instruction_error) = execute_xcm::<T, XcmProcessor, XcmWeigher>(
             eth_location_reanchored_to_tanssi,
             prepared_xcm,
+            MaxXcmExecutionWeight::get(),
         ) {
             log::error!(
                 "Error while executing xcm in raw message processor: {:?}",

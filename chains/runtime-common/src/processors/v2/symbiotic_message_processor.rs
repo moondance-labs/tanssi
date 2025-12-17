@@ -26,6 +26,7 @@ use alloc::boxed::Box;
 use alloc::format;
 use alloc::string::ToString;
 use core::marker::PhantomData;
+use frame_support::weights::Weight;
 use parity_scale_codec::Decode;
 use snowbridge_inbound_queue_primitives::v2::{Message, MessageProcessorError, Payload};
 use sp_core::{Get, H160};
@@ -161,6 +162,7 @@ pub struct SymbioticMessageProcessor<
     TanssiUniversalLocation,
     XcmProcessor,
     XcmWeigher,
+    MaxXcmExecutionWeight,
 >(
     PhantomData<(
         T,
@@ -171,6 +173,7 @@ pub struct SymbioticMessageProcessor<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmExecutionWeight,
     )>,
 );
 
@@ -184,6 +187,7 @@ impl<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmExecutionWeight,
     > MessageProcessorWithFallback<AccountId>
     for SymbioticMessageProcessor<
         T,
@@ -194,6 +198,7 @@ impl<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmExecutionWeight,
     >
 where
     T: snowbridge_pallet_inbound_queue::Config
@@ -208,6 +213,7 @@ where
     TanssiUniversalLocation: Get<InteriorLocation>,
     XcmProcessor: ExecuteXcm<<T as pallet_xcm::Config>::RuntimeCall>,
     XcmWeigher: WeightBounds<<T as pallet_xcm::Config>::RuntimeCall>,
+    MaxXcmExecutionWeight: Get<Weight>,
 {
     type Fallback = SymbioticFallbackProcessor<
         T,
@@ -220,6 +226,7 @@ where
             TanssiUniversalLocation,
             XcmProcessor,
             XcmWeigher,
+            MaxXcmExecutionWeight,
         >,
         GatewayAddress,
         DefaultClaimer,
@@ -228,6 +235,7 @@ where
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmExecutionWeight,
     >;
     type ExtractedMessage = SymbioticMessage<T>;
 

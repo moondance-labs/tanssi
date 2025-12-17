@@ -28,6 +28,7 @@ use alloc::{boxed::Box, string::String, vec::Vec};
 
 use thiserror::Error;
 
+use frame_support::weights::Weight;
 use parity_scale_codec::{Decode, Encode};
 use snowbridge_inbound_queue_primitives::v2::{
     AssetTransfer, EthereumAsset, Message, MessageProcessorError,
@@ -340,14 +341,28 @@ where
 pub fn execute_xcm<T, XcmProcessor, XcmWeigher>(
     origin: impl Into<Location>,
     mut xcm: Xcm<<T as pallet_xcm::Config>::RuntimeCall>,
+    max_weight: Weight,
 ) -> Result<(), InstructionError>
 where
     T: pallet_xcm::Config,
     XcmProcessor: ExecuteXcm<<T as pallet_xcm::Config>::RuntimeCall>,
     XcmWeigher: WeightBounds<<T as pallet_xcm::Config>::RuntimeCall>,
 {
-    // Using Weight::MAX here because we don't have a limit, same as they do in pallet-xcm
-    let weight = XcmWeigher::weight(&mut xcm, Weight::MAX)?;
+    // Calculate weight with the provided limit
+    let weight = XcmWeigher::weight(&mut xcm, max_weight)?;
+
+    // Ensure calculated weight doesn't exceed max_weight
+    if weight.any_gt(max_weight) {
+        log::error!(
+            "XCM execution weight {:?} exceeds max allowed {:?}",
+            weight,
+            max_weight
+        );
+        return Err(InstructionError {
+            index: 0,
+            error: xcm::latest::Error::WeightLimitReached(weight),
+        });
+    }
 
     let mut message_id = xcm.using_encoded(blake2_256);
 

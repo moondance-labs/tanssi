@@ -17,12 +17,13 @@
 //! The bridge to ethereum config
 
 #[cfg(all(not(test), not(feature = "testing-helpers")))]
-use crate::EthereumBeaconClient;
+use crate::{BlockWeights, EthereumBeaconClient};
 use cumulus_primitives_core::Location;
 use frame_support::{
     dispatch::DispatchResult,
     pallet_prelude::{DecodeWithMemTracking, Encode, TypeInfo},
     traits::{fungible::Mutate, tokens::Preservation, ConstBool, EnqueueMessage, EnsureOrigin},
+    weights::Weight,
     BoundedSlice,
 };
 use frame_system::{EnsureRoot, EnsureRootWithSuccess};
@@ -86,6 +87,12 @@ parameter_types! {
 }
 
 parameter_types! {
+    /// Maximum weight for XCM execution in inbound queue v2.
+    /// Set to 10% of block weight to limit fees for relayed messages.
+    /// This ensures that a single inbound message cannot consume more than 10% of block capacity.
+    pub MaxInboundV2XcmExecutionWeight: Weight = sp_runtime::Perbill::from_percent(10) *
+        BlockWeights::get().max_block;
+
     pub Parameters: PricingParameters<u128> = PricingParameters {
         exchange_rate: FixedU128::from_rational(1, 400),
         fee_per_gas: gwei(20),
@@ -757,6 +764,7 @@ pub type RawMessageProcessorInboundV2 = RawMessageProcessorV2<
     UniversalLocation,
     xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
     <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+    MaxInboundV2XcmExecutionWeight,
 >;
 
 pub type SymbioticInboundMessageProcessorV2 = SymbioticMessageProcessorV2<
@@ -768,6 +776,7 @@ pub type SymbioticInboundMessageProcessorV2 = SymbioticMessageProcessorV2<
     UniversalLocation,
     xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
     <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+    MaxInboundV2XcmExecutionWeight,
 >;
 
 impl snowbridge_pallet_inbound_queue_v2::Config for Runtime {
@@ -791,7 +800,7 @@ impl snowbridge_pallet_inbound_queue_v2::Config for Runtime {
     type RewardPayment = BridgeRelayers;
     #[cfg(feature = "runtime-benchmarks")]
     type Helper = Runtime;
-    type WeightInfo = ();
+    type WeightInfo = weights::snowbridge_pallet_inbound_queue_v2::SubstrateWeight<Runtime>;
 }
 
 // Outbound queue V2
