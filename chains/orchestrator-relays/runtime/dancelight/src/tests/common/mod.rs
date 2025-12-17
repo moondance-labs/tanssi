@@ -19,7 +19,7 @@
 use {
     crate::{
         Authorship, BlockProductionCost, CollatorAssignmentCost, ExternalValidatorSlashes,
-        MessageQueue, RuntimeCall,
+        MessageQueue, Preimage, RuntimeCall, Scheduler,
     },
     alloc::collections::btree_map::BTreeMap,
     babe_primitives::{
@@ -41,11 +41,12 @@ use {
     },
     frame_support::{
         assert_ok,
-        traits::{OnFinalize, OnInitialize},
+        traits::{OnFinalize, OnInitialize, QueryPreimage},
         BoundedVec,
     },
     frame_system::pallet_prelude::{BlockNumberFor, HeaderFor},
     nimbus_primitives::NimbusId,
+    pallet_referenda::{DecidingStatus, ReferendumStatus},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
@@ -59,7 +60,7 @@ use {
     sp_core::Public,
     sp_keystore::{KeystoreExt, KeystorePtr},
     sp_runtime::{
-        traits::{Dispatchable, Header, One, SaturatedConversion, Zero},
+        traits::{BlakeTwo256, Dispatchable, Hash, Header, One, SaturatedConversion, Zero},
         BuildStorage, Digest, DigestItem,
     },
     sp_storage::well_known_keys,
@@ -286,6 +287,8 @@ pub fn start_block() -> RunSummary {
         set_paras_inherent(mock_inherent_data);
     }
 
+    Scheduler::on_initialize(System::block_number());
+
     Beefy::on_initialize(System::block_number());
     Mmr::on_initialize(System::block_number());
     BeefyMmrLeaf::on_initialize(System::block_number());
@@ -307,6 +310,7 @@ pub fn end_block() {
     Initializer::on_finalize(System::block_number());
     ContainerRegistrar::on_finalize(System::block_number());
     TanssiCollatorAssignment::on_finalize(System::block_number());
+    Scheduler::on_finalize(System::block_number());
     Beefy::on_finalize(System::block_number());
     Mmr::on_finalize(System::block_number());
     BeefyMmrLeaf::on_finalize(System::block_number());
@@ -1626,4 +1630,88 @@ pub fn mock_snowbridge_message_proof() -> Proof {
             execution_branch: vec![],
         },
     }
+}
+
+/// note a new preimage without registering.
+pub fn note_preimage(who: AccountId, call: &[u8]) -> <Runtime as frame_system::Config>::Hash {
+    assert_ok!(Preimage::note_preimage(
+        RuntimeOrigin::signed(who),
+        call.to_vec()
+    ));
+    let hash = BlakeTwo256::hash(&call);
+    assert!(!Preimage::is_requested(&hash));
+    hash
+}
+
+pub fn wait_for_democracy_to_pass(proposal_index: pallet_referenda::ReferendumIndex) {
+    while !is_deciding(proposal_index) {
+        run_to_block(System::block_number() + 1);
+    }
+    if is_confirming(proposal_index) {
+        let confirming_until = confirming_until(proposal_index);
+        let current_block_number = System::block_number();
+        if current_block_number < confirming_until {
+            while System::block_number() < confirming_until {
+                run_to_block(System::block_number() + 1);
+            }
+        }
+    }
+    if is_approved(proposal_index) {
+        run_to_block(System::block_number() + 1);
+    }
+}
+
+fn is_deciding(i: pallet_referenda::ReferendumIndex) -> bool {
+    matches!(
+        pallet_referenda::ReferendumInfoFor::<Runtime>::get(i),
+        Some(pallet_referenda::ReferendumInfo::Ongoing(
+            ReferendumStatus {
+                deciding: Some(_),
+                ..
+            }
+        ))
+    )
+}
+
+fn is_confirming(i: pallet_referenda::ReferendumIndex) -> bool {
+    matches!(
+        pallet_referenda::ReferendumInfoFor::<Runtime>::get(i),
+        Some(pallet_referenda::ReferendumInfo::Ongoing(
+            ReferendumStatus {
+                deciding: Some(DecidingStatus {
+                    confirming: Some(_until),
+                    ..
+                }),
+                ..
+            }
+        ))
+    )
+}
+
+fn confirming_until(i: pallet_referenda::ReferendumIndex) -> u32 {
+    match pallet_referenda::ReferendumInfoFor::<Runtime>::get(i).unwrap() {
+        pallet_referenda::ReferendumInfo::Ongoing(ReferendumStatus {
+            deciding:
+                Some(DecidingStatus {
+                    confirming: Some(until),
+                    ..
+                }),
+            ..
+        }) => until,
+        _ => panic!("Not confirming"),
+    }
+}
+
+fn is_approved(i: pallet_referenda::ReferendumIndex) -> bool {
+    matches!(
+        pallet_referenda::ReferendumInfoFor::<Runtime>::get(i),
+        Some(pallet_referenda::ReferendumInfo::Approved(..))
+    )
+}
+
+fn is_rejected(i: pallet_referenda::ReferendumIndex) -> bool {
+    matches!(
+        pallet_referenda::ReferendumInfoFor::<Runtime>::get(i),
+        Some(pallet_referenda::ReferendumInfo::Rejected(..))
+    )
 }

@@ -64,7 +64,7 @@ use {
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
                 WEIGHT_REF_TIME_PER_SECOND,
             },
-            ConstantMultiplier, Weight, WeightToFee as _, WeightToFeeCoefficient,
+            ConstantMultiplier, FeePolynomial, Weight, WeightToFee as _, WeightToFeeCoefficient,
             WeightToFeeCoefficients, WeightToFeePolynomial,
         },
     },
@@ -293,7 +293,21 @@ impl fp_rpc::ConvertTransaction<opaque::UncheckedExtrinsic> for TransactionConve
 ///   - Setting it to `0` will essentially disable the weight fee.
 ///   - Setting it to `1` will cause the literal `#[weight = x]` values to be charged.
 pub struct WeightToFee;
-impl WeightToFeePolynomial for WeightToFee {
+impl frame_support::weights::WeightToFee for WeightToFee {
+    type Balance = Balance;
+
+    fn weight_to_fee(weight: &Weight) -> Self::Balance {
+        let time_poly: FeePolynomial<Balance> = RefTimeToFee::polynomial().into();
+        let proof_poly: FeePolynomial<Balance> = ProofSizeToFee::polynomial().into();
+
+        // Take the maximum instead of the sum to charge by the more scarce resource.
+        time_poly
+            .eval(weight.ref_time())
+            .max(proof_poly.eval(weight.proof_size()))
+    }
+}
+pub struct RefTimeToFee;
+impl WeightToFeePolynomial for RefTimeToFee {
     type Balance = Balance;
     fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
         // in Rococo, extrinsic base weight (smallest non-zero weight) is mapped to 1 MILLIUNIT:
@@ -305,6 +319,27 @@ impl WeightToFeePolynomial for WeightToFee {
         let p = 100 * Balance::from(ExtrinsicBaseWeight::get().ref_time());
 
         let q = 100 * Balance::from(ExtrinsicBaseWeight::get().ref_time());
+        smallvec![WeightToFeeCoefficient {
+            degree: 1,
+            negative: false,
+            coeff_frac: Perbill::from_rational(p % q, q),
+            coeff_integer: p / q,
+        }]
+    }
+}
+
+/// Maps the proof size component of `Weight` to a fee.
+pub struct ProofSizeToFee;
+impl WeightToFeePolynomial for ProofSizeToFee {
+    type Balance = Balance;
+    fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
+        // Map 10kb proof to 1 CENT.
+        #[cfg(not(feature = "runtime-benchmarks"))]
+        let p = currency::MILLIUNIT / 10;
+        #[cfg(feature = "runtime-benchmarks")]
+        let p = 100 * Balance::from(ExtrinsicBaseWeight::get().proof_size());
+        let q = 10_000;
+
         smallvec![WeightToFeeCoefficient {
             degree: 1,
             negative: false,
@@ -1116,7 +1151,7 @@ construct_runtime!(
         PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config<T>} = 73,
         MessageQueue: pallet_message_queue::{Pallet, Call, Storage, Event<T>} = 74,
         ForeignAssets: pallet_assets::<Instance1>::{Pallet, Call, Storage, Event<T>} = 75,
-        ForeignAssetsCreator: pallet_foreign_asset_creator::{Pallet, Call, Storage, Event<T>} = 76,
+        ForeignAssetsCreator: pallet_foreign_asset_creator::{Pallet, Call, Storage, Event<T>, Config<T>} = 76,
         AssetRate: pallet_asset_rate::{Pallet, Call, Storage, Event<T>} = 77,
         XcmExecutorUtils: pallet_xcm_executor_utils::{Pallet, Call, Storage, Event<T>} = 78,
 
@@ -1147,6 +1182,7 @@ mod benches {
         [pallet_author_inherent, AuthorInherent]
         [cumulus_pallet_xcmp_queue, XcmpQueue]
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
+        [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
         [pallet_message_queue, MessageQueue]
         [pallet_assets, ForeignAssets]
@@ -1367,7 +1403,7 @@ impl_runtime_apis! {
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, alloc::string::String> {
             use frame_benchmarking::{BenchmarkBatch, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
-            use xcm::latest::prelude::*;
+            use xcm::latest::{prelude::*, Junctions::*};
             use alloc::boxed::Box;
             use pallet_evm_precompile_sha3fips_benchmarking::Pallet as EVMPrecompileSha3FIPSBench;
 
@@ -1383,7 +1419,7 @@ impl_runtime_apis! {
                     System::assert_last_event(cumulus_pallet_parachain_system::Event::<Runtime>::ValidationFunctionStored.into());
                 }
             }
-            use xcm_config::SelfReserve;
+            use xcm_config::{SelfReserve, LocalCheckingAccount};
 
             parameter_types! {
                 pub ExistentialDepositAsset: Option<Asset> = Some((
@@ -1410,6 +1446,68 @@ impl_runtime_apis! {
                         id: AssetId(SelfReserve::get()),
                         fun: Fungible(u128::MAX),
                     }].into()
+                }
+            }
+
+            parameter_types! {
+                pub TrustedReserve: Option<(Location, Asset)> = Some(
+                    (
+                        EthereumLocation::get(),
+                        Asset {
+                            id: AssetId(EthereumLocation::get()),
+                            fun: Fungible(crate::currency::MICROUNIT * 10000),
+                        },
+                    )
+                );
+            }
+
+            impl pallet_xcm_benchmarks::fungible::Config for Runtime {
+                type TransactAsset = Balances;
+
+                type CheckedAccount = LocalCheckingAccount;
+                type TrustedTeleporter = ();
+                type TrustedReserve = TrustedReserve;
+
+                fn get_asset() -> Asset {
+                    use frame_support::{assert_ok, traits::tokens::fungible::Mutate};
+                    let (account, _) = pallet_xcm_benchmarks::account_and_location::<Runtime>(1);
+
+                    assert_ok!(<Balances as Mutate<_>>::mint_into(
+                        &account,
+                        crate::currency::MICROUNIT * 10000,
+                    ));
+
+                    let asset_id = 42u16;
+
+                    // Use runtime-derived Ethereum network
+                    let ethereum_network = EthereumNetwork::get();
+                    let asset_location = Location {
+                        parents: 2,
+                        interior: X2([
+                            GlobalConsensus(ethereum_network),
+                            AccountKey20 {
+                                network: Some(ethereum_network),
+                                key: [0; 20],
+                            },
+                        ]
+                        .into()),
+                    };
+
+                    // Create the foreign asset
+                    assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+                        RuntimeOrigin::root(),
+                        asset_location.clone(),
+                        asset_id,
+                        account,
+                        true,
+                        1u128,
+                    ));
+
+                    // Return the foreign asset
+                    Asset {
+                        id: AssetId(asset_location),
+                        fun: Fungible(crate::currency::MICROUNIT * 10000),
+                    }
                 }
             }
 

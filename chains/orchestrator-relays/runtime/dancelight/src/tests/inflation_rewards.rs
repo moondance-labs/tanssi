@@ -158,8 +158,10 @@ fn test_reward_to_staking_candidate() {
 
             let all_rewards = RewardsPortion::get() * summary.inflation;
             // rewards are shared between the 2 paras
-            let orchestrator_rewards = all_rewards / 2;
-            let candidate_rewards = RewardsCollatorCommission::get() * orchestrator_rewards;
+            let rewards_per_chain = all_rewards / 2;
+            // candidate gets transferred 20% of the reward immediately.
+            // the rest goes into the staking pools
+            let candidate_rewards = RewardsCollatorCommission::get() * rewards_per_chain;
 
             assert_eq!(
                 candidate_rewards,
@@ -342,9 +344,10 @@ fn test_reward_to_invulnerable_with_key_change() {
 
             let all_rewards = RewardsPortion::get() * summary.inflation;
             // rewards are shared between the 2 paras
-            let orchestrator_rewards = all_rewards / 2;
+            let rewards_per_chain = all_rewards / 2;
+            // invulnerables get 100% of the reward immediately, unlike staking candidates
             assert_eq!(
-                orchestrator_rewards,
+                rewards_per_chain,
                 balance_after - balance_before,
                 "alice should get the correct reward portion"
             );

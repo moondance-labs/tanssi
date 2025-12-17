@@ -505,7 +505,10 @@ describeSuite({
                         )
                     ),
                     container2001PolkadotJs.tx.sudo.sudo(
-                        container2001PolkadotJs.tx.assetRate.create(relayNativeTokenAssetId, 2_000_000_000_000_000_000n)
+                        container2001PolkadotJs.tx.assetRate.create(
+                            relayNativeTokenAssetId,
+                            2_000_000_000_000_000_000_000n
+                        )
                     ),
                 ])
                 .signAndSend(alith);

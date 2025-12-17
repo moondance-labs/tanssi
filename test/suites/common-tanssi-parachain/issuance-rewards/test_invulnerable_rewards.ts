@@ -11,6 +11,7 @@ import {
     filterRewardFromOrchestrator,
     getAuthorFromDigest,
     jumpSessions,
+    perbillMul,
 } from "utils";
 import { PARACHAIN_BOND } from "utils";
 
@@ -70,7 +71,9 @@ describeSuite({
                 // Since it is an invulnerable, it receives all payment
                 const events = await polkadotJs.query.system.events();
                 const issuance = await fetchIssuance(events).amount.toBigInt();
-                const chainRewards = (issuance * 7n) / 10n;
+                const BILLION = 1_000_000_000n;
+                const perBill = (7n * BILLION) / 10n;
+                const chainRewards = perbillMul(issuance, perBill);
                 const expectedOrchestratorReward = chainRewards / 3n;
                 const reward = await filterRewardFromOrchestrator(events, account);
                 expect(reward).to.equal(expectedOrchestratorReward + 1n);
@@ -81,6 +84,10 @@ describeSuite({
             id: "E02",
             title: "Parachain bond receives 30% of the inflation and pending rewards plus division dust",
             test: async () => {
+                const assignment = (await polkadotJs.query.collatorAssignment.collatorContainerChain()).toJSON();
+                // Assert 2 collators in each chain
+                expect(Object.values(assignment.containerChains).map((x) => x.length)).to.deep.equal([2, 2]);
+
                 let expectedAmountParachainBond = 0n;
 
                 const pendingChainRewards = await polkadotJs.query.inflationRewards.chainsToReward();
@@ -95,24 +102,28 @@ describeSuite({
                 ).data.free.toBigInt();
                 await context.createBlock();
 
-                const currentChainRewards = await polkadotJs.query.inflationRewards.chainsToReward();
                 const events = await polkadotJs.query.system.events();
                 const issuance = await fetchIssuance(events).amount.toBigInt();
-                let dust = 0n;
-                if (currentChainRewards.isSome) {
-                    const currentRewardPerChain = currentChainRewards.unwrap().rewardsPerChain.toBigInt();
-                    dust = (issuance * 7n) / 10n - 3n * currentRewardPerChain;
-                }
+                let chainRewards: bigint;
+                const BILLION = 1_000_000_000n;
+                const perBill = (7n * BILLION) / 10n;
+                chainRewards = perbillMul(issuance, perBill);
+                // Chain rewards must be a multiple of number of chains.
+                chainRewards = chainRewards - (chainRewards % 3n);
+
+                const currentChainRewards = await polkadotJs.query.inflationRewards.chainsToReward();
+                // Sanity check: calculated chainRewards matches on chain
+                const currentRewardPerChain = currentChainRewards.unwrap().rewardsPerChain.toBigInt();
+                const realRewardsMulChains = currentRewardPerChain * 3n;
+                expect(realRewardsMulChains).to.equal(chainRewards);
+
+                expectedAmountParachainBond += issuance - chainRewards;
+
                 const parachainBondBalanceAfter = (
                     await polkadotJs.query.system.account(PARACHAIN_BOND)
                 ).data.free.toBigInt();
-                expectedAmountParachainBond += (issuance * 3n) / 10n + dust;
-                await context.createBlock();
 
-                // Not sure where this one comes from, looks like a rounding thing
-                expect(parachainBondBalanceAfter - parachainBondBalanceBefore).to.equal(
-                    expectedAmountParachainBond + 1n
-                );
+                expect(parachainBondBalanceAfter - parachainBondBalanceBefore).to.equal(expectedAmountParachainBond);
             },
         });
 
@@ -120,31 +131,25 @@ describeSuite({
             id: "E03",
             title: "Charlie receives the reward from container-chain block proposal",
             test: async () => {
-                const balacharlieBalanceBeforenceBefore = (
+                const charlieBalanceBefore = (
                     await polkadotJs.query.system.account(charlie.address)
                 ).data.free.toBigInt();
 
-                // Create 2 blocks because there are 2 container authors, so charlie does not get a reward on the first one
-                await context.createBlock();
+                // If charlie is not the block author, create 2 blocks here
                 await context.createBlock();
 
                 const currentChainRewards = (await polkadotJs.query.inflationRewards.chainsToReward()).unwrap();
                 const events = await polkadotJs.query.system.events();
                 const receivedRewardCharlie = filterRewardFromContainer(events, charlie.address, 2000);
 
-                const balacharlieBalanceBeforenceAfter = (
+                const charlieBalanceAfter = (
                     await polkadotJs.query.system.account(charlie.address)
                 ).data.free.toBigInt();
 
-                // Not sure where this one comes from, looks like a rounding thing
-                expect(balacharlieBalanceBeforenceAfter - balacharlieBalanceBeforenceBefore).to.equal(
+                expect(charlieBalanceAfter - charlieBalanceBefore).to.equal(
                     currentChainRewards.rewardsPerChain.toBigInt()
                 );
-
-                // Not sure where this one comes from, looks like a rounding thing
-                expect(balacharlieBalanceBeforenceAfter - balacharlieBalanceBeforenceBefore).to.equal(
-                    receivedRewardCharlie
-                );
+                expect(charlieBalanceAfter - charlieBalanceBefore).to.equal(receivedRewardCharlie);
             },
         });
     },

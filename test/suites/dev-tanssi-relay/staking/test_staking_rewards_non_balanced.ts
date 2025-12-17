@@ -14,6 +14,7 @@ import {
     filterRewardStakingDelegators,
     jumpSessions,
     mockAndInsertHeadData,
+    perbillMul,
 } from "utils";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_POOLED_STAKING, checkCallIsFiltered } from "helpers";
 
@@ -161,13 +162,16 @@ describeSuite({
                 if (isStarlight) {
                     const BILLION = 1_000_000_000n;
                     const perBill = (4n * BILLION) / 7n;
-                    chainRewards = (perBill * issuance) / BILLION;
+                    chainRewards = perbillMul(issuance, perBill);
                 } else {
                     // dancelight
-                    chainRewards = (issuance * 7n) / 10n;
+                    const BILLION = 1_000_000_000n;
+                    const perBill = (7n * BILLION) / 10n;
+                    chainRewards = perbillMul(issuance, perBill);
                 }
-                const rounding = chainRewards % 2n > 0 ? 1n : 0n;
-                const expectedContainerReward = chainRewards / 2n - rounding;
+                // Chain rewards must be a multiple of number of chains.
+                chainRewards = chainRewards - (chainRewards % 2n);
+                const expectedContainerReward = chainRewards / 2n;
                 const rewards = fetchRewardAuthorContainers(events);
                 expect(rewards.length).toBe(1);
                 const reward = rewards[0];

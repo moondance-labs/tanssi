@@ -21,6 +21,7 @@
 //! For more information about when the database is deleted, check the
 //! [Keep db flowchart](https://raw.githubusercontent.com/moondance-labs/tanssi/master/docs/keep_db_flowchart.png)
 
+use node_common::service::node_builder::StartBootnodeParams;
 use {
     crate::{
         cli::ContainerChainCli,
@@ -124,6 +125,7 @@ pub struct ContainerChainSpawnParams<
     pub data_preserver: bool,
     pub generate_rpc_builder: TGenerateRpcBuilder,
     pub override_sync_mode: Option<SyncMode>,
+    pub start_bootnode_params: StartBootnodeParams,
 
     pub phantom: PhantomData<RuntimeApi>,
 }
@@ -202,7 +204,8 @@ async fn try_spawn<
         data_preserver,
         generate_rpc_builder,
         override_sync_mode,
-        ..
+        start_bootnode_params,
+        phantom: _,
     } = try_spawn_params;
     // Preload genesis data from orchestrator chain storage.
 
@@ -409,6 +412,7 @@ async fn try_spawn<
                             generate_rpc_builder.clone(),
                             &container_chain_cli,
                             data_preserver,
+                            start_bootnode_params.clone(),
                         )
                         .await?
                     }
@@ -423,6 +427,7 @@ async fn try_spawn<
                             generate_rpc_builder.clone(),
                             &container_chain_cli,
                             data_preserver,
+                            start_bootnode_params.clone(),
                         )
                         .await?
                     }

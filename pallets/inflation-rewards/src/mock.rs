@@ -33,6 +33,8 @@ use {
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage, Perbill,
     },
+    std::collections::BTreeSet,
+    tp_traits::ForSession,
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;

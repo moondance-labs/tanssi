@@ -9,6 +9,7 @@ import {
     filterRewardStakingCollator,
     filterRewardStakingDelegators,
     jumpSessions,
+    perbillMul,
 } from "utils";
 import { DANCE } from "utils";
 import { createBlockAndRemoveInvulnerables } from "utils";
@@ -107,9 +108,12 @@ describeSuite({
                 // Since it is an invulnerable, it receives all payment
                 const events = await polkadotJs.query.system.events();
                 const issuance = await fetchIssuance(events).amount.toBigInt();
-                const chainRewards = (issuance * 7n) / 10n;
-                const rounding = chainRewards % 3n > 0 ? 1n : 0n;
-                const expectedOrchestratorReward = chainRewards - (chainRewards * 2n) / 3n - rounding;
+                const BILLION = 1_000_000_000n;
+                const perBill = (7n * BILLION) / 10n;
+                let chainRewards = perbillMul(issuance, perBill);
+                // Chain rewards must be a multiple of number of chains.
+                chainRewards = chainRewards - (chainRewards % 3n);
+                const expectedOrchestratorReward = chainRewards / 3n;
                 const reward = await fetchRewardAuthorOrchestrator(events);
                 const stakingRewardedCollator = await filterRewardStakingCollator(events, reward.accountId.toString());
                 const stakingRewardedDelegators = await filterRewardStakingDelegators(
@@ -117,8 +121,6 @@ describeSuite({
                     reward.accountId.toString()
                 );
 
-                // How much should the author have gotten?
-                // For now everything as we did not execute the pending operations
                 // How much should the author have gotten?
                 // For now everything as we did not execute the pending operations
                 expect(reward.balance.toBigInt()).toBeGreaterThanOrEqual(expectedOrchestratorReward - 1n);
