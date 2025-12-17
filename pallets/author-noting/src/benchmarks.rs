@@ -74,7 +74,7 @@ mod benchmarks {
 
     #[benchmark]
     fn set_latest_author_data(x: Linear<1, 100>) -> Result<(), BenchmarkError> {
-        // This benchmarks is `set_latest_author_data` with hooks
+        // This benchmarks is `set_latest_author_data` with empty hooks
         let mut container_chains = vec![];
 
         // Register collators in staking pallet and initialize `ChainsToReward`.
@@ -87,6 +87,7 @@ mod benchmarks {
             T::AuthorNotingHook::prepare_worst_case_for_bench(&author, 1, para_id);
         }
 
+        // TODO: maybe we can remove all hooks code? Since we don't test hooks in this benchmark
         // Advance a few blocks and execute the pending staking operations
         T::AuthorNotingHook::bench_advance_block();
         T::AuthorNotingHook::bench_execute_pending();

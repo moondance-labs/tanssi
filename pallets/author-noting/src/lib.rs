@@ -159,18 +159,15 @@ pub mod pallet {
                     .into_iter()
                     .filter_map(|(para_id, collators)| (!collators.is_empty()).then_some(para_id))
                     .collect();
-            // We have two benchmarks, one for `set_latest_author_data` + hooks, and one for only hooks
-            // Here we subtract the hooks weight from the main benchmark, because we add the weight
-            // used by hooks later. In the benchmark it is assumed that all chains produce blocks, so
-            // we must use `container_chains_to_check.len()`, not `infos.len()`.
-            // TODO: this is a bit weird, we could also remove hooks from the base benchmark by adding
-            // a cfg runtime-benchmarks to this function, but that also looks ugly.
-            // Maybe something like
-            // if cfg runtime-benchmarks and some storage value is set: then skip hooks
-            // else keep working as normal
-            // Or a custom hook that does this transparently, but then we need to set that benchmarking hook
-            // in each runtime, and that shouldn't depend on the runtime, all runtimes need the same
-            // benchmarking cfg code.
+            // We have two benchmarks, one for `set_latest_author_data`, which disables hooks,
+            // and one benchmark only for only hooks: `on_container_authors_noted`.
+            // The weight hint needs to include both of them to account for the worst case.
+            // The returned weight will be lower than the hint, because we never have
+            // `T::MaxContainerChains::get()` chains registered.
+            // Here we initialize the weight to the base weight, without hooks, but for the real
+            // number of chains. Later we will add the weight reported by the hooks.
+            // The weight used by hooks is not calculated using the `on_container_authors_noted`
+            // benchmark, instead it is a manual guess of the number of storage reads and writes.
             let mut total_weight =
                 T::WeightInfo::set_latest_author_data(container_chains_to_check.len() as u32);
 
@@ -237,6 +234,10 @@ pub mod pallet {
                     // assumes that the hook will be called
                 } else {
                     // not runtime-benchmarks: always call hook
+                    // TODO: instead of trusting that the hook returns an accurate weight, why not
+                    // use the benchmarked weight? `on_container_authors_noted`
+                    // Then we simplify all the hooks because we don't need to count each storage
+                    // write manually, we get them for free with the benchmark.
                     total_weight
                         .saturating_accrue(T::AuthorNotingHook::on_container_authors_noted(&infos));
                 }
