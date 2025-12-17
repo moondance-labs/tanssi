@@ -47,6 +47,7 @@ use {
     tanssi_runtime_common::relay::ExporterFeeHandler,
     tp_bridge::{
         container_token_to_ethereum_message_exporter::ContainerEthereumBlobExporter,
+        container_token_to_ethereum_message_exporter_v2::ContainerEthereumBlobExporterV2,
         snowbridge_outbound_token_transfer::{EthereumBlobExporter, SnowbrigeTokenTransferRouter},
         snowbridge_outbound_token_transfer_v2::EthereumBlobExporterV2,
         EthereumLocationsConverterFor,
@@ -237,7 +238,10 @@ impl xcm_executor::Config for XcmConfig {
         WaivedLocations,
         ExporterFeeHandler<Self::AssetTransactor, SnowbridgeFeesAccount, TreasuryAccount>,
     >;
-    type MessageExporter = ContainerToSnowbridgeMessageExporter;
+    type MessageExporter = (
+        ContainerToSnowbridgeMessageExporterV2,
+        ContainerToSnowbridgeMessageExporter,
+    );
     type UniversalAliases = Nothing;
     type CallDispatcher = RuntimeCall;
     type SafeCallFilter = Everything;
@@ -386,13 +390,12 @@ pub type ContainerToSnowbridgeMessageExporter = ContainerEthereumBlobExporter<
     SnowbridgeChannelInfo,
 >;
 
-/// Exports message to the Ethereum Gateway contract.
-/// TODO:CHANGE
-pub type ContainerToSnowbridgeMessageExporterV2 = ContainerEthereumBlobExporter<
+/// Exports message to the Ethereum Gateway contract using Snowbridge V2.
+pub type ContainerToSnowbridgeMessageExporterV2 = ContainerEthereumBlobExporterV2<
     UniversalLocation,
     EthereumNetwork,
     EthereumLocation,
     snowbridge_pallet_outbound_queue_v2::Pallet<Runtime>,
     EthereumSystem,
-    SnowbridgeChannelInfo,
+    MinSnowbridgeV2Reward,
 >;

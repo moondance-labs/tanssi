@@ -980,6 +980,7 @@ mod benches {
         [pallet_author_inherent, AuthorInherent]
         [cumulus_pallet_xcmp_queue, XcmpQueue]
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
+        [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
         [pallet_message_queue, MessageQueue]
         [pallet_assets, ForeignAssets]
@@ -1147,7 +1148,7 @@ impl_runtime_apis! {
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, alloc::string::String> {
             use frame_benchmarking::{BenchmarkBatch, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
-            use xcm::latest::prelude::*;
+            use xcm::latest::{prelude::*, Junctions::*};
             use alloc::boxed::Box;
 
             impl frame_system_benchmarking::Config for Runtime {
@@ -1185,6 +1186,68 @@ impl_runtime_apis! {
                         id: AssetId(SelfReserve::get()),
                         fun: Fungible(u128::MAX),
                     }].into()
+                }
+            }
+
+            parameter_types! {
+                pub TrustedReserve: Option<(Location, Asset)> = Some(
+                    (
+                        EthereumLocation::get(),
+                        Asset {
+                            id: AssetId(EthereumLocation::get()),
+                            fun: Fungible(crate::currency::MICROUNIT * 10000),
+                        },
+                    )
+                );
+            }
+
+            impl pallet_xcm_benchmarks::fungible::Config for Runtime {
+                type TransactAsset = Balances;
+
+                type CheckedAccount = xcm_config::LocalCheckingAccount;
+                type TrustedTeleporter = ();
+                type TrustedReserve = TrustedReserve;
+
+                fn get_asset() -> Asset {
+                    use frame_support::{assert_ok, traits::tokens::fungible::Mutate};
+                    let (account, _) = pallet_xcm_benchmarks::account_and_location::<Runtime>(1);
+
+                    assert_ok!(<Balances as Mutate<_>>::mint_into(
+                        &account,
+                        crate::currency::MICROUNIT * 10000,
+                    ));
+
+                    let asset_id = 42u16;
+
+                    // Use runtime-derived Ethereum network
+                    let ethereum_network = EthereumNetwork::get();
+                    let asset_location = Location {
+                        parents: 2,
+                        interior: X2([
+                            GlobalConsensus(ethereum_network),
+                            AccountKey20 {
+                                network: Some(ethereum_network),
+                                key: [0; 20],
+                            },
+                        ]
+                        .into()),
+                    };
+
+                    // Create the foreign asset
+                    assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+                        RuntimeOrigin::root(),
+                        asset_location.clone(),
+                        asset_id,
+                        account,
+                        true,
+                        1u128,
+                    ));
+
+                    // Return the foreign asset
+                    Asset {
+                        id: AssetId(asset_location),
+                        fun: Fungible(crate::currency::MICROUNIT * 10000),
+                    }
                 }
             }
 

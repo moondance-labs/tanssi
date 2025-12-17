@@ -66,6 +66,9 @@ pallet-ethereum-token-transfers = { workspace = true, optional = true }
 pallet-external-validator-slashes = { workspace = true, optional = true }
 pallet-external-validators = { workspace = true, optional = true }
 snowbridge-pallet-inbound-queue = { workspace = true, optional = true }
+thiserror = { workspace = true, optional = true }
+tp-bridge = { workspace = true, optional = true }
+v2_processor_proc_macro = { path = "./src/processors/v2/proc_macro" }
 
 [features]
 default = [
@@ -101,7 +104,6 @@ std = [
 	"scale-info/std",
 	"snowbridge-core/std",
 	"snowbridge-inbound-queue-primitives/std",
-	"snowbridge-pallet-inbound-queue/std",
 	"snowbridge-pallet-inbound-queue?/std",
 	"snowbridge-pallet-system/std",
 	"snowbridge-pallet-system/std",
@@ -109,6 +111,8 @@ std = [
 	"sp-io/std",
 	"sp-runtime/std",
 	"sp-staking/std",
+	"thiserror?/std",
+	"tp-bridge?/std",
 	"xcm-builder/std",
 	"xcm-executor/std",
 	"xcm/std",
@@ -119,6 +123,8 @@ relay = [
 	"pallet-external-validator-slashes",
 	"pallet-external-validators",
 	"snowbridge-pallet-inbound-queue",
+	"thiserror",
+	"tp-bridge",
 ]
 
 runtime-benchmarks = [
@@ -152,6 +158,7 @@ runtime-benchmarks = [
 	"snowbridge-pallet-system/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
+	"tp-bridge/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 	"xcm/runtime-benchmarks",

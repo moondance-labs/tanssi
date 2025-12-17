@@ -85,7 +85,7 @@ struct OrchestratorSubscription {
 }
 
 /// Connects to a ws server by cycle throught all provided urls from the starting position until
-/// each one one was tried. Stops once a connection was succesfully made.
+/// each one one was tried. Stops once a connection was successfully made.
 async fn connect_next_available_rpc_server(
     urls: &[String],
     starting_position: usize,
