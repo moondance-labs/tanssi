@@ -16,8 +16,9 @@
 
 //! The bridge to ethereum config
 
+use crate::BlockWeights;
 #[cfg(all(not(test), not(feature = "testing-helpers")))]
-use crate::{BlockWeights, EthereumBeaconClient};
+use crate::EthereumBeaconClient;
 use cumulus_primitives_core::Location;
 use frame_support::{
     dispatch::DispatchResult,
@@ -404,8 +405,8 @@ mod benchmark_helper {
     use {
         crate::{
             bridge_to_ethereum_config::{EthTokensProcessor, EthereumGatewayAddress},
-            AccountId, Balances, EthereumBeaconClient, ForeignAssetsCreator, MaxExternalValidators,
-            Runtime, RuntimeOrigin, SnowbridgeFeesAccount, UNITS,
+            AccountId, Balances, EthereumBeaconClient, ForeignAssetsCreator, Runtime,
+            RuntimeOrigin, SnowbridgeFeesAccount, UNITS,
         },
         alloc::vec,
         dancelight_runtime_constants::snowbridge::EthereumNetwork,
@@ -414,7 +415,7 @@ mod benchmark_helper {
         snowbridge_beacon_primitives::BeaconHeader,
         snowbridge_core::Channel,
         snowbridge_inbound_queue_primitives::v2::{
-            Message, MessageProcessor as ProcessorV2, MessageProcessorError, Payload,
+            EthereumAsset, Message, MessageProcessor as ProcessorV2, MessageProcessorError, Payload,
         },
         snowbridge_inbound_queue_primitives::{
             v1::{Envelope, MessageProcessor},
@@ -426,12 +427,13 @@ mod benchmark_helper {
         snowbridge_pallet_system::Channels,
         sp_core::{H160, H256},
         sp_runtime::DispatchResult,
-        tp_bridge::symbiotic_message_processor::{
-            InboundCommand, Message as SymbioticMessage, Payload as SymbioticPayload, MAGIC_BYTES,
-        },
-        xcm::latest::{
-            prelude::{Junctions::*, *},
-            Location,
+        tanssi_runtime_common::processors::v2::RawPayload,
+        xcm::{
+            latest::{
+                prelude::{Junctions::*, *},
+                Location,
+            },
+            VersionedXcm,
         },
     };
 
@@ -527,7 +529,29 @@ mod benchmark_helper {
                 true,
                 1,
             )
-            .expect("creating foreign asset");
+            .expect("creating native ETH foreign asset");
+
+            let erc20_token_location = Location {
+                parents: 1,
+                interior: X2([
+                    GlobalConsensus(EthereumNetwork::get()),
+                    AccountKey20 {
+                        network: Some(EthereumNetwork::get()),
+                        key: [0xBBu8; 20],
+                    },
+                ]
+                .into()),
+            };
+
+            ForeignAssetsCreator::create_foreign_asset(
+                RuntimeOrigin::root(),
+                erc20_token_location.clone(),
+                43,
+                AccountId::new([0; 32]),
+                true,
+                1,
+            )
+            .expect("creating ERC20 foreign asset");
 
             EthereumBeaconClient::store_finalized_header(
                 submit_message.finalized_header,
@@ -540,8 +564,8 @@ mod benchmark_helper {
         }
     }
 
-    pub struct WorstCaseSymbioticProcessor<P>(core::marker::PhantomData<P>);
-    impl<P, AccountId> ProcessorV2<AccountId> for WorstCaseSymbioticProcessor<P>
+    pub struct WorstCaseXcmProcessor<P>(core::marker::PhantomData<P>);
+    impl<P, AccountId> ProcessorV2<AccountId> for WorstCaseXcmProcessor<P>
     where
         P: ProcessorV2<AccountId>,
         AccountId: Clone,
@@ -554,96 +578,45 @@ mod benchmark_helper {
             channel: AccountId,
             _envelope: Message,
         ) -> Result<[u8; 32], MessageProcessorError> {
-            let worst_case = create_worst_case_symbiotic_message();
+            let worst_case = create_worst_case_xcm_message();
             P::process_message(channel, worst_case)
         }
     }
 
-    // This helper function will be used for further benchmarks improvements for inbound v2
-    // So I leave it here for now
-    // The idea is we want to wrap Raw message processor and put it to the benchmarks configuration to
-    // compare with symbiotic processor. Raw message processor should be definitely much heavier,
-    // because we can pass hundreds of assets to transfer. We probably will keep this once
-    // instead of symbiotic processor for benchmarks.
-    // pub struct WorstCaseXcmProcessor<P>(core::marker::PhantomData<P>);
-    // impl<P, AccountId> ProcessorV2<AccountId> for WorstCaseXcmProcessor<P>
-    // where
-    //     P: ProcessorV2<AccountId>,
-    //     AccountId: Clone,
-    // {
-    //     fn can_process_message(_channel: &AccountId, _envelope: &Message) -> bool {
-    //         true
-    //     }
-    //
-    //     fn process_message(
-    //         channel: AccountId,
-    //         _envelope: Message,
-    //     ) -> Result<[u8; 32], MessageProcessorError> {
-    //         let worst_case = create_worst_case_xcm_message();
-    //         P::process_message(channel, worst_case)
-    //     }
-    // }
-    // fn create_worst_case_xcm_message() -> Message {
-    //     let beneficiary = AccountId::from([0x01u8; 32]);
-    //     let xcm: Xcm<()> = Xcm(vec![DepositAsset {
-    //         assets: Wild(AllCounted(2)),
-    //         beneficiary: Location::new(
-    //             0,
-    //             AccountId32 {
-    //                 network: None,
-    //                 id: beneficiary.clone().into(),
-    //             },
-    //         ),
-    //     }]);
-    //
-    //     let versioned_xcm = VersionedXcm::V5(xcm);
-    //     let raw_payload = versioned_xcm.encode();
-    //     let asset = EthereumAsset::ForeignTokenERC20 {
-    //         token_id: H256::from([0xAAu8; 32]),
-    //         value: u128::MAX / 2,
-    //     };
-    //
-    //     Message {
-    //         gateway: EthereumGatewayAddress::get(),
-    //         nonce: u64::MAX,
-    //         origin: EthereumGatewayAddress::get(),
-    //         assets: vec![asset],
-    //         payload: Payload::Raw(raw_payload),
-    //         claimer: None,
-    //         value: u128::MAX,
-    //         execution_fee: u128::MAX / 2,
-    //         relayer_fee: 0,
-    //     }
-    // }
+    /// Creates a worst-case XCM message for benchmarking RawMessageProcessor.
+    fn create_worst_case_xcm_message() -> Message {
+        let beneficiary = AccountId::from([0x01u8; 32]);
 
-    fn create_worst_case_symbiotic_message() -> Message {
-        let max_validators = MaxExternalValidators::get();
-        let mut validators = vec::Vec::new();
+        let xcm: Xcm<()> = Xcm(vec![DepositAsset {
+            assets: Wild(AllCounted(10)),
+            beneficiary: Location::new(
+                0,
+                AccountId32 {
+                    network: None,
+                    id: beneficiary.clone().into(),
+                },
+            ),
+        }]);
 
-        let max_account = sp_runtime::AccountId32::from([0xFFu8; 32]);
+        let versioned_xcm = VersionedXcm::V5(xcm);
+        let encoded_xcm = versioned_xcm.encode();
+        let raw_payload = RawPayload::Xcm(encoded_xcm);
 
-        for _ in 0..max_validators {
-            validators.push(max_account.clone());
-        }
-
-        let symbiotic_payload = SymbioticPayload {
-            magic_bytes: MAGIC_BYTES,
-            message: SymbioticMessage::V1(InboundCommand::<Runtime>::ReceiveValidators {
-                validators,
-                external_index: u64::MAX,
-            }),
-        };
+        let assets = vec![EthereumAsset::NativeTokenERC20 {
+            token_id: H160::from([0xBBu8; 20]),
+            value: 1_000_000_000_000u128,
+        }];
 
         Message {
             gateway: EthereumGatewayAddress::get(),
-            nonce: u64::MAX,
-            origin: EthereumGatewayAddress::get(),
-            assets: vec![],
-            payload: Payload::Raw(symbiotic_payload.encode()),
+            nonce: 1u64,
+            origin: H160::from([0x11u8; 20]),
+            assets,
+            payload: Payload::Raw(raw_payload.encode()),
             claimer: None,
-            value: 0,
-            execution_fee: 0,
-            relayer_fee: 0,
+            value: 1_000_000_000_000u128, // ETH value
+            execution_fee: 1_000_000_000u128,
+            relayer_fee: 1_000_000u128,
         }
     }
 
@@ -792,9 +765,8 @@ impl snowbridge_pallet_inbound_queue_v2::Config for Runtime {
         SymbioticInboundMessageProcessorV2,
     );
     #[cfg(feature = "runtime-benchmarks")]
-    type MessageProcessor = (
-        benchmark_helper::WorstCaseSymbioticProcessor<tp_bridge::SymbioticMessageProcessor<Self>>,
-    );
+    type MessageProcessor =
+        (benchmark_helper::WorstCaseXcmProcessor<RawMessageProcessorInboundV2>,);
     type RewardKind = BridgeReward;
     type DefaultRewardKind = SnowbridgeRewardInbound;
     type RewardPayment = BridgeRelayers;
