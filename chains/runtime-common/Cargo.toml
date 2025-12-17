@@ -17,6 +17,7 @@ hex-literal = { workspace = true }
 log = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive" ] }
 scale-info = { workspace = true, features = [ "derive" ] }
+alloy-core = { workspace = true, features = [ "sol-types" ] }
 
 # Own
 pallet-configuration = { workspace = true }
@@ -75,6 +76,7 @@ default = [
 	"std",
 ]
 std = [
+	"alloy-core/std",
 	"cumulus-pallet-xcmp-queue/std",
 	"cumulus-primitives-core/std",
 	"frame-support/std",

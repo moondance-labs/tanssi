@@ -25,21 +25,22 @@ use crate::processors::v2::{
 use alloc::boxed::Box;
 use alloc::format;
 use alloc::string::ToString;
+use alloy_core::sol_types::SolType;
 use core::marker::PhantomData;
 use parity_scale_codec::Decode;
 use snowbridge_inbound_queue_primitives::v2::{Message, MessageProcessorError, Payload};
 use sp_core::{Get, H160};
-use tp_bridge::symbiotic_message_processor::{
-    InboundCommand, Message as SymbioticMessage, Payload as SymbioticPayload, MAGIC_BYTES,
+use tp_bridge::layerzero_message::{
+    Message as LayerZeroMessage, Payload as LayerZeroPayload, MAGIC_BYTES as LZ_MAGIC_BYTES,
 };
 use v2_processor_proc_macro::MessageProcessor;
 use xcm::latest::{ExecuteXcm, InteriorLocation, NetworkId};
 use xcm_executor::traits::WeightBounds;
 
-pub fn try_extract_message<T: pallet_external_validators::Config>(
+pub fn try_extract_message(
     message: &Message,
     gateway_proxy_address: H160,
-) -> Result<SymbioticMessage<T>, MessageExtractionError> {
+) -> Result<LayerZeroMessage, MessageExtractionError> {
     match message.payload {
         Payload::Raw(ref payload) => {
             let raw_payload = crate::processors::v2::RawPayload::decode(&mut payload.as_slice())
@@ -48,11 +49,11 @@ pub fn try_extract_message<T: pallet_external_validators::Config>(
                     source: Some(Box::new(CodecError(error))),
                 })?;
             match raw_payload {
-                crate::processors::v2::RawPayload::Symbiotic(payload) => {
+                crate::processors::v2::RawPayload::LayerZero(payload) => {
                     if message.origin != gateway_proxy_address {
                         return Err(MessageExtractionError::InvalidMessage {
                             context: format!(
-                                "Symbiotic message origin is {:?} expected {:?}",
+                                "LayerZero message origin is {:?} expected {:?}",
                                 message.origin, gateway_proxy_address
                             ),
                             source: None,
@@ -61,34 +62,34 @@ pub fn try_extract_message<T: pallet_external_validators::Config>(
 
                     if message.value > 0 || !message.assets.is_empty() {
                         return Err(MessageExtractionError::InvalidMessage {
-                            context: "Symbiotic message cannot have assets".to_string(),
+                            context: "LayerZero message cannot have assets".to_string(),
                             source: None,
                         });
                     }
 
-                    let symbiotic_payload = SymbioticPayload::decode(&mut payload.as_slice())
-                        .map_err(|error| MessageExtractionError::InvalidMessage {
-                            context: "Unable to decode Symbiotic Payload".to_string(),
-                            source: Some(Box::new(CodecError(error))),
-                        })?;
-                    if symbiotic_payload.magic_bytes != MAGIC_BYTES {
+                    let layer_zero_payload =
+                        LayerZeroPayload::abi_decode_validate(&mut payload.as_slice()).map_err(
+                            |error| MessageExtractionError::InvalidMessage {
+                                context: "Unable to decode LayerZero Payload".to_string(),
+                                source: Some(Box::new(error)),
+                            },
+                        )?;
+                    if &layer_zero_payload.magicBytes.0 != LZ_MAGIC_BYTES {
                         return Err(MessageExtractionError::InvalidMessage {
                             context: format!(
-                                "Symbiotic magic bytes expected: {:?} got: {:?}",
-                                MAGIC_BYTES, symbiotic_payload.magic_bytes
+                                "LayerZero magic bytes expected: {:?} got: {:?}",
+                                LZ_MAGIC_BYTES, layer_zero_payload.magicBytes.0,
                             ),
                             source: None,
                         });
                     }
 
-                    return Ok(symbiotic_payload.message);
+                    Ok(layer_zero_payload.message)
                 }
-                _ => {
-                    Err(MessageExtractionError::UnsupportedMessage {
-                        context: "Unsupported Message".to_string(),
-                        source: None,
-                    })
-                }
+                _ => Err(MessageExtractionError::UnsupportedMessage {
+                    context: "Unsupported Message".to_string(),
+                    source: None,
+                }),
             }
         }
         _ => Err(MessageExtractionError::UnsupportedMessage {
@@ -98,61 +99,20 @@ pub fn try_extract_message<T: pallet_external_validators::Config>(
     }
 }
 
-pub fn process_message<T: pallet_external_validators::Config>(
-    symbiotic_message: SymbioticMessage<T>,
-) -> Result<(), MessageProcessorError> {
-    match symbiotic_message {
-        tp_bridge::symbiotic_message_processor::Message::V1(
-            InboundCommand::ReceiveValidators {
-                validators,
-                external_index,
-            },
-        ) => {
-            // It is fine to return an error here as we know that a valid symbiotic message
-            // does not contain any asset so there is no need to return success here to trap assets.
-            // Moreover, the failure here might indicate critical issue within runtime, so it is crucial
-            // that we do not ignore it.
-            pallet_external_validators::Pallet::<T>::set_external_validators_inner(
-                validators,
-                external_index,
-            )
-            .map_err(|error| MessageProcessorError::ProcessMessage(error))?;
-            Ok(())
-        }
-    }
+pub fn process_message(layer_zero_message: LayerZeroMessage) -> Result<(), MessageProcessorError> {
+    /* TODO: Implement the actual message processing logic here
+     *
+     * In a `LayerZeroMessageForwarder` pallet,
+     * We first check that the source eid/address is whitelisted by the container chain,
+     * then we send a XCM message to query `LayerZeroHandler` pallet on the container chain,
+     * when we get notified in `LayerZeroMessageForwarder` about the pallet index of `LayerZeroHandler`,
+     * we can then send the message to `LayerZeroHandler` using XCM `Transact` instruction sending the bytes received.
+     */
+    unimplemented!()
 }
 
-/// Processes Symbiotic protocol messages for external validator set management.
-///
-/// This processor handles messages from the Symbiotic middleware that controls validator
-/// registration and management. Messages must be encoded in `Payload::Raw(RawPayload::Symbiotic)`
-/// format and originate from the authorized gateway proxy address.
-///
-/// # Message Validation
-///
-/// Strictly validates incoming messages:
-/// - **Origin check**: Message must come from the configured gateway proxy address
-/// - **Asset check**: Symbiotic messages cannot contain assets, ETH value, or execution fees
-/// - **Magic bytes**: Payload must contain correct set of bytes to identify Symbiotic messages
-///
-/// # Supported Commands
-///
-/// Currently, processes `InboundCommand::ReceiveValidators` which:
-/// - Updates the external validator set via `pallet_external_validators`
-/// - Tracks validator changes by external index
-/// - Returns errors on validation failures (no asset trapping needed)
-///
-/// # Fallback Behavior
-///
-/// Uses `PrivilegedFallbackProcessor` which conditionally applies asset trapping:
-/// - **If origin is not gateway**: Assumes user error or malicious behaviour → trap assets via `AssetTrapFallbackProcessor`
-/// - **If origin is gateway**: Assumes middleware error → return error to signal the problem
-///
-/// Unlike `RawMessageProcessor`, this can safely return errors in case origin is gateway since valid Symbiotic messages
-/// from middleware never contain assets that could be lost. And error in that case indicate critical runtime issues that
-/// should not be silently ignored.
 #[derive(MessageProcessor)]
-pub struct SymbioticMessageProcessor<
+pub struct LayerZeroMessageProcessor<
     T,
     GatewayAddress,
     DefaultClaimer,
@@ -185,7 +145,7 @@ impl<
         XcmProcessor,
         XcmWeigher,
     > MessageProcessorWithFallback<AccountId>
-    for SymbioticMessageProcessor<
+    for LayerZeroMessageProcessor<
         T,
         GatewayAddress,
         DefaultClaimer,
@@ -229,7 +189,7 @@ where
         XcmProcessor,
         XcmWeigher,
     >;
-    type ExtractedMessage = SymbioticMessage<T>;
+    type ExtractedMessage = LayerZeroMessage;
 
     fn try_extract_message(
         _sender: &AccountId,

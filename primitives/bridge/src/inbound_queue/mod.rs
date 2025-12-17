@@ -16,6 +16,7 @@
 
 pub mod generic_token_inbound_message_processor;
 pub mod symbiotic_message_processor;
+pub mod layerzero_message;
 
 pub use generic_token_inbound_message_processor::*;
 pub use symbiotic_message_processor::*;

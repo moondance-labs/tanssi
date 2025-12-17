@@ -161,20 +161,20 @@ where
     }
 }
 
-/// Conditional fallback processor for Symbiotic protocol messages.
+/// Conditional fallback processor for privileged protocol messages like (Symbiotic, LayerZero).
 ///
 /// This is a wrapper around `AssetTrapFallbackProcessor` that only attempts to trap
 /// assets if the message contains any assets, ETH value, or execution fees.
 ///
 /// The processor makes the following assumptions:
-/// - If origin is not gateway proxy: user mistakenly or maliciously sent a Symbiotic message
+/// - If origin is not gateway proxy: user mistakenly or maliciously sent a privileged message
 ///   → Trap assets for recovery
-/// - If origin is gateway proxy: Symbiotic middleware sent a message with incorrect semantics
+/// - If origin is gateway proxy: privileged sender sent a message with incorrect semantics
 ///   → Return error to signal the problem
 ///
 /// This conditional behavior prevents unnecessary asset trapping for genuinely invalid
-/// Symbiotic messages while still protecting user funds in case of errors.
-pub struct SymbioticFallbackProcessor<
+/// privileged messages while still protecting user funds in case of errors.
+pub struct PrivilegedFallbackProcessor<
     T,
     AssetTrapFallbackProcessor,
     GatewayAddress,
@@ -210,7 +210,7 @@ impl<
         XcmProcessor,
         XcmWeigher,
     > FallbackMessageProcessor<AccountId>
-    for SymbioticFallbackProcessor<
+    for PrivilegedFallbackProcessor<
         T,
         AssetTrapFallbackProcessor,
         GatewayAddress,
@@ -236,14 +236,14 @@ where
     XcmWeigher: WeightBounds<<T as pallet_xcm::Config>::RuntimeCall>,
 {
     fn handle_message(who: AccountId, message: Message) -> Result<(), MessageProcessorError> {
-        // If origin is not gateway proxy, a user mistakenly or maliciously sent Symbiotic message
-        // If origin is gateway proxy, the symbiotic middleware sent the message with wrong semantics
+        // If origin is not gateway proxy, a user mistakenly or maliciously sent privileged message
+        // If origin is gateway proxy, the privileged middleware sent the message with wrong semantics
         // Based on above assumption we do conditional fallback
         if message.origin != GatewayAddress::get() {
             AssetTrapFallbackProcessor::handle_message(who, message)
         } else {
             Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
-                "Invalid symbiotic message payload",
+                "Invalid privileged message payload",
             )))
         }
     }

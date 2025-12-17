@@ -96,7 +96,7 @@ where
                         context: "Unable to decode Xcm".to_string(),
                         source: Some(Box::new(error)),
                     })?),
-                RawPayload::Symbiotic(_) => Err(MessageExtractionError::UnsupportedMessage {
+                _ => Err(MessageExtractionError::UnsupportedMessage {
                     context: "Message is unsupported".to_string(),
                     source: None,
                 }),

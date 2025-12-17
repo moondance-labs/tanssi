@@ -20109,6 +20109,7 @@ dependencies = [
 name = "tanssi-runtime-common"
 version = "0.1.0"
 dependencies = [
+ "alloy-core",
  "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
  "frame-support",
