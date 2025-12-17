@@ -139,7 +139,9 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
-        #[pallet::weight((T::WeightInfo::set_latest_author_data(T::MaxContainerChains::get()), DispatchClass::Mandatory))]
+        #[pallet::weight((T::WeightInfo::set_latest_author_data(T::MaxContainerChains::get()).saturating_add(T::WeightInfo::on_container_authors_noted(
+            T::MaxContainerChains::get(),
+        )), DispatchClass::Mandatory))]
         #[allow(clippy::useless_conversion)]
         pub fn set_latest_author_data(
             origin: OriginFor<T>,
@@ -170,10 +172,7 @@ pub mod pallet {
             // in each runtime, and that shouldn't depend on the runtime, all runtimes need the same
             // benchmarking cfg code.
             let mut total_weight =
-                T::WeightInfo::set_latest_author_data(container_chains_to_check.len() as u32)
-                    .saturating_sub(T::WeightInfo::on_container_authors_noted(
-                        container_chains_to_check.len() as u32,
-                    ));
+                T::WeightInfo::set_latest_author_data(container_chains_to_check.len() as u32);
 
             // We do this first to make sure we don't do 2 reads (parachains and relay state)
             // when we have no containers registered
@@ -229,8 +228,18 @@ pub mod pallet {
                     }
                 }
 
-                total_weight
-                    .saturating_accrue(T::AuthorNotingHook::on_container_authors_noted(&infos));
+                // Run hook
+                // When benchmarking, we want the possibility to not call hooks, to get the base
+                // weight of this inherent.
+                if cfg!(feature = "runtime-benchmarks") {
+                    // Not call hooks.
+                    // TODO: we may need to add a storage item check, if some other benchmarking code
+                    // assumes that the hook will be called
+                } else {
+                    // not runtime-benchmarks: always call hook
+                    total_weight
+                        .saturating_accrue(T::AuthorNotingHook::on_container_authors_noted(&infos));
+                }
             }
 
             // We correctly set the data
