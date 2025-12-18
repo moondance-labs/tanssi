@@ -939,7 +939,7 @@ impl CollatorLookaheadTestBuilder {
         // Create the mocked runtime api, which will return whether we have a core scheduled
         let mock_runtime_api = MockRuntimeApi::new(self.core_scheduled_for_para);
 
-        // Create the cancelation token
+        // Create the cancellation token
         let cancellation_token = CancellationToken::new();
 
         // Create a dummy overseer, but where we replace the mock runtime api

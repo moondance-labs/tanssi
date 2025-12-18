@@ -43,7 +43,7 @@ use {
     snowbridge_inbound_queue_primitives::{EventProof, Log},
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
-    tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
+    tanssi_runtime_common::processors::v1::NativeTokenTransferMessageProcessor,
     xcm::{
         latest::{
             prelude::*, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, Fungibility,
@@ -3321,7 +3321,7 @@ fn test_add_tip_for_ethereum_token_transfers_succeeded_inbound() {
                 1
             ));
 
-            // Give tokens to BOB so that it does not dissappear his account
+            // Give tokens to BOB so that it does not disappear his account
             ForeignAssets::mint_into(asset_id, &AccountId::from(CHARLIE), amount + 10)
                 .expect("to mint amount");
 

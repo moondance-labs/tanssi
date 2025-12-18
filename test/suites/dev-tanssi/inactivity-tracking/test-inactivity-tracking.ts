@@ -153,7 +153,7 @@ describeSuite({
                 expect(inactiveCollatorsRecordBeforeActivityPeriod.isEmpty).to.be.true;
 
                 // Check that the active collators are not added to the inactivity tracking storage after the end of the session.
-                // Storge must be empty because all collators for chain 2000 are active and chain 2001 is inactive
+                // Storage must be empty because all collators for chain 2000 are active and chain 2001 is inactive
                 await jumpToSession(context, startSession + 1);
                 const inactiveCollatorsRecordWithinActivityPeriod =
                     await polkadotJs.query.inactivityTracking.inactiveCollators(startSession);
