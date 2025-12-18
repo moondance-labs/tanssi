@@ -1,5 +1,3 @@
-#!/bin/bash
-
 root_dir="$(realpath .)"
 
 scripts_root_dir="$root_dir/scripts/bridge"
