@@ -24,7 +24,7 @@ if "$BINARY" export-chain-spec --help &>/dev/null; then
 fi
 
 # Fallback to build-spec (legacy command)
-if "$BINARY build-spec" --help &>/dev/null; then
+if "$BINARY" build-spec --help &>/dev/null; then
     echo "build-spec"
     exit 0
 fi
