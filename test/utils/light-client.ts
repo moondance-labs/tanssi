@@ -106,9 +106,15 @@ function encodeSymbioticMessage(api: ApiPromise, symbioticValidators: string[]):
     return payload.toU8a();
 }
 
+function encodeAsLayerZeroMessage(api: ApiPromise, layerZeroPayload: Uint8Array): Uint8Array {
+    // Placeholder for LayerZero message encoding
+    return layerZeroPayload;
+}
+
 export enum PayloadEnum {
     XCM = "XCM",
     SYMBIOTIC = "SYMBIOTIC",
+    LAYER_ZERO = "LAYER_ZERO",
 }
 
 export function encodeRawPayload(api: ApiPromise, bytes: Uint8Array, payloadEnum: PayloadEnum): Uint8Array {
@@ -117,6 +123,7 @@ export function encodeRawPayload(api: ApiPromise, bytes: Uint8Array, payloadEnum
             _enum: {
                 Xcm: "Vec<u8>",
                 Symbiotic: "Vec<u8>",
+                LayerZero: "Vec<u8>",
             },
         },
     });

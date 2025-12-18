@@ -31,13 +31,13 @@ use parity_scale_codec::Decode;
 use snowbridge_inbound_queue_primitives::v2::{Message, MessageProcessorError, Payload};
 use sp_core::{Get, H160};
 use tp_bridge::layerzero_message::{
-    Message as LayerZeroMessage, Payload as LayerZeroPayload, MAGIC_BYTES as LZ_MAGIC_BYTES,
+    SolMessage as LayerZeroSolMessage, SolPayload as LayerZeroSolPayload, Message as LayerZeroMessage,MAGIC_BYTES as LZ_MAGIC_BYTES,
 };
 use v2_processor_proc_macro::MessageProcessor;
 use xcm::latest::{ExecuteXcm, InteriorLocation, NetworkId};
 use xcm_executor::traits::WeightBounds;
 
-pub fn try_extract_message(
+pub fn try_extract_message<T: pallet_layerzero_forwarder::Config>(
     message: &Message,
     gateway_proxy_address: H160,
 ) -> Result<LayerZeroMessage, MessageExtractionError> {
@@ -67,24 +67,24 @@ pub fn try_extract_message(
                         });
                     }
 
-                    let layer_zero_payload =
-                        LayerZeroPayload::abi_decode_validate(&mut payload.as_slice()).map_err(
+                    let sol_payload =
+                        LayerZeroSolPayload::abi_decode_validate(&mut payload.as_slice()).map_err(
                             |error| MessageExtractionError::InvalidMessage {
                                 context: "Unable to decode LayerZero Payload".to_string(),
                                 source: Some(Box::new(error)),
                             },
                         )?;
-                    if &layer_zero_payload.magicBytes.0 != LZ_MAGIC_BYTES {
+                    if &sol_payload.magicBytes.0 != LZ_MAGIC_BYTES {
                         return Err(MessageExtractionError::InvalidMessage {
                             context: format!(
                                 "LayerZero magic bytes expected: {:?} got: {:?}",
-                                LZ_MAGIC_BYTES, layer_zero_payload.magicBytes.0,
+                                LZ_MAGIC_BYTES, sol_payload.magicBytes.0,
                             ),
                             source: None,
                         });
                     }
 
-                    Ok(layer_zero_payload.message)
+                    Ok(sol_payload.message.into())
                 }
                 _ => Err(MessageExtractionError::UnsupportedMessage {
                     context: "Unsupported Message".to_string(),
@@ -99,16 +99,10 @@ pub fn try_extract_message(
     }
 }
 
-pub fn process_message(layer_zero_message: LayerZeroMessage) -> Result<(), MessageProcessorError> {
-    /* TODO: Implement the actual message processing logic here
-     *
-     * In a `LayerZeroMessageForwarder` pallet,
-     * We first check that the source eid/address is whitelisted by the container chain,
-     * then we send a XCM message to query `LayerZeroHandler` pallet on the container chain,
-     * when we get notified in `LayerZeroMessageForwarder` about the pallet index of `LayerZeroHandler`,
-     * we can then send the message to `LayerZeroHandler` using XCM `Transact` instruction sending the bytes received.
-     */
-    unimplemented!()
+pub fn process_message<T: pallet_layerzero_forwarder::Config>(
+    message: LayerZeroMessage,
+) -> Result<(), MessageProcessorError> {
+    pallet_layerzero_forwarder::Pallet::<T>::forward_message_to_chain(message)
 }
 
 #[derive(MessageProcessor)]
@@ -159,7 +153,7 @@ where
     T: snowbridge_pallet_inbound_queue::Config
         + pallet_xcm::Config
         + snowbridge_pallet_system::Config
-        + pallet_external_validators::Config,
+        + pallet_layerzero_forwarder::Config,
     [u8; 32]: From<<T as frame_system::Config>::AccountId>,
     GatewayAddress: Get<H160>,
     DefaultClaimer: Get<<T as frame_system::Config>::AccountId>,
@@ -196,13 +190,13 @@ where
         message: &Message,
     ) -> Result<Self::ExtractedMessage, MessageExtractionError> {
         let gateway_proxy_address = T::GatewayAddress::get();
-        try_extract_message(message, gateway_proxy_address)
+        try_extract_message::<T>(message, gateway_proxy_address)
     }
 
     fn process_extracted_message(
         _sender: AccountId,
         extracted_message: Self::ExtractedMessage,
     ) -> Result<(), MessageProcessorError> {
-        process_message(extracted_message)
+        process_message::<T>(extracted_message)
     }
 }
