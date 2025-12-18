@@ -16,6 +16,7 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+use node_common::timestamp::MockTimestampInherentDataProvider;
 use {
     cumulus_client_parachain_inherent::{MockValidationDataInherentDataProvider, MockXcmConfig},
     cumulus_client_service::prepare_node_config,
@@ -45,33 +46,6 @@ mod mocked_relay_keys;
 const RANDOMNESS_ACTIVATED_AUX_KEY: &[u8] = b"__DEV_RANDOMNESS_ACTIVATED";
 
 const CONTAINER_CHAINS_EXCLUSION_AUX_KEY: &[u8] = b"__DEV_CONTAINER_CHAINS_EXCLUSION";
-
-thread_local!(static TIMESTAMP: std::cell::RefCell<u64> = const { std::cell::RefCell::new(0) });
-
-/// Provide a mock duration starting at 0 in millisecond for timestamp inherent.
-/// Each call will increment timestamp by slot_duration making Aura think time has passed.
-struct MockTimestampInherentDataProvider;
-#[async_trait::async_trait]
-impl sp_inherents::InherentDataProvider for MockTimestampInherentDataProvider {
-    async fn provide_inherent_data(
-        &self,
-        inherent_data: &mut sp_inherents::InherentData,
-    ) -> Result<(), sp_inherents::Error> {
-        TIMESTAMP.with(|x| {
-            *x.borrow_mut() += dancebox_runtime::SLOT_DURATION;
-            inherent_data.put_data(sp_timestamp::INHERENT_IDENTIFIER, &*x.borrow())
-        })
-    }
-
-    async fn try_handle_error(
-        &self,
-        _identifier: &sp_inherents::InherentIdentifier,
-        _error: &[u8],
-    ) -> Option<Result<(), sp_inherents::Error>> {
-        // The pallet never reports error.
-        None
-    }
-}
 
 /// Build the import queue for the parachain runtime (manual seal).
 fn build_manual_seal_import_queue(
@@ -190,17 +164,17 @@ pub fn start_dev_node(
                     &*client.clone(),
                     block,
                 ).expect("Slot duration should be set");
+                MockTimestampInherentDataProvider::advance_timestamp(
+                    slot_duration.as_millis(),
+                );
 
-                let mut timestamp = 0u64;
-                TIMESTAMP.with(|x| {
-                    timestamp = *x.borrow();
-                });
-
-                timestamp += dancebox_runtime::SLOT_DURATION;
+                // Get the mocked timestamp
+                let timestamp = MockTimestampInherentDataProvider::load();
+                // Calculate mocked slot number
                 let relay_slot = sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
-						timestamp.into(),
-						slot_duration,
-                    );
+                    timestamp.into(),
+                    slot_duration,
+                );
                 let relay_slot = u64::from(*relay_slot);
 
                 let downward_xcm_receiver = downward_xcm_receiver.clone();
