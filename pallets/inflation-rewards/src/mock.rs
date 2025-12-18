@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use std::collections::BTreeSet;
-use tp_traits::ForSession;
 use {
     crate::{self as pallet_inflation_rewards, MaybeSelfChainBlockAuthor},
     bounded_collections::bounded_vec,
