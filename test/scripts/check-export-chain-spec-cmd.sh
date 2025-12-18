@@ -18,13 +18,13 @@ if [[ ! -x "$BINARY" ]]; then
 fi
 
 # Check for export-chain-spec (new command)
-if $BINARY export-chain-spec --help &>/dev/null; then
+if "$BINARY" export-chain-spec --help &>/dev/null; then
     echo "export-chain-spec"
     exit 0
 fi
 
 # Fallback to build-spec (legacy command)
-if $BINARY build-spec --help &>/dev/null; then
+if "$BINARY build-spec" --help &>/dev/null; then
     echo "build-spec"
     exit 0
 fi
