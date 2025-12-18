@@ -29,7 +29,7 @@ fi
 
 mkdir -p specs
 # IF and Fallback will be removed after merge in the next PR
-if bash ./check-export-chain-spec-cmd.sh $BINARY_FOLDER/tanssi-relay | grep -q "export-chain-spec"; then
+if bash ./scripts/check-export-chain-spec-cmd.sh $BINARY_FOLDER/tanssi-relay | grep -q "export-chain-spec"; then
   $BINARY_FOLDER/tanssi-relay export-chain-spec --chain "${RUNTIME}-local" > "specs/tanssi-relay.json"
   echo "Spec for $RUNTIME saved to specs/tanssi-relay.json"
   exit 0
