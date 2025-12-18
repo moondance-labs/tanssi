@@ -146,7 +146,7 @@ jobs:
                 ref: ${{ needs.set-tags.outputs.git_ref }}
           - name: Install shellcheck
             run: |
-              wget -qO- "https://github.com/koalaman/shellcheck/releases/download/stable/shellcheck-stable.linux.x86_64.tar.xz" | tar -xJv
+              wget -qO- "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz" | tar -xJv
               ./shellcheck-stable/shellcheck --version
           - name: Run Shellcheck
             run: |
