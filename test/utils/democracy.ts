@@ -1,4 +1,4 @@
-import { type DevModeContext } from "@moonwall/cli";
+import type { DevModeContext } from "@moonwall/cli";
 import type { KeyringPair } from "@polkadot/keyring/types";
 import { BN } from "@polkadot/util";
 

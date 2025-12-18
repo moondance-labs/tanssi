@@ -3,7 +3,7 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect, fastFowardToNextEvent } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { KeyringPair } from "@polkadot/keyring/types";
-import { type SubmittedEventDataType } from "../../../utils";
+import type { SubmittedEventDataType } from "../../../utils";
 import type { H256 } from "@polkadot/types/interfaces";
 import { maximizeConvictionVotingOf } from "../../../utils/democracy.ts";
 
