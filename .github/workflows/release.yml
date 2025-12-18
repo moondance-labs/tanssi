@@ -144,10 +144,6 @@ jobs:
             uses: actions/checkout@v6
             with:
                 ref: ${{ needs.set-tags.outputs.git_ref }}
-          - name: Install shellcheck
-            run: |
-              wget -qO- "https://github.com/koalaman/shellcheck/releases/download/stable/shellcheck-stable.linux.x86_64.tar.xz" | tar -xJv
-              shellcheck-stable/shellcheck --version
           - name: Run Shellcheck
             run: |
               shopt -s globstar
