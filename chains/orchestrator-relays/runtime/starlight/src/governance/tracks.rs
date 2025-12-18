@@ -22,6 +22,7 @@ const fn percent(x: u128) -> sp_arithmetic::FixedI64 {
     sp_arithmetic::FixedI64::from_rational(x, 100)
 }
 use pallet_referenda::{Curve, Track};
+use runtime_common::prod_or_fast;
 use sp_runtime::str_array as s;
 const APP_ROOT: Curve = Curve::make_reciprocal(4, 28, percent(80), percent(50), percent(100));
 const SUP_ROOT: Curve = Curve::make_linear(28, 28, percent(0), percent(50));
@@ -37,10 +38,10 @@ const TRACKS_DATA: [pallet_referenda::Track<u16, Balance, BlockNumber>; 2] = [
             name: s("root"),
             max_deciding: 1,
             decision_deposit: 500 * GRAND,
-            prepare_period: 1 * DAYS,
-            decision_period: 14 * DAYS,
-            confirm_period: 1 * DAYS,
-            min_enactment_period: 1 * DAYS,
+            prepare_period: prod_or_fast!(1 * DAYS, 8 * MINUTES),
+            decision_period: prod_or_fast!(14 * DAYS, 20 * MINUTES),
+            confirm_period: prod_or_fast!(1 * DAYS, 12 * MINUTES),
+            min_enactment_period: prod_or_fast!(1 * DAYS, 5 * MINUTES),
             min_approval: APP_ROOT,
             min_support: SUP_ROOT,
         },

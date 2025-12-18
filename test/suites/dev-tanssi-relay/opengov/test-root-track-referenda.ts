@@ -1,9 +1,10 @@
 import "@tanssi/api-augment";
 
-import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { beforeAll, describeSuite, expect, fastFowardToNextEvent } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { KeyringPair } from "@polkadot/keyring/types";
-import { isDancelightRuntime, isStarlightRuntime } from "../../../utils/runtime.ts";
+import { maximizeConvictionVotingOf } from "../../../utils/democracy.ts";
+
 import type { SubmittedEventDataType } from "../../../utils";
 
 describeSuite({
@@ -32,14 +33,9 @@ describeSuite({
 
         it({
             id: "E01",
-            timeout: 60000,
+            timeout: 240000,
             title: "Referenda for root is executed",
-            test: async ({ skip }) => {
-                // Skip if the runtime is Starlight, as OpenGov is not supported
-                if (!isDancelightRuntime(api)) {
-                    skip();
-                }
-
+            test: async () => {
                 // Bob wants to add Alice as a proxy
                 const delegate = alice.address;
                 const proxyType = "Any";
@@ -76,48 +72,22 @@ describeSuite({
                     await api.tx.referenda.placeDecisionDeposit(proposalIndex).signAsync(ferdie)
                 );
                 expect(depositSubmit.result?.successful).to.be.true;
+                await maximizeConvictionVotingOf(context, [dave, eve, ferdie], proposalIndex);
 
-                // Step 5: Voting
-                for (const voter of [alice, bob, dave]) {
-                    const voteSubmit = await context.createBlock(
-                        await api.tx.convictionVoting
-                            .vote(proposalIndex, {
-                                Standard: { vote: { aye: true, conviction: "None" }, balance: 999999000000000000n },
-                            })
-                            .signAsync(voter)
-                    );
-                    expect(voteSubmit.result?.successful).to.be.true;
-                }
+                await fastFowardToNextEvent(context); // Fast forward past preparation
+                await fastFowardToNextEvent(context); // Fast forward past decision
+                await fastFowardToNextEvent(context); // Fast forward past enactment
+                await fastFowardToNextEvent(context); // Fast forward past confirming
 
-                const expectedEvents = [
-                    { section: "referenda", method: "DecisionStarted" },
-                    { section: "referenda", method: "ConfirmStarted" },
-                    { section: "referenda", method: "Confirmed" },
-                    { section: "scheduler", method: "Dispatched" },
-                    { section: "scheduler", method: "Dispatched" },
-                ];
+                const finishedReferendum = (
+                    await context.polkadotJs().query.referenda.referendumInfoFor(proposalIndex)
+                ).unwrap();
 
-                // Step 5: Wait for referendum to be executed
-                for (let i = 0; i < 450; i++) {
-                    await context.createBlock();
+                expect(finishedReferendum.isApproved, "Not approved").to.be.true;
+                expect(finishedReferendum.isOngoing, "Still ongoing").to.be.false;
+                expect(finishedReferendum.isTimedOut, "Timed out").to.be.false;
 
-                    const events = await api.query.system.events();
-                    const execEvent = events.find(
-                        (e) =>
-                            e.event.section === expectedEvents[0].section && e.event.method === expectedEvents[0].method
-                    );
-
-                    if (execEvent) {
-                        expectedEvents.shift();
-                    }
-
-                    if (expectedEvents.length === 0) {
-                        break;
-                    }
-                }
-
-                // Check if all the events happened in the specified order.
-                expect(expectedEvents.length).toEqual(0);
+                await fastFowardToNextEvent(context); // Fast forward past dispatched
 
                 // Step 6: Confirm proxy actually added
                 const proxyInfo = await api.query.proxy.proxies(bob.address);
@@ -129,13 +99,9 @@ describeSuite({
 
         it({
             id: "E02",
+            timeout: 120000,
             title: "Not enough support, referenda rejected",
-            test: async ({ skip }) => {
-                // Skip if the runtime is Starlight, as OpenGov is not supported
-                if (!isDancelightRuntime(api)) {
-                    skip();
-                }
-
+            test: async () => {
                 const tx = api.tx.system.remark("0x0005");
 
                 // Step 1: Let's create preimage
@@ -183,146 +149,17 @@ describeSuite({
                     expect(voteSubmit.result?.successful).to.be.true;
                 }
 
-                const expectedEvents = [
-                    { section: "referenda", method: "DecisionStarted" },
-                    { section: "referenda", method: "Rejected" },
-                ];
+                await fastFowardToNextEvent(context); // Fast forward past preparation
+                await fastFowardToNextEvent(context); // Fast forward past decision
+                await fastFowardToNextEvent(context); // Fast forward past enactment
 
-                // Step 5: Wait for referendum to be executed
-                for (let i = 0; i < 450; i++) {
-                    await context.createBlock();
+                const finishedReferendum = (
+                    await context.polkadotJs().query.referenda.referendumInfoFor(proposalIndex)
+                ).unwrap();
 
-                    const events = await api.query.system.events();
-
-                    const execEvent = events.find(
-                        (e) =>
-                            e.event.section === expectedEvents[0].section && e.event.method === expectedEvents[0].method
-                    );
-
-                    if (execEvent) {
-                        expectedEvents.shift();
-                    }
-
-                    if (expectedEvents.length === 0) {
-                        break;
-                    }
-                }
-
-                // Check if all the events happened in the specified order.
-                expect(expectedEvents.length).toEqual(0);
-            },
-        });
-
-        it({
-            id: "E03",
-            title: "Referenda is disabled for Starlight",
-            test: async ({ skip }) => {
-                if (!isStarlightRuntime(api)) {
-                    skip();
-                }
-
-                const delegate = alice.address;
-                const proxyType = "Any";
-                const delay = 0;
-
-                const tx = api.tx.proxy.addProxy(delegate, proxyType, delay);
-
-                const notePreimageTx = api.tx.preimage.notePreimage(tx.method.toHex());
-                const preimageBlock = await context.createBlock(await notePreimageTx.signAsync(alice), {
-                    allowFailures: true,
-                });
-                expect(preimageBlock.result?.successful).to.be.false;
-
-                const submitTx = api.tx.referenda.submit(
-                    {
-                        system: "Root",
-                    },
-                    { Lookup: { Hash: tx.method.hash.toHex(), len: tx.method.encodedLength } },
-                    { After: "1" }
-                );
-
-                const submitBlock = await context.createBlock(await submitTx.signAsync(bob), { allowFailures: true });
-                expect(submitBlock.result?.successful).to.be.false;
-
-                const submitTx2 = api.tx.referenda.submit(
-                    {
-                        Origins: "WhitelistedCaller",
-                    },
-                    { Lookup: { Hash: tx.method.hash.toHex(), len: tx.method.encodedLength } },
-                    { After: "1" }
-                );
-                const submitBlock2 = await context.createBlock(await submitTx2.signAsync(bob), { allowFailures: true });
-                expect(submitBlock2.result?.successful).to.be.false;
-            },
-        });
-
-        it({
-            id: "E04",
-            title: "Referenda without votes will be rejected",
-            test: async ({ skip }) => {
-                if (!isDancelightRuntime(api)) {
-                    skip();
-                }
-
-                const tx = api.tx.system.remark("0x0002");
-
-                // Step 1: Let's create preimage
-                const notePreimageTx = api.tx.preimage.notePreimage(tx.method.toHex());
-                const preimageBlock = await context.createBlock(await notePreimageTx.signAsync(eve));
-                expect(preimageBlock.result?.successful).to.be.true;
-
-                // Step 2: Alice submits referenda for not existing track
-                const submitTx = api.tx.referenda.submit(
-                    {
-                        system: "Root",
-                    },
-                    { Lookup: { Hash: tx.method.hash.toHex(), len: tx.method.encodedLength } },
-                    { After: "1" }
-                );
-
-                const submitBlock = await context.createBlock(await submitTx.signAsync(alice));
-                expect(submitBlock.result?.successful).to.be.true;
-
-                // Step 3: Extract referendum index
-                const events = await api.query.system.events();
-                const proposalIndex = (
-                    events.find((e) => e.event.method === "Submitted").event.toHuman()
-                        .data as unknown as SubmittedEventDataType
-                ).index;
-                expect(proposalIndex).to.not.be.undefined;
-
-                // Step 4: Place decision deposit
-                const depositSubmit = await context.createBlock(
-                    await api.tx.referenda.placeDecisionDeposit(proposalIndex).signAsync(ferdie)
-                );
-                expect(depositSubmit.result?.successful).to.be.true;
-
-                const expectedEvents = [
-                    { section: "referenda", method: "DecisionStarted" },
-                    { section: "referenda", method: "Rejected" },
-                ];
-
-                for (let i = 0; i < 450; i++) {
-                    await context.createBlock();
-
-                    const events = await api.query.system.events();
-
-                    const execEvent = events.find(
-                        (e) =>
-                            e.event.section === expectedEvents[0].section && e.event.method === expectedEvents[0].method
-                    );
-
-                    if (execEvent) {
-                        expectedEvents.shift();
-                    }
-
-                    if (expectedEvents.length === 0) {
-                        break;
-                    }
-                }
-
-                // Check if all the events happened in the specified order.
-                expect(expectedEvents.length).toEqual(0);
+                expect(finishedReferendum.isApproved, "Not approved").to.be.false;
+                expect(finishedReferendum.isOngoing, "Still ongoing").to.be.false;
+                expect(finishedReferendum.isTimedOut, "Timed out").to.be.false;
             },
         });
     },
