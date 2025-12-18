@@ -28,5 +28,10 @@ if [[ "$RUNTIME" != "dancelight" && "$RUNTIME" != "starlight" ]]; then
 fi
 
 mkdir -p specs
-$BINARY_FOLDER/tanssi-relay export-chain-spec --chain "${RUNTIME}-local" > "specs/tanssi-relay.json"
+# IF and Fallback will be removed after merge in the next PR
+if bash ./check-export-chain-spec-cmd.sh ../target/release/container-chain-simple-node | grep -q "export-chain-spec"; then
+  $BINARY_FOLDER/tanssi-relay export-chain-spec --chain "${RUNTIME}-local" > "specs/tanssi-relay.json"
+  exit 0
+fi
+$BINARY_FOLDER/tanssi-relay build-spec --chain "${RUNTIME}-local" > "specs/tanssi-relay.json"
 echo "Spec for $RUNTIME saved to specs/tanssi-relay.json"
