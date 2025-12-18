@@ -144,13 +144,17 @@ jobs:
             uses: actions/checkout@v6
             with:
                 ref: ${{ needs.set-tags.outputs.git_ref }}
+          # We prepare the symlink folder because scandir doesn't allow to specify multiple folders
+          - name: Prepare scandir folder for check
+            run: |
+              mkdir -p .scandir
+              ln -s ./test/scripts .scandir/scripts
+              ln -s ./tools        .scandir/tools
           - name: Run Shellcheck for test scripts
             uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38
             with:
               severity: error
-              scandir: >-
-                ./test/scripts
-                ./tools
+              scandir: ./.scandir
 
     security-analysis-with-zizmor:
       name: Run zizmor
