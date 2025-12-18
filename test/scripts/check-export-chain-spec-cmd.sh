@@ -23,5 +23,12 @@ if $BINARY export-chain-spec --help &>/dev/null; then
     exit 0
 fi
 
-echo "Error: export-chain-spec not found" >&2
+# Fallback to build-spec (legacy command)
+if $BINARY build-spec --help &>/dev/null; then
+    echo "build-spec"
+    exit 0
+fi
+
+# Neither command found
+echo "Error: Neither export-chain-spec nor build-spec available" >&2
 exit 1
