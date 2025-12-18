@@ -4,7 +4,8 @@
 set -e
 
 mkdir -p specs
-# IF and Fallback will be removed after merge in the next PR
+# IF and Fallback should be removed after new version release
+# https://opslayer.atlassian.net/browse/MD-1512
 if bash ./scripts/check-export-chain-spec-cmd.sh tmp/tanssi-node | grep -q "export-chain-spec"; then
   tmp/tanssi-node export-chain-spec --chain dancebox-local > specs/dancebox-plain-spec.json
   pnpm tsx scripts/modify-plain-specs.ts process specs/dancebox-plain-spec.json specs/dancebox-modified-spec.json

@@ -3,7 +3,7 @@
 import { MoonwallContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { alith, generateKeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import { chopsticksWaitTillIncluded, testPalletVersions } from "utils";
+import { chopsticksWaitTillIncluded, getChainSpecCmd, testPalletVersions } from "utils";
 
 describeSuite({
     id: "R01",
@@ -98,7 +98,7 @@ describeSuite({
             title: "Test pallet versions for missed migrations",
             test: async () => {
                 const command = "../target/release/container-chain-frontier-node";
-                const args = ["export-chain-spec", "--raw"];
+                const args = [getChainSpecCmd(command), "--raw"];
 
                 await testPalletVersions(api, command, args);
             },
