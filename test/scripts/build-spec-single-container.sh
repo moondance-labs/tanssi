@@ -25,7 +25,7 @@ else
 fi
 
 mkdir -p specs
-if bash ./check-export-chain-spec-cmd.sh ../target/release/container-chain-simple-node | grep -q "export-chain-spec"; then
+if bash ./check-export-chain-spec-cmd.sh $BINARY_FOLDER/tanssi-node | grep -q "export-chain-spec"; then
   $BINARY_FOLDER/$CONTAINER_BINARY export-chain-spec --add-bootnode "/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9" --parachain-id 2000 --raw > specs/single-container-template-container-2000.json
   $BINARY_FOLDER/tanssi-node export-chain-spec --chain $TANSSI_CHAIN --parachain-id 1000 --add-container-chain specs/single-container-template-container-2000.json --invulnerable "Collator1000-01" --invulnerable "Collator1000-02" --invulnerable "Collator1000-03" --invulnerable "Collator2000-01" --invulnerable "Collator2000-02" --raw > specs/single-container-tanssi-1000.json
   exit 0
