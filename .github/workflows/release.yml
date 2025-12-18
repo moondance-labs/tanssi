@@ -150,6 +150,7 @@ jobs:
               shellcheck-stable/shellcheck --version
           - name: Run Shellcheck
             run: |
+              shopt -s globstar
               shellcheck \
                 test/scripts/**/*.sh \
                 tools/**/*.sh \
