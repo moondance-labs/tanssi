@@ -1,7 +1,8 @@
+#!/bin/bash
+
 # THIS FILE IS ONLY FOR TESTING PURPOSE OF THE MIGRATION FROM build-spec TO export-chain-spec
 # After this command is removed (around April 2026), this file can be removed as well
 
-#!/bin/bash
 set -e
 
 # Always run from project root
