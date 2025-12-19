@@ -16,7 +16,7 @@ describeSuite({
 
         it({
             id: "T01",
-            title: "Test block numbers in relay are 0 yet",
+            title: "Test relay rpc (alice) has more than 0 peers",
             test: async () => {
                 const peers = (await relayApi.rpc.system.peers()).toJSON();
                 console.log(peers);

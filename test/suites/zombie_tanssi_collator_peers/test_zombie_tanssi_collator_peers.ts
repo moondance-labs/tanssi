@@ -216,7 +216,7 @@ function stats(arr: number[]) {
  */
 export async function analyzeCollatorPeers(baseDir: string, collatorNames: string[], nodeLabel: string): Promise<void> {
     for (const name of collatorNames) {
-        const path = `${base}/${name}.log`;
+        const path = `${baseDir}/${name}.log`;
         const { peers, times } = await collectSeries(path, nodeLabel);
 
         expect(peers.length, `${name}: no 'Idle (N peers)' lines found in ${path}`).to.be.greaterThan(0);

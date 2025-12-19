@@ -13,7 +13,7 @@ Summary of a weird issue when switching form libp2p to litep2p.
 
 ## Backstory
 
-litep2p is becoming the default in stable2506 upgrade. All of our zombienet tests work, expect 2 suites that consistently timeout in CI.
+litep2p is becoming the default in stable2506 upgrade. All of our zombienet tests work, except 2 suites that consistently timeout in CI.
 
 ```
 pnpm moonwall test zombie_data_preservers_embedded_dancebox
