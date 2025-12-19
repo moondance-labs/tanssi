@@ -529,6 +529,44 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             [key: string]: AugmentedError<ApiType>;
         };
+        ethereumOutboundQueueV2: {
+            /**
+             * The pallet is halted
+             **/
+            Halted: AugmentedError<ApiType>;
+            /**
+             * Invalid Channel
+             **/
+            InvalidChannel: AugmentedError<ApiType>;
+            /**
+             * Invalid Envelope
+             **/
+            InvalidEnvelope: AugmentedError<ApiType>;
+            /**
+             * Invalid Gateway
+             **/
+            InvalidGateway: AugmentedError<ApiType>;
+            /**
+             * Pending nonce does not exist
+             **/
+            InvalidPendingNonce: AugmentedError<ApiType>;
+            /**
+             * The message is too large
+             **/
+            MessageTooLarge: AugmentedError<ApiType>;
+            /**
+             * Reward payment failed
+             **/
+            RewardPaymentFailed: AugmentedError<ApiType>;
+            /**
+             * Message verification error
+             **/
+            Verification: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
         ethereumSystem: {
             AgentAlreadyCreated: AugmentedError<ApiType>;
             ChannelAlreadyCreated: AugmentedError<ApiType>;
@@ -582,10 +620,15 @@ declare module "@polkadot/api-base/types/errors" {
              * The outbound message is invalid prior to send.
              **/
             InvalidMessage: AugmentedError<ApiType>;
+            LocationReanchorFailed: AugmentedError<ApiType>;
+            LocationToOriginConversionFailed: AugmentedError<ApiType>;
+            MinV2RewardNotAchieved: AugmentedError<ApiType>;
+            OriginConversionFailed: AugmentedError<ApiType>;
             /**
              * When add_tip extrinsic could not be called.
              **/
             TipFailed: AugmentedError<ApiType>;
+            TooManyCommands: AugmentedError<ApiType>;
             /**
              * The outbound message could not be sent.
              **/
@@ -594,6 +637,7 @@ declare module "@polkadot/api-base/types/errors" {
              * Conversion from Location to TokenId failed.
              **/
             UnknownLocationForToken: AugmentedError<ApiType>;
+            V2SendingIsNotAllowed: AugmentedError<ApiType>;
             /**
              * Generic error
              **/
@@ -666,118 +710,6 @@ declare module "@polkadot/api-base/types/errors" {
              * Invalid params for root_test_send_msg_to_eth
              **/
             RootTestInvalidParams: AugmentedError<ApiType>;
-            /**
-             * Generic error
-             **/
-            [key: string]: AugmentedError<ApiType>;
-        };
-        fellowshipCollective: {
-            /**
-             * Account is already a member.
-             **/
-            AlreadyMember: AugmentedError<ApiType>;
-            /**
-             * Unexpected error in state.
-             **/
-            Corruption: AugmentedError<ApiType>;
-            /**
-             * The information provided is incorrect.
-             **/
-            InvalidWitness: AugmentedError<ApiType>;
-            /**
-             * There are no further records to be removed.
-             **/
-            NoneRemaining: AugmentedError<ApiType>;
-            /**
-             * The origin is not sufficiently privileged to do the operation.
-             **/
-            NoPermission: AugmentedError<ApiType>;
-            /**
-             * Account is not a member.
-             **/
-            NotMember: AugmentedError<ApiType>;
-            /**
-             * The given poll index is unknown or has closed.
-             **/
-            NotPolling: AugmentedError<ApiType>;
-            /**
-             * The given poll is still ongoing.
-             **/
-            Ongoing: AugmentedError<ApiType>;
-            /**
-             * The member's rank is too low to vote.
-             **/
-            RankTooLow: AugmentedError<ApiType>;
-            /**
-             * The new member to exchange is the same as the old member
-             **/
-            SameMember: AugmentedError<ApiType>;
-            /**
-             * The max member count for the rank has been reached.
-             **/
-            TooManyMembers: AugmentedError<ApiType>;
-            /**
-             * Generic error
-             **/
-            [key: string]: AugmentedError<ApiType>;
-        };
-        fellowshipReferenda: {
-            /**
-             * The referendum index provided is invalid in this context.
-             **/
-            BadReferendum: AugmentedError<ApiType>;
-            /**
-             * The referendum status is invalid for this operation.
-             **/
-            BadStatus: AugmentedError<ApiType>;
-            /**
-             * The track identifier given was invalid.
-             **/
-            BadTrack: AugmentedError<ApiType>;
-            /**
-             * There are already a full complement of referenda in progress for this track.
-             **/
-            Full: AugmentedError<ApiType>;
-            /**
-             * Referendum's decision deposit is already paid.
-             **/
-            HasDeposit: AugmentedError<ApiType>;
-            /**
-             * The deposit cannot be refunded since none was made.
-             **/
-            NoDeposit: AugmentedError<ApiType>;
-            /**
-             * The deposit refunder is not the depositor.
-             **/
-            NoPermission: AugmentedError<ApiType>;
-            /**
-             * There was nothing to do in the advancement.
-             **/
-            NothingToDo: AugmentedError<ApiType>;
-            /**
-             * Referendum is not ongoing.
-             **/
-            NotOngoing: AugmentedError<ApiType>;
-            /**
-             * No track exists for the proposal origin.
-             **/
-            NoTrack: AugmentedError<ApiType>;
-            /**
-             * The preimage does not exist.
-             **/
-            PreimageNotExist: AugmentedError<ApiType>;
-            /**
-             * The preimage is stored with a different length than the one provided.
-             **/
-            PreimageStoredWithDifferentLength: AugmentedError<ApiType>;
-            /**
-             * The queue of the track is empty.
-             **/
-            QueueEmpty: AugmentedError<ApiType>;
-            /**
-             * Any deposit cannot be refunded until after the decision is over.
-             **/
-            Unfinished: AugmentedError<ApiType>;
             /**
              * Generic error
              **/

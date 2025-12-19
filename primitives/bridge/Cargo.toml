@@ -10,7 +10,7 @@ version = "0.1.0"
 workspace = true
 
 [dependencies]
-alloy-core = { workspace = true }
+alloy-core = { workspace = true, features = [ "sol-types" ] }
 dp-chain-state-snapshot = { workspace = true }
 dp-container-chain-genesis-data = { workspace = true }
 ethabi = { workspace = true }
@@ -46,6 +46,7 @@ hex-literal = { workspace = true }
 pallet-balances = { workspace = true, features = [ "std" ] }
 pallet-timestamp = { workspace = true, features = [ "std" ] }
 sp-io = { workspace = true, features = [ "std" ] }
+sp-tracing = { workspace = true }
 
 [features]
 default = [ "std" ]
@@ -70,11 +71,13 @@ std = [
 	"snowbridge-inbound-queue-primitives/std",
 	"snowbridge-outbound-queue-primitives/std",
 	"snowbridge-pallet-outbound-queue-v2/std",
+	"snowbridge-pallet-outbound-queue-v2/std",
 	"snowbridge-pallet-outbound-queue/std",
 	"snowbridge-pallet-system/std",
 	"sp-core/std",
 	"sp-io/std",
 	"sp-runtime/std",
+	"sp-tracing/std",
 	"xcm-builder/std",
 	"xcm-executor/std",
 	"xcm/std",

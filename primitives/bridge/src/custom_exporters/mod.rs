@@ -15,7 +15,45 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 pub mod container_token_to_ethereum_message_exporter;
+pub mod container_token_to_ethereum_message_exporter_v2;
 pub mod snowbridge_outbound_token_transfer;
+pub mod snowbridge_outbound_token_transfer_v2;
 
 pub use container_token_to_ethereum_message_exporter::*;
 pub use snowbridge_outbound_token_transfer::*;
+pub use snowbridge_outbound_token_transfer_v2::*;
+
+#[derive(PartialEq, Debug)]
+pub enum XcmConverterError {
+    UnexpectedEndOfXcm,
+    EndOfXcmMessageExpected,
+    WithdrawAssetExpected,
+    DepositAssetExpected,
+    NoReserveAssets,
+    FilterDoesNotConsumeAllAssets,
+    TooManyAssets,
+    ZeroAssetTransfer,
+    BeneficiaryResolutionFailed,
+    AssetResolutionFailed,
+    InvalidFeeAsset,
+    SetTopicExpected,
+    ReserveAssetDepositedExpected,
+    InvalidAsset,
+    UnexpectedInstruction,
+    AliasOriginExpected,
+    InvalidOrigin,
+    TooManyCommands,
+    ClearOriginExpected,
+    BuyExecutionExpected,
+    ParaIdMismatch,
+}
+
+#[macro_export]
+macro_rules! match_expression {
+	($expression:expr, $(|)? $( $pattern:pat_param )|+ $( if $guard: expr )?, $value:expr $(,)?) => {
+		match $expression {
+			$( $pattern )|+ $( if $guard )? => Some($value),
+			_ => None,
+		}
+	};
+}

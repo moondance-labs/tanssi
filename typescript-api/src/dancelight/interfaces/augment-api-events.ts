@@ -43,8 +43,6 @@ import type {
     PalletMultisigTimepoint,
     PalletPooledStakingPoolsActivePoolKind,
     PalletProxyDepositKind,
-    PalletRankedCollectiveTally,
-    PalletRankedCollectiveVoteRecord,
     PalletStreamPaymentDepositChange,
     PalletStreamPaymentParty,
     PalletStreamPaymentStreamConfig,
@@ -57,6 +55,7 @@ import type {
     SnowbridgeCorePricingPricingParameters,
     SnowbridgeCoreRewardMessageId,
     SnowbridgeOutboundQueuePrimitivesOperatingMode,
+    SnowbridgeOutboundQueuePrimitivesV2Message,
     SpConsensusGrandpaAppPublic,
     SpRuntimeDispatchError,
     SpRuntimeDispatchErrorWithPostInfo,
@@ -479,6 +478,57 @@ declare module "@polkadot/api-base/types/events" {
              **/
             [key: string]: AugmentedEvent<ApiType>;
         };
+        ethereumOutboundQueueV2: {
+            /**
+             * Message will be committed at the end of current block. From now on, to track the
+             * progress the message, use the `nonce` or the `id`.
+             **/
+            MessageAccepted: AugmentedEvent<ApiType, [id: H256, nonce: u64], { id: H256; nonce: u64 }>;
+            /**
+             * Delivery Proof received
+             **/
+            MessageDelivered: AugmentedEvent<ApiType, [nonce: u64], { nonce: u64 }>;
+            /**
+             * Message was not committed due to being overweight or the current block is full.
+             **/
+            MessagePostponed: AugmentedEvent<
+                ApiType,
+                [payload: Bytes, reason: FrameSupportMessagesProcessMessageError],
+                { payload: Bytes; reason: FrameSupportMessagesProcessMessageError }
+            >;
+            /**
+             * Message has been queued and will be processed in the future
+             **/
+            MessageQueued: AugmentedEvent<
+                ApiType,
+                [message: SnowbridgeOutboundQueuePrimitivesV2Message],
+                { message: SnowbridgeOutboundQueuePrimitivesV2Message }
+            >;
+            /**
+             * Message was not committed due to some failure condition, like an overweight message.
+             **/
+            MessageRejected: AugmentedEvent<
+                ApiType,
+                [id: Option<H256>, payload: Bytes, error: FrameSupportMessagesProcessMessageError],
+                { id: Option<H256>; payload: Bytes; error: FrameSupportMessagesProcessMessageError }
+            >;
+            /**
+             * Some messages have been committed
+             **/
+            MessagesCommitted: AugmentedEvent<ApiType, [root: H256, count: u64], { root: H256; count: u64 }>;
+            /**
+             * Set OperatingMode
+             **/
+            OperatingModeChanged: AugmentedEvent<
+                ApiType,
+                [mode: SnowbridgeCoreOperatingModeBasicOperatingMode],
+                { mode: SnowbridgeCoreOperatingModeBasicOperatingMode }
+            >;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         ethereumSystem: {
             /**
              * An CreateAgent message was sent to the Gateway
@@ -695,159 +745,6 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [messageId: H256, rewardsCommand: TpBridgeCommand],
                 { messageId: H256; rewardsCommand: TpBridgeCommand }
-            >;
-            /**
-             * Generic event
-             **/
-            [key: string]: AugmentedEvent<ApiType>;
-        };
-        fellowshipCollective: {
-            /**
-             * A member `who` has been added.
-             **/
-            MemberAdded: AugmentedEvent<ApiType, [who: AccountId32], { who: AccountId32 }>;
-            /**
-             * The member `who` had their `AccountId` changed to `new_who`.
-             **/
-            MemberExchanged: AugmentedEvent<
-                ApiType,
-                [who: AccountId32, newWho: AccountId32],
-                { who: AccountId32; newWho: AccountId32 }
-            >;
-            /**
-             * The member `who` of given `rank` has been removed from the collective.
-             **/
-            MemberRemoved: AugmentedEvent<ApiType, [who: AccountId32, rank: u16], { who: AccountId32; rank: u16 }>;
-            /**
-             * The member `who`se rank has been changed to the given `rank`.
-             **/
-            RankChanged: AugmentedEvent<ApiType, [who: AccountId32, rank: u16], { who: AccountId32; rank: u16 }>;
-            /**
-             * The member `who` has voted for the `poll` with the given `vote` leading to an updated
-             * `tally`.
-             **/
-            Voted: AugmentedEvent<
-                ApiType,
-                [
-                    who: AccountId32,
-                    poll: u32,
-                    vote: PalletRankedCollectiveVoteRecord,
-                    tally: PalletRankedCollectiveTally,
-                ],
-                {
-                    who: AccountId32;
-                    poll: u32;
-                    vote: PalletRankedCollectiveVoteRecord;
-                    tally: PalletRankedCollectiveTally;
-                }
-            >;
-            /**
-             * Generic event
-             **/
-            [key: string]: AugmentedEvent<ApiType>;
-        };
-        fellowshipReferenda: {
-            /**
-             * A referendum has been approved and its proposal has been scheduled.
-             **/
-            Approved: AugmentedEvent<ApiType, [index: u32], { index: u32 }>;
-            /**
-             * A referendum has been cancelled.
-             **/
-            Cancelled: AugmentedEvent<
-                ApiType,
-                [index: u32, tally: PalletRankedCollectiveTally],
-                { index: u32; tally: PalletRankedCollectiveTally }
-            >;
-            ConfirmAborted: AugmentedEvent<ApiType, [index: u32], { index: u32 }>;
-            /**
-             * A referendum has ended its confirmation phase and is ready for approval.
-             **/
-            Confirmed: AugmentedEvent<
-                ApiType,
-                [index: u32, tally: PalletRankedCollectiveTally],
-                { index: u32; tally: PalletRankedCollectiveTally }
-            >;
-            ConfirmStarted: AugmentedEvent<ApiType, [index: u32], { index: u32 }>;
-            /**
-             * The decision deposit has been placed.
-             **/
-            DecisionDepositPlaced: AugmentedEvent<
-                ApiType,
-                [index: u32, who: AccountId32, amount: u128],
-                { index: u32; who: AccountId32; amount: u128 }
-            >;
-            /**
-             * The decision deposit has been refunded.
-             **/
-            DecisionDepositRefunded: AugmentedEvent<
-                ApiType,
-                [index: u32, who: AccountId32, amount: u128],
-                { index: u32; who: AccountId32; amount: u128 }
-            >;
-            /**
-             * A referendum has moved into the deciding phase.
-             **/
-            DecisionStarted: AugmentedEvent<
-                ApiType,
-                [index: u32, track: u16, proposal: FrameSupportPreimagesBounded, tally: PalletRankedCollectiveTally],
-                { index: u32; track: u16; proposal: FrameSupportPreimagesBounded; tally: PalletRankedCollectiveTally }
-            >;
-            /**
-             * A deposit has been slashed.
-             **/
-            DepositSlashed: AugmentedEvent<
-                ApiType,
-                [who: AccountId32, amount: u128],
-                { who: AccountId32; amount: u128 }
-            >;
-            /**
-             * A referendum has been killed.
-             **/
-            Killed: AugmentedEvent<
-                ApiType,
-                [index: u32, tally: PalletRankedCollectiveTally],
-                { index: u32; tally: PalletRankedCollectiveTally }
-            >;
-            /**
-             * Metadata for a referendum has been cleared.
-             **/
-            MetadataCleared: AugmentedEvent<ApiType, [index: u32, hash_: H256], { index: u32; hash_: H256 }>;
-            /**
-             * Metadata for a referendum has been set.
-             **/
-            MetadataSet: AugmentedEvent<ApiType, [index: u32, hash_: H256], { index: u32; hash_: H256 }>;
-            /**
-             * A proposal has been rejected by referendum.
-             **/
-            Rejected: AugmentedEvent<
-                ApiType,
-                [index: u32, tally: PalletRankedCollectiveTally],
-                { index: u32; tally: PalletRankedCollectiveTally }
-            >;
-            /**
-             * The submission deposit has been refunded.
-             **/
-            SubmissionDepositRefunded: AugmentedEvent<
-                ApiType,
-                [index: u32, who: AccountId32, amount: u128],
-                { index: u32; who: AccountId32; amount: u128 }
-            >;
-            /**
-             * A referendum has been submitted.
-             **/
-            Submitted: AugmentedEvent<
-                ApiType,
-                [index: u32, track: u16, proposal: FrameSupportPreimagesBounded],
-                { index: u32; track: u16; proposal: FrameSupportPreimagesBounded }
-            >;
-            /**
-             * A referendum has been timed out without being decided.
-             **/
-            TimedOut: AugmentedEvent<
-                ApiType,
-                [index: u32, tally: PalletRankedCollectiveTally],
-                { index: u32; tally: PalletRankedCollectiveTally }
             >;
             /**
              * Generic event

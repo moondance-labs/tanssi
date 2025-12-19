@@ -2,7 +2,7 @@ endpoint: wss://services.tanssi-testnet.network/dancelight
 block: ${env.DANCELIGHT_BLOCK_NUMBER}
 mock-signature-host: true
 db: ./tmp/db_mba.sqlite
-rpc-timeout: 120_000
+rpc-timeout: 120000
 
 import-storage:
     System:

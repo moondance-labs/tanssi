@@ -60,6 +60,16 @@ export async function jumpToBlock(context: DevModeContext, targetBlockNumber: nu
     }
 }
 
+/*
+ * Waits for the specified number of sessions, periodically checking `earlyExit`.
+ *
+ * The function returns as soon as one of the following occurs:
+ *  - the session-wait limit is reached, or
+ *  - `earlyExit` returns true.
+ *
+ * A successful return does *not* guarantee that `earlyExit` returned true —
+ * it may simply indicate that the session timeout was reached.
+ */
 export async function waitSessions(
     context,
     paraApi: ApiPromise,
@@ -849,6 +859,39 @@ export const waitUntilNonceForChannelChanged = async (
     }
 
     throw new Error(`Nonce for channelId "${channelId}" has not been changed within ${timeoutMs / 1000}s`);
+};
+
+export const waitUntilSnowbridgeV2OutboundNonceChange = async (
+    polkadotJs: ApiPromise,
+    timeoutMs = 90000,
+    blockTimeMs = 6000
+): Promise<void> => {
+    const start = performance.now();
+
+    const timeoutAt = Date.now() + timeoutMs;
+
+    console.log("Waiting Snowbridge V2 outbound nonce change for", timeoutMs / 1000, "seconds");
+    let nonce: number = null;
+
+    while (Date.now() < timeoutAt) {
+        const latestNonce = await polkadotJs.query.ethereumOutboundQueueV2.nonce();
+
+        if (nonce !== null && Number(latestNonce.toHuman()) !== nonce) {
+            const header = await polkadotJs.rpc.chain.getHeader();
+            const blockHash = await polkadotJs.rpc.chain.getBlockHash(header.number.toNumber());
+            const end = performance.now();
+            console.log(
+                `Snowbridge V2 outbound nonce changed in block #${header.number} with hash: ${blockHash}. Took: ${((end - start) / 1000).toFixed(2)} sec`
+            );
+
+            return;
+        }
+        nonce = Number(latestNonce.toHuman());
+
+        await new Promise((resolve) => setTimeout(resolve, blockTimeMs));
+    }
+
+    throw new Error(`Snowbridge V2 outbound nonce has not been changed within ${timeoutMs / 1000}s`);
 };
 
 /*

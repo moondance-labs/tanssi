@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+#[cfg(not(feature = "runtime-benchmarks"))]
+use crate::{match_expression, XcmConverterError};
 use {
     alloc::vec::Vec,
     core::{iter::Peekable, marker::PhantomData, slice::Iter},
@@ -175,39 +177,6 @@ where
         log::info!(target: "xcm::container_ethereum_blob_exporter", "message delivered {message_id:#?}.");
         Ok(message_id.into())
     }
-}
-
-#[cfg(not(feature = "runtime-benchmarks"))]
-/// Errors that can be thrown to the pattern matching step.
-#[derive(PartialEq, Debug)]
-enum XcmConverterError {
-    UnexpectedEndOfXcm,
-    EndOfXcmMessageExpected,
-    DepositAssetExpected,
-    ClearOriginExpected,
-    BuyExecutionExpected,
-    NoReserveAssets,
-    FilterDoesNotConsumeAllAssets,
-    TooManyAssets,
-    ZeroAssetTransfer,
-    BeneficiaryResolutionFailed,
-    AssetResolutionFailed,
-    InvalidFeeAsset,
-    SetTopicExpected,
-    ReserveAssetDepositedExpected,
-    InvalidAsset,
-    ParaIdMismatch,
-    UnexpectedInstruction,
-}
-
-#[cfg(not(feature = "runtime-benchmarks"))]
-macro_rules! match_expression {
-	($expression:expr, $(|)? $( $pattern:pat_param )|+ $( if $guard: expr )?, $value:expr $(,)?) => {
-		match $expression {
-			$( $pattern )|+ $( if $guard )? => Some($value),
-			_ => None,
-		}
-	};
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -990,7 +959,6 @@ mod tests {
         }]
         .into();
 
-        let beneficiary_address: [u8; 20] = hex!("2000000000000000000000000000000000000000");
         let filter: AssetFilter = assets.clone().into();
         let mut message: Option<Xcm<()>> = Some(
             vec![
@@ -1002,9 +970,10 @@ mod tests {
                 },
                 DepositAsset {
                     assets: filter,
-                    beneficiary: AccountKey20 {
+                    // This will fail as the expected type is AccountKey20.
+                    beneficiary: AccountId32 {
                         network: None,
-                        key: beneficiary_address,
+                        id: [0; 32],
                     }
                     .into(),
                 },

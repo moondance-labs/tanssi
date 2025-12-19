@@ -77,7 +77,7 @@ pub mod pallet {
         #[pallet::constant]
         type FreeBlockProductionCredits: Get<BlockNumberFor<Self>>;
 
-        /// The maximum number of collator assigment production credits that can be accumulated
+        /// The maximum number of collator assignment production credits that can be accumulated
         #[pallet::constant]
         type FreeCollatorAssignmentCredits: Get<u32>;
         /// Owner of the container chain, can call some only-owner methods
@@ -642,7 +642,7 @@ impl<T: Config> CollatorAssignmentHook<BalanceOf<T>> for Pallet<T> {
 }
 
 impl<T: Config> CollatorAssignmentTip<BalanceOf<T>> for Pallet<T> {
-    fn get_para_tip(para_id: ParaId) -> Option<BalanceOf<T>> {
+    fn get_para_max_tip(para_id: ParaId) -> Option<BalanceOf<T>> {
         MaxTip::<T>::get(para_id)
     }
 }

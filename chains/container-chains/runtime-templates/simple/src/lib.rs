@@ -58,7 +58,7 @@ use {
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
                 WEIGHT_REF_TIME_PER_SECOND,
             },
-            ConstantMultiplier, Weight, WeightToFee as _, WeightToFeeCoefficient,
+            ConstantMultiplier, FeePolynomial, Weight, WeightToFee as _, WeightToFeeCoefficient,
             WeightToFeeCoefficients, WeightToFeePolynomial,
         },
     },
@@ -76,7 +76,7 @@ use {
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
     sp_consensus_slots::{Slot, SlotDuration},
-    sp_core::{MaxEncodedLen, OpaqueMetadata},
+    sp_core::{Get, MaxEncodedLen, OpaqueMetadata},
     sp_keyring::Sr25519Keyring,
     sp_runtime::{
         generic,
@@ -195,7 +195,21 @@ pub mod currency {
 ///   - Setting it to `0` will essentially disable the weight fee.
 ///   - Setting it to `1` will cause the literal `#[weight = x]` values to be charged.
 pub struct WeightToFee;
-impl WeightToFeePolynomial for WeightToFee {
+impl frame_support::weights::WeightToFee for WeightToFee {
+    type Balance = Balance;
+
+    fn weight_to_fee(weight: &Weight) -> Self::Balance {
+        let time_poly: FeePolynomial<Balance> = RefTimeToFee::polynomial().into();
+        let proof_poly: FeePolynomial<Balance> = ProofSizeToFee::polynomial().into();
+
+        // Take the maximum instead of the sum to charge by the more scarce resource.
+        time_poly
+            .eval(weight.ref_time())
+            .max(proof_poly.eval(weight.proof_size()))
+    }
+}
+pub struct RefTimeToFee;
+impl WeightToFeePolynomial for RefTimeToFee {
     type Balance = Balance;
     fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
         // in Rococo, extrinsic base weight (smallest non-zero weight) is mapped to 1 MILLIUNIT:
@@ -211,12 +225,40 @@ impl WeightToFeePolynomial for WeightToFee {
     }
 }
 
+/// Maps the proof size component of `Weight` to a fee.
+pub struct ProofSizeToFee;
+impl WeightToFeePolynomial for ProofSizeToFee {
+    type Balance = Balance;
+    fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
+        // Map 10kb proof to 1 CENT.
+        let p = MILLIUNIT / 10;
+        let q = 10_000;
+
+        smallvec![WeightToFeeCoefficient {
+            degree: 1,
+            negative: false,
+            coeff_frac: Perbill::from_rational(p % q, q),
+            coeff_integer: p / q,
+        }]
+    }
+}
+
 parameter_types! {
         /// Network and location for the Ethereum chain. On Starlight, the Ethereum chain bridged
         /// to is the Ethereum mainnet, with chain ID 1.
         /// <https://chainlist.org/chain/1>
         /// <https://ethereum.org/en/developers/docs/apis/json-rpc/#net_version>
-        pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 11155111 };
+        pub EthereumNetwork: NetworkId = {
+            use crate::dynamic_params::xcm_config::RelayNetwork;
+            use crate::dynamic_params::EthereumNetworkChainId;
+
+            // derive chain_id from RelayNetwork
+            let chain_id = EthereumNetworkChainId::from_relay_network(&RelayNetwork::get())
+                .unwrap_or(EthereumNetworkChainId::EthereumMainnet)
+                .as_u64();
+
+            NetworkId::Ethereum { chain_id }
+        };
         pub EthereumLocation: Location = Location::new(2, EthereumNetwork::get());
 }
 
@@ -444,6 +486,40 @@ pub mod dynamic_params {
     /// The Dancelight genesis hash used as the default relay network identifier.
     pub const DANCELIGHT_GENESIS_HASH: [u8; 32] =
         hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"];
+
+    /// The Starlight genesis hash.
+    pub const TANSSI_GENESIS_HASH: [u8; 32] =
+        hex_literal::hex!["dd6d086f75ec041b66e20c4186d327b23c8af244c534a2418de6574e8c041a60"];
+
+    pub enum EthereumNetworkChainId {
+        EthereumTestnet,
+        EthereumMainnet,
+    }
+
+    pub const SEPOLIA_ETH_TESTNET_CHAIN_ID: u64 = 11155111;
+    pub const ETH_MAINNET_CHAIN_ID: u64 = 1;
+
+    impl EthereumNetworkChainId {
+        pub fn as_u64(&self) -> u64 {
+            match self {
+                EthereumNetworkChainId::EthereumTestnet => SEPOLIA_ETH_TESTNET_CHAIN_ID,
+                EthereumNetworkChainId::EthereumMainnet => ETH_MAINNET_CHAIN_ID,
+            }
+        }
+
+        /// Derive chain_id from relay network
+        pub fn from_relay_network(network: &NetworkId) -> Option<Self> {
+            match network {
+                NetworkId::ByGenesis(hash) if hash == &DANCELIGHT_GENESIS_HASH => {
+                    Some(Self::EthereumTestnet)
+                }
+                NetworkId::ByGenesis(hash) if hash == &TANSSI_GENESIS_HASH => {
+                    Some(Self::EthereumMainnet)
+                }
+                _ => None,
+            }
+        }
+    }
 
     #[dynamic_pallet_params]
     #[codec(index = 0)]
@@ -872,7 +948,7 @@ construct_runtime!(
         PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config<T>} = 73,
         MessageQueue: pallet_message_queue::{Pallet, Call, Storage, Event<T>} = 74,
         ForeignAssets: pallet_assets::<Instance1>::{Pallet, Call, Storage, Event<T>} = 75,
-        ForeignAssetsCreator: pallet_foreign_asset_creator::{Pallet, Call, Storage, Event<T>} = 76,
+        ForeignAssetsCreator: pallet_foreign_asset_creator::{Pallet, Call, Storage, Event<T>, Config<T>} = 76,
         AssetRate: pallet_asset_rate::{Pallet, Call, Storage, Event<T>} = 77,
         XcmExecutorUtils: pallet_xcm_executor_utils::{Pallet, Call, Storage, Event<T>} = 78,
 
@@ -904,6 +980,7 @@ mod benches {
         [pallet_author_inherent, AuthorInherent]
         [cumulus_pallet_xcmp_queue, XcmpQueue]
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
+        [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
         [pallet_message_queue, MessageQueue]
         [pallet_assets, ForeignAssets]
@@ -1071,7 +1148,7 @@ impl_runtime_apis! {
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, alloc::string::String> {
             use frame_benchmarking::{BenchmarkBatch, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
-            use xcm::latest::prelude::*;
+            use xcm::latest::{prelude::*, Junctions::*};
             use alloc::boxed::Box;
 
             impl frame_system_benchmarking::Config for Runtime {
@@ -1109,6 +1186,68 @@ impl_runtime_apis! {
                         id: AssetId(SelfReserve::get()),
                         fun: Fungible(u128::MAX),
                     }].into()
+                }
+            }
+
+            parameter_types! {
+                pub TrustedReserve: Option<(Location, Asset)> = Some(
+                    (
+                        EthereumLocation::get(),
+                        Asset {
+                            id: AssetId(EthereumLocation::get()),
+                            fun: Fungible(crate::currency::MICROUNIT * 10000),
+                        },
+                    )
+                );
+            }
+
+            impl pallet_xcm_benchmarks::fungible::Config for Runtime {
+                type TransactAsset = Balances;
+
+                type CheckedAccount = xcm_config::LocalCheckingAccount;
+                type TrustedTeleporter = ();
+                type TrustedReserve = TrustedReserve;
+
+                fn get_asset() -> Asset {
+                    use frame_support::{assert_ok, traits::tokens::fungible::Mutate};
+                    let (account, _) = pallet_xcm_benchmarks::account_and_location::<Runtime>(1);
+
+                    assert_ok!(<Balances as Mutate<_>>::mint_into(
+                        &account,
+                        crate::currency::MICROUNIT * 10000,
+                    ));
+
+                    let asset_id = 42u16;
+
+                    // Use runtime-derived Ethereum network
+                    let ethereum_network = EthereumNetwork::get();
+                    let asset_location = Location {
+                        parents: 2,
+                        interior: X2([
+                            GlobalConsensus(ethereum_network),
+                            AccountKey20 {
+                                network: Some(ethereum_network),
+                                key: [0; 20],
+                            },
+                        ]
+                        .into()),
+                    };
+
+                    // Create the foreign asset
+                    assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+                        RuntimeOrigin::root(),
+                        asset_location.clone(),
+                        asset_id,
+                        account,
+                        true,
+                        1u128,
+                    ));
+
+                    // Return the foreign asset
+                    Asset {
+                        id: AssetId(asset_location),
+                        fun: Fungible(crate::currency::MICROUNIT * 10000),
+                    }
                 }
             }
 
@@ -1466,4 +1605,29 @@ cumulus_pallet_parachain_system::register_validate_block! {
     Runtime = Runtime,
     CheckInherents = CheckInherents,
     BlockExecutor = pallet_author_inherent::BlockExecutor::<Runtime, Executive>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_chain_id_derivation_dancelight() {
+        let chain_id = dynamic_params::EthereumNetworkChainId::from_relay_network(
+            &NetworkId::ByGenesis(dynamic_params::DANCELIGHT_GENESIS_HASH),
+        )
+        .unwrap()
+        .as_u64();
+        assert_eq!(chain_id, dynamic_params::SEPOLIA_ETH_TESTNET_CHAIN_ID);
+    }
+
+    #[test]
+    fn test_chain_id_derivation_starlight() {
+        let chain_id = dynamic_params::EthereumNetworkChainId::from_relay_network(
+            &NetworkId::ByGenesis(dynamic_params::TANSSI_GENESIS_HASH),
+        )
+        .unwrap()
+        .as_u64();
+        assert_eq!(chain_id, dynamic_params::ETH_MAINNET_CHAIN_ID);
+    }
 }

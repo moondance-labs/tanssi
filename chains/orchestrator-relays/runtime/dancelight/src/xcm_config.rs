@@ -20,11 +20,11 @@ use {
     super::{
         parachains_origin,
         weights::{self, xcm::XcmWeight},
-        AccountId, AllPalletsWithSystem, Balance, Balances, Dmp, Fellows, ForeignAssets,
+        AccountId, AllPalletsWithSystem, Balance, Balances, Dmp, ForeignAssets,
         ForeignAssetsCreator, ParaId, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin,
         TransactionByteFee, Treasury, WeightToFee, XcmPallet,
     },
-    crate::{governance::StakingAdmin, EthereumSystem, SnowbridgeFeesAccount},
+    crate::{EthereumSystem, SnowbridgeFeesAccount},
     dancelight_runtime_constants::{
         currency::CENTS,
         snowbridge::{EthereumLocation, EthereumNetwork},
@@ -47,7 +47,9 @@ use {
     tanssi_runtime_common::relay::ExporterFeeHandler,
     tp_bridge::{
         container_token_to_ethereum_message_exporter::ContainerEthereumBlobExporter,
+        container_token_to_ethereum_message_exporter_v2::ContainerEthereumBlobExporterV2,
         snowbridge_outbound_token_transfer::{EthereumBlobExporter, SnowbrigeTokenTransferRouter},
+        snowbridge_outbound_token_transfer_v2::EthereumBlobExporterV2,
         EthereumLocationsConverterFor,
     },
     tp_xcm_commons::{EthereumAssetReserve, NativeAssetReserve},
@@ -61,7 +63,7 @@ use {
         ChildParachainConvertsVia, ConvertedConcreteId, DescribeAllTerminal, DescribeFamily,
         FixedWeightBounds, FrameTransactionalProcessor, FungibleAdapter, FungiblesAdapter,
         HashedDescription, IsChildSystemParachain, IsConcrete, MintLocation, NoChecking,
-        OriginToPluralityVoice, SignedAccountId32AsNative, SignedToAccountId32,
+        SendXcmFeeToAccount, SignedAccountId32AsNative, SignedToAccountId32,
         SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents,
         WeightInfoBounds, WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
     },
@@ -156,6 +158,8 @@ pub type PriceForChildParachainDelivery =
 pub type XcmRouter = WithUniqueTopic<(
     // Use DMP to communicate with child parachains.
     ChildParachainRouter<Runtime, XcmPallet, PriceForChildParachainDelivery>,
+    // Send Ethereum-native tokens back to Ethereum V2.
+    SnowbrigeTokenTransferRouter<SnowbridgeExporterv2, UniversalLocation>,
     // Send Ethereum-native tokens back to Ethereum.
     SnowbrigeTokenTransferRouter<SnowbridgeExporter, UniversalLocation>,
 )>;
@@ -234,7 +238,10 @@ impl xcm_executor::Config for XcmConfig {
         WaivedLocations,
         ExporterFeeHandler<Self::AssetTransactor, SnowbridgeFeesAccount, TreasuryAccount>,
     >;
-    type MessageExporter = ContainerToSnowbridgeMessageExporter;
+    type MessageExporter = (
+        ContainerToSnowbridgeMessageExporterV2,
+        ContainerToSnowbridgeMessageExporter,
+    );
     type UniversalAliases = Nothing;
     type CallDispatcher = RuntimeCall;
     type SafeCallFilter = Everything;
@@ -247,35 +254,11 @@ impl xcm_executor::Config for XcmConfig {
     type XcmEventEmitter = XcmPallet;
 }
 
-parameter_types! {
-    pub const CollectiveBodyId: BodyId = BodyId::Unit;
-    // StakingAdmin pluralistic body.
-    pub const StakingAdminBodyId: BodyId = BodyId::Defense;
-    // Fellows pluralistic body.
-    pub const FellowsBodyId: BodyId = BodyId::Technical;
-}
-
 /// Type to convert an `Origin` type value into a `Location` value which represents an interior
 /// location of this chain.
 pub type LocalOriginToLocation = (
     // And a usual Signed origin to be used in XCM as a corresponding AccountId32
     SignedToAccountId32<RuntimeOrigin, AccountId, ThisNetwork>,
-);
-
-/// Type to convert the `StakingAdmin` origin to a Plurality `Location` value.
-pub type StakingAdminToPlurality =
-    OriginToPluralityVoice<RuntimeOrigin, StakingAdmin, StakingAdminBodyId>;
-
-/// Type to convert the Fellows origin to a Plurality `Location` value.
-pub type FellowsToPlurality = OriginToPluralityVoice<RuntimeOrigin, Fellows, FellowsBodyId>;
-
-/// Type to convert a pallet `Origin` type value into a `Location` value which represents an
-/// interior location of this chain for a destination chain.
-pub type LocalPalletOriginToLocation = (
-    // StakingAdmin origin to be used in XCM as a corresponding Plurality `Location` value.
-    StakingAdminToPlurality,
-    // Fellows origin to be used in XCM as a corresponding Plurality `Location` value.
-    FellowsToPlurality,
 );
 
 impl pallet_xcm::Config for Runtime {
@@ -373,6 +356,9 @@ parameter_types! {
     pub SnowbridgeChannelInfo: Option<(ChannelId, AgentId)> =
         pallet_ethereum_token_transfers::CurrentChannelInfo::<Runtime>::get()
             .map(|x| (x.channel_id, x.agent_id));
+
+    pub const MinV2Reward: u128 = 1u128;
+    pub MinSnowbridgeV2Reward: Asset = (TokenLocation::get(), MinV2Reward::get()).into();
 }
 
 /// Exports message to the Ethereum Gateway contract.
@@ -385,6 +371,16 @@ pub type SnowbridgeExporter = EthereumBlobExporter<
 >;
 
 /// Exports message to the Ethereum Gateway contract.
+pub type SnowbridgeExporterv2 = EthereumBlobExporterV2<
+    UniversalLocation,
+    EthereumNetwork,
+    snowbridge_pallet_outbound_queue_v2::Pallet<Runtime>,
+    EthereumSystem,
+    MinSnowbridgeV2Reward,
+    SendXcmFeeToAccount<LocalAssetTransactor, SnowbridgeFeesAccount>,
+>;
+
+/// Exports message to the Ethereum Gateway contract.
 pub type ContainerToSnowbridgeMessageExporter = ContainerEthereumBlobExporter<
     UniversalLocation,
     EthereumNetwork,
@@ -392,4 +388,14 @@ pub type ContainerToSnowbridgeMessageExporter = ContainerEthereumBlobExporter<
     snowbridge_pallet_outbound_queue::Pallet<Runtime>,
     EthereumSystem,
     SnowbridgeChannelInfo,
+>;
+
+/// Exports message to the Ethereum Gateway contract using Snowbridge V2.
+pub type ContainerToSnowbridgeMessageExporterV2 = ContainerEthereumBlobExporterV2<
+    UniversalLocation,
+    EthereumNetwork,
+    EthereumLocation,
+    snowbridge_pallet_outbound_queue_v2::Pallet<Runtime>,
+    EthereumSystem,
+    MinSnowbridgeV2Reward,
 >;

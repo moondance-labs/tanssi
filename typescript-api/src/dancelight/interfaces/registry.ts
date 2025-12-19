@@ -226,22 +226,14 @@ import type {
     PalletProxyError,
     PalletProxyEvent,
     PalletProxyProxyDefinition,
-    PalletRankedCollectiveCall,
-    PalletRankedCollectiveError,
-    PalletRankedCollectiveEvent,
-    PalletRankedCollectiveMemberRecord,
-    PalletRankedCollectiveTally,
-    PalletRankedCollectiveVoteRecord,
     PalletReferendaCall,
     PalletReferendaCurve,
     PalletReferendaDecidingStatus,
     PalletReferendaDeposit,
     PalletReferendaError,
     PalletReferendaEvent,
-    PalletReferendaReferendumInfoConvictionVotingTally,
-    PalletReferendaReferendumInfoRankedCollectiveTally,
-    PalletReferendaReferendumStatusConvictionVotingTally,
-    PalletReferendaReferendumStatusRankedCollectiveTally,
+    PalletReferendaReferendumInfo,
+    PalletReferendaReferendumStatus,
     PalletReferendaTrackDetails,
     PalletRegistrarCall,
     PalletRegistrarDepositInfo,
@@ -425,7 +417,11 @@ import type {
     SnowbridgeOutboundQueuePrimitivesOperatingMode,
     SnowbridgeOutboundQueuePrimitivesSendError,
     SnowbridgeOutboundQueuePrimitivesV1MessageInitializer,
+    SnowbridgeOutboundQueuePrimitivesV2Message,
+    SnowbridgeOutboundQueuePrimitivesV2MessageCommand,
     SnowbridgeOutboundQueuePrimitivesV2MessageInitializer,
+    SnowbridgeOutboundQueuePrimitivesV2MessageOutboundCommandWrapper,
+    SnowbridgeOutboundQueuePrimitivesV2MessageOutboundMessage,
     SnowbridgePalletEthereumClientCall,
     SnowbridgePalletEthereumClientError,
     SnowbridgePalletEthereumClientEvent,
@@ -440,6 +436,10 @@ import type {
     SnowbridgePalletOutboundQueueCommittedMessage,
     SnowbridgePalletOutboundQueueError,
     SnowbridgePalletOutboundQueueEvent,
+    SnowbridgePalletOutboundQueueV2Call,
+    SnowbridgePalletOutboundQueueV2Error,
+    SnowbridgePalletOutboundQueueV2Event,
+    SnowbridgePalletOutboundQueueV2PendingOrder,
     SnowbridgePalletSystemCall,
     SnowbridgePalletSystemError,
     SnowbridgePalletSystemEvent,
@@ -803,22 +803,14 @@ declare module "@polkadot/types/types/registry" {
         PalletProxyError: PalletProxyError;
         PalletProxyEvent: PalletProxyEvent;
         PalletProxyProxyDefinition: PalletProxyProxyDefinition;
-        PalletRankedCollectiveCall: PalletRankedCollectiveCall;
-        PalletRankedCollectiveError: PalletRankedCollectiveError;
-        PalletRankedCollectiveEvent: PalletRankedCollectiveEvent;
-        PalletRankedCollectiveMemberRecord: PalletRankedCollectiveMemberRecord;
-        PalletRankedCollectiveTally: PalletRankedCollectiveTally;
-        PalletRankedCollectiveVoteRecord: PalletRankedCollectiveVoteRecord;
         PalletReferendaCall: PalletReferendaCall;
         PalletReferendaCurve: PalletReferendaCurve;
         PalletReferendaDecidingStatus: PalletReferendaDecidingStatus;
         PalletReferendaDeposit: PalletReferendaDeposit;
         PalletReferendaError: PalletReferendaError;
         PalletReferendaEvent: PalletReferendaEvent;
-        PalletReferendaReferendumInfoConvictionVotingTally: PalletReferendaReferendumInfoConvictionVotingTally;
-        PalletReferendaReferendumInfoRankedCollectiveTally: PalletReferendaReferendumInfoRankedCollectiveTally;
-        PalletReferendaReferendumStatusConvictionVotingTally: PalletReferendaReferendumStatusConvictionVotingTally;
-        PalletReferendaReferendumStatusRankedCollectiveTally: PalletReferendaReferendumStatusRankedCollectiveTally;
+        PalletReferendaReferendumInfo: PalletReferendaReferendumInfo;
+        PalletReferendaReferendumStatus: PalletReferendaReferendumStatus;
         PalletReferendaTrackDetails: PalletReferendaTrackDetails;
         PalletRegistrarCall: PalletRegistrarCall;
         PalletRegistrarDepositInfo: PalletRegistrarDepositInfo;
@@ -1002,7 +994,11 @@ declare module "@polkadot/types/types/registry" {
         SnowbridgeOutboundQueuePrimitivesOperatingMode: SnowbridgeOutboundQueuePrimitivesOperatingMode;
         SnowbridgeOutboundQueuePrimitivesSendError: SnowbridgeOutboundQueuePrimitivesSendError;
         SnowbridgeOutboundQueuePrimitivesV1MessageInitializer: SnowbridgeOutboundQueuePrimitivesV1MessageInitializer;
+        SnowbridgeOutboundQueuePrimitivesV2Message: SnowbridgeOutboundQueuePrimitivesV2Message;
+        SnowbridgeOutboundQueuePrimitivesV2MessageCommand: SnowbridgeOutboundQueuePrimitivesV2MessageCommand;
         SnowbridgeOutboundQueuePrimitivesV2MessageInitializer: SnowbridgeOutboundQueuePrimitivesV2MessageInitializer;
+        SnowbridgeOutboundQueuePrimitivesV2MessageOutboundCommandWrapper: SnowbridgeOutboundQueuePrimitivesV2MessageOutboundCommandWrapper;
+        SnowbridgeOutboundQueuePrimitivesV2MessageOutboundMessage: SnowbridgeOutboundQueuePrimitivesV2MessageOutboundMessage;
         SnowbridgePalletEthereumClientCall: SnowbridgePalletEthereumClientCall;
         SnowbridgePalletEthereumClientError: SnowbridgePalletEthereumClientError;
         SnowbridgePalletEthereumClientEvent: SnowbridgePalletEthereumClientEvent;
@@ -1017,6 +1013,10 @@ declare module "@polkadot/types/types/registry" {
         SnowbridgePalletOutboundQueueCommittedMessage: SnowbridgePalletOutboundQueueCommittedMessage;
         SnowbridgePalletOutboundQueueError: SnowbridgePalletOutboundQueueError;
         SnowbridgePalletOutboundQueueEvent: SnowbridgePalletOutboundQueueEvent;
+        SnowbridgePalletOutboundQueueV2Call: SnowbridgePalletOutboundQueueV2Call;
+        SnowbridgePalletOutboundQueueV2Error: SnowbridgePalletOutboundQueueV2Error;
+        SnowbridgePalletOutboundQueueV2Event: SnowbridgePalletOutboundQueueV2Event;
+        SnowbridgePalletOutboundQueueV2PendingOrder: SnowbridgePalletOutboundQueueV2PendingOrder;
         SnowbridgePalletSystemCall: SnowbridgePalletSystemCall;
         SnowbridgePalletSystemError: SnowbridgePalletSystemError;
         SnowbridgePalletSystemEvent: SnowbridgePalletSystemEvent;

@@ -17,9 +17,9 @@ jobs:
   setup-scripts:
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Upload tools
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: original-tools
           path: tools
@@ -52,7 +52,7 @@ jobs:
       RUSTFLAGS: "-C target-cpu=${{ matrix.cpu }}"
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ steps.check-git-ref.outputs.git_ref }}
       - name: Setup Rust toolchain
@@ -75,7 +75,7 @@ jobs:
         with:
           cpu: ${{ matrix.cpu }}
       - name: Upload binaries
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: binaries-${{ matrix.cpu }}
           path: binaries
@@ -86,7 +86,7 @@ jobs:
     outputs:
       matrix_tests: ${{ steps.prepare.outputs.matrix_tests }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
     # Build input dependent matrix
       - name: create matrix
@@ -112,7 +112,7 @@ jobs:
         image: ${{ fromJson(needs.docker_matrix_prep.outputs.matrix_tests) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - uses: actions/download-artifact@v6
         with:
           pattern: binaries-*

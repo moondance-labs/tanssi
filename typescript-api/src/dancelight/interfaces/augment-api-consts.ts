@@ -224,6 +224,28 @@ declare module "@polkadot/api-base/types/consts" {
              **/
             [key: string]: Codec;
         };
+        ethereumOutboundQueueV2: {
+            /**
+             * The default RewardKind discriminator for rewards allocated to relayers from this pallet.
+             **/
+            defaultRewardKind: DancelightRuntimeBridgeToEthereumConfigBridgeReward & AugmentedConst<ApiType>;
+            /**
+             * Address of the Gateway contract
+             **/
+            gatewayAddress: H160 & AugmentedConst<ApiType>;
+            /**
+             * Max bytes in a message payload
+             **/
+            maxMessagePayloadSize: u32 & AugmentedConst<ApiType>;
+            /**
+             * Max number of messages processed per block
+             **/
+            maxMessagesPerBlock: u32 & AugmentedConst<ApiType>;
+            /**
+             * Generic const
+             **/
+            [key: string]: Codec;
+        };
         ethereumSystem: {
             /**
              * Cost of delivering a message from Ethereum
@@ -304,37 +326,6 @@ declare module "@polkadot/api-base/types/consts" {
              * For how many eras points are kept in storage.
              **/
             historyDepth: u32 & AugmentedConst<ApiType>;
-            /**
-             * Generic const
-             **/
-            [key: string]: Codec;
-        };
-        fellowshipReferenda: {
-            /**
-             * Quantization level for the referendum wakeup scheduler. A higher number will result in
-             * fewer storage reads/writes needed for smaller voters, but also result in delays to the
-             * automatic referendum status changes. Explicit servicing instructions are unaffected.
-             **/
-            alarmInterval: u32 & AugmentedConst<ApiType>;
-            /**
-             * Maximum size of the referendum queue for a single track.
-             **/
-            maxQueued: u32 & AugmentedConst<ApiType>;
-            /**
-             * The minimum amount to be used as a deposit for a public referendum proposal.
-             **/
-            submissionDeposit: u128 & AugmentedConst<ApiType>;
-            /**
-             * A list of tracks.
-             *
-             * Note: if the tracks are dynamic, the value in the static metadata might be inaccurate.
-             **/
-            tracks: Vec<ITuple<[u16, PalletReferendaTrackDetails]>> & AugmentedConst<ApiType>;
-            /**
-             * The number of blocks after submission that a referendum must begin being decided by.
-             * Once this passes, then anyone may cancel the referendum.
-             **/
-            undecidingTimeout: u32 & AugmentedConst<ApiType>;
             /**
              * Generic const
              **/
@@ -764,7 +755,7 @@ declare module "@polkadot/api-base/types/consts" {
              **/
             freeBlockProductionCredits: u32 & AugmentedConst<ApiType>;
             /**
-             * The maximum number of collator assigment production credits that can be accumulated
+             * The maximum number of collator assignment production credits that can be accumulated
              **/
             freeCollatorAssignmentCredits: u32 & AugmentedConst<ApiType>;
             /**

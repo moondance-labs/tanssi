@@ -16,6 +16,7 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+use node_common::timestamp::MockTimestampInherentDataProvider;
 use {
     container_chain_template_frontier_runtime::{opaque::Block, Hash, RuntimeApi},
     cumulus_client_cli::CollatorOptions,
@@ -67,6 +68,8 @@ impl NodeBuilderConfig for NodeConfig {
     type ParachainExecutor = ParachainExecutor;
 }
 
+const RELAY_CHAIN_SLOT_DURATION_MILLIS: u64 = 6_000;
+
 pub fn frontier_database_dir(config: &Configuration, path: &str) -> std::path::PathBuf {
     let config_dir = config
         .base_path
@@ -108,33 +111,6 @@ where
             },
         },
     )
-}
-
-thread_local!(static TIMESTAMP: std::cell::RefCell<u64> = const { std::cell::RefCell::new(0) });
-
-/// Provide a mock duration starting at 0 in millisecond for timestamp inherent.
-/// Each call will increment timestamp by slot_duration making Aura think time has passed.
-struct MockTimestampInherentDataProvider;
-#[async_trait::async_trait]
-impl sp_inherents::InherentDataProvider for MockTimestampInherentDataProvider {
-    async fn provide_inherent_data(
-        &self,
-        inherent_data: &mut sp_inherents::InherentData,
-    ) -> Result<(), sp_inherents::Error> {
-        TIMESTAMP.with(|x| {
-            *x.borrow_mut() += container_chain_template_frontier_runtime::SLOT_DURATION;
-            inherent_data.put_data(sp_timestamp::INHERENT_IDENTIFIER, &*x.borrow())
-        })
-    }
-
-    async fn try_handle_error(
-        &self,
-        _identifier: &sp_inherents::InherentIdentifier,
-        _error: &[u8],
-    ) -> Option<Result<(), sp_inherents::Error>> {
-        // The pallet never reports error.
-        None
-    }
 }
 
 pub fn import_queue(
@@ -204,7 +180,7 @@ where
     let (_, import_queue) = import_queue(&parachain_config, &node_builder);
 
     // Relay chain interface
-    let (relay_chain_interface, _collator_key) = node_builder
+    let (relay_chain_interface, _collator_key, start_bootnode_params) = node_builder
         .build_relay_chain_interface(&parachain_config, polkadot_config, collator_options.clone())
         .await?;
 
@@ -295,6 +271,7 @@ where
         para_id,
         relay_chain_interface.clone(),
         relay_chain_slot_duration,
+        start_bootnode_params,
     )?;
 
     Ok((node_builder.task_manager, node_builder.client))
@@ -392,6 +369,10 @@ pub async fn start_dev_node(
                 ),
             )),
             create_inherent_data_providers: move |block: H256, ()| {
+                MockTimestampInherentDataProvider::advance_timestamp(
+                    RELAY_CHAIN_SLOT_DURATION_MILLIS,
+                );
+
                 let current_para_block = client
                     .number(block)
                     .expect("Header lookup should succeed")
@@ -413,18 +394,13 @@ pub async fn start_dev_node(
                 let authorities_for_cidp = authorities.clone();
                 let para_head_key = RelayWellKnownKeys::para_head(para_id);
                 let relay_slot_key = RelayWellKnownKeys::CURRENT_SLOT.to_vec();
-                let slot_duration = container_chain_template_frontier_runtime::SLOT_DURATION;
 
-                let mut timestamp = 0u64;
-                TIMESTAMP.with(|x| {
-                    timestamp = *x.borrow();
-                });
-
-                timestamp += slot_duration;
-
+                // Get the mocked timestamp
+                let timestamp = MockTimestampInherentDataProvider::load();
+                // Calculate mocked slot number
                 let relay_slot = sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
                     timestamp.into(),
-                    SlotDuration::from_millis(slot_duration),
+                    SlotDuration::from_millis(RELAY_CHAIN_SLOT_DURATION_MILLIS),
                 );
                 let relay_slot = u64::from(*relay_slot);
 
