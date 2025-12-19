@@ -20,6 +20,7 @@ use {
     crate::tests::common::*,
     crate::{weights, BlockWeights},
     alloc::vec,
+    frame_support::dispatch::{CallableCallFor, GetDispatchInfo},
     frame_support::{assert_noop, assert_ok, error::BadOrigin},
     pallet_author_noting::WeightInfo as _,
     pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,
@@ -196,11 +197,16 @@ fn max_num_chains_for_author_noting_inherent() {
             // We have enough weight to support MaxContainerChains
             let author_noting_weight = |x| {
                 <weights::pallet_author_noting::SubstrateWeight<Runtime>>::set_latest_author_data(x)
+                    .saturating_add(<weights::pallet_author_noting::SubstrateWeight<Runtime>>::on_container_authors_noted(x))
             };
 
             let worst_case_author_noting_weight = author_noting_weight(
                 <Runtime as pallet_author_noting::Config>::MaxContainerChains::get(),
             );
+            // First, assert that real weight hint is calculated as we expect (base + hooks)
+            let call = CallableCallFor::<AuthorNoting, Runtime>::set_latest_author_data { data: () };
+            assert_eq!(call.get_dispatch_info().call_weight, worst_case_author_noting_weight);
+            // Assert that the weight with current max number of chains is lower than inherents_weight_limit
             assert!(worst_case_author_noting_weight.all_lte(inherents_weight_limit));
 
             // We also support double of that, as a safety margin
