@@ -29,6 +29,19 @@
 //!
 //! But in the case of inherents, there is no fee, and there is no possibility of not including it,
 //! so the weight is useless.
+//!
+//! So in our case we use this weight hint to ensure that we can support the number of chains that
+//! we aim to support. This ensures that when we add a new expensive hook, we get an error ahead of
+//! time, instead of getting degraded block production as the number of registered chains grows.
+//!
+//! This benchmark is a bit complex because we allow each runtime to configure a set of "hooks"
+//! that will run for every container chain that produces a block. We want to benchmark the hooks
+//! separately, because we allow hooks to return its own weight.
+//!
+//! So the `set_latest_author_data` benchmark disables hooks using the
+//! `set_should_run_author_noting_hooks` function. This means that the weight hint for the
+//! `set_latest_author_data` inherent must be `set_latest_author_data + on_container_authors_noted`.
+//! This is verified in test `inherent_weight_is_base_plus_hooks`.
 
 use {
     crate::{AuthorNotingInfo, Call, Config, HeadData, Pallet, ParaId, RelayOrPara},
