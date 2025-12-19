@@ -68,6 +68,19 @@ mod test_sproof {
     }
 }
 
+/// Storage key used as a helper for benchmarking, to be able to skip `set_latest_author_data` hooks.
+/// We set this to false in `set_latest_author_data` benchmark because that benchmarks only the base
+/// weight, excluding the hooks.
+const STORAGE_KEY_ENABLE_HOOKS: &[u8] = b"__mock_bench_run_author_noting_hooks";
+
+pub fn should_run_author_noting_hooks() -> bool {
+    // default: true
+    frame_support::storage::unhashed::get(STORAGE_KEY_ENABLE_HOOKS).unwrap_or(true)
+}
+pub fn set_should_run_author_noting_hooks(x: bool) {
+    frame_support::storage::unhashed::put(STORAGE_KEY_ENABLE_HOOKS, x);
+}
+
 #[benchmarks]
 mod benchmarks {
     use super::*;
@@ -178,6 +191,9 @@ mod benchmarks {
             ForSession::Current,
             &container_chains,
         );
+
+        // This benchmark is without hooks
+        set_should_run_author_noting_hooks(false);
 
         #[extrinsic_call]
         _(RawOrigin::None, data);
