@@ -1,9 +1,9 @@
 import "@tanssi/api-augment";
 
-import { beforeAll, describeSuite, expect, fastFowardToNextEvent } from "@moonwall/cli";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { KeyringPair } from "@polkadot/keyring/types";
-import { maximizeConvictionVotingOf } from "../../../utils/democracy.ts";
+import { maximizeConvictionVotingOf, fastForwardUntilNoMoreEvents } from "../../../utils/democracy.ts";
 
 import type { SubmittedEventDataType } from "../../../utils";
 
@@ -74,10 +74,7 @@ describeSuite({
                 expect(depositSubmit.result?.successful).to.be.true;
                 await maximizeConvictionVotingOf(context, [dave, eve, ferdie], proposalIndex);
 
-                await fastFowardToNextEvent(context); // Fast forward past preparation
-                await fastFowardToNextEvent(context); // Fast forward past decision
-                await fastFowardToNextEvent(context); // Fast forward past enactment
-                await fastFowardToNextEvent(context); // Fast forward past confirming
+                await fastForwardUntilNoMoreEvents(context);
 
                 const finishedReferendum = (
                     await context.polkadotJs().query.referenda.referendumInfoFor(proposalIndex)
@@ -86,8 +83,6 @@ describeSuite({
                 expect(finishedReferendum.isApproved, "Not approved").to.be.true;
                 expect(finishedReferendum.isOngoing, "Still ongoing").to.be.false;
                 expect(finishedReferendum.isTimedOut, "Timed out").to.be.false;
-
-                await fastFowardToNextEvent(context); // Fast forward past dispatched
 
                 // Step 6: Confirm proxy actually added
                 const proxyInfo = await api.query.proxy.proxies(bob.address);
@@ -149,9 +144,7 @@ describeSuite({
                     expect(voteSubmit.result?.successful).to.be.true;
                 }
 
-                await fastFowardToNextEvent(context); // Fast forward past preparation
-                await fastFowardToNextEvent(context); // Fast forward past decision
-                await fastFowardToNextEvent(context); // Fast forward past enactment
+                await fastForwardUntilNoMoreEvents(context);
 
                 const finishedReferendum = (
                     await context.polkadotJs().query.referenda.referendumInfoFor(proposalIndex)

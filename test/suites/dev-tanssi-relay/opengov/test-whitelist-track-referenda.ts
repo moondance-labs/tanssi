@@ -1,11 +1,11 @@
 import "@tanssi/api-augment";
 
-import { beforeAll, describeSuite, expect, fastFowardToNextEvent } from "@moonwall/cli";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { KeyringPair } from "@polkadot/keyring/types";
 import type { SubmittedEventDataType } from "../../../utils";
 import type { H256 } from "@polkadot/types/interfaces";
-import { maximizeConvictionVotingOf } from "../../../utils/democracy.ts";
+import { maximizeConvictionVotingOf, fastForwardUntilNoMoreEvents } from "../../../utils/democracy.ts";
 
 export type ProposedEventDataType = {
     account: string;
@@ -125,10 +125,7 @@ describeSuite({
 
                 await maximizeConvictionVotingOf(context, [dave, eve, ferdie], proposalIndex);
 
-                await fastFowardToNextEvent(context); // Fast forward past preparation
-                await fastFowardToNextEvent(context); // Fast forward past decision
-                await fastFowardToNextEvent(context); // Fast forward past enactment
-                await fastFowardToNextEvent(context); // Fast forward past confirming
+                await fastForwardUntilNoMoreEvents(context);
 
                 const finishedReferendum = (
                     await context.polkadotJs().query.referenda.referendumInfoFor(proposalIndex)
@@ -137,8 +134,6 @@ describeSuite({
                 expect(finishedReferendum.isApproved, "Not approved").to.be.true;
                 expect(finishedReferendum.isOngoing, "Still ongoing").to.be.false;
                 expect(finishedReferendum.isTimedOut, "Timed out").to.be.false;
-
-                await fastFowardToNextEvent(context); // Fast forward past dispatched
 
                 // 7. Verify the call is no longer whitelisted and the dispatch was successful
                 const isCallWhitelistedAfterFailedWhitelistDispatchTx = (await api.query.whitelist.whitelistedCall(
@@ -209,10 +204,7 @@ describeSuite({
 
                 await maximizeConvictionVotingOf(context, [dave, eve, ferdie], proposalIndex);
 
-                await fastFowardToNextEvent(context); // Fast forward past preparation
-                await fastFowardToNextEvent(context); // Fast forward past decision
-                await fastFowardToNextEvent(context); // Fast forward past enactment
-                await fastFowardToNextEvent(context); // Fast forward past confirming
+                await fastForwardUntilNoMoreEvents(context);
 
                 const finishedReferendum = (
                     await context.polkadotJs().query.referenda.referendumInfoFor(proposalIndex)
@@ -222,7 +214,6 @@ describeSuite({
                 expect(finishedReferendum.isOngoing, "Still ongoing").to.be.false;
                 expect(finishedReferendum.isTimedOut, "Timed out").to.be.false;
 
-                await fastFowardToNextEvent(context); // Fast forward past dispatch
                 // 7. Confirm proxy is not added
                 const proxyInfo = await api.query.proxy.proxies(charlie.address);
                 const [delegates] = proxyInfo.toJSON() as { delegate: string }[][];

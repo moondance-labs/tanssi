@@ -1,4 +1,4 @@
-import type { DevModeContext } from "@moonwall/cli";
+import { type DevModeContext, fastFowardToNextEvent } from "@moonwall/cli";
 import type { KeyringPair } from "@polkadot/keyring/types";
 import { BN } from "@polkadot/util";
 
@@ -36,4 +36,18 @@ export const maximizeConvictionVotingOf = async (context: DevModeContext, voters
                 .signAsync(voter)
         )
     );
+};
+
+// Fast forward until the proper error is thrown
+export const fastForwardUntilNoMoreEvents = async (context: DevModeContext) => {
+    while (true) {
+        try {
+            await fastFowardToNextEvent(context);
+        } catch (err: any) {
+            if (err.message === "entry is not iterable") {
+                return;
+            }
+            throw err; // unexpected error
+        }
+    }
 };
