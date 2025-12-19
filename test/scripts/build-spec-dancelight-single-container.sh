@@ -14,4 +14,4 @@ fi
 
 mkdir -p specs
 $BINARY_FOLDER/container-chain-simple-node export-chain-spec --add-bootnode "/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9" --parachain-id 2000 --raw > specs/single-container-template-container-2000.json
-$BINARY_FOLDER/tanssi-relay export-chain-spec --chain dancelight-local specs/single-container-template-container-2000.json --invulnerable "Collator-01" --invulnerable "Collator-02" > specs/tanssi-relay.json
+$BINARY_FOLDER/tanssi-relay export-chain-spec --chain dancelight-local --add-container-chain specs/single-container-template-container-2000.json --invulnerable "Collator-01" --invulnerable "Collator-02" > specs/tanssi-relay.json
