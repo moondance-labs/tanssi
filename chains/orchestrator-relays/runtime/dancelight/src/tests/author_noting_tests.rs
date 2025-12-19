@@ -16,14 +16,15 @@
 
 #![cfg(test)]
 
-use crate::{weights, BlockWeights};
-use pallet_author_noting::WeightInfo;
 use {
     crate::tests::common::*,
+    crate::{weights, BlockWeights},
     alloc::vec,
     frame_support::{assert_noop, assert_ok, error::BadOrigin},
+    pallet_author_noting::WeightInfo as _,
     pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,
     parity_scale_codec::Encode,
+    sp_arithmetic::Perbill,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_runtime::{generic::DigestItem, traits::BlakeTwo256},
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
@@ -172,7 +173,7 @@ fn test_author_noting_set_author_and_kill_author_data_bad_origin() {
 }
 
 #[test]
-fn max_num_chains() {
+fn max_num_chains_for_author_noting_inherent() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
@@ -190,13 +191,24 @@ fn max_num_chains() {
         .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
-            for x in 0..1000 {
-                let base_weight = <weights::pallet_author_noting::SubstrateWeight<Runtime>>::set_latest_author_data(
-                    x
-                );
-                println!("{:4} parachains: {:?}", x, base_weight);
-            }
-            println!("MAX BLOCK WEIGHT: {:?}", BlockWeights::get());
+            // TODO: where to find weight reserved for inherents? I'm assuming 20% here
+            let inherents_weight_limit = Perbill::from_percent(20) * BlockWeights::get().max_block;
+            // We have enough weight to support MaxContainerChains
+            let author_noting_weight = |x| {
+                <weights::pallet_author_noting::SubstrateWeight<Runtime>>::set_latest_author_data(x)
+            };
+
+            let worst_case_author_noting_weight = author_noting_weight(
+                <Runtime as pallet_author_noting::Config>::MaxContainerChains::get(),
+            );
+            assert!(worst_case_author_noting_weight.all_lte(inherents_weight_limit));
+
+            // We also support double of that, as a safety margin
+            // If this assert fails we can just remove it, or we can decrease MaxLengthParaIds a bit
+            let worst_case_author_noting_weight = author_noting_weight(
+                2 * <Runtime as pallet_author_noting::Config>::MaxContainerChains::get(),
+            );
+            assert!(worst_case_author_noting_weight.all_lte(inherents_weight_limit));
         });
 }
 
