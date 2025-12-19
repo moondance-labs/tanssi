@@ -76,7 +76,7 @@ describeSuite({
                 const chainRewards = perbillMul(issuance, perBill);
                 const expectedOrchestratorReward = chainRewards / 3n;
                 const reward = await filterRewardFromOrchestrator(events, account);
-                expect(reward).to.equal(expectedOrchestratorReward + 1n);
+                expect(reward).to.equal(expectedOrchestratorReward);
             },
         });
 
