@@ -105,9 +105,9 @@ mod benchmarks {
 
         // Register collators in staking pallet and initialize `ChainsToReward`.
         // TODO: we probably need to initialize `ChainsToReward` again after advancing blocks
-        // Para ids always start at 1000
+        // Start at index 2000 because para_id < 2000 are system parachains
         for para_id in 0..x {
-            let para_id = 1000u32 + para_id;
+            let para_id = 2000u32 + para_id;
             let para_id: ParaId = para_id.into();
             let author: T::AccountId = account("account id", u32::from(para_id), 0u32);
             T::AuthorNotingHook::prepare_worst_case_for_bench(&author, 1, para_id);
@@ -124,9 +124,9 @@ mod benchmarks {
             // PARA MODE
             let mut sproof_builder = test_sproof::ParaHeaderSproofBuilder::default();
 
-            // Must start at 1000 in Para mode (why?)
+            // Start at index 2000 because para_id < 2000 are system parachains
             for para_id in 0..x {
-                let para_id = (1000u32 + para_id).into();
+                let para_id = (2000u32 + para_id).into();
 
                 let author: T::AccountId = account("account id", u32::from(para_id), 0u32);
                 container_chains.push((para_id, vec![author.clone()]));
@@ -158,9 +158,9 @@ mod benchmarks {
         {
             // RELAY MODE
 
-            // Must start at 1000 in Relay mode (why?)
+            // Start at index 2000 because para_id < 2000 are system parachains
             for para_id in 0..x {
-                let para_id = 1000u32 + para_id;
+                let para_id = 2000u32 + para_id;
                 let slot: crate::InherentType = 13u64.into();
                 let header = sp_runtime::generic::Header::<crate::BlockNumber, crate::BlakeTwo256> {
                     parent_hash: Default::default(),
@@ -255,7 +255,8 @@ mod benchmarks {
     fn on_container_authors_noted(x: Linear<1, 50>) -> Result<(), BenchmarkError> {
         let mut infos = vec![];
         for i in 0..x {
-            let para_id = (1000 + i).into();
+            // Start at index 2000 because para_id < 2000 are system parachains
+            let para_id = (2000 + i).into();
             let block_number = 1;
             let author: T::AccountId = account("account id", u32::from(para_id), 0u32);
             T::AuthorNotingHook::prepare_worst_case_for_bench(&author, block_number, para_id);
