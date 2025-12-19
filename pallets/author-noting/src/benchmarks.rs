@@ -78,7 +78,7 @@ pub fn should_run_author_noting_hooks() -> bool {
     frame_support::storage::unhashed::get(STORAGE_KEY_ENABLE_HOOKS).unwrap_or(true)
 }
 pub fn set_should_run_author_noting_hooks(x: bool) {
-    frame_support::storage::unhashed::put(STORAGE_KEY_ENABLE_HOOKS, x);
+    frame_support::storage::unhashed::put(STORAGE_KEY_ENABLE_HOOKS, &x);
 }
 
 #[benchmarks]
