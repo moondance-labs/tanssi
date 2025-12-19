@@ -27,6 +27,7 @@ mod collator_assignment_tests;
 mod common;
 mod container_token_transfers;
 mod core_scheduling_tests;
+mod democracy_tracks;
 mod ethereum_client;
 mod ethereum_token_transfers;
 mod external_validator_rewards_tests;
@@ -46,7 +47,6 @@ mod session_keys;
 mod slashes;
 mod staking;
 mod sudo;
-mod test_disabled_extrinsics;
 
 #[macro_export]
 macro_rules! filter_events {
