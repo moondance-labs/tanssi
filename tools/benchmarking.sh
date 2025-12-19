@@ -125,19 +125,24 @@ function bench {
     fi
 }
 
-if [[ "${@}" =~ "--help" ]]; then
+if [[ "${*}" =~ "--help" ]]; then
     help
 else
     CHECK=0
-    if [[ "${@}" =~ "--check" ]]; then
-        CHECK=1
-        set -o noglob && set -- ${@/'--check'} && set +o noglob
-    fi
-
     ALL=0
-    if [[ "${@}" =~ "--all" ]]; then
-        ALL=1
-    fi
+
+    filtered_args=()
+    for arg in "$@"; do
+        if [[ "$arg" == "--check" ]]; then
+            CHECK=1
+        elif [[ "$arg" == "--all" ]]; then
+            ALL=1
+        else
+            filtered_args+=("$arg")
+        fi
+    done
+
+    set -- "${filtered_args[@]}"
 
     if [[ "${ALL}" -eq 1 ]]; then
         mkdir -p weights/

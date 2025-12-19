@@ -1124,7 +1124,7 @@ impl ProcessMessage for MessageProcessor {
                     xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
                     RuntimeCall,
                 >::process_message(
-                    message, Junction::Parachain(para.into()), meter, id
+                    message, Junction::Parachain(para.into()), meter, id,
                 )
             }
             TanssiAggregateMessageOrigin::Snowbridge(_) => {
@@ -2434,6 +2434,7 @@ mod benches {
         [pallet_bridge_relayers, BridgeRelayersBench::<Runtime>]
         [snowbridge_pallet_inbound_queue, EthereumInboundQueue]
         [snowbridge_pallet_outbound_queue_v2, EthereumOutboundQueueV2]
+        [snowbridge_pallet_inbound_queue_v2, EthereumInboundQueueV2]
     );
 }
 
