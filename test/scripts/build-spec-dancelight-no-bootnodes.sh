@@ -15,7 +15,7 @@ fi
 mkdir -p specs
 # IF and Fallback should be removed after new version release
 # https://opslayer.atlassian.net/browse/MD-1512
-if bash ./scripts/check-export-chain-spec-cmd.sh $BINARY_FOLDER/container-chain-simple-node build-spec | grep -q "export-chain-spec"; then
+if bash ./scripts/check-export-chain-spec-cmd.sh $BINARY_FOLDER/container-chain-simple-node | grep -q "export-chain-spec"; then
   $BINARY_FOLDER/container-chain-simple-node export-chain-spec --disable-default-bootnode --parachain-id 2000 --raw > specs/single-container-template-container-2000-no-bootnodes.json
   $BINARY_FOLDER/container-chain-frontier-node export-chain-spec --disable-default-bootnode --parachain-id 2001 --raw > specs/single-container-template-container-2001-no-bootnodes.json
   $BINARY_FOLDER/container-chain-simple-node export-chain-spec --disable-default-bootnode --parachain-id 2002 --raw > specs/single-container-template-container-2002-no-bootnodes.json
