@@ -285,10 +285,10 @@ export function hexToIPv4(hex: string): string {
 
     // /proc/net/tcp-style is little-endian: 01 00 00 7F => 127.0.0.1
     const octets = [
-        parseInt(s.slice(6, 8), 16), // last byte -> first octet
-        parseInt(s.slice(4, 6), 16),
-        parseInt(s.slice(2, 4), 16),
-        parseInt(s.slice(0, 2), 16), // first byte -> last octet
+        Number.parseInt(s.slice(6, 8), 16), // last byte -> first octet
+        Number.parseInt(s.slice(4, 6), 16),
+        Number.parseInt(s.slice(2, 4), 16),
+        Number.parseInt(s.slice(0, 2), 16), // first byte -> last octet
     ];
 
     return octets.join(".");
