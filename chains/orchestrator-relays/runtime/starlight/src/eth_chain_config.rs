@@ -23,7 +23,7 @@ pub enum BuildEnv {
     TestLike,
 }
 
-pub const fn current_env() -> BuildEnv {
+const fn current_env() -> BuildEnv {
     if cfg!(feature = "runtime-benchmarks") {
         BuildEnv::Benchmark
     } else if cfg!(any(feature = "std", feature = "fast-runtime", test)) {
