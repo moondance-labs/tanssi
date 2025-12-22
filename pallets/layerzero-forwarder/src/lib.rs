@@ -40,16 +40,7 @@ use crate::types::ChainId;
 pub use pallet::*;
 use xcm::latest::Location;
 use xcm::prelude::Parachain;
-use {
-    parity_scale_codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen},
-    scale_info::TypeInfo,
-    sp_runtime::traits::Get,
-    tp_bridge::layerzero_message::Message,
-    tp_traits::{
-        EraIndexProvider, ExternalIndexProvider, InvulnerablesProvider, OnEraEnd, OnEraStart,
-        ValidatorProvider,
-    },
-};
+use {parity_scale_codec::Encode, sp_runtime::traits::Get, tp_bridge::layerzero_message::Message};
 
 fn extract_container_chain_id(location: &Location) -> Option<ChainId> {
     match location.unpack() {
@@ -61,22 +52,15 @@ fn extract_container_chain_id(location: &Location) -> Option<ChainId> {
 #[frame_support::pallet]
 pub mod pallet {
     use crate::types::{ChainId, MessageForwardingConfig};
-    use frame_support::traits::Contains;
+    use alloc::vec;
     use snowbridge_inbound_queue_primitives::v2::MessageProcessorError;
     use tp_bridge::ConvertLocation;
     use xcm::latest::{send_xcm, Location, Xcm};
     use xcm::prelude::{OriginKind, Transact};
-    use alloc::vec;
     use {
         super::*,
-        alloc::vec::Vec,
-        frame_support::{
-            pallet_prelude::*,
-            traits::{EnsureOrigin, UnixTime, ValidatorRegistration},
-            BoundedVec, DefaultNoBound,
-        },
+        frame_support::{pallet_prelude::*, traits::EnsureOrigin},
         frame_system::pallet_prelude::*,
-        sp_runtime::{traits::Convert, SaturatedConversion},
     };
 
     /// Configure the pallet by specifying the parameters and types on which it depends.
@@ -85,7 +69,10 @@ pub mod pallet {
         #[pallet::constant]
         type MaxWhitelistedSenders: Get<u32> + Clone;
         /// Origin locations allowed to update message forwarding configurations
-        type ContainerChainOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin, Success = Location>;
+        type ContainerChainOrigin: EnsureOrigin<
+            <Self as frame_system::Config>::RuntimeOrigin,
+            Success = Location,
+        >;
 
         /// Used to obtain container chain sovereign account.
         type ConvertLocation: ConvertLocation<Self::AccountId>;

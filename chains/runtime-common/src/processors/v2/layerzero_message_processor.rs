@@ -31,7 +31,7 @@ use parity_scale_codec::Decode;
 use snowbridge_inbound_queue_primitives::v2::{Message, MessageProcessorError, Payload};
 use sp_core::{Get, H160};
 use tp_bridge::layerzero_message::{
-    SolMessage as LayerZeroSolMessage, SolPayload as LayerZeroSolPayload, Message as LayerZeroMessage,MAGIC_BYTES as LZ_MAGIC_BYTES,
+    Message as LayerZeroMessage, SolPayload as LayerZeroSolPayload, MAGIC_BYTES as LZ_MAGIC_BYTES,
 };
 use v2_processor_proc_macro::MessageProcessor;
 use xcm::latest::{ExecuteXcm, InteriorLocation, NetworkId};

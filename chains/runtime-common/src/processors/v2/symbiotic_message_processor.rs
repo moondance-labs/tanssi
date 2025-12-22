@@ -83,12 +83,10 @@ pub fn try_extract_message<T: pallet_external_validators::Config>(
 
                     return Ok(symbiotic_payload.message);
                 }
-                _ => {
-                    Err(MessageExtractionError::UnsupportedMessage {
-                        context: "Unsupported Message".to_string(),
-                        source: None,
-                    })
-                }
+                _ => Err(MessageExtractionError::UnsupportedMessage {
+                    context: "Unsupported Message".to_string(),
+                    source: None,
+                }),
             }
         }
         _ => Err(MessageExtractionError::UnsupportedMessage {
