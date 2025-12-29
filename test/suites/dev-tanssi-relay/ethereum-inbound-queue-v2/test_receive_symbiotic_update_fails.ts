@@ -17,7 +17,7 @@ import type { KeyringPair } from "@moonwall/util";
 import { hexToU8a } from "@polkadot/util";
 import { getBytes } from "ethers/utils";
 import { AbiCoder } from "ethers/abi";
-import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2 } from "../../../helpers";
+import {retrieveDispatchErrors, STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2} from "../../../helpers";
 
 describeSuite({
     id: "ETHINBV2SYMBFAIL",

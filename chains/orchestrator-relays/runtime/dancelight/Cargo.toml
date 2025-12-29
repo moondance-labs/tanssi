@@ -142,6 +142,7 @@ pallet-data-preservers = { workspace = true }
 pallet-data-preservers-runtime-api = { workspace = true }
 pallet-inactivity-tracking = { workspace = true }
 pallet-inflation-rewards = { workspace = true }
+pallet-layerzero-forwarder = { workspace = true }
 pallet-outbound-message-commitment-recorder = { workspace = true }
 pallet-pooled-staking = { workspace = true }
 pallet-registrar = { workspace = true }
@@ -263,6 +264,7 @@ std = [
 	"pallet-inactivity-tracking/std",
 	"pallet-inflation-rewards/std",
 	"pallet-initializer/std",
+	"pallet-layerzero-forwarder/std",
 	"pallet-invulnerables/std",
 	"pallet-maintenance-mode/std",
 	"pallet-message-queue/std",

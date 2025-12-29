@@ -139,6 +139,8 @@ type LocalOriginConverter = (
     ChildParachainAsNative<parachains_origin::Origin, RuntimeOrigin>,
     // The AccountId32 location type can be expressed natively as a `Signed` origin.
     SignedAccountId32AsNative<ThisNetwork, RuntimeOrigin>,
+    // Xcm origins can be represented natively under the Xcm pallet's Xcm origin.
+    pallet_xcm::XcmPassthrough<RuntimeOrigin>
 );
 
 parameter_types! {
@@ -350,6 +352,12 @@ impl pallet_foreign_asset_creator::Config for Runtime {
     type WeightInfo = weights::pallet_foreign_asset_creator::SubstrateWeight<Runtime>;
     type OnForeignAssetCreated = ();
     type OnForeignAssetDestroyed = ();
+}
+
+impl pallet_layerzero_forwarder::Config for Runtime {
+    type MaxWhitelistedSenders = ConstU32<100>;
+    type ContainerChainOrigin = pallet_xcm::EnsureXcm<OnlyParachains>;
+    type ConvertLocation = LocationConverter;
 }
 
 parameter_types! {

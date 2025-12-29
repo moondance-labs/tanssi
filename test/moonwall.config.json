@@ -49,7 +49,7 @@
         },
         {
             "name": "dev_tanssi_relay_dancelight",
-            "envVars": ["DEBUG_COLORS=1"],
+            "envVars": ["DEBUG_COLORS=1", "RUST_LOG=lz=debug"],
             "testFileDir": ["suites/dev-tanssi-relay", "suites/common-all", "suites/common-tanssi"],
             "runScripts": [
                 "download-ethereum-client-test-files.sh",

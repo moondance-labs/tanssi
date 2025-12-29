@@ -14,22 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-//! ExternalValidators pallet.
-//!
-//! A pallet to manage external validators for a solochain.
-//!
-//! ## Terminology
-//!
-//! - WhitelistedValidators: Fixed validators set by root/governance. Have priority over the external validators.
-//!      Are not rewarded.
-//! - ExternalValidators: Validators set using storage proofs from another blockchain. Can be disabled by setting
-//!     `SkipExternalValidators` to true.
-//!
-//! Validators only change once per era. By default the era changes after a fixed number of sessions, but new eras
-//! can be forced or disabled using a root extrinsic.
-//!
-//! The structure of this pallet and the concept of eras is inspired by `pallet_staking` from Polkadot.
-
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod types;
@@ -39,7 +23,7 @@ extern crate alloc;
 use crate::types::ChainId;
 pub use pallet::*;
 use xcm::latest::Location;
-use xcm::prelude::Parachain;
+use xcm::prelude::{Parachain, Unlimited};
 use {parity_scale_codec::Encode, sp_runtime::traits::Get, tp_bridge::layerzero_message::Message};
 
 fn extract_container_chain_id(location: &Location) -> Option<ChainId> {
@@ -56,7 +40,7 @@ pub mod pallet {
     use snowbridge_inbound_queue_primitives::v2::MessageProcessorError;
     use tp_bridge::ConvertLocation;
     use xcm::latest::{send_xcm, Location, Xcm};
-    use xcm::prelude::{OriginKind, Transact};
+    use xcm::prelude::{OriginKind, Transact, UnpaidExecution};
     use {
         super::*,
         frame_support::{pallet_prelude::*, traits::EnsureOrigin},
@@ -168,11 +152,17 @@ pub mod pallet {
             let pallet_index = config.notification_destination.0;
             let call_index = config.notification_destination.1;
 
-            let remote_xcm = Xcm::<()>(vec![Transact {
-                origin_kind: OriginKind::Xcm,
-                fallback_max_weight: None,
-                call: (pallet_index, call_index, message).encode().into(),
-            }]);
+            let remote_xcm = Xcm::<()>(vec![
+                UnpaidExecution {
+                    weight_limit: Unlimited,
+                    check_origin: None,
+                },
+                Transact {
+                    origin_kind: OriginKind::Xcm,
+                    fallback_max_weight: None,
+                    call: (pallet_index, call_index, message).encode().into(),
+                },
+            ]);
 
             send_xcm::<<T as pallet_xcm::Config>::XcmRouter>(
                 container_chain_location.clone(),

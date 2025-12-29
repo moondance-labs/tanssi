@@ -2072,6 +2072,7 @@ construct_runtime! {
         EthereumInboundQueueV2: snowbridge_pallet_inbound_queue_v2 = 124,
         EthereumSystemV2: snowbridge_pallet_system_v2 = 125,
         BridgeRelayers: pallet_bridge_relayers = 126,
+        LayerZeroForwarder: pallet_layerzero_forwarder = 127,
 
         // BEEFY Bridges support.
         Beefy: pallet_beefy = 240,
