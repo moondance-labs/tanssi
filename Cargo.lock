@@ -2436,6 +2436,7 @@ dependencies = [
  "pallet-evm-precompile-xcm-utils",
  "pallet-evm-precompileset-assets-erc20",
  "pallet-foreign-asset-creator",
+ "pallet-lz-receiver-example",
  "pallet-maintenance-mode",
  "pallet-message-queue",
  "pallet-migrations 0.1.0",
@@ -2521,6 +2522,7 @@ dependencies = [
  "pallet-balances",
  "pallet-cc-authorities-noting",
  "pallet-foreign-asset-creator",
+ "pallet-lz-receiver-example",
  "pallet-maintenance-mode",
  "pallet-message-queue",
  "pallet-migrations 0.1.0",
@@ -10922,6 +10924,36 @@ dependencies = [
  "staging-xcm-executor",
  "tp-bridge",
  "tp-traits",
+]
+
+[[package]]
+name = "pallet-lz-receiver"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "staging-xcm",
+]
+
+[[package]]
+name = "pallet-lz-receiver-example"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "staging-xcm",
 ]
 
 [[package]]
