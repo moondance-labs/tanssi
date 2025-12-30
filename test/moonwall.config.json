@@ -1024,9 +1024,9 @@
             "testFileDir": ["suites/zombie_tanssi_relay_dht_bootnodes"],
             "runScripts": [
                 "build-spec-dancelight-no-bootnodes.sh",
-                "compile-wasm.ts compile -b ../target/release/tanssi-relay -o wasm -c specs/tanssi-relay.json",
-                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json",
-                "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2001.json"
+                "compile-wasm.ts compile -b ../target/release/tanssi-relay -o wasm -c specs/tanssi-relay-no-bootnodes.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000-no-bootnodes.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2001-no-bootnodes.json"
             ],
             "foundation": {
                 "type": "zombie",
