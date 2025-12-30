@@ -4,7 +4,12 @@ import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { generateUpdate, generateLayerZeroOutboundLog, sendCallAsChildPara, getChildParaSovereignAccount } from "utils";
+import {
+    generateUpdate,
+    generateLayerZeroOutboundLog,
+    sendCallAsChildPara,
+    sovereignAccountOfChildForAddress32,
+} from "utils";
 import type { KeyringPair } from "@moonwall/util";
 import { retrieveDispatchErrors, STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2 } from "../../../helpers";
 import { hexToU8a } from "@polkadot/util";
@@ -43,7 +48,7 @@ describeSuite({
             }
 
             // Fund the sovereign account of para 2000 (child parachain on relay)
-            const paraSovereignAccount = getChildParaSovereignAccount(context, destinationChain);
+            const paraSovereignAccount = sovereignAccountOfChildForAddress32(context, destinationChain);
             const fundTx = polkadotJs.tx.balances.transferAllowDeath(paraSovereignAccount, fundAmount);
             await context.createBlock(await fundTx.signAsync(alice), { allowFailures: false });
         });

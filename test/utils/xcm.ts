@@ -1148,22 +1148,6 @@ export const getParathreadRelayTankAddress = async (
 };
 
 /**
- * Get the sovereign account of a child parachain on the relay chain.
- * Uses "para" prefix as defined in polkadot-sdk/polkadot/parachain/src/primitives.rs
- *
- * Total: 4 bytes (para) + 4 bytes (u32 paraId) + 24 bytes (padding) = 32 bytes (AccountId32)
- */
-export function getChildParaSovereignAccount(context: DevModeContext, paraId: number): string {
-    return u8aToHex(
-        new Uint8Array([
-            ...new TextEncoder().encode("para"),
-            ...context.polkadotJs().createType("u32", paraId).toU8a(),
-            ...new Uint8Array(24),
-        ])
-    );
-}
-
-/**
  * Send a call as a child parachain to the relay chain via UMP (Upward Message Passing)
  *
  * This function sends an XCM message from a parachain UP to the relay chain.
@@ -1187,7 +1171,7 @@ export const sendCallAsChildPara = async (
     const encodedCall = call.method.toHex();
 
     // Get the sovereign account using the runtime API (most reliable)
-    const sovereignAccount = getChildParaSovereignAccount(context, paraId);
+    const sovereignAccount = sovereignAccountOfChildForAddress32(context, paraId);
 
     // For relay chains, the native token location is { parents: 0, interior: Here }
     const xcmMessage = new XcmFragment({

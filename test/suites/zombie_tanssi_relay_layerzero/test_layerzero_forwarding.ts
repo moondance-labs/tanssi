@@ -3,7 +3,7 @@
 import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import type { KeyringPair, } from "@moonwall/util";
+import type { KeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 
 import {
