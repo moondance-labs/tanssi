@@ -36,19 +36,19 @@
             {
                 "name": "alice",
                 "rpc_port": "9947",
-                "validator": true,
+                "validator": true
             },
             {
                 "name": "bob",
-                "validator": true,
+                "validator": true
             },
             {
                 "name": "charlie",
-                "validator": true,
+                "validator": true
             },
             {
                 "name": "dave",
-                "validator": true,
+                "validator": true
             }
         ]
     },
