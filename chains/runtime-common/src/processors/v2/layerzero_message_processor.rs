@@ -37,7 +37,7 @@ use v2_processor_proc_macro::MessageProcessor;
 use xcm::latest::{ExecuteXcm, InteriorLocation, NetworkId};
 use xcm_executor::traits::WeightBounds;
 
-pub fn try_extract_message<T: pallet_layerzero_forwarder::Config>(
+pub fn try_extract_message<T: pallet_lz_router::Config>(
     message: &Message,
     gateway_proxy_address: H160,
 ) -> Result<LayerZeroMessage, MessageExtractionError> {
@@ -99,10 +99,10 @@ pub fn try_extract_message<T: pallet_layerzero_forwarder::Config>(
     }
 }
 
-pub fn process_message<T: pallet_layerzero_forwarder::Config>(
+pub fn process_message<T: pallet_lz_router::Config>(
     message: LayerZeroMessage,
 ) -> Result<(), MessageProcessorError> {
-    pallet_layerzero_forwarder::Pallet::<T>::forward_message_to_chain(message)
+    pallet_lz_router::Pallet::<T>::forward_message_to_chain(message)
 }
 
 #[derive(MessageProcessor)]
@@ -153,7 +153,7 @@ where
     T: snowbridge_pallet_inbound_queue::Config
         + pallet_xcm::Config
         + snowbridge_pallet_system::Config
-        + pallet_layerzero_forwarder::Config,
+        + pallet_lz_router::Config,
     [u8; 32]: From<<T as frame_system::Config>::AccountId>,
     GatewayAddress: Get<H160>,
     DefaultClaimer: Get<<T as frame_system::Config>::AccountId>,

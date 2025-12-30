@@ -14,6 +14,24 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+//! # LayerZero Router Pallet
+//!
+//! Routes LayerZero messages between container chains and external chains (Ethereum, etc.)
+//! via the relay chain.
+//!
+//! ## Message Flow
+//!
+//! **Inbound**: Ethereum → Relay (this pallet) → Container Chain
+//! **Outbound**: Container Chain → Relay (this pallet) → Ethereum
+//!
+//! ## Usage
+//!
+//! Container chains configure forwarding via `update_message_forwarding_config`, specifying:
+//! - Whitelisted senders: `(LayerZeroEndpoint, LayerZeroAddress)` tuples
+//! - Notification destination: `(pallet_index, call_index)` to receive messages
+//!
+//! See `pallet-lz-receiver-example` for a reference implementation.
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod types;
@@ -103,6 +121,9 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
+        /// Update forwarding configuration for a container chain.
+        ///
+        /// Must be called via XCM from the container chain itself.
         #[pallet::call_index(0)]
         #[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
         pub fn update_message_forwarding_config(
@@ -132,6 +153,10 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
+        /// Forward a LayerZero message to its destination container chain via XCM.
+        ///
+        /// Called by `LayerZeroInboundMessageProcessorV2` when messages arrive from Ethereum.
+        /// Validates the sender is whitelisted and sends an XCM Transact to the destination.
         pub fn forward_message_to_chain(message: Message) -> Result<(), MessageProcessorError> {
             let dest_chain_id: ChainId = message.destination_chain;
 

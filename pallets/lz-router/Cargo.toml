@@ -1,7 +1,7 @@
 [package]
-name = "pallet-layerzero-forwarder"
+name = "pallet-lz-router"
 authors = { workspace = true }
-description = "A pallet to manage and forward messages comming from layerzero."
+description = "A pallet to route LayerZero messages between container chains and external LayerZero-connected chains."
 edition = "2021"
 license = "GPL-3.0-only"
 version = "0.1.0"

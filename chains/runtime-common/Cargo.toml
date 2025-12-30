@@ -66,7 +66,7 @@ pallet-babe = { workspace = true, optional = true }
 pallet-ethereum-token-transfers = { workspace = true, optional = true }
 pallet-external-validator-slashes = { workspace = true, optional = true }
 pallet-external-validators = { workspace = true, optional = true }
-pallet-layerzero-forwarder = { workspace = true, optional = true }
+pallet-lz-router = { workspace = true, optional = true }
 snowbridge-pallet-inbound-queue = { workspace = true, optional = true }
 thiserror = { workspace = true, optional = true }
 tp-bridge = { workspace = true, optional = true }
@@ -92,7 +92,7 @@ std = [
 	"pallet-ethereum-token-transfers?/std",
 	"pallet-external-validator-slashes?/std",
 	"pallet-external-validators?/std",
-	"pallet-layerzero-forwarder?/std",
+	"pallet-lz-router?/std",
 	"pallet-foreign-asset-creator/std",
 	"pallet-inactivity-tracking/std",
 	"pallet-migrations/std",
@@ -126,7 +126,7 @@ relay = [
 	"pallet-ethereum-token-transfers",
 	"pallet-external-validator-slashes",
 	"pallet-external-validators",
-	"pallet-layerzero-forwarder",
+	"pallet-lz-router",
 	"snowbridge-pallet-inbound-queue",
 	"thiserror",
 	"tp-bridge",
@@ -145,7 +145,7 @@ runtime-benchmarks = [
 	"pallet-ethereum-token-transfers?/runtime-benchmarks",
 	"pallet-external-validator-slashes?/runtime-benchmarks",
 	"pallet-external-validators?/runtime-benchmarks",
-	"pallet-layerzero-forwarder?/runtime-benchmarks",
+	"pallet-lz-router?/runtime-benchmarks",
 	"pallet-foreign-asset-creator/runtime-benchmarks",
 	"pallet-inactivity-tracking/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
@@ -183,7 +183,7 @@ try-runtime = [
 	"pallet-ethereum-token-transfers?/try-runtime",
 	"pallet-external-validator-slashes?/try-runtime",
 	"pallet-external-validators?/try-runtime",
-	"pallet-layerzero-forwarder?/try-runtime",
+	"pallet-lz-router?/try-runtime",
 	"pallet-foreign-asset-creator/try-runtime",
 	"pallet-inactivity-tracking/try-runtime",
 	"pallet-migrations/try-runtime",

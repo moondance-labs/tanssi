@@ -22,7 +22,7 @@
 //! ## Overview
 //!
 //! When a LayerZero message arrives at the relay chain (via the Ethereum bridge), the relay
-//! chain's `pallet_layerzero_forwarder` forwards it to the destination container chain using
+//! chain's `pallet_lz_router` forwards it to the destination container chain using
 //! XCM Transact. This pallet shows how a container chain can receive and process such messages.
 //!
 //! ## Implementation Requirements
@@ -115,7 +115,7 @@ pub mod pallet {
         /// Receive a LayerZero message forwarded from the relay chain.
         ///
         /// This extrinsic is called via XCM Transact from the relay chain's
-        /// `pallet_layerzero_forwarder`. The relay chain encodes the call as
+        /// `pallet_lz_router`. The relay chain encodes the call as
         /// `(pallet_index, call_index, payload)`.
         ///
         /// # Origin

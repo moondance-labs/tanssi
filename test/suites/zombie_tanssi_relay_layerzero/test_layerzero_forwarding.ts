@@ -91,17 +91,17 @@ describeSuite({
 
         it({
             id: "T03",
-            title: "Verify LayerZero forwarder pallet exists on relay chain",
+            title: "Verify LzRouter pallet exists on relay chain",
             test: async () => {
                 const relayMetadata = await relayChainPolkadotJs.rpc.state.getMetadata();
-                const layerZeroForwarder = relayMetadata.asLatest.pallets.find(
-                    ({ name }) => name.toString() === "LayerZeroForwarder"
+                const lzRouter = relayMetadata.asLatest.pallets.find(
+                    ({ name }) => name.toString() === "LzRouter"
                 );
-                expect(layerZeroForwarder, "LayerZeroForwarder pallet not found on relay").to.not.be.undefined;
-                console.log(`LayerZeroForwarder pallet index: ${layerZeroForwarder.index.toNumber()}`);
+                expect(lzRouter, "LzRouter pallet not found on relay").to.not.be.undefined;
+                console.log(`LzRouter pallet index: ${lzRouter.index.toNumber()}`);
 
                 // Check if storage for MessageForwardingConfigs exists
-                const storageEntries = layerZeroForwarder.storage?.unwrap().items || [];
+                const storageEntries = lzRouter.storage?.unwrap().items || [];
                 const hasConfigStorage = storageEntries.some(
                     (item) => item.name.toString() === "MessageForwardingConfigs"
                 );
@@ -143,7 +143,7 @@ describeSuite({
                 const lzSourceEndpoint = 30101; // Ethereum mainnet LayerZero endpoint ID
 
                 // Build the call to execute on the relay chain
-                const forwardingConfigCall = relayChainPolkadotJs.tx.layerZeroForwarder.updateMessageForwardingConfig({
+                const forwardingConfigCall = relayChainPolkadotJs.tx.lzRouter.updateMessageForwardingConfig({
                     notificationDestination: [palletIndex, callIndex],
                     whitelistedSenders: [[lzSourceEndpoint, Array.from(lzSourceAddress)]],
                 });
@@ -227,7 +227,7 @@ describeSuite({
                 await waitSessions(context, relayChainPolkadotJs, 1, null, "Tanssi-relay");
 
                 // Verify the forwarding config was set
-                const storedConfig = await relayChainPolkadotJs.query.layerZeroForwarder.messageForwardingConfigs(2000);
+                const storedConfig = await relayChainPolkadotJs.query.lzRouter.messageForwardingConfigs(2000);
                 console.log(`Stored config: ${JSON.stringify(storedConfig.toHuman())}`);
 
                 expect(storedConfig.isSome, "Forwarding config should be set").to.be.true;
@@ -298,7 +298,7 @@ describeSuite({
 
                 // Check for LayerZeroMessageForwarded event (if it exists)
                 const forwardedEvent = relayEvents.find((a) => {
-                    return a.event.section === "layerZeroForwarder" && a.event.method === "MessageForwarded";
+                    return a.event.section === "lzRouter" && a.event.method === "MessageForwarded";
                 });
                 expect(!!forwardedEvent, "MessageForwarded event should exist on relay").to.equal(true);
                 console.log("LayerZero message forwarded on relay chain!");

@@ -13,6 +13,9 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+
+//! Types used by the LzRouter pallet.
+
 use crate::Config;
 use frame_support::pallet_prelude::MaxEncodedLen;
 use frame_support::{
@@ -22,10 +25,16 @@ use sp_runtime::BoundedVec;
 use tp_bridge::layerzero_message::{LayerZeroAddress, LayerZeroEndpoint};
 use tp_traits::__reexports::{Decode, DecodeWithMemTracking, Encode, RuntimeDebug, TypeInfo};
 
+/// Parachain/container chain identifier (matches the para_id)
 pub type ChainId = u32;
+
+/// Index of a pallet in the runtime
 pub type PalletIndex = u8;
+
+/// Index of an extrinsic call within a pallet
 pub type CallIndex = u8;
 
+/// Configuration for forwarding LayerZero messages to a container chain.
 #[derive(
     DebugNoBound,
     PartialEqNoBound,
@@ -39,9 +48,10 @@ pub type CallIndex = u8;
 )]
 #[scale_info(skip_type_params(T))]
 pub struct MessageForwardingConfig<T: Config> {
-    /// List of whitelisted (LayerZeroEndpoint, LayerZeroAddress) tuples allowed to forward messages to this chain
+    /// Whitelisted (endpoint, address) tuples allowed to send messages.
     pub whitelisted_senders:
         BoundedVec<(LayerZeroEndpoint, LayerZeroAddress), T::MaxWhitelistedSenders>,
-    /// Pallet index and call index to be used when forwarding messages to this chain
+
+    /// Target (pallet_index, call_index) on the container chain.
     pub notification_destination: (PalletIndex, CallIndex),
 }
