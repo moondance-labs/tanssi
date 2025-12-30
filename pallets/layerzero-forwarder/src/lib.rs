@@ -94,6 +94,11 @@ pub mod pallet {
             new_config: MessageForwardingConfig<T>,
             old_config: Option<MessageForwardingConfig<T>>,
         },
+        /// Message forwarded to a container chain
+        MessageForwarded {
+            chain_id: ChainId,
+            message: Message,
+        },
     }
 
     #[pallet::call]
@@ -160,7 +165,7 @@ pub mod pallet {
                 Transact {
                     origin_kind: OriginKind::Xcm,
                     fallback_max_weight: None,
-                    call: (pallet_index, call_index, message).encode().into(),
+                    call: (pallet_index, call_index, message.encode()).encode().into(),
                 },
             ]);
 
@@ -169,6 +174,11 @@ pub mod pallet {
                 remote_xcm.clone(),
             )
             .map_err(|err| MessageProcessorError::SendMessage(err))?;
+
+            Self::deposit_event(Event::MessageForwarded {
+                chain_id: dest_chain_id,
+                message,
+            });
 
             Ok(())
         }

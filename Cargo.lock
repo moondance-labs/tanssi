@@ -10927,21 +10927,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-lz-receiver"
-version = "0.1.0"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "staging-xcm",
-]
-
-[[package]]
 name = "pallet-lz-receiver-example"
 version = "0.1.0"
 dependencies = [

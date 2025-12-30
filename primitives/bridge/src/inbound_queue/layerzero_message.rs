@@ -1,4 +1,3 @@
-
 // Copyright (C) Moondance Labs Ltd.
 // This file is part of Tanssi.
 
@@ -18,7 +17,8 @@ use alloc::vec::Vec;
 use alloy_core::sol;
 use frame_support::pallet_prelude::{Decode, Encode};
 use frame_support::DebugNoBound;
-use sp_core::ConstU32;
+use scale_info::TypeInfo;
+use sp_core::{ConstU32, DecodeWithMemTracking};
 use sp_runtime::BoundedVec;
 
 /// Magic bytes are added in every payload intended for this processor to make sure
@@ -44,7 +44,7 @@ sol! {
 pub type LayerZeroAddress = BoundedVec<u8, ConstU32<32>>;
 pub type LayerZeroEndpoint = u32;
 
-#[derive(Encode, Decode, Clone, DebugNoBound)]
+#[derive(Encode, Decode, DecodeWithMemTracking, Clone, DebugNoBound, PartialEq, Eq, TypeInfo)]
 pub struct Message {
     pub lz_source_address: LayerZeroAddress,
     pub lz_source_endpoint: LayerZeroEndpoint,

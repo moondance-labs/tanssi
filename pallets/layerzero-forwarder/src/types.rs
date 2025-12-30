@@ -23,8 +23,8 @@ use tp_bridge::layerzero_message::{LayerZeroAddress, LayerZeroEndpoint};
 use tp_traits::__reexports::{Decode, DecodeWithMemTracking, Encode, RuntimeDebug, TypeInfo};
 
 pub type ChainId = u32;
-pub type PalletIndex = u32;
-pub type CallIndex = u32;
+pub type PalletIndex = u8;
+pub type CallIndex = u8;
 
 #[derive(
     DebugNoBound,
