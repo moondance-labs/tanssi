@@ -44,9 +44,9 @@ use {
 };
 
 use tanssi_runtime_common::relay::v2::{
+    LayerZeroMessageProcessor as LayerZeroMessageProcessorV2,
     RawMessageProcessor as RawMessageProcessorV2,
     SymbioticMessageProcessor as SymbioticMessageProcessorV2,
-    LayerZeroMessageProcessor as LayerZeroMessageProcessorV2,
 };
 
 use crate::xcm_config::UniversalLocation;

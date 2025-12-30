@@ -3,7 +3,7 @@
 import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { type KeyringPair, alith } from "@moonwall/util";
+import type { KeyringPair, } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 
 import {
@@ -59,10 +59,14 @@ describeSuite({
                 const relayBlockNum = (await relayChainPolkadotJs.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(relayBlockNum).to.be.greaterThan(0);
 
-                const container2000BlockNum = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
+                const container2000BlockNum = (
+                    await container2000Api.rpc.chain.getBlock()
+                ).block.header.number.toNumber();
                 expect(container2000BlockNum).to.be.greaterThan(0);
 
-                const container2001BlockNum = (await container2001Api.rpc.chain.getBlock()).block.header.number.toNumber();
+                const container2001BlockNum = (
+                    await container2001Api.rpc.chain.getBlock()
+                ).block.header.number.toNumber();
                 expect(container2001BlockNum).to.be.greaterThan(0);
             },
         });
@@ -94,9 +98,7 @@ describeSuite({
             title: "Verify LzRouter pallet exists on relay chain",
             test: async () => {
                 const relayMetadata = await relayChainPolkadotJs.rpc.state.getMetadata();
-                const lzRouter = relayMetadata.asLatest.pallets.find(
-                    ({ name }) => name.toString() === "LzRouter"
-                );
+                const lzRouter = relayMetadata.asLatest.pallets.find(({ name }) => name.toString() === "LzRouter");
                 expect(lzRouter, "LzRouter pallet not found on relay").to.not.be.undefined;
                 console.log(`LzRouter pallet index: ${lzRouter.index.toNumber()}`);
 
@@ -211,7 +213,6 @@ describeSuite({
                 // Wait a bit for the transfer to be finalized
                 await waitSessions(context, relayChainPolkadotJs, 1, null, "Tanssi-relay");
 
-
                 // Check sovereign account balance
                 const balance = await relayChainPolkadotJs.query.system.account(sovereignAccount);
                 console.log(`Sovereign account balance: ${balance.data.free.toString()}`);
@@ -248,7 +249,7 @@ describeSuite({
                 const destinationChain = 2000;
 
                 // The message payload to send
-                const message = new Uint8Array([0x01, 0x02, 0x03, 0x04, 0xDE, 0xAD, 0xBE, 0xEF]);
+                const message = new Uint8Array([0x01, 0x02, 0x03, 0x04, 0xde, 0xad, 0xbe, 0xef]);
 
                 // Use a unique nonce based on timestamp to avoid InvalidNonce errors
                 // The nonce is tracked in a sparse bitmap and each can only be used once
@@ -278,9 +279,9 @@ describeSuite({
                 // Submit the LayerZero message
                 console.log("Submitting LayerZero message to inbound queue...");
                 const submitTx = relayChainPolkadotJs.tx.ethereumInboundQueueV2.submit(messageExtrinsics[0]);
-                let { blockHash } = await signAndSendAndInclude(submitTx, aliceRelay);
+                const { blockHash } = await signAndSendAndInclude(submitTx, aliceRelay);
 
-                let relayChainApiForInboundQueue = await relayChainPolkadotJs.at(blockHash);
+                const relayChainApiForInboundQueue = await relayChainPolkadotJs.at(blockHash);
 
                 const dispatchErrors = await retrieveDispatchErrors(relayChainApiForInboundQueue);
                 console.log(`Dispatch errors: ${dispatchErrors}`);
@@ -327,7 +328,9 @@ describeSuite({
                     const events = await apiAt.query.system.events();
 
                     const lzEvent = events.find((record) => {
-                        return record.event.section === "lzReceiverExample" && record.event.method === "MessageReceived";
+                        return (
+                            record.event.section === "lzReceiverExample" && record.event.method === "MessageReceived"
+                        );
                     });
 
                     if (lzEvent) {
@@ -338,7 +341,8 @@ describeSuite({
                     }
                 }
 
-                expect(messageReceivedFound, "LzReceiverExample.MessageReceived event should exist on container chain").to.be.true;
+                expect(messageReceivedFound, "LzReceiverExample.MessageReceived event should exist on container chain")
+                    .to.be.true;
                 console.log("LayerZero message successfully forwarded to container chain!");
             },
         });

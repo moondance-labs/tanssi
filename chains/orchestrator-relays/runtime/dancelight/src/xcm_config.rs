@@ -140,7 +140,7 @@ type LocalOriginConverter = (
     // The AccountId32 location type can be expressed natively as a `Signed` origin.
     SignedAccountId32AsNative<ThisNetwork, RuntimeOrigin>,
     // Xcm origins can be represented natively under the Xcm pallet's Xcm origin.
-    pallet_xcm::XcmPassthrough<RuntimeOrigin>
+    pallet_xcm::XcmPassthrough<RuntimeOrigin>,
 );
 
 parameter_types! {

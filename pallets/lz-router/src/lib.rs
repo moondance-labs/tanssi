@@ -46,7 +46,7 @@ use {parity_scale_codec::Encode, sp_runtime::traits::Get, tp_bridge::layerzero_m
 
 fn extract_container_chain_id(location: &Location) -> Option<ChainId> {
     match location.unpack() {
-        (0, [Parachain(id)]) => Some(id.clone()),
+        (0, [Parachain(id)]) => Some(*id),
         _ => None,
     }
 }
@@ -113,10 +113,7 @@ pub mod pallet {
             old_config: Option<MessageForwardingConfig<T>>,
         },
         /// Message forwarded to a container chain
-        MessageForwarded {
-            chain_id: ChainId,
-            message: Message,
-        },
+        MessageForwarded { chain_id: ChainId, message: Message },
         /// Outbound message queued for Ethereum/LayerZero
         OutboundMessageQueued {
             source_chain_id: ChainId,
@@ -138,7 +135,7 @@ pub mod pallet {
             new_config: MessageForwardingConfig<T>,
         ) -> DispatchResult {
             let origin_location = T::ContainerChainOrigin::ensure_origin(origin)?;
-            let chain_id = extract_container_chain_id(&origin_location.into())
+            let chain_id = extract_container_chain_id(&origin_location)
                 .ok_or(Error::<T>::LocationIsNotAContainerChain)?;
 
             let old_config = MessageForwardingConfigs::<T>::get(chain_id);
@@ -170,7 +167,7 @@ pub mod pallet {
             payload: alloc::vec::Vec<u8>,
         ) -> DispatchResult {
             let origin_location = T::ContainerChainOrigin::ensure_origin(origin)?;
-            let source_chain_id = extract_container_chain_id(&origin_location.into())
+            let source_chain_id = extract_container_chain_id(&origin_location)
                 .ok_or(Error::<T>::LocationIsNotAContainerChain)?;
 
             // TODO: Queue message for Ethereum outbound queue
@@ -233,7 +230,7 @@ pub mod pallet {
                 container_chain_location.clone(),
                 remote_xcm.clone(),
             )
-            .map_err(|err| MessageProcessorError::SendMessage(err))?;
+            .map_err(MessageProcessorError::SendMessage)?;
 
             Self::deposit_event(Event::MessageForwarded {
                 chain_id: dest_chain_id,

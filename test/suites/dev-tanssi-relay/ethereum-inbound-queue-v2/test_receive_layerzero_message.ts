@@ -4,12 +4,7 @@ import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import {
-    generateUpdate,
-    generateLayerZeroOutboundLog,
-    sendCallAsChildPara,
-    getChildParaSovereignAccount,
-} from "utils";
+import { generateUpdate, generateLayerZeroOutboundLog, sendCallAsChildPara, getChildParaSovereignAccount } from "utils";
 import type { KeyringPair } from "@moonwall/util";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2 } from "../../../helpers";
 import { hexToU8a } from "@polkadot/util";

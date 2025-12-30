@@ -1,11 +1,8 @@
 // @ts-nocheck
 
 import { type DevModeContext, customDevRpcRequest, expect } from "@moonwall/cli";
-import { alith } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import type { DispatchError, XcmpMessageFormat } from "@polkadot/types/interfaces";
-import { expectSystemEvent } from "../helpers/expect";
-import { getPalletIndex } from "../helpers/pallets";
+import type { XcmpMessageFormat } from "@polkadot/types/interfaces";
 import type {
     CumulusPalletParachainSystemRelayStateSnapshotMessagingStateSnapshot,
     XcmV3JunctionNetworkId,
@@ -1153,7 +1150,7 @@ export const getParathreadRelayTankAddress = async (
 /**
  * Get the sovereign account of a child parachain on the relay chain.
  * Uses "para" prefix as defined in polkadot-sdk/polkadot/parachain/src/primitives.rs
- * 
+ *
  * Total: 4 bytes (para) + 4 bytes (u32 paraId) + 24 bytes (padding) = 32 bytes (AccountId32)
  */
 export function getChildParaSovereignAccount(context: DevModeContext, paraId: number): string {
