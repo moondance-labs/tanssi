@@ -6,8 +6,16 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 
-import { signAndSendAndInclude, sovereignAccountOfChildForAddress32, waitSessions } from "utils";
+import {
+    signAndSendAndInclude,
+    sovereignAccountOfChildForAddress32,
+    waitSessions,
+    XcmFragment,
+    generateLayerZeroOutboundLog,
+    generateUpdate,
+} from "utils";
 import { hexToU8a } from "@polkadot/util";
+import { retrieveDispatchErrors } from "helpers";
 
 describeSuite({
     id: "ZOMBIETANSSILZ01",
@@ -151,51 +159,36 @@ describeSuite({
                 // 4. Refund surplus
                 // 5. Deposit remaining assets back
 
-                const xcmMessage = {
-                    V4: [
+                const xcmMessage = new XcmFragment({
+                    assets: [
                         {
-                            WithdrawAsset: [
-                                {
-                                    id: { parents: 0, interior: "Here" },
-                                    fun: { Fungible: 10_000_000_000_000n }, // 10 tokens
-                                },
-                            ],
-                        },
-                        {
-                            BuyExecution: {
-                                fees: {
-                                    id: { parents: 0, interior: "Here" },
-                                    fun: { Fungible: 10_000_000_000_000n },
-                                },
-                                weightLimit: "Unlimited",
-                            },
-                        },
-                        {
-                            Transact: {
-                                originKind: "Xcm",
-                                requireWeightAtMost: {
-                                    refTime: 1_000_000_000n,
-                                    proofSize: 100_000n,
-                                },
-                                call: {
-                                    encoded: encodedCall,
-                                },
-                            },
-                        },
-                        "RefundSurplus",
-                        {
-                            DepositAsset: {
-                                assets: { Wild: "All" },
-                                beneficiary: {
-                                    parents: 0,
-                                    interior: {
-                                        X1: [{ Parachain: 2000 }],
-                                    },
-                                },
-                            },
+                            multilocation: { parents: 0, interior: { Here: null } },
+                            fungible: 10_000_000_000_000n, // 10 tokens
                         },
                     ],
-                };
+                })
+                    .withdraw_asset()
+                    .buy_execution()
+                    .push_any({
+                        Transact: {
+                            originKind: "Xcm",
+                            requireWeightAtMost: {
+                                refTime: 1_000_000_000n,
+                                proofSize: 100_000n,
+                            },
+                            call: {
+                                encoded: encodedCall,
+                            },
+                        },
+                    })
+                    .refund_surplus()
+                    .deposit_asset(1n, null, {
+                        parents: 0,
+                        interior: {
+                            X1: [{ Parachain: 2000 }],
+                        },
+                    })
+                    .as_v4();
 
                 // Destination is the relay chain (parent)
                 const dest = {
@@ -241,6 +234,112 @@ describeSuite({
                 const config = storedConfig.unwrap();
                 expect(config.notificationDestination[0].toNumber()).to.equal(palletIndex);
                 expect(config.notificationDestination[1].toNumber()).to.equal(callIndex);
+            },
+        });
+
+        it({
+            id: "T06",
+            title: "Submit LayerZero message from Ethereum and verify processing on relay",
+            timeout: 300000,
+            test: async () => {
+                // LayerZero sender (same as whitelisted in T05)
+                const lzSourceAddress = hexToU8a("0x0000000000000000000000001234567890abcdef1234567890abcdef12345678");
+                const lzSourceEndpoint = 30101;
+                const destinationChain = 2000;
+
+                // The message payload to send
+                const message = new Uint8Array([0x01, 0x02, 0x03, 0x04, 0xDE, 0xAD, 0xBE, 0xEF]);
+
+                // Use a unique nonce based on timestamp to avoid InvalidNonce errors
+                // The nonce is tracked in a sparse bitmap and each can only be used once
+                const nonce = Date.now();
+                console.log(`Using nonce: ${nonce}`);
+
+                console.log("Generating LayerZero outbound log...");
+                const log = await generateLayerZeroOutboundLog(relayChainPolkadotJs, nonce, {
+                    lzSourceAddress,
+                    lzSourceEndpoint,
+                    destinationChain,
+                    message,
+                });
+
+                console.log("Generating beacon update...");
+                const { checkpointUpdate, messageExtrinsics } = await generateUpdate(relayChainPolkadotJs, [log]);
+
+                // Submit the checkpoint via sudo
+                console.log("Submitting force checkpoint...");
+                const checkpointTx = relayChainPolkadotJs.tx.ethereumBeaconClient.forceCheckpoint(checkpointUpdate);
+                const sudoCheckpointTx = relayChainPolkadotJs.tx.sudo.sudo(checkpointTx);
+                await signAndSendAndInclude(sudoCheckpointTx, aliceRelay);
+
+                // Wait for checkpoint to be processed
+                await context.waitBlock(1, "Tanssi-relay");
+
+                // Submit the LayerZero message
+                console.log("Submitting LayerZero message to inbound queue...");
+                const submitTx = relayChainPolkadotJs.tx.ethereumInboundQueueV2.submit(messageExtrinsics[0]);
+                let { blockHash } = await signAndSendAndInclude(submitTx, aliceRelay);
+
+                let relayChainApiForInboundQueue = await relayChainPolkadotJs.at(blockHash);
+
+                const dispatchErrors = await retrieveDispatchErrors(relayChainApiForInboundQueue);
+                console.log(`Dispatch errors: ${dispatchErrors}`);
+                // expect the dispatch errors to be empty
+                expect(dispatchErrors).to.be.empty;
+
+                // Check for MessageReceived event on relay chain
+                const relayEvents = await relayChainApiForInboundQueue.query.system.events();
+
+                const messageReceivedEvent = relayEvents.find((a) => {
+                    return a.event.section === "ethereumInboundQueueV2" && a.event.method === "MessageReceived";
+                });
+                expect(!!messageReceivedEvent, "MessageReceived event should exist on relay").to.equal(true);
+                console.log("LayerZero message received on relay chain!");
+
+                // Check for LayerZeroMessageForwarded event (if it exists)
+                const forwardedEvent = relayEvents.find((a) => {
+                    return a.event.section === "layerZeroForwarder" && a.event.method === "MessageForwarded";
+                });
+                expect(!!forwardedEvent, "MessageForwarded event should exist on relay").to.equal(true);
+                console.log("LayerZero message forwarded on relay chain!");
+            },
+        });
+
+        it({
+            id: "T07",
+            title: "Verify container chain receives the LayerZero notification",
+            timeout: 300000,
+            test: async () => {
+                // Wait for DMP to deliver the message to container chain
+                console.log("Waiting for DMP message to be delivered to container chain...");
+                await waitSessions(context, relayChainPolkadotJs, 2, null, "Tanssi-relay");
+
+                // Check container chain for the MessageReceived event from LzReceiverExample
+                // We need to search through recent blocks
+                const currentBlock = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
+                console.log(`Container chain current block: ${currentBlock}`);
+
+                let messageReceivedFound = false;
+                // Search last 20 blocks for the event
+                for (let i = Math.max(1, currentBlock - 20); i <= currentBlock; i++) {
+                    const blockHash = await container2000Api.rpc.chain.getBlockHash(i);
+                    const apiAt = await container2000Api.at(blockHash);
+                    const events = await apiAt.query.system.events();
+
+                    const lzEvent = events.find((record) => {
+                        return record.event.section === "lzReceiverExample" && record.event.method === "MessageReceived";
+                    });
+
+                    if (lzEvent) {
+                        console.log(`Found MessageReceived event at block ${i}`);
+                        console.log(`Event data: ${JSON.stringify(lzEvent.event.toHuman())}`);
+                        messageReceivedFound = true;
+                        break;
+                    }
+                }
+
+                expect(messageReceivedFound, "LzReceiverExample.MessageReceived event should exist on container chain").to.be.true;
+                console.log("LayerZero message successfully forwarded to container chain!");
             },
         });
     },

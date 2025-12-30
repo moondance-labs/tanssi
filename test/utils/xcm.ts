@@ -475,7 +475,6 @@ export class XcmFragment {
             this.instructions.push({
                 DepositAsset: {
                     assets: { Wild: "All" },
-                    maxAssets: max_assets,
                     beneficiary: customBeneficiary,
                 },
             });
