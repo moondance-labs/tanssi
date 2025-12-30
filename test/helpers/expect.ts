@@ -128,7 +128,7 @@ export function expectSubstrateEvents<
             events.push(...foundEvents);
         }
     }
-    expect(events.length > 0).to.not.be.null;
+    expect(events).to.not.be.empty;
     return events.map(({ event }) => event) as any;
 }
 
