@@ -117,6 +117,13 @@ pub mod pallet {
             chain_id: ChainId,
             message: Message,
         },
+        /// Outbound message queued for Ethereum/LayerZero
+        OutboundMessageQueued {
+            source_chain_id: ChainId,
+            destination_endpoint: u32,
+            destination_address: [u8; 32],
+            payload: alloc::vec::Vec<u8>,
+        },
     }
 
     #[pallet::call]
@@ -146,6 +153,34 @@ pub mod pallet {
                 chain_id,
                 new_config,
                 old_config,
+            });
+
+            Ok(())
+        }
+
+        /// Send an outbound message to Ethereum/LayerZero.
+        ///
+        /// Called via XCM from a container chain to send a message to an external chain.
+        #[pallet::call_index(1)]
+        #[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
+        pub fn send_message_to_ethereum(
+            origin: OriginFor<T>,
+            destination_endpoint: u32,
+            destination_address: [u8; 32],
+            payload: alloc::vec::Vec<u8>,
+        ) -> DispatchResult {
+            let origin_location = T::ContainerChainOrigin::ensure_origin(origin)?;
+            let source_chain_id = extract_container_chain_id(&origin_location.into())
+                .ok_or(Error::<T>::LocationIsNotAContainerChain)?;
+
+            // TODO: Queue message for Ethereum outbound queue
+            // This will integrate with snowbridge outbound queue
+
+            Self::deposit_event(Event::OutboundMessageQueued {
+                source_chain_id,
+                destination_endpoint,
+                destination_address,
+                payload,
             });
 
             Ok(())

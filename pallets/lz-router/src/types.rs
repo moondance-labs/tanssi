@@ -18,12 +18,10 @@
 
 use crate::Config;
 use frame_support::pallet_prelude::MaxEncodedLen;
-use frame_support::{
-    CloneNoBound, DebugNoBound, Deserialize, EqNoBound, PartialEqNoBound, Serialize,
-};
+use frame_support::{CloneNoBound, DebugNoBound, EqNoBound, PartialEqNoBound};
 use sp_runtime::BoundedVec;
 use tp_bridge::layerzero_message::{LayerZeroAddress, LayerZeroEndpoint};
-use tp_traits::__reexports::{Decode, DecodeWithMemTracking, Encode, RuntimeDebug, TypeInfo};
+use tp_traits::__reexports::{Decode, DecodeWithMemTracking, Encode, TypeInfo};
 
 /// Parachain/container chain identifier (matches the para_id)
 pub type ChainId = u32;
