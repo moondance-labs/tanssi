@@ -13,11 +13,11 @@ targets = [ "x86_64-unknown-linux-gnu" ]
 workspace = true
 
 [dependencies]
+alloy-core = { workspace = true, features = [ "sol-types" ] }
 hex-literal = { workspace = true }
 log = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive" ] }
 scale-info = { workspace = true, features = [ "derive" ] }
-alloy-core = { workspace = true, features = [ "sol-types" ] }
 
 # Own
 pallet-configuration = { workspace = true }
@@ -92,9 +92,9 @@ std = [
 	"pallet-ethereum-token-transfers?/std",
 	"pallet-external-validator-slashes?/std",
 	"pallet-external-validators?/std",
-	"pallet-lz-router?/std",
 	"pallet-foreign-asset-creator/std",
 	"pallet-inactivity-tracking/std",
+	"pallet-lz-router?/std",
 	"pallet-migrations/std",
 	"pallet-pooled-staking/std",
 	"pallet-registrar/std",
@@ -145,9 +145,9 @@ runtime-benchmarks = [
 	"pallet-ethereum-token-transfers?/runtime-benchmarks",
 	"pallet-external-validator-slashes?/runtime-benchmarks",
 	"pallet-external-validators?/runtime-benchmarks",
-	"pallet-lz-router?/runtime-benchmarks",
 	"pallet-foreign-asset-creator/runtime-benchmarks",
 	"pallet-inactivity-tracking/runtime-benchmarks",
+	"pallet-lz-router?/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
 	"pallet-pooled-staking/runtime-benchmarks",
 	"pallet-registrar/runtime-benchmarks",
@@ -183,9 +183,9 @@ try-runtime = [
 	"pallet-ethereum-token-transfers?/try-runtime",
 	"pallet-external-validator-slashes?/try-runtime",
 	"pallet-external-validators?/try-runtime",
-	"pallet-lz-router?/try-runtime",
 	"pallet-foreign-asset-creator/try-runtime",
 	"pallet-inactivity-tracking/try-runtime",
+	"pallet-lz-router?/try-runtime",
 	"pallet-migrations/try-runtime",
 	"pallet-pooled-staking/try-runtime",
 	"pallet-registrar/try-runtime",

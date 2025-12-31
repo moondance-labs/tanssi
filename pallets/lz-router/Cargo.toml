@@ -21,12 +21,12 @@ scale-info = { workspace = true, features = [ "derive" ] }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 sp-runtime = { workspace = true }
-tp-traits = { workspace = true }
 tp-bridge = { workspace = true }
+tp-traits = { workspace = true }
 
+snowbridge-inbound-queue-primitives = { workspace = true }
 xcm = { workspace = true }
 xcm-executor = { workspace = true }
-snowbridge-inbound-queue-primitives = { workspace = true }
 
 frame-benchmarking = { workspace = true }
 
@@ -49,18 +49,18 @@ std = [
 	"pallet-balances/std",
 	"pallet-session/std",
 	"pallet-timestamp/std",
+	"pallet-xcm/std",
 	"parity-scale-codec/std",
 	"rand?/std",
 	"scale-info/std",
+	"snowbridge-inbound-queue-primitives/std",
 	"sp-core/std",
 	"sp-io/std",
 	"sp-runtime/std",
-	"tp-traits/std",
 	"tp-bridge/std",
-	"xcm/std",
+	"tp-traits/std",
 	"xcm-executor/std",
-	"pallet-xcm/std",
-	"snowbridge-inbound-queue-primitives/std",
+	"xcm/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
@@ -68,14 +68,14 @@ runtime-benchmarks = [
 	"frame-system/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
-	"rand",
-	"sp-runtime/runtime-benchmarks",
-	"tp-traits/runtime-benchmarks",
-	"tp-bridge/runtime-benchmarks",
-	"xcm/runtime-benchmarks",
-	"xcm-executor/runtime-benchmarks",
 	"pallet-xcm/runtime-benchmarks",
+	"rand",
 	"snowbridge-inbound-queue-primitives/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks",
+	"tp-bridge/runtime-benchmarks",
+	"tp-traits/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
 ]
 
 try-runtime = [
@@ -84,6 +84,6 @@ try-runtime = [
 	"pallet-balances?/try-runtime",
 	"pallet-session/try-runtime",
 	"pallet-timestamp/try-runtime",
-	"sp-runtime/try-runtime",
 	"pallet-xcm/try-runtime",
+	"sp-runtime/try-runtime",
 ]
