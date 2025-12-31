@@ -33,7 +33,7 @@ export async function expectOk<
         });
     } else {
         // @ts-expect-error TODO: fix this
-        expect(block.result!.successful, block.result!.error?.name).to.be.true;
+        expect(block.result?.successful, block.result?.error?.name).to.be.true;
     }
     return block;
 }
@@ -54,7 +54,7 @@ export function expectSubstrateEvent<
 ): IEvent<Tuple> {
     let event: EventRecord | undefined;
     if (Array.isArray(block.result)) {
-        block.result.forEach((r) => {
+        for (const r of block.result) {
             const foundEvents = r.events.filter(
                 ({ event }) => event.section.toString() === section && event.method.toString() === method
             );
@@ -69,12 +69,12 @@ export function expectSubstrateEvent<
                 ).to.be.length(1);
                 event = foundEvents[0];
             }
-        });
+        }
     } else {
-        const foundEvents = (block.result! as any).events!.filter(
+        const foundEvents = (block.result as any)?.events?.filter(
             (item: any) => item.event.section.toString() === section && item.event.method.toString() === method
         );
-        if (foundEvents.length > 0) {
+        if (foundEvents?.length > 0) {
             expect(
                 foundEvents,
                 `Event ${section.toString()}.${method.toString()} appeared multiple times`
@@ -93,6 +93,7 @@ export function expectSubstrateEvent<
             .map(({ event }) => `       - ${event.section.toString()}.${event.method.toString()}\n`)
             .join("")}`
     ).to.not.be.undefined;
+    // biome-ignore lint/style/noNonNullAssertion: expect above throws if event is undefined
     return event!.event as any;
 }
 
@@ -112,19 +113,19 @@ export function expectSubstrateEvents<
 ): IEvent<Tuple>[] {
     const events: EventRecord[] = [];
     if (Array.isArray(block.result)) {
-        block.result.forEach((r) => {
+        for (const r of block.result) {
             const foundEvents = r.events.filter(
                 ({ event }) => event.section.toString() === section && event.method.toString() === method
             );
             if (foundEvents.length > 0) {
                 events.push(...foundEvents);
             }
-        });
+        }
     } else {
-        const foundEvents = (block.result! as any).events.filter(
+        const foundEvents = (block.result as any)?.events?.filter(
             (item: any) => item.event.section.toString() === section && item.event.method.toString() === method
         );
-        if (foundEvents.length > 0) {
+        if (foundEvents?.length > 0) {
             events.push(...foundEvents);
         }
     }
