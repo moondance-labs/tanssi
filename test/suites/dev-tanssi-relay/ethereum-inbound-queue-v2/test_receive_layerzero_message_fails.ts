@@ -55,7 +55,7 @@ describeSuite({
 
         it({
             id: "E01",
-            title: "LayerZero message fails with NoForwardingConfig when no config is set",
+            title: "LayerZero message fails with NoRoutingConfig when no config is set",
             test: async () => {
                 if (shouldSkipStarlightSnV2TT) {
                     console.log("Skipping test for Starlight runtime");
@@ -86,7 +86,7 @@ describeSuite({
 
                 const errors = await retrieveDispatchErrors(polkadotJs);
 
-                expect(errors).to.include("NoForwardingConfig");
+                expect(errors).to.include("NoRoutingConfig");
             },
         });
 
