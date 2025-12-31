@@ -40,6 +40,7 @@ import type {
     PalletConvictionVotingVoteAccountVote,
     PalletExternalValidatorsForcing,
     PalletInactivityTrackingActivityTrackingStatus,
+    PalletLzRouterMessageForwardingConfig,
     PalletMultisigTimepoint,
     PalletPooledStakingPoolsActivePoolKind,
     PalletProxyDepositKind,
@@ -67,6 +68,7 @@ import type {
     StagingXcmV5Xcm,
     TpBridgeChannelInfo,
     TpBridgeCommand,
+    TpBridgeInboundQueueLayerzeroMessageMessage,
     TpTraitsFullRotationModes,
     XcmV3TraitsSendError,
     XcmV5TraitsError,
@@ -1256,6 +1258,44 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [accountId: AccountId32, balance: u128],
                 { accountId: AccountId32; balance: u128 }
+            >;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        lzRouter: {
+            /**
+             * Message forwarded to a container chain
+             **/
+            MessageForwarded: AugmentedEvent<
+                ApiType,
+                [chainId: u32, message: TpBridgeInboundQueueLayerzeroMessageMessage],
+                { chainId: u32; message: TpBridgeInboundQueueLayerzeroMessageMessage }
+            >;
+            /**
+             * Message forwarding configuration updated for a container chain
+             **/
+            MessageForwardingConfigUpdated: AugmentedEvent<
+                ApiType,
+                [
+                    chainId: u32,
+                    newConfig: PalletLzRouterMessageForwardingConfig,
+                    oldConfig: Option<PalletLzRouterMessageForwardingConfig>,
+                ],
+                {
+                    chainId: u32;
+                    newConfig: PalletLzRouterMessageForwardingConfig;
+                    oldConfig: Option<PalletLzRouterMessageForwardingConfig>;
+                }
+            >;
+            /**
+             * Outbound message queued for Ethereum/LayerZero
+             **/
+            OutboundMessageQueued: AugmentedEvent<
+                ApiType,
+                [sourceChainId: u32, destinationEndpoint: u32, destinationAddress: U8aFixed, payload: Bytes],
+                { sourceChainId: u32; destinationEndpoint: u32; destinationAddress: U8aFixed; payload: Bytes }
             >;
             /**
              * Generic event

@@ -70,6 +70,7 @@ import type {
     PalletInactivityTrackingActivityTrackingStatus,
     PalletInactivityTrackingOfflineStatus,
     PalletInflationRewardsChainsToRewardValue,
+    PalletLzRouterMessageForwardingConfig,
     PalletMessageQueueBookState,
     PalletMessageQueuePage,
     PalletMigrationsMigrationCursor,
@@ -1748,6 +1749,21 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             hasInitialized: AugmentedQuery<ApiType, () => Observable<Option<Null>>, []> &
                 QueryableStorageEntry<ApiType, []>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        lzRouter: {
+            /**
+             * Configuration per container chain for message forwarding
+             **/
+            messageForwardingConfigs: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<PalletLzRouterMessageForwardingConfig>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
             /**
              * Generic query
              **/
