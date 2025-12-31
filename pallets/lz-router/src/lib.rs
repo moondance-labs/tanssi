@@ -26,7 +26,7 @@
 //!
 //! ## Usage
 //!
-//! Container chains configure forwarding via `update_message_forwarding_config`, specifying:
+//! Container chains configure routing via `update_routing_config`, specifying:
 //! - Whitelisted senders: `(LayerZeroEndpoint, LayerZeroAddress)` tuples
 //! - Notification destination: `(pallet_index, call_index)` to receive messages
 //!
@@ -42,7 +42,10 @@ use crate::types::ChainId;
 pub use pallet::*;
 use xcm::latest::Location;
 use xcm::prelude::{Parachain, Unlimited};
-use {parity_scale_codec::Encode, sp_runtime::traits::Get, tp_bridge::layerzero_message::Message};
+use {
+    parity_scale_codec::Encode, sp_runtime::traits::Get,
+    tp_bridge::layerzero_message::InboundMessage,
+};
 
 fn extract_container_chain_id(location: &Location) -> Option<ChainId> {
     match location.unpack() {
@@ -53,7 +56,7 @@ fn extract_container_chain_id(location: &Location) -> Option<ChainId> {
 
 #[frame_support::pallet]
 pub mod pallet {
-    use crate::types::{ChainId, MessageForwardingConfig};
+    use crate::types::{ChainId, RoutingConfig};
     use alloc::vec;
     use snowbridge_inbound_queue_primitives::v2::MessageProcessorError;
     use tp_bridge::ConvertLocation;
@@ -70,7 +73,7 @@ pub mod pallet {
     pub trait Config: frame_system::Config + pallet_xcm::Config {
         #[pallet::constant]
         type MaxWhitelistedSenders: Get<u32> + Clone;
-        /// Origin locations allowed to update message forwarding configurations
+        /// Origin locations allowed to update routing configurations
         type ContainerChainOrigin: EnsureOrigin<
             <Self as frame_system::Config>::RuntimeOrigin,
             Success = Location,
@@ -84,17 +87,17 @@ pub mod pallet {
     #[pallet::without_storage_info]
     pub struct Pallet<T>(_);
 
-    /// Configuration per container chain for message forwarding
+    /// Routing configuration per container chain
     #[pallet::storage]
-    pub type MessageForwardingConfigs<T: Config> =
-        StorageMap<_, Twox64Concat, ChainId, MessageForwardingConfig<T>, OptionQuery>;
+    pub type RoutingConfigs<T: Config> =
+        StorageMap<_, Twox64Concat, ChainId, RoutingConfig<T>, OptionQuery>;
 
     #[pallet::error]
     pub enum Error<T> {
         /// The provided origin location is not a container chain
         LocationIsNotAContainerChain,
-        /// No forwarding configuration found for the destination chain
-        NoForwardingConfig,
+        /// No routing configuration found for the destination chain
+        NoRoutingConfig,
         /// The sender (address+endpoint) is not whitelisted to forward messages to the destination chain
         NotWhitelistedSender,
         /// Setting the same configuration that already exists
@@ -106,14 +109,17 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub(crate) fn deposit_event)]
     pub enum Event<T: Config> {
-        /// Message forwarding configuration updated for a container chain
-        MessageForwardingConfigUpdated {
+        /// Routing configuration updated for a container chain
+        RoutingConfigUpdated {
             chain_id: ChainId,
-            new_config: MessageForwardingConfig<T>,
-            old_config: Option<MessageForwardingConfig<T>>,
+            new_config: RoutingConfig<T>,
+            old_config: Option<RoutingConfig<T>>,
         },
-        /// Message forwarded to a container chain
-        MessageForwarded { chain_id: ChainId, message: Message },
+        /// Inbound message routed to a container chain
+        InboundMessageRouted {
+            chain_id: ChainId,
+            message: InboundMessage,
+        },
         /// Outbound message queued for Ethereum/LayerZero
         OutboundMessageQueued {
             source_chain_id: ChainId,
@@ -125,28 +131,28 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        /// Update forwarding configuration for a container chain.
+        /// Update routing configuration for a container chain.
         ///
         /// Must be called via XCM from the container chain itself.
         #[pallet::call_index(0)]
         #[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-        pub fn update_message_forwarding_config(
+        pub fn update_routing_config(
             origin: OriginFor<T>,
-            new_config: MessageForwardingConfig<T>,
+            new_config: RoutingConfig<T>,
         ) -> DispatchResult {
             let origin_location = T::ContainerChainOrigin::ensure_origin(origin)?;
             let chain_id = extract_container_chain_id(&origin_location)
                 .ok_or(Error::<T>::LocationIsNotAContainerChain)?;
 
-            let old_config = MessageForwardingConfigs::<T>::get(chain_id);
+            let old_config = RoutingConfigs::<T>::get(chain_id);
             ensure!(
                 old_config != Some(new_config.clone()),
                 Error::<T>::SameConfigAlreadyExists
             );
 
-            MessageForwardingConfigs::<T>::insert(chain_id, new_config.clone());
+            RoutingConfigs::<T>::insert(chain_id, new_config.clone());
 
-            Self::deposit_event(Event::MessageForwardingConfigUpdated {
+            Self::deposit_event(Event::RoutingConfigUpdated {
                 chain_id,
                 new_config,
                 old_config,
@@ -189,11 +195,13 @@ pub mod pallet {
         ///
         /// Called by `LayerZeroInboundMessageProcessorV2` when messages arrive from Ethereum.
         /// Validates the sender is whitelisted and sends an XCM Transact to the destination.
-        pub fn forward_message_to_chain(message: Message) -> Result<(), MessageProcessorError> {
+        pub fn forward_message_to_chain(
+            message: InboundMessage,
+        ) -> Result<(), MessageProcessorError> {
             let dest_chain_id: ChainId = message.destination_chain;
 
-            let config = MessageForwardingConfigs::<T>::get(dest_chain_id).ok_or(
-                MessageProcessorError::ProcessMessage(Error::<T>::NoForwardingConfig.into()),
+            let config = RoutingConfigs::<T>::get(dest_chain_id).ok_or(
+                MessageProcessorError::ProcessMessage(Error::<T>::NoRoutingConfig.into()),
             )?;
 
             config
@@ -232,7 +240,7 @@ pub mod pallet {
             )
             .map_err(MessageProcessorError::SendMessage)?;
 
-            Self::deposit_event(Event::MessageForwarded {
+            Self::deposit_event(Event::InboundMessageRouted {
                 chain_id: dest_chain_id,
                 message,
             });

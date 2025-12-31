@@ -31,7 +31,8 @@ use parity_scale_codec::Decode;
 use snowbridge_inbound_queue_primitives::v2::{Message, MessageProcessorError, Payload};
 use sp_core::{Get, H160};
 use tp_bridge::layerzero_message::{
-    Message as LayerZeroMessage, SolPayload as LayerZeroSolPayload, MAGIC_BYTES as LZ_MAGIC_BYTES,
+    InboundMessage as LayerZeroInboundMessage, InboundSolPayload as LayerZeroInboundSolPayload,
+    MAGIC_BYTES as LZ_MAGIC_BYTES,
 };
 use v2_processor_proc_macro::MessageProcessor;
 use xcm::latest::{ExecuteXcm, InteriorLocation, NetworkId};
@@ -40,7 +41,7 @@ use xcm_executor::traits::WeightBounds;
 pub fn try_extract_message<T: pallet_lz_router::Config>(
     message: &Message,
     gateway_proxy_address: H160,
-) -> Result<LayerZeroMessage, MessageExtractionError> {
+) -> Result<LayerZeroInboundMessage, MessageExtractionError> {
     match message.payload {
         Payload::Raw(ref payload) => {
             let raw_payload = crate::processors::v2::RawPayload::decode(&mut payload.as_slice())
@@ -68,12 +69,11 @@ pub fn try_extract_message<T: pallet_lz_router::Config>(
                     }
 
                     let sol_payload =
-                        LayerZeroSolPayload::abi_decode_validate(&mut payload.as_slice()).map_err(
-                            |error| MessageExtractionError::InvalidMessage {
+                        LayerZeroInboundSolPayload::abi_decode_validate(&mut payload.as_slice())
+                            .map_err(|error| MessageExtractionError::InvalidMessage {
                                 context: "Unable to decode LayerZero Payload".to_string(),
                                 source: Some(Box::new(error)),
-                            },
-                        )?;
+                            })?;
                     if &sol_payload.magicBytes.0 != LZ_MAGIC_BYTES {
                         return Err(MessageExtractionError::InvalidMessage {
                             context: format!(
@@ -100,7 +100,7 @@ pub fn try_extract_message<T: pallet_lz_router::Config>(
 }
 
 pub fn process_message<T: pallet_lz_router::Config>(
-    message: LayerZeroMessage,
+    message: LayerZeroInboundMessage,
 ) -> Result<(), MessageProcessorError> {
     pallet_lz_router::Pallet::<T>::forward_message_to_chain(message)
 }
@@ -183,7 +183,7 @@ where
         XcmProcessor,
         XcmWeigher,
     >;
-    type ExtractedMessage = LayerZeroMessage;
+    type ExtractedMessage = LayerZeroInboundMessage;
 
     fn try_extract_message(
         _sender: &AccountId,

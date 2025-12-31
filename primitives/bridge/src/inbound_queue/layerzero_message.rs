@@ -29,11 +29,11 @@ use sp_runtime::BoundedVec;
 pub const MAGIC_BYTES: &[u8; 4] = b"lzb1";
 
 sol! {
-    struct SolPayload {
+    struct InboundSolPayload {
         bytes4  magicBytes;
-        SolMessage message;
+        InboundSolMessage message;
     }
-    struct SolMessage {
+    struct InboundSolMessage {
         bytes32 lzSourceAddress;
         uint32  lzSourceEndpoint;
         uint32  destinationChain;
@@ -45,16 +45,16 @@ pub type LayerZeroAddress = BoundedVec<u8, ConstU32<32>>;
 pub type LayerZeroEndpoint = u32;
 
 #[derive(Encode, Decode, DecodeWithMemTracking, Clone, DebugNoBound, PartialEq, Eq, TypeInfo)]
-pub struct Message {
+pub struct InboundMessage {
     pub lz_source_address: LayerZeroAddress,
     pub lz_source_endpoint: LayerZeroEndpoint,
     pub destination_chain: u32,
     pub message: Vec<u8>,
 }
 
-// from SolMessage to Message
-impl From<SolMessage> for Message {
-    fn from(sol_message: SolMessage) -> Self {
+// from InboundSolMessage to InboundMessage
+impl From<InboundSolMessage> for InboundMessage {
+    fn from(sol_message: InboundSolMessage) -> Self {
         Self {
             lz_source_address: sol_message
                 .lzSourceAddress

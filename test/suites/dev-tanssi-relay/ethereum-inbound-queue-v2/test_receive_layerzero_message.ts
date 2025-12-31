@@ -66,7 +66,7 @@ describeSuite({
                 const lzSourceEndpoint = 30101;
 
                 // Set up a forwarding config with the SAME sender address via XCM from para 2000
-                const configCall = polkadotJs.tx.lzRouter.updateMessageForwardingConfig({
+                const configCall = polkadotJs.tx.lzRouter.updateRoutingConfig({
                     whitelistedSenders: [[lzSourceEndpoint, Array.from(lzSourceAddress)]],
                     notificationDestination: [100, 0], // pallet_index, call_index
                 });

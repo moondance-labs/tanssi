@@ -32,7 +32,7 @@ pub type PalletIndex = u8;
 /// Index of an extrinsic call within a pallet
 pub type CallIndex = u8;
 
-/// Configuration for forwarding LayerZero messages to a container chain.
+/// Routing configuration for LayerZero messages to a container chain.
 #[derive(
     DebugNoBound,
     PartialEqNoBound,
@@ -45,7 +45,7 @@ pub type CallIndex = u8;
     DecodeWithMemTracking,
 )]
 #[scale_info(skip_type_params(T))]
-pub struct MessageForwardingConfig<T: Config> {
+pub struct RoutingConfig<T: Config> {
     /// Whitelisted (endpoint, address) tuples allowed to send messages.
     pub whitelisted_senders:
         BoundedVec<(LayerZeroEndpoint, LayerZeroAddress), T::MaxWhitelistedSenders>,

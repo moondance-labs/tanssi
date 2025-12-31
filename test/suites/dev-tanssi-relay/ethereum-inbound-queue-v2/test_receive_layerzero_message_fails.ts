@@ -106,7 +106,7 @@ describeSuite({
                 const differentSenderAddress = hexToU8a(
                     "0x000000000000000000000000abcdefabcdefabcdefabcdefabcdefabcdefabcd"
                 );
-                const configCall = polkadotJs.tx.lzRouter.updateMessageForwardingConfig({
+                const configCall = polkadotJs.tx.lzRouter.updateRoutingConfig({
                     whitelistedSenders: [[lzSourceEndpoint, Array.from(differentSenderAddress)]],
                     notificationDestination: [100, 0], // pallet_index, call_index
                 });

@@ -119,8 +119,8 @@ function encodeLayerZeroMessage(
     const paddedSourceAddress = new Uint8Array(32);
     paddedSourceAddress.set(lzSourceAddress.slice(0, 32), 32 - lzSourceAddress.length);
 
-    // Encode as SolPayload struct: tuple(bytes4 magicBytes, tuple(bytes32,uint32,uint32,bytes) message)
-    // The nested tuple is SolMessage: (lzSourceAddress, lzSourceEndpoint, destinationChain, message)
+    // Encode as InboundSolPayload struct: tuple(bytes4 magicBytes, tuple(bytes32,uint32,uint32,bytes) message)
+    // The nested tuple is InboundSolMessage: (lzSourceAddress, lzSourceEndpoint, destinationChain, message)
     const encoded = defaultAbiCoder.encode(
         ["tuple(bytes4,tuple(bytes32,uint32,uint32,bytes))"],
         [[MAGIC_BYTES, [paddedSourceAddress, lzSourceEndpoint, destinationChain, message]]]

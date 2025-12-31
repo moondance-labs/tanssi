@@ -102,12 +102,10 @@ describeSuite({
                 expect(lzRouter, "LzRouter pallet not found on relay").to.not.be.undefined;
                 console.log(`LzRouter pallet index: ${lzRouter.index.toNumber()}`);
 
-                // Check if storage for MessageForwardingConfigs exists
+                // Check if storage for RoutingConfigs exists
                 const storageEntries = lzRouter.storage?.unwrap().items || [];
-                const hasConfigStorage = storageEntries.some(
-                    (item) => item.name.toString() === "MessageForwardingConfigs"
-                );
-                expect(hasConfigStorage, "MessageForwardingConfigs storage not found").to.be.true;
+                const hasConfigStorage = storageEntries.some((item) => item.name.toString() === "RoutingConfigs");
+                expect(hasConfigStorage, "RoutingConfigs storage not found").to.be.true;
             },
         });
 
@@ -145,12 +143,12 @@ describeSuite({
                 const lzSourceEndpoint = 30101; // Ethereum mainnet LayerZero endpoint ID
 
                 // Build the call to execute on the relay chain
-                const forwardingConfigCall = relayChainPolkadotJs.tx.lzRouter.updateMessageForwardingConfig({
+                const routingConfigCall = relayChainPolkadotJs.tx.lzRouter.updateRoutingConfig({
                     notificationDestination: [palletIndex, callIndex],
                     whitelistedSenders: [[lzSourceEndpoint, Array.from(lzSourceAddress)]],
                 });
 
-                const encodedCall = forwardingConfigCall.method.toHex();
+                const encodedCall = routingConfigCall.method.toHex();
                 console.log(`Encoded call: ${encodedCall}`);
 
                 // Build XCM message to send from container chain to relay chain
@@ -228,7 +226,7 @@ describeSuite({
                 await waitSessions(context, relayChainPolkadotJs, 1, null, "Tanssi-relay");
 
                 // Verify the forwarding config was set
-                const storedConfig = await relayChainPolkadotJs.query.lzRouter.messageForwardingConfigs(2000);
+                const storedConfig = await relayChainPolkadotJs.query.lzRouter.routingConfigs(2000);
                 console.log(`Stored config: ${JSON.stringify(storedConfig.toHuman())}`);
 
                 expect(storedConfig.isSome, "Forwarding config should be set").to.be.true;
@@ -297,12 +295,12 @@ describeSuite({
                 expect(!!messageReceivedEvent, "MessageReceived event should exist on relay").to.equal(true);
                 console.log("LayerZero message received on relay chain!");
 
-                // Check for LayerZeroMessageForwarded event (if it exists)
-                const forwardedEvent = relayEvents.find((a) => {
-                    return a.event.section === "lzRouter" && a.event.method === "MessageForwarded";
+                // Check for InboundMessageRouted event
+                const routedEvent = relayEvents.find((a) => {
+                    return a.event.section === "lzRouter" && a.event.method === "InboundMessageRouted";
                 });
-                expect(!!forwardedEvent, "MessageForwarded event should exist on relay").to.equal(true);
-                console.log("LayerZero message forwarded on relay chain!");
+                expect(!!routedEvent, "InboundMessageRouted event should exist on relay").to.equal(true);
+                console.log("LayerZero inbound message routed on relay chain!");
             },
         });
 

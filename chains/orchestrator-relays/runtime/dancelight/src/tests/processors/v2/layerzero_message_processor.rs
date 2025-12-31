@@ -29,8 +29,8 @@ use {
         LayerZeroMessageProcessor, MessageExtractionError, MessageProcessorWithFallback, RawPayload,
     },
     tp_bridge::layerzero_message::{
-        SolMessage as LayerZeroSolMessage, SolPayload as LayerZeroSolPayload,
-        MAGIC_BYTES as LZ_MAGIC_BYTES,
+        InboundSolMessage as LayerZeroInboundSolMessage,
+        InboundSolPayload as LayerZeroInboundSolPayload, MAGIC_BYTES as LZ_MAGIC_BYTES,
     },
     xcm::latest::prelude::*,
 };
@@ -62,19 +62,19 @@ fn create_layerzero_payload(
     destination_chain: u32,
     message: Vec<u8>,
 ) -> Vec<u8> {
-    let sol_message = LayerZeroSolMessage {
+    let sol_message = LayerZeroInboundSolMessage {
         lzSourceAddress: source_address.into(),
         lzSourceEndpoint: source_endpoint,
         destinationChain: destination_chain,
         message: message.into(),
     };
 
-    let sol_payload = LayerZeroSolPayload {
+    let sol_payload = LayerZeroInboundSolPayload {
         magicBytes: (*LZ_MAGIC_BYTES).into(),
         message: sol_message,
     };
 
-    LayerZeroSolPayload::abi_encode(&sol_payload)
+    LayerZeroInboundSolPayload::abi_encode(&sol_payload)
 }
 
 /// Helper function to create a valid LayerZero ABI-encoded payload with custom magic bytes
@@ -85,19 +85,19 @@ fn create_layerzero_payload_with_magic(
     destination_chain: u32,
     message: Vec<u8>,
 ) -> Vec<u8> {
-    let sol_message = LayerZeroSolMessage {
+    let sol_message = LayerZeroInboundSolMessage {
         lzSourceAddress: source_address.into(),
         lzSourceEndpoint: source_endpoint,
         destinationChain: destination_chain,
         message: message.into(),
     };
 
-    let sol_payload = LayerZeroSolPayload {
+    let sol_payload = LayerZeroInboundSolPayload {
         magicBytes: magic_bytes.into(),
         message: sol_message,
     };
 
-    LayerZeroSolPayload::abi_encode(&sol_payload)
+    LayerZeroInboundSolPayload::abi_encode(&sol_payload)
 }
 
 #[test]
