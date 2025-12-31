@@ -10905,7 +10905,6 @@ dependencies = [
 name = "pallet-lz-receiver-example"
 version = "0.1.0"
 dependencies = [
- "frame-benchmarking",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
@@ -10926,7 +10925,6 @@ dependencies = [
  "log",
  "pallet-balances",
  "pallet-session",
- "pallet-timestamp",
  "pallet-xcm",
  "parity-scale-codec",
  "rand 0.8.5",
