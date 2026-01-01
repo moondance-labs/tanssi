@@ -37,6 +37,7 @@ pallet-xcm = { workspace = true }
 [dev-dependencies]
 sp-core = { workspace = true }
 sp-io = { workspace = true }
+xcm-builder = { workspace = true }
 
 [features]
 default = [ "std" ]

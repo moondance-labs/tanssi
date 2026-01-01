@@ -10934,6 +10934,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "staging-xcm",
+ "staging-xcm-builder",
  "staging-xcm-executor",
  "tp-bridge",
  "tp-traits",

@@ -36,6 +36,12 @@
 
 mod types;
 
+#[cfg(test)]
+mod mock;
+
+#[cfg(test)]
+mod tests;
+
 extern crate alloc;
 
 use crate::types::ChainId;
