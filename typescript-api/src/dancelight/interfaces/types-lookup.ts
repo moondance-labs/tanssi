@@ -6403,9 +6403,9 @@ declare module "@polkadot/types/lookup" {
 
     /** @name PalletLzRouterCall (503) */
     interface PalletLzRouterCall extends Enum {
-        readonly isUpdateMessageForwardingConfig: boolean;
-        readonly asUpdateMessageForwardingConfig: {
-            readonly newConfig: PalletLzRouterMessageForwardingConfig;
+        readonly isUpdateRoutingConfig: boolean;
+        readonly asUpdateRoutingConfig: {
+            readonly newConfig: PalletLzRouterRoutingConfig;
         } & Struct;
         readonly isSendMessageToEthereum: boolean;
         readonly asSendMessageToEthereum: {
@@ -6413,11 +6413,11 @@ declare module "@polkadot/types/lookup" {
             readonly destinationAddress: U8aFixed;
             readonly payload: Bytes;
         } & Struct;
-        readonly type: "UpdateMessageForwardingConfig" | "SendMessageToEthereum";
+        readonly type: "UpdateRoutingConfig" | "SendMessageToEthereum";
     }
 
-    /** @name PalletLzRouterMessageForwardingConfig (504) */
-    interface PalletLzRouterMessageForwardingConfig extends Struct {
+    /** @name PalletLzRouterRoutingConfig (504) */
+    interface PalletLzRouterRoutingConfig extends Struct {
         readonly whitelistedSenders: Vec<ITuple<[u32, Bytes]>>;
         readonly notificationDestination: ITuple<[u8, u8]>;
     }
@@ -8100,16 +8100,16 @@ declare module "@polkadot/types/lookup" {
 
     /** @name PalletLzRouterEvent (589) */
     interface PalletLzRouterEvent extends Enum {
-        readonly isMessageForwardingConfigUpdated: boolean;
-        readonly asMessageForwardingConfigUpdated: {
+        readonly isRoutingConfigUpdated: boolean;
+        readonly asRoutingConfigUpdated: {
             readonly chainId: u32;
-            readonly newConfig: PalletLzRouterMessageForwardingConfig;
-            readonly oldConfig: Option<PalletLzRouterMessageForwardingConfig>;
+            readonly newConfig: PalletLzRouterRoutingConfig;
+            readonly oldConfig: Option<PalletLzRouterRoutingConfig>;
         } & Struct;
-        readonly isMessageForwarded: boolean;
-        readonly asMessageForwarded: {
+        readonly isInboundMessageRouted: boolean;
+        readonly asInboundMessageRouted: {
             readonly chainId: u32;
-            readonly message: TpBridgeInboundQueueLayerzeroMessageMessage;
+            readonly message: TpBridgeInboundQueueLayerzeroMessageInboundMessage;
         } & Struct;
         readonly isOutboundMessageQueued: boolean;
         readonly asOutboundMessageQueued: {
@@ -8118,11 +8118,11 @@ declare module "@polkadot/types/lookup" {
             readonly destinationAddress: U8aFixed;
             readonly payload: Bytes;
         } & Struct;
-        readonly type: "MessageForwardingConfigUpdated" | "MessageForwarded" | "OutboundMessageQueued";
+        readonly type: "RoutingConfigUpdated" | "InboundMessageRouted" | "OutboundMessageQueued";
     }
 
-    /** @name TpBridgeInboundQueueLayerzeroMessageMessage (591) */
-    interface TpBridgeInboundQueueLayerzeroMessageMessage extends Struct {
+    /** @name TpBridgeInboundQueueLayerzeroMessageInboundMessage (591) */
+    interface TpBridgeInboundQueueLayerzeroMessageInboundMessage extends Struct {
         readonly lzSourceAddress: Bytes;
         readonly lzSourceEndpoint: u32;
         readonly destinationChain: u32;
@@ -10726,13 +10726,13 @@ declare module "@polkadot/types/lookup" {
     /** @name PalletLzRouterError (986) */
     interface PalletLzRouterError extends Enum {
         readonly isLocationIsNotAContainerChain: boolean;
-        readonly isNoForwardingConfig: boolean;
+        readonly isNoRoutingConfig: boolean;
         readonly isNotWhitelistedSender: boolean;
         readonly isSameConfigAlreadyExists: boolean;
         readonly isChainAccountConversionFailed: boolean;
         readonly type:
             | "LocationIsNotAContainerChain"
-            | "NoForwardingConfig"
+            | "NoRoutingConfig"
             | "NotWhitelistedSender"
             | "SameConfigAlreadyExists"
             | "ChainAccountConversionFailed";

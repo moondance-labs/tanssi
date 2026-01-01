@@ -5472,8 +5472,8 @@ export default {
      **/
     PalletLzRouterCall: {
         _enum: {
-            update_message_forwarding_config: {
-                newConfig: "PalletLzRouterMessageForwardingConfig",
+            update_routing_config: {
+                newConfig: "PalletLzRouterRoutingConfig",
             },
             send_message_to_ethereum: {
                 destinationEndpoint: "u32",
@@ -5483,9 +5483,9 @@ export default {
         },
     },
     /**
-     * Lookup504: pallet_lz_router::types::MessageForwardingConfig<T>
+     * Lookup504: pallet_lz_router::types::RoutingConfig<T>
      **/
-    PalletLzRouterMessageForwardingConfig: {
+    PalletLzRouterRoutingConfig: {
         whitelistedSenders: "Vec<(u32,Bytes)>",
         notificationDestination: "(u8,u8)",
     },
@@ -6874,14 +6874,14 @@ export default {
      **/
     PalletLzRouterEvent: {
         _enum: {
-            MessageForwardingConfigUpdated: {
+            RoutingConfigUpdated: {
                 chainId: "u32",
-                newConfig: "PalletLzRouterMessageForwardingConfig",
-                oldConfig: "Option<PalletLzRouterMessageForwardingConfig>",
+                newConfig: "PalletLzRouterRoutingConfig",
+                oldConfig: "Option<PalletLzRouterRoutingConfig>",
             },
-            MessageForwarded: {
+            InboundMessageRouted: {
                 chainId: "u32",
-                message: "TpBridgeInboundQueueLayerzeroMessageMessage",
+                message: "TpBridgeInboundQueueLayerzeroMessageInboundMessage",
             },
             OutboundMessageQueued: {
                 sourceChainId: "u32",
@@ -6892,9 +6892,9 @@ export default {
         },
     },
     /**
-     * Lookup591: tp_bridge::inbound_queue::layerzero_message::Message
+     * Lookup591: tp_bridge::inbound_queue::layerzero_message::InboundMessage
      **/
-    TpBridgeInboundQueueLayerzeroMessageMessage: {
+    TpBridgeInboundQueueLayerzeroMessageInboundMessage: {
         lzSourceAddress: "Bytes",
         lzSourceEndpoint: "u32",
         destinationChain: "u32",
@@ -9167,7 +9167,7 @@ export default {
     PalletLzRouterError: {
         _enum: [
             "LocationIsNotAContainerChain",
-            "NoForwardingConfig",
+            "NoRoutingConfig",
             "NotWhitelistedSender",
             "SameConfigAlreadyExists",
             "ChainAccountConversionFailed",

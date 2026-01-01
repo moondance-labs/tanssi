@@ -48,7 +48,7 @@ import type {
     PalletExternalValidatorsForcing,
     PalletIdentityJudgement,
     PalletIdentityLegacyIdentityInfo,
-    PalletLzRouterMessageForwardingConfig,
+    PalletLzRouterRoutingConfig,
     PalletMigrationsHistoricCleanupSelector,
     PalletMigrationsMigrationCursor,
     PalletMultisigTimepoint,
@@ -3931,19 +3931,19 @@ declare module "@polkadot/api-base/types/submittable" {
                 [u32, U8aFixed, Bytes]
             >;
             /**
-             * Update forwarding configuration for a container chain.
+             * Update routing configuration for a container chain.
              *
              * Must be called via XCM from the container chain itself.
              **/
-            updateMessageForwardingConfig: AugmentedSubmittable<
+            updateRoutingConfig: AugmentedSubmittable<
                 (
                     newConfig:
-                        | PalletLzRouterMessageForwardingConfig
+                        | PalletLzRouterRoutingConfig
                         | { whitelistedSenders?: any; notificationDestination?: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [PalletLzRouterMessageForwardingConfig]
+                [PalletLzRouterRoutingConfig]
             >;
             /**
              * Generic tx

@@ -1137,9 +1137,9 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             LocationIsNotAContainerChain: AugmentedError<ApiType>;
             /**
-             * No forwarding configuration found for the destination chain
+             * No routing configuration found for the destination chain
              **/
-            NoForwardingConfig: AugmentedError<ApiType>;
+            NoRoutingConfig: AugmentedError<ApiType>;
             /**
              * The sender (address+endpoint) is not whitelisted to forward messages to the destination chain
              **/

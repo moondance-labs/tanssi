@@ -40,7 +40,7 @@ import type {
     PalletConvictionVotingVoteAccountVote,
     PalletExternalValidatorsForcing,
     PalletInactivityTrackingActivityTrackingStatus,
-    PalletLzRouterMessageForwardingConfig,
+    PalletLzRouterRoutingConfig,
     PalletMultisigTimepoint,
     PalletPooledStakingPoolsActivePoolKind,
     PalletProxyDepositKind,
@@ -68,7 +68,7 @@ import type {
     StagingXcmV5Xcm,
     TpBridgeChannelInfo,
     TpBridgeCommand,
-    TpBridgeInboundQueueLayerzeroMessageMessage,
+    TpBridgeInboundQueueLayerzeroMessageInboundMessage,
     TpTraitsFullRotationModes,
     XcmV3TraitsSendError,
     XcmV5TraitsError,
@@ -1266,28 +1266,12 @@ declare module "@polkadot/api-base/types/events" {
         };
         lzRouter: {
             /**
-             * Message forwarded to a container chain
+             * Inbound message routed to a container chain
              **/
-            MessageForwarded: AugmentedEvent<
+            InboundMessageRouted: AugmentedEvent<
                 ApiType,
-                [chainId: u32, message: TpBridgeInboundQueueLayerzeroMessageMessage],
-                { chainId: u32; message: TpBridgeInboundQueueLayerzeroMessageMessage }
-            >;
-            /**
-             * Message forwarding configuration updated for a container chain
-             **/
-            MessageForwardingConfigUpdated: AugmentedEvent<
-                ApiType,
-                [
-                    chainId: u32,
-                    newConfig: PalletLzRouterMessageForwardingConfig,
-                    oldConfig: Option<PalletLzRouterMessageForwardingConfig>,
-                ],
-                {
-                    chainId: u32;
-                    newConfig: PalletLzRouterMessageForwardingConfig;
-                    oldConfig: Option<PalletLzRouterMessageForwardingConfig>;
-                }
+                [chainId: u32, message: TpBridgeInboundQueueLayerzeroMessageInboundMessage],
+                { chainId: u32; message: TpBridgeInboundQueueLayerzeroMessageInboundMessage }
             >;
             /**
              * Outbound message queued for Ethereum/LayerZero
@@ -1296,6 +1280,14 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [sourceChainId: u32, destinationEndpoint: u32, destinationAddress: U8aFixed, payload: Bytes],
                 { sourceChainId: u32; destinationEndpoint: u32; destinationAddress: U8aFixed; payload: Bytes }
+            >;
+            /**
+             * Routing configuration updated for a container chain
+             **/
+            RoutingConfigUpdated: AugmentedEvent<
+                ApiType,
+                [chainId: u32, newConfig: PalletLzRouterRoutingConfig, oldConfig: Option<PalletLzRouterRoutingConfig>],
+                { chainId: u32; newConfig: PalletLzRouterRoutingConfig; oldConfig: Option<PalletLzRouterRoutingConfig> }
             >;
             /**
              * Generic event
