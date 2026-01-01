@@ -38,7 +38,7 @@ jobs:
           cpu: ${{ matrix.cpu }}
 
       - name: Upload binary
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: binaries-${{matrix.cpu}}
           path: binaries
