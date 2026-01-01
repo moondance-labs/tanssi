@@ -171,7 +171,7 @@ jobs:
               ref: ${{ needs.set-tags.outputs.git_ref }}
 
         - name: Run zizmor
-          uses: zizmorcore/zizmor-action@e673c3917a1aef3c65c972347ed84ccd013ecda4
+          uses: zizmorcore/zizmor-action@e639db99335bc9038abc0e066dfcd72e23d26fb4
           with:
             inputs: |
               .github/workflows/
