@@ -102,7 +102,7 @@ pub fn try_extract_message<T: pallet_lz_router::Config>(
 pub fn process_message<T: pallet_lz_router::Config>(
     message: LayerZeroInboundMessage,
 ) -> Result<(), MessageProcessorError> {
-    pallet_lz_router::Pallet::<T>::forward_message_to_chain(message)
+    pallet_lz_router::Pallet::<T>::handle_inbound_message(message)
 }
 
 #[derive(MessageProcessor)]

@@ -191,11 +191,11 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-        /// Forward a LayerZero message to its destination container chain via XCM.
+        /// Handle an inbound LayerZero message by forwarding it to its destination container chain via XCM.
         ///
         /// Called by `LayerZeroInboundMessageProcessorV2` when messages arrive from Ethereum.
         /// Validates the sender is whitelisted and sends an XCM Transact to the destination.
-        pub fn forward_message_to_chain(
+        pub fn handle_inbound_message(
             message: InboundMessage,
         ) -> Result<(), MessageProcessorError> {
             let dest_chain_id: ChainId = message.destination_chain;
