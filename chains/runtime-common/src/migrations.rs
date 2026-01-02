@@ -1472,10 +1472,10 @@ mod relay {
         fn get_migrations() -> Vec<Box<dyn Migration>> {
             /*let migrate_pallet_session_v0_to_v1 =
                 MigratePalletSessionV0toV1::<Runtime>(Default::default());
-            
+
             let migrate_snowbridge_fee_per_gas_migration_v0_to_v1 =
                 MigrateSnowbridgeFeePerGasMigrationV0ToV1::<Runtime>(Default::default());
-            
+
             let _eth_system_genesis_hashes = MigrateEthSystemGenesisHashes::<
                 Runtime,
                 snowbridge_system_migration::StarlightLocation,
