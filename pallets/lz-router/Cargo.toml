@@ -59,7 +59,7 @@ std = [
 	"tp-bridge/std",
 	"tp-traits/std",
 	"xcm-builder/std",
-  	"xcm-executor/std",
+	"xcm-executor/std",
 	"xcm/std",
 ]
 runtime-benchmarks = [
