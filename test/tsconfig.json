@@ -19,8 +19,7 @@
     "*suites/**/*.ts",
     "utils/*.ts",
     "tools/*.ts",
-    "helpers/compiled/*.json",
-    "../node_modules/.pnpm/vitest@3.2.4_@types+debug@4.1.12_@types+node@22.12.0_@vitest+ui@3.2.4_jsdom@23.2.0_tsx@4.19.2_yaml@2.8.2/node_modules/vitest/globals.d.ts"
+    "helpers/compiled/*.json"
   ],
   "exclude": ["node_modules/"]
 }
