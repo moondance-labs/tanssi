@@ -37,7 +37,7 @@ jobs:
         with:
           node-version: 22.x
       - name: Download Original Tools
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: original-tools
           path: original-tools
