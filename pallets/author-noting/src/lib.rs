@@ -225,7 +225,7 @@ pub mod pallet {
                     }
                 }
 
-                // Run hook
+                // Call AuthorNotingHook
                 // When benchmarking, we want the possibility to not call hooks, to get the base
                 // weight of this inherent.
                 #[cfg(feature = "runtime-benchmarks")]
@@ -234,13 +234,6 @@ pub mod pallet {
                         .saturating_accrue(T::AuthorNotingHook::on_container_authors_noted(&infos));
                 }
                 // not runtime-benchmarks: always call hook
-                // TODO: instead of trusting that the hook returns an accurate weight, why not
-                // use the benchmarked weight? `on_container_authors_noted`
-                // Then we simplify all the hooks because we don't need to count each storage
-                // write manually, we get them for free with the benchmark.
-                // Not that important because the staking distribute rewards does return the
-                // worst case calculated from a benchmark, and that's the most expensive hook,
-                // so it is good enough for now.
                 #[cfg(not(feature = "runtime-benchmarks"))]
                 total_weight
                     .saturating_accrue(T::AuthorNotingHook::on_container_authors_noted(&infos));

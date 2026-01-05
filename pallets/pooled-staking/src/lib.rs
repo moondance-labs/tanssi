@@ -796,7 +796,8 @@ pub mod pallet {
 
         #[cfg(feature = "runtime-benchmarks")]
         fn prepare_worst_case_for_bench(caller: &Candidate<T>) {
-            // TODO: register and self-delegate?
+            // Worst case: account exists in both pools
+            // Register and self-delegate
             use frame_support::traits::fungible::Balanced;
             use frame_system::RawOrigin;
 
@@ -827,8 +828,8 @@ pub mod pallet {
 
         #[cfg(feature = "runtime-benchmarks")]
         fn bench_advance_block() {
-            // TODO: this one is weird. It advances 2 sessions, but it only calls `rotate_session`,
-            // if doesn't call on_initialize/on_finalize for any block
+            // This one is weird. It advances 2 sessions, but it only calls `rotate_session`,
+            // it doesn't call on_initialize/on_finalize for any block.
             T::JoiningRequestTimer::skip_to_elapsed();
         }
 
