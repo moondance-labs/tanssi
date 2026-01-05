@@ -14,27 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-//! Runtime API for Services Payment pallet
+//! Runtime API for Author Noting pallet
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
 sp_api::decl_runtime_apis! {
-    // TODO: do we need to update the api version?
-    pub trait ServicesPaymentApi<AccountId, Balance, ParaId>
+    pub trait ParachainTankAccountApi<AccountId, BlockNumber, ParaId>
     where
         AccountId: parity_scale_codec::Codec,
-        Balance: parity_scale_codec::Codec,
+        BlockNumber: parity_scale_codec::Codec,
         ParaId: parity_scale_codec::Codec,
     {
-        fn block_cost(para_id: ParaId) -> Balance;
-        fn collator_assignment_cost(para_id: ParaId) -> Balance;
-
-        /// Calculate the parachain tank account for a given para ID.
-        ///
-        /// This account is derived by:
-        /// 1. Encoding the tuple ("modlpy/serpayment", para_id) using SCALE encoding
-        /// 2. Hashing it with Blake2-256
-        /// 3. Decoding the hash as an AccountId
-        fn parachain_tank_account(para_id: ParaId) -> AccountId;
+        fn latest_block_number(para_id: ParaId) -> Option<BlockNumber>;
+        fn latest_author(para_id: ParaId) -> Option<AccountId>;
     }
 }
