@@ -1132,8 +1132,8 @@ where
         //let migrate_config_max_parachain_percentage = MigrateConfigurationAddParachainPercentage::<Runtime>(Default::default());
         //let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
         //let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
-        let migrate_pallet_session_v0_to_v1 = MigratePalletSessionV0toV1::<Runtime>(Default::default());
-        let migrate_data_preservers_profiles = DataPreserversProfileContentMigration::<Runtime>(Default::default());
+        //let migrate_pallet_session_v0_to_v1 = MigratePalletSessionV0toV1::<Runtime>(Default::default());
+        //let migrate_data_preservers_profiles = DataPreserversProfileContentMigration::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 400
@@ -1158,8 +1158,10 @@ where
             //Box::new(migrate_config_full_rotation_mode),
             // Applied in runtime 1200
             //Box::new(migrate_stream_payment_new_config_items),
-            Box::new(migrate_pallet_session_v0_to_v1),
-            Box::new(migrate_data_preservers_profiles),
+            // Applied in runtime 1400
+            // Box::new(migrate_pallet_session_v0_to_v1),
+            // Applied in runtime 1600
+            //Box::new(migrate_data_preservers_profiles),
         ]
     }
 }
@@ -1219,10 +1221,10 @@ where
         //let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
         //let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
         //let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
-        let migrate_pallet_session_v0_to_v1 = MigratePalletSessionV0toV1::<Runtime>(Default::default());
-        let migrate_offline_marking_storage =
+        //let migrate_pallet_session_v0_to_v1 = MigratePalletSessionV0toV1::<Runtime>(Default::default());
+        /*let migrate_offline_marking_storage =
             OfflineMarkingStorageMigration::<Runtime>(Default::default());
-            let migrate_data_preservers_profiles = DataPreserversProfileContentMigration::<Runtime>(Default::default());
+            let migrate_data_preservers_profiles = DataPreserversProfileContentMigration::<Runtime>(Default::default());*/
 
 
         vec![
@@ -1268,9 +1270,12 @@ where
             //Box::new(migrate_stream_payment_new_config_items),
             // Applied in runtime 1200
             //Box::new(migrate_pallet_xcm_v5),
-            Box::new(migrate_pallet_session_v0_to_v1),
-            Box::new(migrate_offline_marking_storage),
-            Box::new(migrate_data_preservers_profiles),
+            // Applied in runtime 1400
+            //Box::new(migrate_pallet_session_v0_to_v1),
+            // Applied in runtime 1500
+            //Box::new(migrate_offline_marking_storage),
+            // Applied in runtime 1600
+            //Box::new(migrate_data_preservers_profiles),
         ]
     }
 }
@@ -1410,7 +1415,7 @@ mod relay {
             //let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
             //let para_shared_v1_migration = MigrateParaSharedToV1::<Runtime>(Default::default());
             //let para_scheduler_v3_migration = MigrateParaSchedulerToV3::<Runtime>(Default::default());
-            let migrate_pallet_session_v0_to_v1 =
+            /*let migrate_pallet_session_v0_to_v1 =
                 MigratePalletSessionV0toV1::<Runtime>(Default::default());
             let migrate_snowbridge_fee_per_gas_migration_v0_to_v1 =
                 MigrateSnowbridgeFeePerGasMigrationV0ToV1::<Runtime>(Default::default());
@@ -1421,7 +1426,7 @@ mod relay {
             let migrate_offline_marking_storage =
                 OfflineMarkingStorageMigration::<Runtime>(Default::default());
             let migrate_data_preservers_profiles =
-                DataPreserversProfileContentMigration::<Runtime>(Default::default());
+                DataPreserversProfileContentMigration::<Runtime>(Default::default());*/
 
             vec![
                 // Applied in runtime 1000
@@ -1440,11 +1445,16 @@ mod relay {
                 // Box::new(para_shared_v1_migration),
                 // Applied in runtime 1200
                 //Box::new(para_scheduler_v3_migration),
-                Box::new(migrate_pallet_session_v0_to_v1),
-                Box::new(migrate_snowbridge_fee_per_gas_migration_v0_to_v1),
-                Box::new(eth_system_genesis_hashes),
-                Box::new(migrate_offline_marking_storage),
-                Box::new(migrate_data_preservers_profiles),
+                // Applied in runtime 1400
+                // Box::new(migrate_pallet_session_v0_to_v1),
+                // Applied in runtime 1400
+                // Box::new(migrate_snowbridge_fee_per_gas_migration_v0_to_v1),
+                // Applied in runtime 1400
+                // Box::new(eth_system_genesis_hashes),
+                // Applied in runtime 1500
+                // Box::new(migrate_offline_marking_storage),
+                // Applied in runtime 1600
+                // Box::new(migrate_data_preservers_profiles),
             ]
         }
     }
@@ -1460,25 +1470,32 @@ mod relay {
         Runtime: pallet_data_preservers::Config,
     {
         fn get_migrations() -> Vec<Box<dyn Migration>> {
-            let migrate_pallet_session_v0_to_v1 =
+            /*let migrate_pallet_session_v0_to_v1 =
                 MigratePalletSessionV0toV1::<Runtime>(Default::default());
+
             let migrate_snowbridge_fee_per_gas_migration_v0_to_v1 =
                 MigrateSnowbridgeFeePerGasMigrationV0ToV1::<Runtime>(Default::default());
-            let eth_system_genesis_hashes = MigrateEthSystemGenesisHashes::<
+
+            let _eth_system_genesis_hashes = MigrateEthSystemGenesisHashes::<
                 Runtime,
                 snowbridge_system_migration::StarlightLocation,
             >(Default::default());
-            let migrate_offline_marking_storage =
+
+            let _migrate_offline_marking_storage =
                 OfflineMarkingStorageMigration::<Runtime>(Default::default());
-            let migrate_data_preservers_profiles =
-                DataPreserversProfileContentMigration::<Runtime>(Default::default());
+
+            let _migrate_data_preservers_profiles =
+                DataPreserversProfileContentMigration::<Runtime>(Default::default());*/
 
             vec![
-                Box::new(migrate_pallet_session_v0_to_v1),
-                Box::new(migrate_snowbridge_fee_per_gas_migration_v0_to_v1),
-                Box::new(eth_system_genesis_hashes),
-                Box::new(migrate_offline_marking_storage),
-                Box::new(migrate_data_preservers_profiles),
+                // Applied in runtime 1400
+                // Box::new(migrate_snowbridge_fee_per_gas_migration_v0_to_v1),
+                // Applied in runtime 1400
+                // Box::new(eth_system_genesis_hashes),
+                // Applied in runtime 1500
+                // Box::new(migrate_offline_marking_storage),
+                // Applied in runtime 1600
+                // Box::new(migrate_data_preservers_profiles),
             ]
         }
     }
