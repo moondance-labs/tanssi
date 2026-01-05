@@ -37,12 +37,12 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Upload scripts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: original-scripts
           path: scripts
       - name: Upload tools
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: original-tools
           path: tools
@@ -164,7 +164,7 @@ jobs:
           ./original-scripts/build-runtime-srtool.sh cleanup
 
       - name: Archive Artifacts for ${{ matrix.chain }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: runtime-info-${{ matrix.chain.runtime_name }}
           path: |
