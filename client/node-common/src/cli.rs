@@ -33,6 +33,19 @@ where
     pub extra: ExtraFields,
 }
 
+/// The `export-chain-spec` command used to export a specification.
+#[derive(Debug, Clone, clap::Parser)]
+pub struct ExportChainSpecCmd<ExtraFields = EmptyExtra>
+where
+    ExtraFields: clap::Args,
+{
+    #[clap(flatten)]
+    pub base: sc_cli::ExportChainSpecCmd,
+
+    #[clap(flatten)]
+    pub extra: ExtraFields,
+}
+
 #[derive(Debug, Clone, clap::Args, Default)]
 pub struct EmptyExtra {}
 
@@ -119,12 +132,19 @@ impl RelayChainCli {
 /// Sub-commands supported by the collator.
 #[derive(Debug, clap::Subcommand)]
 #[allow(clippy::large_enum_variant)]
-pub enum Subcommand<B>
+pub enum Subcommand<B, E>
 where
     B: clap::Args,
+    E: clap::Args,
 {
     /// Build a chain specification.
+    #[deprecated(
+        note = "build-spec command will be removed after 1/04/2026. Use export-chain-spec command instead"
+    )]
     BuildSpec(B),
+
+    /// Export the chain specification.
+    ExportChainSpec(E),
 
     /// Validate blocks.
     CheckBlock(sc_cli::CheckBlockCmd),

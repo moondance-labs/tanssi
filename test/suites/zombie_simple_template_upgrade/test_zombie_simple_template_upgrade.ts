@@ -116,7 +116,7 @@ describeSuite({
                 } else {
                     command = "../target/release/container-chain-simple-node";
                 }
-                const args = ["build-spec", "--raw"];
+                const args = ["export-chain-spec", "--raw"];
 
                 await testPalletVersions(paraApi, command, args);
             },

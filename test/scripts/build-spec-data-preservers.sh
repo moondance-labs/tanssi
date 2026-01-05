@@ -7,19 +7,17 @@ set -e
 cd $(dirname $0)/..
 
 mkdir -p specs
-../target/release/container-chain-simple-node build-spec\
-    --disable-default-bootnode\
+../target/release/container-chain-simple-node export-chain-spec\
     --add-bootnode "/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"\
     --parachain-id 2000\
     --raw > specs/data-preservers-container-2000.json
 
-../target/release/container-chain-frontier-node build-spec\
-    --disable-default-bootnode\
+../target/release/container-chain-frontier-node export-chain-spec\
     --add-bootnode "/ip4/127.0.0.1/tcp/33050/ws/p2p/12D3KooWFGaw1rxB6MSuN3ucuBm7hMq5pBFJbEoqTyth4cG483Cc"\
     --parachain-id 2001\
     --raw > specs/data-preservers-container-2001.json
 
-../target/release/tanssi-node build-spec\
+../target/release/tanssi-node export-chain-spec\
     --chain dancebox-local\
     --parachain-id 1000\
     --add-container-chain specs/data-preservers-container-2000.json\
