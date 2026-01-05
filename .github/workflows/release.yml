@@ -452,7 +452,7 @@ jobs:
             target: wasm32-unknown-unknown
 
         - name: Cache cargo bin
-          uses: actions/cache@v4
+          uses: actions/cache@v5
           with:
             path: ~/.cargo/bin
             key: cargo-bin-udeps-nightly-${{ runner.os }}
