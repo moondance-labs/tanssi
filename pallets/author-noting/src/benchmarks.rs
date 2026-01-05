@@ -87,10 +87,14 @@ mod test_sproof {
 const STORAGE_KEY_ENABLE_HOOKS: &[u8] = b"__mock_bench_run_author_noting_hooks";
 
 pub fn should_run_author_noting_hooks() -> bool {
+    // whitelist this key, it is only read if benchmark feature is enabled
+    frame_benchmarking::benchmarking::add_to_whitelist(STORAGE_KEY_ENABLE_HOOKS.to_vec().into());
     // default: true
     frame_support::storage::unhashed::get(STORAGE_KEY_ENABLE_HOOKS).unwrap_or(true)
 }
 pub fn set_should_run_author_noting_hooks(x: bool) {
+    // whitelist this key, it is only read if benchmark feature is enabled
+    frame_benchmarking::benchmarking::add_to_whitelist(STORAGE_KEY_ENABLE_HOOKS.to_vec().into());
     frame_support::storage::unhashed::put(STORAGE_KEY_ENABLE_HOOKS, &x);
 }
 
@@ -102,21 +106,6 @@ mod benchmarks {
     fn set_latest_author_data(x: Linear<1, 100>) -> Result<(), BenchmarkError> {
         // This benchmarks is `set_latest_author_data` with empty hooks
         let mut container_chains = vec![];
-
-        // Register collators in staking pallet and initialize `ChainsToReward`.
-        // TODO: we probably need to initialize `ChainsToReward` again after advancing blocks
-        // Start at index 2000 because para_id < 2000 are system parachains
-        for para_id in 0..x {
-            let para_id = 2000u32 + para_id;
-            let para_id: ParaId = para_id.into();
-            let author: T::AccountId = account("account id", u32::from(para_id), 0u32);
-            T::AuthorNotingHook::prepare_worst_case_for_bench(&author, 1, para_id);
-        }
-
-        // TODO: maybe we can remove all hooks code? Since we don't test hooks in this benchmark
-        // Advance a few blocks and execute the pending staking operations
-        T::AuthorNotingHook::bench_advance_block();
-        T::AuthorNotingHook::bench_execute_pending();
 
         let data = if TypeId::of::<<<T as Config>::RelayOrPara as RelayOrPara>::InherentArg>()
             == TypeId::of::<tp_author_noting_inherent::OwnParachainInherentData>()

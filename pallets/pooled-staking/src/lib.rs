@@ -830,6 +830,8 @@ pub mod pallet {
         fn bench_advance_block() {
             // This one is weird. It advances 2 sessions, but it only calls `rotate_session`,
             // it doesn't call on_initialize/on_finalize for any block.
+            // This causes the following log line:
+            // Current epoch index 0 is lower than session index 1.
             T::JoiningRequestTimer::skip_to_elapsed();
         }
 
