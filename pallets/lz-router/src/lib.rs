@@ -210,17 +210,15 @@ pub mod pallet {
                 MessageProcessorError::ProcessMessage(Error::<T>::NoRoutingConfig.into()),
             )?;
 
-            config
-                .whitelisted_senders
-                .iter()
-                .any(|(lz_endpoint, lz_address)| {
-                    &message.lz_source_endpoint == lz_endpoint
-                        && &message.lz_source_address == lz_address
-                })
-                .then_some(())
-                .ok_or(MessageProcessorError::ProcessMessage(
+            let sender = (
+                message.lz_source_endpoint,
+                message.lz_source_address.clone(),
+            );
+            if !config.whitelisted_senders.contains(&sender) {
+                return Err(MessageProcessorError::ProcessMessage(
                     Error::<T>::NotWhitelistedSender.into(),
-                ))?;
+                ));
+            }
 
             let container_chain_location = Location::new(0, [Parachain(dest_chain_id)]);
 

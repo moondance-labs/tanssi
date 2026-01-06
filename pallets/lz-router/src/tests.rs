@@ -16,8 +16,9 @@
 
 use {
     crate::{mock::*, types::RoutingConfig, Error, Event, Pallet, RoutingConfigs},
-    frame_support::{assert_err, assert_noop, assert_ok, BoundedVec},
+    frame_support::{assert_err, assert_noop, assert_ok},
     snowbridge_inbound_queue_primitives::v2::MessageProcessorError,
+    sp_runtime::{BoundedBTreeSet, BoundedVec},
     tp_bridge::layerzero_message::InboundMessage,
 };
 
@@ -27,15 +28,13 @@ fn create_routing_config(
     pallet_index: u8,
     call_index: u8,
 ) -> RoutingConfig<Test> {
-    let senders: BoundedVec<_, _> = whitelisted_senders
-        .into_iter()
-        .map(|(endpoint, address)| {
-            let addr: BoundedVec<u8, _> = address.try_into().expect("address too long");
-            (endpoint, addr)
-        })
-        .collect::<Vec<_>>()
-        .try_into()
-        .expect("too many whitelisted senders");
+    let mut senders: BoundedBTreeSet<_, _> = BoundedBTreeSet::new();
+    for (endpoint, address) in whitelisted_senders {
+        let addr: BoundedVec<u8, _> = address.try_into().expect("address too long");
+        senders
+            .try_insert((endpoint, addr))
+            .expect("too many whitelisted senders");
+    }
 
     RoutingConfig {
         whitelisted_senders: senders,

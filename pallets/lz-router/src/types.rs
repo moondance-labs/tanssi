@@ -19,9 +19,10 @@
 use crate::Config;
 use frame_support::pallet_prelude::MaxEncodedLen;
 use frame_support::{CloneNoBound, DebugNoBound, EqNoBound, PartialEqNoBound};
-use sp_runtime::BoundedVec;
+use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
+use scale_info::TypeInfo;
+use sp_runtime::BoundedBTreeSet;
 use tp_bridge::layerzero_message::{LayerZeroAddress, LayerZeroEndpoint};
-use tp_traits::__reexports::{Decode, DecodeWithMemTracking, Encode, TypeInfo};
 
 /// Parachain/container chain identifier (matches the para_id)
 pub type ChainId = u32;
@@ -48,7 +49,7 @@ pub type CallIndex = u8;
 pub struct RoutingConfig<T: Config> {
     /// Whitelisted (endpoint, address) tuples allowed to send messages.
     pub whitelisted_senders:
-        BoundedVec<(LayerZeroEndpoint, LayerZeroAddress), T::MaxWhitelistedSenders>,
+        BoundedBTreeSet<(LayerZeroEndpoint, LayerZeroAddress), T::MaxWhitelistedSenders>,
 
     /// Target (pallet_index, call_index) on the container chain.
     pub notification_destination: (PalletIndex, CallIndex),
