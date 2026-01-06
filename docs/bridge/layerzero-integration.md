@@ -16,7 +16,7 @@ A **central hub smart contract on Ethereum** acts as the bridge between LayerZer
 
 ## Architecture Diagram
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                         LAYERZERO-CONNECTED CHAINS                           │
 │                                                                              │
@@ -96,7 +96,7 @@ A **central hub smart contract on Ethereum** acts as the bridge between LayerZer
 
 ### Step-by-Step Flow
 
-```
+```text
 1. User/Contract  ────►  2. TanssiLzSpoke ────►  3. LayerZero  ────►  4. TanssiLzHub
    triggers send            on source            Protocol            on Ethereum
    on source chain          chain                delivers             receives msg
@@ -158,7 +158,7 @@ Xcm([
 
 The `encoded_call` is structured as:
 
-```
+```text
 ┌─────────────────┬─────────────────┬──────────────────────────────────┐
 │  pallet_index   │   call_index    │   SCALE-encoded InboundMessage   │
 │     (u8)        │      (u8)       │         (Vec<u8>)                │
@@ -176,12 +176,12 @@ The container chain's receiver pallet will decode and process the message.
 
 ### Step-by-Step Flow
 
-```
+```text
 1. Container       2. LzRouter        3. Snowbridge      4. TanssiLzHub
    sends XCM  ────►  queues msg  ────►  relays to   ────►  sends via LZ
    to relay          for outbound      Ethereum           to dest chain
-                                                                │
-                                                                ▼
+                                                               │
+                                                               ▼
                                        6. Target Contract  5. TanssiLzSpoke
                                           receives msg  ◄────  relays to target
                                           from Tanssi         app contract
@@ -200,7 +200,7 @@ The container chain's receiver pallet will decode and process the message.
 
 The **TanssiLzHub** contract on Ethereum is the central bridge between LayerZero and Tanssi:
 
-```
+```text
                     ┌─────────────────────────────────────┐
                     │         TanssiLzHub                 │
                     │           (Ethereum)                │
@@ -226,7 +226,7 @@ The **TanssiLzHub** contract on Ethereum is the central bridge between LayerZero
 
 The **TanssiLzSpoke** contracts are deployed on each LayerZero-connected chain (Solana, Arbitrum, Base, etc.) and act as entry/exit points for messages to/from Tanssi:
 
-```
+```text
                     ┌─────────────────────────────────────┐
                     │       TanssiLzSpoke                 │
                     │   (Solana, Arbitrum, Base, etc.)    │
