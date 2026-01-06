@@ -142,3 +142,13 @@ impl From<OutboundMessage> for OutboundSolMessage {
         }
     }
 }
+
+// from OutboundMessage to OutboundSolMessageEnvelope (includes magic bytes)
+impl From<OutboundMessage> for OutboundSolMessageEnvelope {
+    fn from(message: OutboundMessage) -> Self {
+        Self {
+            magicBytes: (*MAGIC_BYTES).into(),
+            message: message.into(),
+        }
+    }
+}
