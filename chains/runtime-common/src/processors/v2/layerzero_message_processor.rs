@@ -84,7 +84,12 @@ pub fn try_extract_message<T: pallet_lz_router::Config>(
                         });
                     }
 
-                    Ok(sol_payload.message.into())
+                    sol_payload.message.try_into().map_err(|e| {
+                        MessageExtractionError::InvalidMessage {
+                            context: format!("LayerZero message conversion failed: {}", e),
+                            source: None,
+                        }
+                    })
                 }
                 _ => Err(MessageExtractionError::UnsupportedMessage {
                     context: "Unsupported Message".to_string(),

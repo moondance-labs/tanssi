@@ -144,7 +144,7 @@ fn layerzero_try_extract_message_succeeds_with_valid_payload() {
         );
         assert_eq!(extracted.lz_source_endpoint, source_endpoint);
         assert_eq!(extracted.destination_chain, destination_chain);
-        assert_eq!(extracted.message, inner_message);
+        assert_eq!(extracted.message.to_vec(), inner_message);
     });
 }
 

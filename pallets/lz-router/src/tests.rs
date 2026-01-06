@@ -53,7 +53,7 @@ fn create_inbound_message(
         lz_source_address: source_address.try_into().expect("address too long"),
         lz_source_endpoint: source_endpoint,
         destination_chain,
-        message,
+        message: message.try_into().expect("message too long"),
     }
 }
 
