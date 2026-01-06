@@ -49,8 +49,12 @@ pub use pallet::*;
 use xcm::latest::Location;
 use xcm::prelude::{Parachain, Unlimited};
 use {
-    parity_scale_codec::Encode, sp_runtime::traits::Get,
-    tp_bridge::layerzero_message::InboundMessage,
+    parity_scale_codec::Encode,
+    sp_runtime::traits::Get,
+    tp_bridge::layerzero_message::{
+        InboundMessage, LayerZeroAddress, LayerZeroEndpoint, LayerZeroOutboundPayload,
+        OutboundMessage,
+    },
 };
 
 fn extract_container_chain_id(location: &Location) -> Option<ChainId> {
@@ -121,12 +125,7 @@ pub mod pallet {
             message: InboundMessage,
         },
         /// Outbound message queued for Ethereum/LayerZero
-        OutboundMessageQueued {
-            source_chain_id: ChainId,
-            destination_endpoint: u32,
-            destination_address: [u8; 32],
-            payload: alloc::vec::Vec<u8>,
-        },
+        OutboundMessageQueued { message: OutboundMessage },
     }
 
     #[pallet::call]
@@ -164,27 +163,30 @@ pub mod pallet {
         /// Send an outbound message to Ethereum/LayerZero.
         ///
         /// Called via XCM from a container chain to send a message to an external chain.
+        /// The `source_chain` is automatically set from the calling container chain's origin.
         #[pallet::call_index(1)]
         #[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
         pub fn send_message_to_ethereum(
             origin: OriginFor<T>,
-            destination_endpoint: u32,
-            destination_address: [u8; 32],
-            payload: alloc::vec::Vec<u8>,
+            lz_destination_address: LayerZeroAddress,
+            lz_destination_endpoint: LayerZeroEndpoint,
+            payload: LayerZeroOutboundPayload,
         ) -> DispatchResult {
             let origin_location = T::ContainerChainOrigin::ensure_origin(origin)?;
-            let source_chain_id = extract_container_chain_id(&origin_location)
+            let source_chain = extract_container_chain_id(&origin_location)
                 .ok_or(Error::<T>::LocationIsNotAContainerChain)?;
+
+            let message = OutboundMessage {
+                source_chain,
+                lz_destination_address,
+                lz_destination_endpoint,
+                payload,
+            };
 
             // TODO: Queue message for Ethereum outbound queue
             // This will integrate with snowbridge outbound queue
 
-            Self::deposit_event(Event::OutboundMessageQueued {
-                source_chain_id,
-                destination_endpoint,
-                destination_address,
-                payload,
-            });
+            Self::deposit_event(Event::OutboundMessageQueued { message });
 
             Ok(())
         }

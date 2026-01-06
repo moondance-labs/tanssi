@@ -30,7 +30,7 @@ use {
     },
     tp_bridge::layerzero_message::{
         InboundSolMessage as LayerZeroInboundSolMessage,
-        InboundSolPayload as LayerZeroInboundSolPayload, MAGIC_BYTES as LZ_MAGIC_BYTES,
+        InboundSolMessageEnvelope as LayerZeroInboundSolEnvelope, MAGIC_BYTES as LZ_MAGIC_BYTES,
     },
     xcm::latest::prelude::*,
 };
@@ -66,15 +66,15 @@ fn create_layerzero_payload(
         lzSourceAddress: source_address.into(),
         lzSourceEndpoint: source_endpoint,
         destinationChain: destination_chain,
-        message: message.into(),
+        payload: message.into(),
     };
 
-    let sol_payload = LayerZeroInboundSolPayload {
+    let sol_envelope = LayerZeroInboundSolEnvelope {
         magicBytes: (*LZ_MAGIC_BYTES).into(),
         message: sol_message,
     };
 
-    LayerZeroInboundSolPayload::abi_encode(&sol_payload)
+    LayerZeroInboundSolEnvelope::abi_encode(&sol_envelope)
 }
 
 /// Helper function to create a valid LayerZero ABI-encoded payload with custom magic bytes
@@ -89,15 +89,15 @@ fn create_layerzero_payload_with_magic(
         lzSourceAddress: source_address.into(),
         lzSourceEndpoint: source_endpoint,
         destinationChain: destination_chain,
-        message: message.into(),
+        payload: message.into(),
     };
 
-    let sol_payload = LayerZeroInboundSolPayload {
+    let sol_envelope = LayerZeroInboundSolEnvelope {
         magicBytes: magic_bytes.into(),
         message: sol_message,
     };
 
-    LayerZeroInboundSolPayload::abi_encode(&sol_payload)
+    LayerZeroInboundSolEnvelope::abi_encode(&sol_envelope)
 }
 
 #[test]
@@ -144,7 +144,7 @@ fn layerzero_try_extract_message_succeeds_with_valid_payload() {
         );
         assert_eq!(extracted.lz_source_endpoint, source_endpoint);
         assert_eq!(extracted.destination_chain, destination_chain);
-        assert_eq!(extracted.message.to_vec(), inner_message);
+        assert_eq!(extracted.payload.to_vec(), inner_message);
     });
 }
 

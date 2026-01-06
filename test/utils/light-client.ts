@@ -113,9 +113,7 @@ function encodeLayerZeroMessage(
     message: Uint8Array
 ): Uint8Array {
     if (lzSourceAddress.length !== 32) {
-        throw new Error(
-            `lzSourceAddress must be exactly 32 bytes, got ${lzSourceAddress.length} bytes`
-        );
+        throw new Error(`lzSourceAddress must be exactly 32 bytes, got ${lzSourceAddress.length} bytes`);
     }
 
     const MAGIC_BYTES = new Uint8Array([0x6c, 0x7a, 0x62, 0x31]); // "lzb1"

@@ -31,8 +31,8 @@ use parity_scale_codec::Decode;
 use snowbridge_inbound_queue_primitives::v2::{Message, MessageProcessorError, Payload};
 use sp_core::{Get, H160};
 use tp_bridge::layerzero_message::{
-    InboundMessage as LayerZeroInboundMessage, InboundSolPayload as LayerZeroInboundSolPayload,
-    MAGIC_BYTES as LZ_MAGIC_BYTES,
+    InboundMessage as LayerZeroInboundMessage,
+    InboundSolMessageEnvelope as LayerZeroInboundSolEnvelope, MAGIC_BYTES as LZ_MAGIC_BYTES,
 };
 use v2_processor_proc_macro::MessageProcessor;
 use xcm::latest::{ExecuteXcm, InteriorLocation, NetworkId};
@@ -69,11 +69,11 @@ pub fn try_extract_message<T: pallet_lz_router::Config>(
                     }
 
                     let sol_payload =
-                        LayerZeroInboundSolPayload::abi_decode_validate(&mut payload.as_slice())
+                        LayerZeroInboundSolEnvelope::abi_decode_validate(&mut payload.as_slice())
                             .map_err(|error| MessageExtractionError::InvalidMessage {
-                                context: "Unable to decode LayerZero Payload".to_string(),
-                                source: Some(Box::new(error)),
-                            })?;
+                            context: "Unable to decode LayerZero Payload".to_string(),
+                            source: Some(Box::new(error)),
+                        })?;
                     if &sol_payload.magicBytes.0 != LZ_MAGIC_BYTES {
                         return Err(MessageExtractionError::InvalidMessage {
                             context: format!(
