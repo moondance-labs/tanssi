@@ -38,9 +38,9 @@ describeSuite({
                 const expectedTank2004 = paraIdTank(paraId2004);
 
                 // Convert both to hex for comparison
-                const apiResult2000 = u8aToHex(tankAccount2000);
-                const apiResult2001 = u8aToHex(tankAccount2001);
-                const apiResult2004 = u8aToHex(tankAccount2004);
+                const apiResult2000 = u8aToHex(tankAccount2000.toU8a());
+                const apiResult2001 = u8aToHex(tankAccount2001.toU8a());
+                const apiResult2004 = u8aToHex(tankAccount2004.toU8a());
 
                 const expected2000 = u8aToHex(expectedTank2000);
                 const expected2001 = u8aToHex(expectedTank2001);
@@ -53,8 +53,7 @@ describeSuite({
 
                 // For para_id 2004, verify it matches the documented expected value
                 // As per the requirements: 0xd5eae3eea344c346d648beb985d6619a1589f22e1880ff35f7840aa8288e5a87
-                const expectedHex2004 =
-                    "0xd5eae3eea344c346d648beb985d6619a1589f22e1880ff35f7840aa8288e5a87";
+                const expectedHex2004 = "0xd5eae3eea344c346d648beb985d6619a1589f22e1880ff35f7840aa8288e5a87";
                 expect(apiResult2004, "Tank account for paraId 2004 should match the documented value").toBe(
                     expectedHex2004
                 );
@@ -62,4 +61,3 @@ describeSuite({
         });
     },
 });
-
