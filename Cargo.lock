@@ -10919,6 +10919,7 @@ dependencies = [
 name = "pallet-lz-router"
 version = "0.1.0"
 dependencies = [
+ "alloy-core",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -10930,6 +10931,7 @@ dependencies = [
  "rand 0.8.5",
  "scale-info",
  "snowbridge-inbound-queue-primitives",
+ "snowbridge-outbound-queue-primitives",
  "sp-core",
  "sp-io",
  "sp-runtime",

@@ -23,13 +23,16 @@ use {
     },
     frame_system::EnsureRoot,
     pallet_xcm::TestWeightInfo,
-    sp_core::H256,
+    parity_scale_codec::{Decode, Encode},
+    snowbridge_outbound_queue_primitives::SendError as SnowbridgeSendError,
+    sp_core::{H160, H256},
     sp_runtime::{
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     },
     std::cell::RefCell,
     std::sync::Arc,
+    tp_bridge::{ConvertLocation, TicketInfo},
     xcm::latest::{
         Assets, InteriorLocation, Junction, Junctions, Location, NetworkId, SendError, SendResult,
         SendXcm, Xcm, XcmHash,
@@ -157,6 +160,54 @@ impl frame_support::traits::EnsureOrigin<RuntimeOrigin> for MockContainerChainOr
     }
 }
 
+// Thread-local storage for tracking sent Ethereum messages
+thread_local! {
+    pub static SENT_ETH_MESSAGE_NONCE: RefCell<u64> = const { RefCell::new(0) };
+}
+
+/// Get the nonce of sent Ethereum messages
+#[allow(dead_code)]
+pub fn sent_eth_message_nonce() -> u64 {
+    SENT_ETH_MESSAGE_NONCE.with(|q| (*q.borrow()))
+}
+
+/// Clear the sent Ethereum message nonce
+#[allow(dead_code)]
+pub fn clear_sent_eth_messages() {
+    SENT_ETH_MESSAGE_NONCE.with(|r| *r.borrow_mut() = 0);
+}
+
+#[derive(Clone, Decode, Default, Encode)]
+pub struct DummyTicket {
+    pub message_id: H256,
+}
+
+impl TicketInfo for DummyTicket {
+    fn message_id(&self) -> H256 {
+        self.message_id
+    }
+}
+
+/// Mock OutboundQueueV2 that records sent messages
+pub struct MockOutboundQueueV2;
+
+impl snowbridge_outbound_queue_primitives::v2::SendMessage for MockOutboundQueueV2 {
+    type Ticket = DummyTicket;
+
+    fn deliver(_: Self::Ticket) -> Result<H256, SnowbridgeSendError> {
+        SENT_ETH_MESSAGE_NONCE.with(|r| *r.borrow_mut() += 1);
+        Ok(H256::zero())
+    }
+
+    fn validate(
+        message: &snowbridge_outbound_queue_primitives::v2::Message,
+    ) -> Result<Self::Ticket, SnowbridgeSendError> {
+        Ok(DummyTicket {
+            message_id: message.id,
+        })
+    }
+}
+
 parameter_types! {
     pub const MaxWhitelistedSendersValue: u32 = 10;
     pub UniversalLocation: InteriorLocation = Junctions::X1(
@@ -164,6 +215,39 @@ parameter_types! {
     );
     pub const BaseXcmWeight: Weight = Weight::from_parts(10_000, 0);
     pub const MaxInstructions: u32 = 100;
+    /// Mock LayerZero hub address on Ethereum
+    pub const LayerZeroHubAddressValue: H160 = H160([0x42; 20]);
+    /// Minimum reward for outbound messages
+    pub const MinOutboundRewardValue: u128 = 1;
+    /// Mock Ethereum network for testing
+    pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 11155111 };
+    /// Mock Ethereum location
+    pub EthereumLocation: Location = Location::new(2, [Junction::GlobalConsensus(EthereumNetwork::get())]);
+    /// Fees account for testing
+    pub const FeesAccountId: AccountId = 999;
+}
+
+/// Mock LocationHashOf that converts locations to H256 by hashing
+pub struct MockLocationHashOf;
+
+impl ConvertLocation<H256> for MockLocationHashOf {
+    fn convert_location(location: &Location) -> Option<H256> {
+        use parity_scale_codec::Encode;
+        use sp_runtime::traits::Hash;
+        Some(BlakeTwo256::hash(&location.encode()))
+    }
+}
+
+/// Mock LocationToAccountId that converts parachain locations to account IDs
+pub struct MockLocationToAccountId;
+
+impl xcm_executor::traits::ConvertLocation<AccountId> for MockLocationToAccountId {
+    fn convert_location(location: &Location) -> Option<AccountId> {
+        match location.unpack() {
+            (0, [Junction::Parachain(id)]) => Some(*id as AccountId),
+            _ => None,
+        }
+    }
 }
 
 /// Wrapper type that implements Clone for parameter_types
@@ -206,6 +290,15 @@ impl pallet_xcm::Config for Test {
 impl pallet_lz_router::Config for Test {
     type MaxWhitelistedSenders = MaxWhitelistedSenders;
     type ContainerChainOrigin = MockContainerChainOrigin;
+    type OutboundQueueV2 = MockOutboundQueueV2;
+    type LayerZeroHubAddress = LayerZeroHubAddressValue;
+    type MinOutboundReward = MinOutboundRewardValue;
+    type LocationHashOf = MockLocationHashOf;
+    type EthereumLocation = EthereumLocation;
+    type UniversalLocation = UniversalLocation;
+    type Currency = Balances;
+    type FeesAccount = FeesAccountId;
+    type LocationToAccountId = MockLocationToAccountId;
 }
 
 #[derive(Default)]

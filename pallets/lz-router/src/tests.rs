@@ -16,9 +16,12 @@
 
 use {
     crate::{mock::*, types::RoutingConfig, Error, Event, Pallet, RoutingConfigs},
-    frame_support::{assert_err, assert_noop, assert_ok},
+    frame_support::{
+        assert_err, assert_noop, assert_ok,
+        traits::fungible::{Inspect, Mutate},
+    },
     snowbridge_inbound_queue_primitives::v2::MessageProcessorError,
-    sp_runtime::{BoundedBTreeSet, BoundedVec},
+    sp_runtime::{ArithmeticError, BoundedBTreeSet, BoundedVec},
     tp_bridge::layerzero_message::InboundMessage,
 };
 
@@ -316,6 +319,329 @@ mod handle_inbound_message {
 
             // Check that 2 XCM messages were sent
             assert_eq!(sent_xcm().len(), 2);
+        });
+    }
+}
+
+mod send_message_to_ethereum {
+    use super::*;
+
+    const PARA_ID: u32 = 2000;
+    const REWARD: u128 = 100;
+    const GAS: u64 = 500_000;
+
+    /// Helper to create an outbound message for testing
+    fn create_outbound_params() -> (Vec<u8>, u32, Vec<u8>) {
+        let lz_destination_address = vec![0xAA, 0xBB, 0xCC];
+        let lz_destination_endpoint = 40161u32; // Ethereum endpoint
+        let payload = b"test payload".to_vec();
+        (lz_destination_address, lz_destination_endpoint, payload)
+    }
+
+    #[test]
+    fn send_message_to_ethereum_works() {
+        ExtBuilder.build().execute_with(|| {
+            // Setup: Give sovereign account some balance
+            let sovereign_account = PARA_ID as AccountId;
+            Balances::mint_into(&sovereign_account, 1000).unwrap();
+            let fees_account = FeesAccountId::get();
+            let initial_fees_balance = Balances::balance(&fees_account);
+
+            let (dest_addr, dest_endpoint, payload) = create_outbound_params();
+
+            // Verify no messages sent yet
+            assert_eq!(sent_eth_message_nonce(), 0);
+
+            // Send message
+            assert_ok!(LzRouter::send_message_to_ethereum(
+                RuntimeOrigin::signed(PARA_ID as AccountId),
+                dest_addr.clone().try_into().unwrap(),
+                dest_endpoint,
+                payload.clone().try_into().unwrap(),
+                REWARD,
+                GAS,
+            ));
+
+            // Check fee was transferred
+            assert_eq!(
+                Balances::balance(&fees_account),
+                initial_fees_balance + REWARD
+            );
+            assert_eq!(Balances::balance(&sovereign_account), 1000 - REWARD);
+
+            // Check event was emitted
+            let events = lz_router_events();
+            assert_eq!(events.len(), 1);
+            match &events[0] {
+                Event::OutboundMessageSent {
+                    message_id,
+                    message,
+                    reward,
+                    gas,
+                } => {
+                    assert_eq!(message.source_chain, PARA_ID);
+                    assert_eq!(message.lz_destination_address.to_vec(), dest_addr);
+                    assert_eq!(message.lz_destination_endpoint, dest_endpoint);
+                    assert_eq!(message.payload.to_vec(), payload);
+                    assert_eq!(*reward, REWARD);
+                    assert_eq!(*gas, GAS);
+                    assert_ne!(*message_id, sp_core::H256::zero());
+                }
+                _ => panic!("Expected OutboundMessageSent event"),
+            }
+
+            // Verify message was queued to Ethereum
+            assert_eq!(sent_eth_message_nonce(), 1);
+        });
+    }
+
+    #[test]
+    fn send_message_fails_below_minimum_reward() {
+        ExtBuilder.build().execute_with(|| {
+            let sovereign_account = PARA_ID as AccountId;
+            Balances::mint_into(&sovereign_account, 1000).unwrap();
+
+            let (dest_addr, dest_endpoint, payload) = create_outbound_params();
+            let below_min_reward = MinOutboundRewardValue::get() - 1;
+
+            // Should fail with reward below minimum
+            assert_noop!(
+                LzRouter::send_message_to_ethereum(
+                    RuntimeOrigin::signed(PARA_ID as AccountId),
+                    dest_addr.try_into().unwrap(),
+                    dest_endpoint,
+                    payload.try_into().unwrap(),
+                    below_min_reward,
+                    GAS,
+                ),
+                Error::<Test>::MinRewardNotAchieved
+            );
+
+            // No events or transfers should have occurred
+            assert_eq!(lz_router_events().len(), 0);
+            assert_eq!(sent_eth_message_nonce(), 0);
+        });
+    }
+
+    #[test]
+    fn send_message_fails_insufficient_balance() {
+        ExtBuilder.build().execute_with(|| {
+            let sovereign_account = PARA_ID as AccountId;
+            // Give insufficient balance
+            Balances::mint_into(&sovereign_account, REWARD - 1).unwrap();
+
+            let (dest_addr, dest_endpoint, payload) = create_outbound_params();
+
+            // Should fail due to insufficient balance for transfer
+            assert_noop!(
+                LzRouter::send_message_to_ethereum(
+                    RuntimeOrigin::signed(PARA_ID as AccountId),
+                    dest_addr.try_into().unwrap(),
+                    dest_endpoint,
+                    payload.try_into().unwrap(),
+                    REWARD,
+                    GAS,
+                ),
+                ArithmeticError::Underflow
+            );
+
+            // No events should have been emitted
+            assert_eq!(lz_router_events().len(), 0);
+            assert_eq!(sent_eth_message_nonce(), 0);
+        });
+    }
+
+    #[test]
+    fn send_message_fails_with_invalid_origin() {
+        ExtBuilder.build().execute_with(|| {
+            let (dest_addr, dest_endpoint, payload) = create_outbound_params();
+
+            // Try with root origin (not a container chain)
+            assert_noop!(
+                LzRouter::send_message_to_ethereum(
+                    RuntimeOrigin::root(),
+                    dest_addr.try_into().unwrap(),
+                    dest_endpoint,
+                    payload.try_into().unwrap(),
+                    REWARD,
+                    GAS,
+                ),
+                sp_runtime::DispatchError::BadOrigin
+            );
+        });
+    }
+
+    #[test]
+    fn send_message_with_different_gas_limits() {
+        ExtBuilder.build().execute_with(|| {
+            let sovereign_account = PARA_ID as AccountId;
+            Balances::mint_into(&sovereign_account, 10_000).unwrap();
+
+            let (dest_addr, dest_endpoint, payload) = create_outbound_params();
+
+            // Test with low gas
+            assert_ok!(LzRouter::send_message_to_ethereum(
+                RuntimeOrigin::signed(PARA_ID as AccountId),
+                dest_addr.clone().try_into().unwrap(),
+                dest_endpoint,
+                payload.clone().try_into().unwrap(),
+                REWARD,
+                100_000,
+            ));
+
+            System::reset_events();
+
+            // Test with high gas
+            assert_ok!(LzRouter::send_message_to_ethereum(
+                RuntimeOrigin::signed(PARA_ID as AccountId),
+                dest_addr.clone().try_into().unwrap(),
+                dest_endpoint,
+                payload.clone().try_into().unwrap(),
+                REWARD,
+                5_000_000,
+            ));
+
+            let events = lz_router_events();
+            assert_eq!(events.len(), 1);
+            if let Event::OutboundMessageSent { gas, .. } = events[0] {
+                assert_eq!(gas, 5_000_000);
+            }
+        });
+    }
+
+    #[test]
+    fn send_message_with_large_payload() {
+        ExtBuilder.build().execute_with(|| {
+            let sovereign_account = PARA_ID as AccountId;
+            Balances::mint_into(&sovereign_account, 1000).unwrap();
+
+            let (dest_addr, dest_endpoint, _) = create_outbound_params();
+            // Create a large payload (but within 8KB limit)
+            let large_payload = vec![0xFF; 4096];
+
+            assert_ok!(LzRouter::send_message_to_ethereum(
+                RuntimeOrigin::signed(PARA_ID as AccountId),
+                dest_addr.try_into().unwrap(),
+                dest_endpoint,
+                large_payload.clone().try_into().unwrap(),
+                REWARD,
+                GAS,
+            ));
+
+            // Verify payload in event
+            let events = lz_router_events();
+            if let Event::OutboundMessageSent { message, .. } = &events[0] {
+                assert_eq!(message.payload.to_vec(), large_payload);
+            }
+        });
+    }
+
+    #[test]
+    fn send_message_with_exact_minimum_reward() {
+        ExtBuilder.build().execute_with(|| {
+            let sovereign_account = PARA_ID as AccountId;
+            Balances::mint_into(&sovereign_account, 1000).unwrap();
+
+            let (dest_addr, dest_endpoint, payload) = create_outbound_params();
+            let min_reward = MinOutboundRewardValue::get();
+
+            // Should succeed with exact minimum
+            assert_ok!(LzRouter::send_message_to_ethereum(
+                RuntimeOrigin::signed(PARA_ID as AccountId),
+                dest_addr.try_into().unwrap(),
+                dest_endpoint,
+                payload.try_into().unwrap(),
+                min_reward,
+                GAS,
+            ));
+
+            assert_eq!(lz_router_events().len(), 1);
+            assert_eq!(sent_eth_message_nonce(), 1);
+        });
+    }
+
+    #[test]
+    fn send_multiple_messages_from_same_chain() {
+        ExtBuilder.build().execute_with(|| {
+            let sovereign_account = PARA_ID as AccountId;
+            Balances::mint_into(&sovereign_account, 10_000).unwrap();
+
+            let (dest_addr, dest_endpoint, payload) = create_outbound_params();
+
+            // Send first message
+            assert_ok!(LzRouter::send_message_to_ethereum(
+                RuntimeOrigin::signed(PARA_ID as AccountId),
+                dest_addr.clone().try_into().unwrap(),
+                dest_endpoint,
+                payload.clone().try_into().unwrap(),
+                REWARD,
+                GAS,
+            ));
+
+            System::reset_events();
+
+            // Send second message
+            assert_ok!(LzRouter::send_message_to_ethereum(
+                RuntimeOrigin::signed(PARA_ID as AccountId),
+                dest_addr.clone().try_into().unwrap(),
+                dest_endpoint,
+                b"second message".to_vec().try_into().unwrap(),
+                REWARD,
+                GAS,
+            ));
+
+            // Both should succeed
+            assert_eq!(sent_eth_message_nonce(), 2);
+
+            // Check that second event has different payload
+            let events = lz_router_events();
+            if let Event::OutboundMessageSent { message, .. } = &events[0] {
+                assert_eq!(message.payload.to_vec(), b"second message".to_vec());
+            }
+        });
+    }
+
+    #[test]
+    fn send_messages_from_different_chains() {
+        ExtBuilder.build().execute_with(|| {
+            let para1 = 2000u32;
+            let para2 = 2001u32;
+
+            // Fund both sovereign accounts
+            Balances::mint_into(&(para1 as AccountId), 1000).unwrap();
+            Balances::mint_into(&(para2 as AccountId), 1000).unwrap();
+
+            let (dest_addr, dest_endpoint, payload) = create_outbound_params();
+
+            // Send from para1
+            assert_ok!(LzRouter::send_message_to_ethereum(
+                RuntimeOrigin::signed(para1 as AccountId),
+                dest_addr.clone().try_into().unwrap(),
+                dest_endpoint,
+                payload.clone().try_into().unwrap(),
+                REWARD,
+                GAS,
+            ));
+
+            System::reset_events();
+
+            // Send from para2
+            assert_ok!(LzRouter::send_message_to_ethereum(
+                RuntimeOrigin::signed(para2 as AccountId),
+                dest_addr.try_into().unwrap(),
+                dest_endpoint,
+                payload.try_into().unwrap(),
+                REWARD,
+                GAS,
+            ));
+
+            // Check that both have correct source_chain
+            let events = lz_router_events();
+            if let Event::OutboundMessageSent { message, .. } = &events[0] {
+                assert_eq!(message.source_chain, para2);
+            }
+
+            assert_eq!(sent_eth_message_nonce(), 2);
         });
     }
 }

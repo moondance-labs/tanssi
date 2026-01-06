@@ -13,6 +13,7 @@ targets = [ "x86_64-unknown-linux-gnu" ]
 workspace = true
 
 [dependencies]
+alloy-core = { workspace = true, features = [ "sol-types" ] }
 log = { workspace = true }
 parity-scale-codec = { workspace = true }
 rand = { workspace = true, optional = true }
@@ -20,11 +21,14 @@ scale-info = { workspace = true, features = [ "derive" ] }
 
 frame-support = { workspace = true }
 frame-system = { workspace = true }
+sp-core = { workspace = true }
+sp-io = { workspace = true }
 sp-runtime = { workspace = true }
 tp-bridge = { workspace = true }
 tp-traits = { workspace = true }
 
 snowbridge-inbound-queue-primitives = { workspace = true }
+snowbridge-outbound-queue-primitives = { workspace = true }
 xcm = { workspace = true }
 xcm-executor = { workspace = true }
 
@@ -42,6 +46,7 @@ xcm-builder = { workspace = true }
 [features]
 default = [ "std" ]
 std = [
+	"alloy-core/std",
 	"frame-benchmarking/std",
 	"frame-support/std",
 	"frame-system/std",
@@ -53,6 +58,7 @@ std = [
 	"rand?/std",
 	"scale-info/std",
 	"snowbridge-inbound-queue-primitives/std",
+	"snowbridge-outbound-queue-primitives/std",
 	"sp-core/std",
 	"sp-io/std",
 	"sp-runtime/std",
