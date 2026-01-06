@@ -30,7 +30,6 @@ use {
     },
     std::cell::RefCell,
     std::sync::Arc,
-    tp_bridge::ConvertLocation,
     xcm::latest::{
         Assets, InteriorLocation, Junction, Junctions, Location, NetworkId, SendError, SendResult,
         SendXcm, Xcm, XcmHash,
@@ -158,18 +157,6 @@ impl frame_support::traits::EnsureOrigin<RuntimeOrigin> for MockContainerChainOr
     }
 }
 
-/// Mock location to account converter
-pub struct MockConvertLocation;
-
-impl ConvertLocation<AccountId> for MockConvertLocation {
-    fn convert_location(location: &Location) -> Option<AccountId> {
-        match location.unpack() {
-            (0, [Junction::Parachain(id)]) => Some(AccountId::from(*id)),
-            _ => None,
-        }
-    }
-}
-
 parameter_types! {
     pub const MaxWhitelistedSendersValue: u32 = 10;
     pub UniversalLocation: InteriorLocation = Junctions::X1(
@@ -219,7 +206,6 @@ impl pallet_xcm::Config for Test {
 impl pallet_lz_router::Config for Test {
     type MaxWhitelistedSenders = MaxWhitelistedSenders;
     type ContainerChainOrigin = MockContainerChainOrigin;
-    type ConvertLocation = MockConvertLocation;
 }
 
 #[derive(Default)]

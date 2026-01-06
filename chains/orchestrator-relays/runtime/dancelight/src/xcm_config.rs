@@ -357,7 +357,6 @@ impl pallet_foreign_asset_creator::Config for Runtime {
 impl pallet_lz_router::Config for Runtime {
     type MaxWhitelistedSenders = ConstU32<100>;
     type ContainerChainOrigin = pallet_xcm::EnsureXcm<OnlyParachains>;
-    type ConvertLocation = LocationConverter;
 }
 
 parameter_types! {

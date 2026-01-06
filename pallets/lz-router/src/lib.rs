@@ -65,7 +65,6 @@ pub mod pallet {
     use crate::types::{ChainId, RoutingConfig};
     use alloc::vec;
     use snowbridge_inbound_queue_primitives::v2::MessageProcessorError;
-    use tp_bridge::ConvertLocation;
     use xcm::latest::{send_xcm, Location, Xcm};
     use xcm::prelude::{OriginKind, Transact, UnpaidExecution};
     use {
@@ -84,9 +83,6 @@ pub mod pallet {
             <Self as frame_system::Config>::RuntimeOrigin,
             Success = Location,
         >;
-
-        /// Used to obtain container chain sovereign account.
-        type ConvertLocation: ConvertLocation<Self::AccountId>;
     }
 
     #[pallet::pallet]
@@ -108,8 +104,6 @@ pub mod pallet {
         NotWhitelistedSender,
         /// Setting the same configuration that already exists
         SameConfigAlreadyExists,
-        /// Failed to convert container chain location to account ID
-        ChainAccountConversionFailed,
     }
 
     #[pallet::event]
