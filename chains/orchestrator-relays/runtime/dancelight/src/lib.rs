@@ -947,7 +947,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				RuntimeCall::Treasury(..) |
 				RuntimeCall::ConvictionVoting(..) |
 				RuntimeCall::Referenda(..) |
-
                 RuntimeCall::OpenTechCommitteeCollective(..) |
 				RuntimeCall::Whitelist(..) |
 				RuntimeCall::Utility(..) |

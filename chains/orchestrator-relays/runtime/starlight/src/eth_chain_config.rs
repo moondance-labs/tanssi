@@ -17,7 +17,7 @@
 use hex_literal::hex;
 use snowbridge_beacon_primitives::{Fork, ForkVersions};
 
-enum BuildEnv {
+pub enum BuildEnv {
     Prod,
     Benchmark,
     TestLike,

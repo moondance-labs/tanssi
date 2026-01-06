@@ -33,12 +33,12 @@ jobs:
               with:
                 features: "fast-runtime,metadata-hash"
             - name: Upload runtimes
-              uses: actions/upload-artifact@v5
+              uses: actions/upload-artifact@v6
               with:
                   name: runtimes
                   path: runtimes
             - name: Upload binary
-              uses: actions/upload-artifact@v5
+              uses: actions/upload-artifact@v6
               with:
                   name: binaries
                   path: binaries
@@ -57,7 +57,7 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v6
             - name: "Download binaries"
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v7
               with:
                   name: binaries
                   path: target/release
@@ -76,7 +76,7 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v6
             - name: "Download binaries"
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v7
               with:
                   name: binaries
                   path: target/release
@@ -85,7 +85,7 @@ jobs:
               uses: ./.github/workflow-templates/make-binaries-executable
 
             - name: Cache Foundry
-              uses: actions/cache@v4
+              uses: actions/cache@v5
               with:
                 path: |
                   ~/.foundry
@@ -93,7 +93,7 @@ jobs:
                 key: symbiotic-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
 
             - name: Cache Symbiotic Contracts
-              uses: actions/cache@v4
+              uses: actions/cache@v5
               id: cache-symbiotic
               with:
                 path: |
@@ -103,7 +103,7 @@ jobs:
                 key: symbiotic-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
 
             - name: Cache Snowbridge Relayer
-              uses: actions/cache@v4
+              uses: actions/cache@v5
               id: cache-relayer
               with:
                 path: |
@@ -113,7 +113,7 @@ jobs:
                 key: relayer-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
 
             - name: Cache Ethereum Node Binaries
-              uses: actions/cache@v4
+              uses: actions/cache@v5
               id: cache-ethereum-binaries
               with:
                 path: |
@@ -134,12 +134,12 @@ jobs:
           with:
             features: "fast-runtime,runtime-benchmarks,metadata-hash"
         - name: Upload benchmark runtimes
-          uses: actions/upload-artifact@v5
+          uses: actions/upload-artifact@v6
           with:
             name: runtimes-benchmark
             path: runtimes
         - name: Upload binary
-          uses: actions/upload-artifact@v5
+          uses: actions/upload-artifact@v6
           with:
             name: binaries-benchmark
             path: binaries
@@ -166,7 +166,7 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v6
             - name: "Download benchmark binaries"
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v7
               with:
                 name: runtimes-benchmark
                 path: target/release

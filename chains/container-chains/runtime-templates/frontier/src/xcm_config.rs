@@ -53,12 +53,12 @@ use {
         sovereign_paid_remote_exporter::SovereignPaidRemoteExporter,
         ContainerChainEthereumLocationConverter,
     },
-    tp_xcm_commons::EthereumAssetReserveFromParent,
+    tp_xcm_commons::{EthereumAssetReserveForTanssi, EthereumAssetReserveFromParent},
     xcm::latest::prelude::*,
     xcm_builder::{
         AccountKey20Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
-        IsConcrete, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
+        IsConcrete, MintLocation, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
         SiblingParachainConvertsVia, SignedAccountKey20AsNative, SovereignSignedViaLocation,
         TakeWeightCredit, UsingComponents, WeightInfoBounds, WithComputedOrigin, WithUniqueTopic,
         XcmFeeManagerFromComponents,
@@ -225,6 +225,7 @@ impl xcm_executor::Config for XcmConfig {
     // - Ethereum assets with ethereum or relay origin
     type IsReserve = (
         IsReserveFilter<Runtime>,
+        EthereumAssetReserveForTanssi<EthereumLocation>,
         EthereumAssetReserveFromParent<EthereumLocation, EthereumNetwork>,
     );
     type IsTeleporter = IsTeleportFilter<Runtime>;
@@ -350,6 +351,7 @@ parameter_types! {
     pub const ForeignAssetsMetadataDepositBase: Balance = 0;
     pub const ForeignAssetsMetadataDepositPerByte: Balance = 0;
     pub CheckingAccount: AccountId = PolkadotXcm::check_account();
+    pub LocalCheckingAccount: (AccountId, MintLocation) = (CheckingAccount::get(), MintLocation::Local);
 }
 
 #[cfg(feature = "runtime-benchmarks")]
