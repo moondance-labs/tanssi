@@ -17,6 +17,32 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 //! Benchmarking
+//!
+//! ## Note about inherents
+//!
+//! `set_latest_author_data` is an inherent that must be included in every block, or else the block
+//! is invalid.
+//!
+//! Usually the purpose of an extrinsic weight is for the block author to be able to decide whether
+//! to include it in the block or skip it. Taking into account the fee, and the block space that
+//! will be used by that extrinsic.
+//!
+//! But in the case of inherents, there is no fee, and there is no possibility of not including it,
+//! so the weight is useless.
+//!
+//! So in our case we use this weight hint to ensure that we can support the number of chains that
+//! we aim to support. This ensures that when we add a new expensive hook, we get an error ahead of
+//! time, instead of getting degraded block production as the number of registered chains grows.
+//!
+//! This benchmark is a bit complex because we allow each runtime to configure a set of "hooks"
+//! that will run for every container chain that produces a block. We want to benchmark the hooks
+//! separately, because we allow hooks to return its own weight.
+//!
+//! So the `set_latest_author_data` benchmark disables hooks using the
+//! `set_should_run_author_noting_hooks` function. This means that the weight hint for the
+//! `set_latest_author_data` inherent must be `set_latest_author_data + on_container_authors_noted`.
+//! This is verified in test `inherent_weight_is_base_plus_hooks`.
+
 use {
     crate::{AuthorNotingInfo, Call, Config, HeadData, Pallet, ParaId, RelayOrPara},
     alloc::{boxed::Box, vec},
@@ -55,25 +81,43 @@ mod test_sproof {
     }
 }
 
+/// Storage key used as a helper for benchmarking, to be able to skip `set_latest_author_data` hooks.
+/// We set this to false in `set_latest_author_data` benchmark because that benchmarks only the base
+/// weight, excluding the hooks.
+const STORAGE_KEY_ENABLE_HOOKS: &[u8] = b"__mock_bench_run_author_noting_hooks";
+
+pub fn should_run_author_noting_hooks() -> bool {
+    // whitelist this key, it is only read if benchmark feature is enabled
+    frame_benchmarking::benchmarking::add_to_whitelist(STORAGE_KEY_ENABLE_HOOKS.to_vec().into());
+    // default: true
+    frame_support::storage::unhashed::get(STORAGE_KEY_ENABLE_HOOKS).unwrap_or(true)
+}
+pub fn set_should_run_author_noting_hooks(x: bool) {
+    // whitelist this key, it is only read if benchmark feature is enabled
+    frame_benchmarking::benchmarking::add_to_whitelist(STORAGE_KEY_ENABLE_HOOKS.to_vec().into());
+    frame_support::storage::unhashed::put(STORAGE_KEY_ENABLE_HOOKS, &x);
+}
+
 #[benchmarks]
 mod benchmarks {
     use super::*;
 
     #[benchmark]
     fn set_latest_author_data(x: Linear<1, 100>) -> Result<(), BenchmarkError> {
+        // This benchmarks is `set_latest_author_data` with empty hooks
         let mut container_chains = vec![];
 
         let data = if TypeId::of::<<<T as Config>::RelayOrPara as RelayOrPara>::InherentArg>()
             == TypeId::of::<tp_author_noting_inherent::OwnParachainInherentData>()
         {
-            // RELAY MODE
+            // PARA MODE
             let mut sproof_builder = test_sproof::ParaHeaderSproofBuilder::default();
 
-            // Must start at 0 in Relay mode (why?)
+            // Start at index 2000 because para_id < 2000 are system parachains
             for para_id in 0..x {
-                let para_id = para_id.into();
+                let para_id = (2000u32 + para_id).into();
 
-                let author: T::AccountId = account("account id", 0u32, 0u32);
+                let author: T::AccountId = account("account id", u32::from(para_id), 0u32);
                 container_chains.push((para_id, vec![author.clone()]));
 
                 // Mock assigned authors for this para id
@@ -97,25 +141,19 @@ mod benchmarks {
                 relay_storage_proof: proof,
             };
 
-            for para_id in 0..x {
-                let para_id = para_id.into();
-                let author: T::AccountId = account("account id", 0u32, 0u32);
-
-                T::AuthorNotingHook::prepare_worst_case_for_bench(&author, 1, para_id);
-            }
-
             *(Box::new(arg) as Box<dyn Any>).downcast().unwrap()
         } else if TypeId::of::<<<T as Config>::RelayOrPara as RelayOrPara>::InherentArg>()
             == TypeId::of::<()>()
         {
-            // PARA MODE
+            // RELAY MODE
 
-            // Must start at 1 in Para mode (why?)
-            for para_id in 1..x {
+            // Start at index 2000 because para_id < 2000 are system parachains
+            for para_id in 0..x {
+                let para_id = 2000u32 + para_id;
                 let slot: crate::InherentType = 13u64.into();
                 let header = sp_runtime::generic::Header::<crate::BlockNumber, crate::BlakeTwo256> {
                     parent_hash: Default::default(),
-                    number: Default::default(),
+                    number: 1,
                     state_root: Default::default(),
                     extrinsics_root: Default::default(),
                     digest: sp_runtime::generic::Digest {
@@ -129,7 +167,7 @@ mod benchmarks {
                 let bytes = para_id.twox_64_concat();
 
                 // Mock assigned authors for this para id
-                let author: T::AccountId = account("account id", 0u32, 0u32);
+                let author: T::AccountId = account("account id", u32::from(para_id), 0u32);
 
                 container_chains.push((para_id, vec![author.clone()]));
 
@@ -144,8 +182,6 @@ mod benchmarks {
 
                 let head_data = HeadData(header.encode());
                 frame_support::storage::unhashed::put(&key, &head_data);
-
-                T::AuthorNotingHook::prepare_worst_case_for_bench(&author, 1, para_id);
             }
             let arg = ();
             *(Box::new(arg) as Box<dyn Any>).downcast().unwrap()
@@ -157,6 +193,9 @@ mod benchmarks {
             ForSession::Current,
             &container_chains,
         );
+
+        // This benchmark is without hooks
+        set_should_run_author_noting_hooks(false);
 
         #[extrinsic_call]
         _(RawOrigin::None, data);
@@ -205,9 +244,10 @@ mod benchmarks {
     fn on_container_authors_noted(x: Linear<1, 50>) -> Result<(), BenchmarkError> {
         let mut infos = vec![];
         for i in 0..x {
-            let para_id = (1000 + i).into();
+            // Start at index 2000 because para_id < 2000 are system parachains
+            let para_id = (2000 + i).into();
             let block_number = 1;
-            let author: T::AccountId = account("account id", 0u32, 0u32);
+            let author: T::AccountId = account("account id", u32::from(para_id), 0u32);
             T::AuthorNotingHook::prepare_worst_case_for_bench(&author, block_number, para_id);
             infos.push(AuthorNotingInfo {
                 author,
@@ -215,6 +255,9 @@ mod benchmarks {
                 para_id,
             });
         }
+
+        T::AuthorNotingHook::bench_advance_block();
+        T::AuthorNotingHook::bench_execute_pending();
 
         #[block]
         {
