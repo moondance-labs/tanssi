@@ -3140,7 +3140,7 @@ sp_api::impl_runtime_apis! {
         }
     }
 
-    impl pallet_services_payment_runtime_api::ServicesPaymentApi<Block, Balance, ParaId> for Runtime {
+    impl pallet_services_payment_runtime_api::ServicesPaymentApi<Block, AccountId, Balance, ParaId> for Runtime {
         fn block_cost(para_id: ParaId) -> Balance {
             let (block_production_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideBlockProductionCost::block_cost(&para_id);
             block_production_costs
@@ -3149,6 +3149,10 @@ sp_api::impl_runtime_apis! {
         fn collator_assignment_cost(para_id: ParaId) -> Balance {
             let (collator_assignment_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);
             collator_assignment_costs
+        }
+
+        fn parachain_tank_account(para_id: ParaId) -> AccountId {
+            ServicesPayment::parachain_tank(para_id)
         }
     }
 
