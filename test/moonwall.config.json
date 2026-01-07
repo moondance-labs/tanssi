@@ -1594,6 +1594,7 @@
                 "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
                 "launchSpec": [
                     {
+                        "newBlockTimeout": 300000,
                         "name": "db",
                         "type": "parachain",
                         "configPath": "./configs/stagenet-dancebox.yml",
@@ -1620,6 +1621,7 @@
                 "rtUpgradePath": "../target/release/wbuild/starlight-runtime/starlight_runtime.compact.compressed.wasm",
                 "launchSpec": [
                     {
+                        "newBlockTimeout": 300000,
                         "name": "db",
                         "type": "relaychain",
                         "configPath": "./configs/tanssi.yml",
@@ -1646,6 +1648,7 @@
                 "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
                 "launchSpec": [
                     {
+                        "newBlockTimeout": 300000,
                         "name": "db",
                         "type": "parachain",
                         "configPath": "./configs/dancebox.yml",
@@ -1672,6 +1675,7 @@
                 "rtUpgradePath": "../target/release/wbuild/flashbox-runtime/flashbox_runtime.compact.compressed.wasm",
                 "launchSpec": [
                     {
+                        "newBlockTimeout": 300000,
                         "name": "db",
                         "type": "parachain",
                         "configPath": "./configs/stagenet-flashbox.yml",
@@ -1698,6 +1702,7 @@
                 "rtUpgradePath": "../target/release/wbuild/dancelight-runtime/dancelight_runtime.compact.compressed.wasm",
                 "launchSpec": [
                     {
+                        "newBlockTimeout": 300000,
                         "name": "db",
                         "type": "relaychain",
                         "configPath": "./configs/stagelight.yml",
@@ -1724,6 +1729,7 @@
                 "rtUpgradePath": "../target/release/wbuild/dancelight-runtime/dancelight_runtime.compact.compressed.wasm",
                 "launchSpec": [
                     {
+                        "newBlockTimeout": 300000,
                         "name": "db",
                         "type": "relaychain",
                         "configPath": "./configs/dancelight.yml",
@@ -1750,6 +1756,7 @@
                 "rtUpgradePath": "../target/release/wbuild/starlight-runtime/starlight_runtime.compact.compressed.wasm",
                 "launchSpec": [
                     {
+                        "newBlockTimeout": 300000,
                         "name": "db",
                         "type": "relaychain",
                         "configPath": "./configs/moonlight.yml",
@@ -1816,6 +1823,7 @@
                 "rtUpgradePath": "../target/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.compressed.wasm",
                 "launchSpec": [
                     {
+                        "newBlockTimeout": 300000,
                         "name": "db",
                         "type": "parachain",
                         "configPath": "./configs/frontierContainer.yml"
