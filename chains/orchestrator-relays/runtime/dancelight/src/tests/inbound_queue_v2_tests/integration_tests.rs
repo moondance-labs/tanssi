@@ -14,6 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use crate::{RuntimeCall, UncheckedExtrinsic};
+use frame_support::dispatch::{CallableCallFor, GetDispatchInfo};
+use sp_runtime::traits::Dispatchable;
 use {
     crate::{
         bridge_to_ethereum_config::EthereumGatewayAddress,
@@ -225,8 +228,26 @@ fn test_inbound_queue_message_symbiotic_incorrect_gateway_origin() {
                 proof: dummy_proof.clone(),
             }),
         );
-
         assert_eq!(result, Ok(()));
+
+        // Validators have not been set
+        let validators = pallet_external_validators::ExternalValidators::<Runtime>::get();
+        assert_ne!(validators, payload_validators);
+
+        // And no events from pallet external validators have been emitted
+        let events = frame_system::Pallet::<Runtime>::events();
+
+        for record in events {
+            match &record.event {
+                RuntimeEvent::ExternalValidators(
+                    ..
+                ) => {
+                    panic!("Got unexpected ExternalValidators event: {:?}", record.event);
+                }
+
+                _ => {}
+            }
+        }
     });
 }
 
@@ -788,6 +809,260 @@ fn test_inbound_queue_transfer_erc20_works() {
 
         assert!(found_message, "MessageReceived event not found");
         assert!(found_issued, "Issued event for ETH not found");
+    });
+}
+
+#[test]
+fn test_inbound_queue_transfer_erc20_as_msg_sender_works() {
+    ExtBuilder::default()
+        .with_validators(
+            vec![]
+        )
+        .with_external_validators(
+            vec![
+                (AccountId::from(ALICE), 210 * UNIT),
+                (AccountId::from(BOB), 100 * UNIT),
+            ]
+        ).build().execute_with(|| {
+        let nonce_val = 1u64;
+
+        let dummy_proof = mock_snowbridge_message_proof();
+        let erc20_token_id = hex_literal::hex!("c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
+
+        let erc20_asset_location = Location {
+            parents: 1,
+            interior: X2([
+                GlobalConsensus(Ethereum { chain_id: ETH_CHAIN_ID }),
+                AccountKey20 {
+                    network: Some(Ethereum { chain_id: ETH_CHAIN_ID }),
+                    key: erc20_token_id,
+                }
+            ]
+                .into()),
+        };
+
+        let asset_id = 43u16;
+
+        assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+            root_origin(),
+            erc20_asset_location.clone(),
+            asset_id,
+            AccountId::from(ALICE),
+            true,
+            1
+        ));
+
+        let token_value = 123_456_000u128;
+
+        let beneficiary = AccountId::from(FERDIE);
+        let instructions = vec![DepositAsset {
+            assets: Wild(AllCounted(1)),
+            beneficiary: Location::new(
+                0,
+                AccountId32 {
+                    network: None,
+                    id: beneficiary.clone().into(),
+                },
+            ),
+        }];
+
+        let xcm: Xcm<()> = instructions.into();
+        let versioned_message_xcm = VersionedXcm::V5(xcm);
+
+        let xcm_bytes = RawPayload::Xcm(versioned_message_xcm.encode());
+
+        let asset = IGatewayV2::AsNativeTokenERC20 {token_id: Address::from(erc20_token_id), value: token_value};
+        let event = IGatewayV2::OutboundMessageAccepted {
+            nonce: nonce_val,
+            payload: IGatewayV2::Payload {
+                // TODO: how does this account pay for fees?
+                origin: Address::from([0x11; 20]),
+                assets: vec![IGatewayV2::EthereumAsset {
+                    kind: 0,
+                    data: asset.abi_encode().into(),
+                }],
+                xcm: IGatewayV2::Xcm { kind: 0, data: xcm_bytes.encode().into() },
+                claimer: vec![].into(),
+                value: 0,
+                executionFee: 0,
+                relayerFee: 0,
+            },
+        };
+
+        let foreign_asset_balance_before = ForeignAssets::balance(asset_id, AccountId::from(beneficiary.clone()));
+        assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
+            event_log: Log {
+                address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
+                topics: event
+                    .encode_topics()
+                    .into_iter()
+                    .map(|word| H256::from(word.0.0))
+                    .collect(),
+                data: event.encode_data(),
+            },
+            proof: dummy_proof.clone(),
+        })), Ok(()));
+        let foreign_asset_balance_after = ForeignAssets::balance(asset_id, AccountId::from(beneficiary.clone()));
+        assert_eq!(foreign_asset_balance_after - foreign_asset_balance_before, token_value);
+
+        let events = frame_system::Pallet::<Runtime>::events();
+
+        let mut found_message = false;
+        let mut found_issued = false;
+
+        for record in events {
+            match &record.event {
+                RuntimeEvent::EthereumInboundQueueV2(
+                    snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce, .. }
+                ) if *nonce == nonce_val => {
+                    found_message = true;
+                }
+
+                RuntimeEvent::ForeignAssets(
+                    pallet_assets::Event::Issued { amount, .. }
+                ) if *amount == token_value => {
+                    found_issued = true;
+                }
+
+                _ => {}
+            }
+        }
+
+        assert!(found_message, "MessageReceived event not found");
+        assert!(found_issued, "Issued event for ETH not found");
+    });
+}
+
+#[test]
+fn test_inbound_queue_xcm_transact_system_remark_as_msg_sender_works() {
+    ExtBuilder::default()
+        .with_validators(
+            vec![]
+        )
+        .with_external_validators(
+            vec![
+                (AccountId::from(ALICE), 210 * UNIT),
+                (AccountId::from(BOB), 100 * UNIT),
+            ]
+        ).build().execute_with(|| {
+        let nonce_val = 1u64;
+
+        let dummy_proof = mock_snowbridge_message_proof();
+        let erc20_token_id = hex_literal::hex!("c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
+
+        let erc20_asset_location = Location {
+            parents: 1,
+            interior: X2([
+                GlobalConsensus(Ethereum { chain_id: ETH_CHAIN_ID }),
+                AccountKey20 {
+                    network: Some(Ethereum { chain_id: ETH_CHAIN_ID }),
+                    key: erc20_token_id,
+                }
+            ]
+                .into()),
+        };
+
+        let asset_id = 43u16;
+
+        assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+            root_origin(),
+            erc20_asset_location.clone(),
+            asset_id,
+            AccountId::from(ALICE),
+            true,
+            1
+        ));
+
+        let token_value = 123_456_000u128;
+
+        let beneficiary = AccountId::from(FERDIE);
+        let transact_call = RuntimeCall::System(CallableCallFor::<System, Runtime>::remark_with_event { remark: b"hello from ethereum?".to_vec() });
+        let instructions = vec![Transact {
+            origin_kind: OriginKind::SovereignAccount,
+            fallback_max_weight: None,
+            call: transact_call.encode().into(),
+        }];
+
+        let xcm: Xcm<()> = instructions.into();
+        let versioned_message_xcm = VersionedXcm::V5(xcm);
+
+        let xcm_bytes = RawPayload::Xcm(versioned_message_xcm.encode());
+
+        let asset = IGatewayV2::AsNativeTokenERC20 {token_id: Address::from(erc20_token_id), value: token_value};
+        let old_assets = vec![IGatewayV2::EthereumAsset {
+            kind: 0,
+            data: asset.abi_encode().into(),
+        }];
+        // Event with no assets and 0 value, shouldn't be able to call transact
+        // origin is msg.sender from ethereum, doesn't have any tokens in tanssi
+        let event = IGatewayV2::OutboundMessageAccepted {
+            nonce: nonce_val,
+            payload: IGatewayV2::Payload {
+                origin: Address::from([0x11; 20]),
+                assets: vec![],
+                xcm: IGatewayV2::Xcm { kind: 0, data: xcm_bytes.encode().into() },
+                claimer: vec![].into(),
+                value: 0,
+                executionFee: 0,
+                relayerFee: 0,
+            },
+        };
+
+        let foreign_asset_balance_before = ForeignAssets::balance(asset_id, AccountId::from(beneficiary.clone()));
+        // relayer can be anything
+        let relayer = AccountId::new([0xaa; 32]);
+        let call = RuntimeCall::EthereumInboundQueueV2(CallableCallFor::<EthereumInboundQueueV2, Runtime>::submit { event: Box::new(EventProof {
+            event_log: Log {
+                address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
+                topics: event
+                    .encode_topics()
+                    .into_iter()
+                    .map(|word| H256::from(word.0.0))
+                    .collect(),
+                data: event.encode_data(),
+            },
+            proof: dummy_proof.clone(),
+        })});
+        let info = call.get_dispatch_info();
+        assert!(info.call_weight.ref_time() > 0, "weight is zero");
+        let post = call.dispatch(
+            <Runtime as frame_system::Config>::RuntimeOrigin::signed(relayer)
+        );
+        assert_ok!(post);
+        let used = post.unwrap().actual_weight.unwrap_or(info.call_weight);
+        assert!(used.ref_time() > 0, "actual weight is zero");
+        println!("used weight: {:?}", used);
+        let events = frame_system::Pallet::<Runtime>::events();
+
+        println!("{:?}", events);
+
+        let mut found_message = false;
+        let mut found_remark = false;
+
+        for record in events {
+            match &record.event {
+                RuntimeEvent::EthereumInboundQueueV2(
+                    snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce, .. }
+                ) if *nonce == nonce_val => {
+                    found_message = true;
+                }
+
+                RuntimeEvent::System(
+                    frame_system::Event::Remarked { sender, hash }
+                ) => {
+                    found_remark = true;
+                    // TODO: how does this account pay for fees?
+                    // We see the system remarked event so it worked
+                    // Remarked! 9075bd281ac2116eb06d6f6cecde02b437306b90e377900e4377272f96e90fae (5FL7jCJc...) 0xda45538cacc877e1393e1cabf1bbef93f23945cfa2b4f881b20ff53a964ebbb6
+                    println!("Remarked! {:?} {:?}", sender, hash);
+                }
+
+                _ => {}
+            }
+        }
+
+        assert!(found_message, "MessageReceived event not found");
+        assert!(found_remark, "Remarked event for ETH not found");
     });
 }
 
