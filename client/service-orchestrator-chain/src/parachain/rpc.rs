@@ -81,7 +81,7 @@ where
     C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>,
     C::Api: BlockBuilder<Block>,
     C::Api: StreamPaymentRuntimeApi<Block, u64, u128, u128>,
-    C::Api: ServicesPaymentRuntimeApi<Block, u128, ParaId>,
+    C::Api: ServicesPaymentRuntimeApi<Block, AccountId, u128, ParaId>,
     P: TransactionPool + Sync + Send + 'static,
 {
     use substrate_frame_rpc_system::{System, SystemApiServer};
@@ -98,7 +98,7 @@ where
 
     module.merge(System::new(client.clone(), pool).into_rpc())?;
     module.merge(StreamPayment::<_, Block>::new(client.clone()).into_rpc())?;
-    module.merge(ServicesPayment::<_, Block>::new(client).into_rpc())?;
+    module.merge(ServicesPayment::<_, Block, AccountId>::new(client).into_rpc())?;
 
     if let Some(command_sink) = command_sink {
         module.merge(

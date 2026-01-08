@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Upload tools
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: original-tools
           path: tools
@@ -37,7 +37,7 @@ jobs:
         run:  |
           ./test/scripts/download-latest-rt-binaries.sh ${{ github.event.inputs.binaries }} --include-all-archs --tag ${{ github.event.inputs.docker_tag }}        
       - name: Upload binaries
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: binaries
           path: test/tmp/
@@ -57,7 +57,7 @@ jobs:
         with:
           node-version: 22.x
       - name: Download Original Tools
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: original-tools
           path: original-tools
@@ -76,7 +76,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: ["download-binaries", "publish-draft-release"]
     steps:
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           name: binaries
           path: build

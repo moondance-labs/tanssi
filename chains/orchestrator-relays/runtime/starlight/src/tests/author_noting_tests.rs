@@ -18,15 +18,20 @@
 
 use {
     crate::tests::common::*,
+    crate::{weights, BlockWeights},
     alloc::vec,
+    frame_support::dispatch::{CallableCallFor, GetDispatchInfo},
     frame_support::{assert_noop, assert_ok, error::BadOrigin},
+    pallet_author_noting::WeightInfo as _,
     pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,
     parity_scale_codec::Encode,
+    sp_arithmetic::Perbill,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_runtime::{generic::DigestItem, traits::BlakeTwo256},
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_traits::{ContainerChainBlockInfo, ParaId},
 };
+
 #[test]
 fn test_author_noting_not_self_para() {
     ExtBuilder::default()
@@ -165,6 +170,51 @@ fn test_author_noting_set_author_and_kill_author_data_bad_origin() {
                 AuthorNoting::kill_author_data(origin_of(ALICE.into()), other_para),
                 BadOrigin
             );
+        });
+}
+
+#[test]
+fn max_num_chains_for_author_noting_inherent() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_empty_parachains(vec![1001, 1002])
+        .build()
+        .execute_with(|| {
+            // TODO: where to find weight reserved for inherents? I'm assuming 20% here
+            let inherents_weight_limit = Perbill::from_percent(20) * BlockWeights::get().max_block;
+            // We have enough weight to support MaxContainerChains
+            let author_noting_weight = |x| {
+                <weights::pallet_author_noting::SubstrateWeight<Runtime>>::set_latest_author_data(x)
+                    .saturating_add(<weights::pallet_author_noting::SubstrateWeight<Runtime>>::on_container_authors_noted(x))
+            };
+
+            let worst_case_author_noting_weight = author_noting_weight(
+                <Runtime as pallet_author_noting::Config>::MaxContainerChains::get(),
+            );
+            // First, assert that real weight hint is calculated as we expect (base + hooks)
+            let call = CallableCallFor::<AuthorNoting, Runtime>::set_latest_author_data { data: () };
+            assert_eq!(call.get_dispatch_info().call_weight, worst_case_author_noting_weight);
+            // Assert that the weight with current max number of chains is lower than inherents_weight_limit
+            assert!(worst_case_author_noting_weight.all_lte(inherents_weight_limit));
+
+            // We also support double of that, as a safety margin
+            // If this assert fails we can just remove it, or we can decrease MaxLengthParaIds a bit
+            let worst_case_author_noting_weight = author_noting_weight(
+                2 * <Runtime as pallet_author_noting::Config>::MaxContainerChains::get(),
+            );
+            assert!(worst_case_author_noting_weight.all_lte(inherents_weight_limit));
         });
 }
 

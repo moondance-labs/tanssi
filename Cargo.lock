@@ -18952,6 +18952,7 @@ dependencies = [
  "pallet-beefy",
  "pallet-beefy-mmr",
  "pallet-collator-assignment",
+ "pallet-collective",
  "pallet-configuration",
  "pallet-conviction-voting",
  "pallet-data-preservers",

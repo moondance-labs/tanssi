@@ -171,7 +171,7 @@ jobs:
               ref: ${{ needs.set-tags.outputs.git_ref }}
 
         - name: Run zizmor
-          uses: zizmorcore/zizmor-action@e673c3917a1aef3c65c972347ed84ccd013ecda4
+          uses: zizmorcore/zizmor-action@e639db99335bc9038abc0e066dfcd72e23d26fb4
           with:
             inputs: |
               .github/workflows/
@@ -254,12 +254,12 @@ jobs:
               with:
                 features: "fast-runtime,metadata-hash"
             - name: Upload runtimes
-              uses: actions/upload-artifact@v5
+              uses: actions/upload-artifact@v6
               with:
                   name: runtimes
                   path: runtimes
             - name: Upload binary
-              uses: actions/upload-artifact@v5
+              uses: actions/upload-artifact@v6
               with:
                   name: binaries
                   path: binaries
@@ -310,7 +310,7 @@ jobs:
                   echo "✅ Found build ID: $LATEST_TARGET_BRANCH_BUILD"
                   echo "LATEST_TARGET_BRANCH_BUILD=$LATEST_TARGET_BRANCH_BUILD" >> $GITHUB_OUTPUT
             - name: "Download runtimes from target branch"
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v7
               with:
                 name: runtimes
                 path: runtimes-target-branch
@@ -318,7 +318,7 @@ jobs:
                 github-token: ${{ github.token }}
                 run-id: ${{ steps.latest-target-build.outputs.LATEST_TARGET_BRANCH_BUILD }}
             - name: "Download branch built runtime"
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v7
               with:
                   name: runtimes
                   path: runtimes-current-branch
@@ -452,7 +452,7 @@ jobs:
             target: wasm32-unknown-unknown
 
         - name: Cache cargo bin
-          uses: actions/cache@v4
+          uses: actions/cache@v5
           with:
             path: ~/.cargo/bin
             key: cargo-bin-udeps-nightly-${{ runner.os }}
@@ -510,7 +510,7 @@ jobs:
               with:
                   version: 9
             - name: "Download binaries"
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v7
               with:
                   name: binaries
                   path: target/release
@@ -543,7 +543,7 @@ jobs:
               with:
                   version: 9
             - name: "Download binaries"
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v7
               with:
                   name: binaries
                   path: target/release
@@ -576,7 +576,7 @@ jobs:
               with:
                   version: 9
             - name: "Download binaries"
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v7
               with:
                   name: binaries
                   path: target/release
@@ -614,7 +614,7 @@ jobs:
                   node-version: 22.x
                   cache: "pnpm"
             - name: "Download binaries"
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v7
               with:
                   name: binaries
                   path: target/release
@@ -647,7 +647,7 @@ jobs:
                   node-version: 22.x
                   cache: "pnpm"
             - name: "Download binaries"
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v7
               with:
                   name: binaries
                   path: target/release
@@ -680,7 +680,7 @@ jobs:
                   node-version: 22.x
                   cache: "pnpm"
             - name: "Download binaries"
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v7
               with:
                   name: binaries
                   path: target/release
@@ -705,7 +705,7 @@ jobs:
               with:
                   version: 9
             - name: "Download binaries"
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v7
               with:
                   name: binaries
                   path: target/release
@@ -742,7 +742,7 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: "Download binaries"
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v7
               with:
                   name: binaries
                   path: target/release
@@ -797,13 +797,13 @@ jobs:
                   mkdir -p target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
                   mkdir -p test/tmp
             - name: "Download runtime"
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v7
               with:
                   name: runtimes
                   path: target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
             # Binaries needed for testPalletVersions test
             - name: "Download binaries"
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v7
               with:
                   name: binaries
                   path: target/release
@@ -841,14 +841,14 @@ jobs:
                   mkdir -p target/release/wbuild/${{ matrix.chain }}-runtime/
                   mkdir -p test/tmp
             - name: "Download binaries"
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v7
               with:
                   name: binaries
                   path: target/release
             - name: Make binaries executable
               uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Download branch built runtime"
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v7
               with:
                   name: runtimes
                   path: target/release/wbuild/${{ matrix.chain }}-runtime/
@@ -865,7 +865,7 @@ jobs:
                   MOST_RECENT_ZOMBIE_DIR=$(ls -td /tmp/zombie-* | head -n 1)
                   find $MOST_RECENT_ZOMBIE_DIR -maxdepth 1 -type f -name '*.log' -exec zip -r $NODE_LOGS_ZIP {} \;
                   echo "NODE_LOGS_ZIP=${NODE_LOGS_ZIP}" >> $GITHUB_ENV
-            - uses: actions/upload-artifact@v5
+            - uses: actions/upload-artifact@v6
               if: failure()
               with:
                   name: failed-node-logs
@@ -901,14 +901,14 @@ jobs:
                   mkdir -p target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
                   mkdir -p test/tmp
             - name: "Download binaries"
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v7
               with:
                   name: binaries
                   path: target/release
             - name: Make binaries executable
               uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Download runtime"
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v7
               with:
                   name: runtimes
                   path: target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
@@ -948,14 +948,14 @@ jobs:
                   mkdir -p target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
                   mkdir -p test/tmp
             - name: "Download binaries"
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v7
               with:
                   name: binaries
                   path: target/release
             - name: Make binaries executable
               uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Download runtime"
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v7
               with:
                   name: runtimes
                   path: target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
@@ -987,7 +987,7 @@ jobs:
               run: |
                   mkdir -p test/tmp
             - name: "Download binaries"
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v7
               with:
                   name: binaries
                   path: target/release
@@ -1041,7 +1041,7 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: "Download binaries"
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v7
               with:
                   name: binaries
                   path: build

@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Upload tools
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: original-tools
           path: tools
@@ -75,7 +75,7 @@ jobs:
         with:
           cpu: ${{ matrix.cpu }}
       - name: Upload binaries
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: binaries-${{ matrix.cpu }}
           path: binaries
@@ -113,7 +113,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           pattern: binaries-*
           merge-multiple: true

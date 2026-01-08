@@ -61,8 +61,8 @@
     "devDependencies": {
         "@acala-network/chopsticks": "1.2.3",
         "@moonbeam-network/api-augment": "0.3401.2",
-        "@moonwall/cli": "5.18.1",
-        "@moonwall/util": "5.18.1",
+        "@moonwall/cli": "5.18.2",
+        "@moonwall/util": "5.18.2",
         "@polkadot/wasm-crypto": "^7.4.1",
         "@tanssi/api-augment": "workspace:*",
         "@types/debug": "4.1.12",
