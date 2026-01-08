@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { type BlockCreationResponse, type DevModeContext, expect } from "@moonwall/cli";
 import type { EventRecord } from "@polkadot/types/interfaces";
 import type { ApiTypes, AugmentedEvent, AugmentedEvents, SubmittableExtrinsic } from "@polkadot/api/types";
