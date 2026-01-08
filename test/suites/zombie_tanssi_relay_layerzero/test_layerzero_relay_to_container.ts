@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
@@ -15,7 +13,7 @@ import {
     generateUpdate,
 } from "utils";
 import { hexToU8a } from "@polkadot/util";
-import { retrieveDispatchErrors } from "helpers";
+import { retrieveDispatchErrors, findEventInRecentBlocks } from "helpers";
 
 describeSuite({
     id: "ZOMBIETANSSILZ01",
@@ -314,33 +312,16 @@ describeSuite({
                 await waitSessions(context, relayChainPolkadotJs, 2, null, "Tanssi-relay");
 
                 // Check container chain for the MessageReceived event from LzReceiverExample
-                // We need to search through recent blocks
-                const currentBlock = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
-                console.log(`Container chain current block: ${currentBlock}`);
+                const lzEventResult = await findEventInRecentBlocks(
+                    container2000Api,
+                    (record) => record.event.section === "lzReceiverExample" && record.event.method === "MessageReceived",
+                    20
+                );
 
-                let messageReceivedFound = false;
-                // Search last 20 blocks for the event
-                for (let i = Math.max(1, currentBlock - 20); i <= currentBlock; i++) {
-                    const blockHash = await container2000Api.rpc.chain.getBlockHash(i);
-                    const apiAt = await container2000Api.at(blockHash);
-                    const events = await apiAt.query.system.events();
-
-                    const lzEvent = events.find((record) => {
-                        return (
-                            record.event.section === "lzReceiverExample" && record.event.method === "MessageReceived"
-                        );
-                    });
-
-                    if (lzEvent) {
-                        console.log(`Found MessageReceived event at block ${i}`);
-                        console.log(`Event data: ${JSON.stringify(lzEvent.event.toHuman())}`);
-                        messageReceivedFound = true;
-                        break;
-                    }
-                }
-
-                expect(messageReceivedFound, "LzReceiverExample.MessageReceived event should exist on container chain")
-                    .to.be.true;
+                expect(lzEventResult, "LzReceiverExample.MessageReceived event should exist on container chain").to.not.be
+                    .null;
+                console.log(`Found MessageReceived event at block ${lzEventResult.blockNum}`);
+                console.log(`Event data: ${JSON.stringify(lzEventResult.event.event.toHuman())}`);
                 console.log("LayerZero message successfully forwarded to container chain!");
             },
         });

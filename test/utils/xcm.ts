@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { type DevModeContext, customDevRpcRequest, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 import type { XcmpMessageFormat } from "@polkadot/types/interfaces";
@@ -11,6 +9,7 @@ import type {
 import { type BN, hexToU8a, stringToU8a, u8aToHex } from "@polkadot/util";
 import { xxhashAsU8a } from "@polkadot/util-crypto";
 import * as console from "node:console";
+import { findEventInBlockRange } from "../helpers/events";
 
 // Creates and returns the tx that overrides the paraHRMP existence
 // This needs to be inserted at every block in which you are willing to test
@@ -1230,24 +1229,19 @@ export const sendCallAsChildPara = async (
         const endBlockNumber = (await api.query.system.number()).toNumber();
 
         // Search through all blocks from start+1 to end to find the messageQueue.Processed event
-        let processedEvent = null;
-        for (let blockNum = startBlockNumber + 1; blockNum <= endBlockNumber; blockNum++) {
-            const blockHash = await api.rpc.chain.getBlockHash(blockNum);
-            const apiAt = await api.at(blockHash);
-            const events = await apiAt.query.system.events();
+        const processedEventResult = await findEventInBlockRange(
+            api,
+            startBlockNumber + 1,
+            endBlockNumber,
+            (record) => record.event.section === "messageQueue" && record.event.method === "Processed"
+        );
 
-            processedEvent = events.find((record) => {
-                return record.event.section === "messageQueue" && record.event.method === "Processed";
-            });
-
-            if (processedEvent) {
-                break;
-            }
-        }
-
-        expect(processedEvent, "messageQueue.Processed event should exist").to.exist;
+        expect(processedEventResult, "messageQueue.Processed event should exist").to.exist;
         // Check that the message was processed successfully
-        expect(processedEvent.event.data[3].toJSON(), "XCM message should be processed successfully").to.be.true;
+        expect(
+            processedEventResult.event.event.data[3].toJSON(),
+            "XCM message should be processed successfully"
+        ).to.be.true;
     }
 
     return { blockRes };

@@ -344,6 +344,9 @@ pub mod pallet {
 
             // Convert to ABI-encodable envelope (includes magic bytes)
             let envelope: OutboundSolMessageEnvelope = message.clone().into();
+            // TODO: incode the function selctor also
+            // | 4 bytes  |   N × 32 bytes |
+            // | selector | ABI-encoded arguments |
             let calldata = envelope.abi_encode();
 
             // Create CallContract command targeting the LayerZero hub on Ethereum

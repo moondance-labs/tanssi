@@ -118,3 +118,52 @@ export async function retrieveBatchDispatchErrors(polkadotJs: ApiPromise) {
 
     return batchErrors;
 }
+
+/**
+ * Search for an event across a range of blocks
+ *
+ * @param api - The Polkadot API instance
+ * @param startBlockNumber - The block number to start searching from (inclusive)
+ * @param endBlockNumber - The block number to stop searching at (inclusive)
+ * @param predicate - Function to test if an event record matches the desired event
+ * @returns Object with blockNum and event if found, or null if not found
+ */
+export async function findEventInBlockRange(
+    api: ApiPromise,
+    startBlockNumber: number,
+    endBlockNumber: number,
+    predicate: (record: any) => boolean
+): Promise<{ blockNum: number; event: any } | null> {
+    for (let blockNum = startBlockNumber; blockNum <= endBlockNumber; blockNum++) {
+        const blockHash = await api.rpc.chain.getBlockHash(blockNum);
+        const apiAt = await api.at(blockHash);
+        const events = await apiAt.query.system.events();
+
+        const matchingEvent = events.find(predicate);
+
+        if (matchingEvent) {
+            return { blockNum, event: matchingEvent };
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Search for an event in recent blocks (from current block backwards)
+ *
+ * @param api - The Polkadot API instance
+ * @param predicate - Function to test if an event record matches the desired event
+ * @param maxBlocksBack - Maximum number of blocks to search backwards (default: 20)
+ * @returns Object with blockNum and event if found, or null if not found
+ */
+export async function findEventInRecentBlocks(
+    api: ApiPromise,
+    predicate: (record: any) => boolean,
+    maxBlocksBack: number = 20
+): Promise<{ blockNum: number; event: any } | null> {
+    const currentBlock = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
+    const startBlock = Math.max(1, currentBlock - maxBlocksBack);
+
+    return findEventInBlockRange(api, startBlock, currentBlock, predicate);
+}

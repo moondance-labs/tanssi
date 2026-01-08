@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
@@ -16,8 +14,8 @@ import { hexToU8a } from "@polkadot/util";
 import * as console from "node:console";
 
 describeSuite({
-    id: "ETHINBV2LZOK",
-    title: "Receive LayerZero message from Ethereum - Success",
+    id: "LZROUTER02",
+    title: "LzRouter - Receive LayerZero message from Ethereum - Success",
     foundationMethods: "dev",
 
     testCases: ({ it, context }) => {

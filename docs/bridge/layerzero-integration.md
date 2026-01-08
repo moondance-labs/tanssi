@@ -129,10 +129,10 @@ A **central hub smart contract on Ethereum** acts as the bridge between LayerZer
 
 ```rust
 pub struct InboundMessage {
-    pub lz_source_address: BoundedVec<u8, ConstU32<32>>,  // Source contract address (up to 32 bytes)
-    pub lz_source_endpoint: u32,                           // LayerZero endpoint ID (e.g., 30101 for Ethereum)
-    pub destination_chain: u32,                            // Target container chain ID
-    pub message: Vec<u8>,                                  // Application payload
+    pub lz_source_address: Vec<u8>,  // Source contract address (up to 32 bytes)
+    pub lz_source_endpoint: u32,     // LayerZero endpoint ID (e.g., 30101 for Ethereum)
+    pub destination_chain: u32,      // Target container chain ID
+    pub payload: Vec<u8>,            // Application payload (max 8KB)
 }
 ```
 
