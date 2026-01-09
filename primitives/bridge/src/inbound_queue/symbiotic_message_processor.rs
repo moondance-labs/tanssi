@@ -142,10 +142,10 @@ where
     fn process_message(
         _who: AccountId,
         message: v2::Message,
-    ) -> Result<[u8; 32], MessageProcessorError> {
+    ) -> Result<([u8; 32], Option<Weight>), MessageProcessorError> {
         match &message.payload {
             v2::message::Payload::Raw(data) => Self::process_message(None, &data)
-                .map(|_| [0; 32])
+                .map(|_| ([0; 32], None))
                 .map_err(|e| MessageProcessorError::ProcessMessage(e)),
             v2::message::Payload::CreateAsset { .. } => Err(MessageProcessorError::ProcessMessage(
                 DispatchError::Other("Create asset is not supported"),
