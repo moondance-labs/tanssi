@@ -547,7 +547,7 @@ mod benchmark_helper {
         fn process_message(
             channel: AccountId,
             _envelope: Message,
-        ) -> Result<[u8; 32], MessageProcessorError> {
+        ) -> Result<([u8; 32], Option<Weight>), MessageProcessorError> {
             let worst_case = create_worst_case_symbiotic_message();
             P::process_message(channel, worst_case)
         }
@@ -669,7 +669,7 @@ mod benchmark_helper {
         fn process_message(
             channel: AccountId,
             envelope: snowbridge_inbound_queue_primitives::v2::Message,
-        ) -> Result<[u8; 32], MessageProcessorError> {
+        ) -> Result<([u8; 32], Option<Weight>), MessageProcessorError> {
             P::process_message(channel, envelope)
         }
     }

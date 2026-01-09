@@ -29,6 +29,7 @@ use core::marker::PhantomData;
 use parity_scale_codec::Decode;
 use snowbridge_inbound_queue_primitives::v2::{Message, MessageProcessorError, Payload};
 use sp_core::{Get, H160};
+use sp_runtime::Weight;
 use tp_bridge::symbiotic_message_processor::{
     InboundCommand, Message as SymbioticMessage, Payload as SymbioticPayload, MAGIC_BYTES,
 };
@@ -240,7 +241,8 @@ where
     fn process_extracted_message(
         _sender: AccountId,
         extracted_message: Self::ExtractedMessage,
-    ) -> Result<(), MessageProcessorError> {
-        process_message(extracted_message)
+    ) -> Result<Option<Weight>, MessageProcessorError> {
+        // TODO: Add proper consumed weight
+        process_message(extracted_message).map(|_| None)
     }
 }

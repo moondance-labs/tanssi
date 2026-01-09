@@ -25,6 +25,7 @@ use frame_support::__private::Get;
 use snowbridge_inbound_queue_primitives::v2::{Message, MessageProcessorError};
 use sp_core::H160;
 use sp_runtime::DispatchError;
+use sp_runtime::Weight;
 use xcm::latest::{ExecuteXcm, InteriorLocation, NetworkId, Xcm};
 use xcm_executor::traits::WeightBounds;
 
@@ -95,7 +96,10 @@ where
     XcmProcessor: ExecuteXcm<<T as pallet_xcm::Config>::RuntimeCall>,
     XcmWeigher: WeightBounds<<T as pallet_xcm::Config>::RuntimeCall>,
 {
-    fn handle_message(_who: AccountId, message: Message) -> Result<(), MessageProcessorError> {
+    fn handle_message(
+        _who: AccountId,
+        message: Message,
+    ) -> Result<Option<Weight>, MessageProcessorError> {
         let extracted_message: ExtractedXcmConstructionInfo<
             <T as pallet_xcm::Config>::RuntimeCall,
         > = ExtractedXcmConstructionInfo {
@@ -157,7 +161,8 @@ where
             );
         }
 
-        Ok(())
+        // TODO: Add proper consumed weight
+        Ok(None)
     }
 }
 
@@ -235,7 +240,10 @@ where
     XcmProcessor: ExecuteXcm<<T as pallet_xcm::Config>::RuntimeCall>,
     XcmWeigher: WeightBounds<<T as pallet_xcm::Config>::RuntimeCall>,
 {
-    fn handle_message(who: AccountId, message: Message) -> Result<(), MessageProcessorError> {
+    fn handle_message(
+        who: AccountId,
+        message: Message,
+    ) -> Result<Option<Weight>, MessageProcessorError> {
         // If origin is not gateway proxy, a user mistakenly or maliciously sent privileged message
         // If origin is gateway proxy, the privileged middleware sent the message with wrong semantics
         // Based on above assumption we do conditional fallback
