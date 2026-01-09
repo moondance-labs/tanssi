@@ -53,7 +53,7 @@
         "@polkadot/types-codec": "*",
         "@polkadot/util": "*",
         "@polkadot/util-crypto": "*",
-        "@zombienet/orchestrator": "0.0.105",
+        "@zombienet/orchestrator": "0.0.114",
         "ethereum-cryptography": "3.1.0",
         "ps-node": "0.1.6"
     },
@@ -70,7 +70,7 @@
         "@types/ps-node": "0.1.3",
         "@types/yargs": "^17.0.33",
         "@vitest/ui": "3.2.4",
-        "@zombienet/utils": "^0.0.28",
+        "@zombienet/utils": "^0.0.30",
         "bottleneck": "2.19.5",
         "chalk": "^5.4.0",
         "debug": "4.3.7",

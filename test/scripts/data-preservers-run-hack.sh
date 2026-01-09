@@ -51,17 +51,22 @@ while [[ $# -gt 0 ]]; do
 done
 
 # --- Helpers ------------------------------------------------------------------
-# Find --base-path VALUE in an array by reference; prints "index:value" on success.
+# Find --base-path VALUE in an array; prints "index:value" on success.
 find_base_path_in_array() {
-  # $1: name of array var
+  # $1: array name (as string)
   local array_name="$1"
-  local -n arr="$array_name"  # nameref
   local i
-  for (( i=0; i<${#arr[@]}; i++ )); do
-    if [[ "${arr[$i]}" == "--base-path" ]]; then
+
+  # Use eval to access array indirectly (bash 3.2 compatible)
+  eval "local array_len=\${#${array_name}[@]}"
+
+  for (( i=0; i<array_len; i++ )); do
+    eval "local current=\${${array_name}[$i]}"
+    if [[ "$current" == "--base-path" ]]; then
       local j=$(( i + 1 ))
-      if (( j < ${#arr[@]} )); then
-        printf "%d:%s\n" "$i" "${arr[$j]}"
+      if (( j < array_len )); then
+        eval "local next=\${${array_name}[$j]}"
+        printf "%d:%s\n" "$i" "$next"
         return 0
       fi
     fi
@@ -69,13 +74,14 @@ find_base_path_in_array() {
   return 1
 }
 
-# Insert two tokens at the beginning of an array-by-ref
+# Insert two tokens at the beginning of an array
 prepend_to_array() {
   # $1: array name, $2: token1, $3: token2
-  local array_name="$1"; shift
-  local -n arr="$array_name"
-  local t1="$1" t2="$2"
-  arr=("$t1" "$t2" "${arr[@]}")
+  local array_name="$1"
+  local t1="$2" t2="$3"
+
+  # Use eval to modify array indirectly
+  eval "$array_name=(\"\$t1\" \"\$t2\" \"\${${array_name}[@]}\")"
 }
 
 # --- Determine/Inject container --base-path -----------------------------------
