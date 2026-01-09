@@ -25,6 +25,7 @@ frontier-template-emulated-chain = { workspace = true }
 hex-literal = { workspace = true }
 pallet-message-queue = { workspace = true }
 pallet-xcm = { workspace = true }
+frame-system = { workspace = true }
 primitives = { workspace = true }
 runtime-parachains = { workspace = true }
 simple-template-emulated-chain = { workspace = true }
