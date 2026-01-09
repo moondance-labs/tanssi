@@ -38,12 +38,12 @@ pub trait ServicesPaymentApi<Balance, ParaId> {
     async fn collator_assignment_cost(&self, para_id: ParaId) -> RpcResult<Balance>;
 }
 
-pub struct ServicesPayment<Client, Block> {
+pub struct ServicesPayment<Client, Block, AccountId> {
     client: Arc<Client>,
-    _phantom: PhantomData<Block>,
+    _phantom: PhantomData<(Block, AccountId)>,
 }
 
-impl<Client, Block> ServicesPayment<Client, Block> {
+impl<Client, Block, AccountId> ServicesPayment<Client, Block, AccountId> {
     pub fn new(client: Arc<Client>) -> Self {
         Self {
             client,
@@ -53,13 +53,14 @@ impl<Client, Block> ServicesPayment<Client, Block> {
 }
 
 #[async_trait]
-impl<Client, Hash, Block, Balance, ParaId> ServicesPaymentApiServer<Balance, ParaId>
-    for ServicesPayment<Client, Block>
+impl<Client, Hash, Block, AccountId, Balance, ParaId> ServicesPaymentApiServer<Balance, ParaId>
+    for ServicesPayment<Client, Block, AccountId>
 where
     Hash: Send + 'static,
     Block: BlockT<Hash = Hash>,
     Client: ProvideRuntimeApi<Block> + Sync + Send + UsageProvider<Block> + 'static,
-    Client::Api: ServicesPaymentRuntimeApi<Block, Balance, ParaId>,
+    Client::Api: ServicesPaymentRuntimeApi<Block, AccountId, Balance, ParaId>,
+    AccountId: parity_scale_codec::Codec + Send + Sync + 'static,
     Balance: parity_scale_codec::Codec + Send + 'static,
     ParaId: parity_scale_codec::Codec + Send + 'static,
 {
