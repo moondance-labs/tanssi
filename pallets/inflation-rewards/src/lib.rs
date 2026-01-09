@@ -17,6 +17,21 @@
 //! # Inflation Rewards Pallet
 //!
 //! This pallet handle native token inflation and rewards distribution.
+//!
+//! Inflation is minted once in `on_initialize`, using
+//! `T::Currency::issue(T::InflationRate::get() * T::Currency::total_issuance());`.
+//!
+//! Note that this is `Perbill` `Mul`, so it rounds to the nearest integer.
+//! Search for `rational_mul_correction` in polkadot-sdk for more info.
+//!
+//! Then, the inflation is split into 2 parts based on `T::RewardsPortion::get()`.
+//! The rewards portion is transferred first to `T::PendingRewardsAccount` in `on_initialize`,
+//! and then to each collator in `on_container_authors_noted`. If a chain doesn't produce blocks,
+//! the reward stays in that account and is transferred to `T::OnUnbalanced` on the next block
+//! `on_initialize`.
+//!
+//! The `T::OnUnbalanced` handles inflation that doesn't go to block rewards, this is usually the
+//! parachain bond account.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 extern crate alloc;
@@ -85,12 +100,16 @@ pub mod pallet {
                         Preservation::Expendable,
                         Fortitude::Force,
                     )
-                    .unwrap_or(CreditOf::<T>::zero())
+                    .unwrap_or_else(|_e| {
+                        log::debug!("failed to withdraw from PendingRewardsAccount");
+
+                        CreditOf::<T>::zero()
+                    })
                 } else {
                     CreditOf::<T>::zero()
                 };
 
-            // Get the number of chains at this block (tanssi + container chain blocks)
+            // Get the number of chains at this block (container chain blocks)
             weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 1));
             let container_chains_to_check_unbounded: Vec<_> =
                 T::ContainerChains::container_chains_with_collators(ForSession::Current)
@@ -98,16 +117,17 @@ pub mod pallet {
                     .filter_map(|(para_id, collators)| (!collators.is_empty()).then_some(para_id))
                     .collect();
 
-            // Convert to BoundedVec. If the number of chains is greater than the limit, truncate
+            // Convert to BoundedBTreeSet. If the number of chains is greater than the limit, truncate
             // and emit a warning. This should never happen because we assume that
             // MaxContainerChains has the same value in all the pallets, but that's not enforced.
             // A better solution would be for container_chains_with_collators to return an already
             // bounded data structure.
             let unbounded_len = container_chains_to_check_unbounded.len();
-            let container_chains_to_check =
-                BoundedVec::truncate_from(container_chains_to_check_unbounded);
+            let container_chains_to_check = bounded_vec_into_bounded_btree_set(
+                BoundedVec::truncate_from(container_chains_to_check_unbounded),
+            );
             if container_chains_to_check.len() != unbounded_len {
-                log::warn!("inflation_rewards: got more chains than max. ")
+                log::warn!("inflation_rewards: got more chains than max");
             }
 
             let mut number_of_chains: BalanceOf<T> =
@@ -133,10 +153,17 @@ pub mod pallet {
                     .peek()
                     .checked_div(&number_of_chains)
                     .unwrap_or_else(|| {
+                        // This is unreachable because we checked `number_of_chains.is_zero()` above
                         log::error!("Rewards per chain is zero");
                         BalanceOf::<T>::zero()
                     });
-                let (mut total_reminder, staking_rewards) = rewards_credit.split_merge(
+                // rewards_credit must be a multiple of number_of_chains, because the reward is split
+                // evenly between all chains. So take the remainder (total_rewards % number_of_chains)
+                // and move it to total_remainder, like this:
+                // total_remainder = reminder_credit + (total_rewards % number_of_chains)
+                // staking_rewards = rewards_credit - (total_rewards % number_of_chains)
+                // This guarantees that `staking_rewards - rewards_per_chain * number_of_chains == 0`
+                let (mut total_remainder, staking_rewards) = rewards_credit.split_merge(
                     total_rewards % number_of_chains,
                     (reminder_credit, CreditOf::<T>::zero()),
                 );
@@ -145,7 +172,10 @@ pub mod pallet {
                 if let Err(undistributed_rewards) =
                     T::Currency::resolve(&T::PendingRewardsAccount::get(), staking_rewards)
                 {
-                    total_reminder = total_reminder.merge(undistributed_rewards);
+                    // This error can happen if `PendingRewardsAccount` has 0 balance and
+                    // `staking_rewards` is less than existential deposit. In that case, we won't
+                    // be able to reward collators, and the reward will go to `OnUnbalanced`.
+                    total_remainder = total_remainder.merge(undistributed_rewards);
                 }
 
                 // Keep track of chains to reward
@@ -154,11 +184,14 @@ pub mod pallet {
                     rewards_per_chain,
                 });
 
-                // Let the runtime handle the non-staking part
-                T::OnUnbalanced::on_unbalanced(not_distributed_rewards.merge(total_reminder));
+                // Let the runtime handle the non-staking part, plus the non distributed rewards
+                // from the previous block, plus the dust from total_rewards % number_of_chains.
+                T::OnUnbalanced::on_unbalanced(not_distributed_rewards.merge(total_remainder));
 
                 // We don't reward the orchestrator in solochain mode
                 if let Some(orchestrator_author) = T::GetSelfChainBlockAuthor::get_block_author() {
+                    // Container chain authors get rewarded later in inherent, but orchestrator
+                    // author is rewarded now.
                     weight.saturating_accrue(Self::reward_orchestrator_author(orchestrator_author));
                 }
             }
@@ -216,7 +249,12 @@ pub mod pallet {
         },
     }
 
-    /// Container chains to reward per block
+    /// Container chains to reward per block.
+    /// This gets initialized to the list of chains that should be producing blocks.
+    /// Then, in the `set_latest_author_data` inherent, the chains that actually have produced
+    /// blocks are rewarded and removed from this list, in the `on_container_authors_noted` hook.
+    /// Chains that have not produced blocks stay in this list, and their rewards get accumulated as
+    /// `not_distributed_rewards` and handled by `OnUnbalanced` in the next block `on_initialize`.
     #[pallet::storage]
     pub(super) type ChainsToReward<T: Config> =
         StorageValue<_, ChainsToRewardValue<T>, OptionQuery>;
@@ -226,7 +264,7 @@ pub mod pallet {
     )]
     #[scale_info(skip_type_params(T))]
     pub struct ChainsToRewardValue<T: Config> {
-        pub para_ids: BoundedVec<ParaId, <T as Config>::MaxContainerChains>,
+        pub para_ids: BoundedBTreeSet<ParaId, <T as Config>::MaxContainerChains>,
         pub rewards_per_chain: BalanceOf<T>,
     }
 
@@ -235,21 +273,30 @@ pub mod pallet {
             let mut total_weight = T::DbWeight::get().reads(1);
             if let Some(chains_to_reward) = ChainsToReward::<T>::get() {
                 total_weight.saturating_accrue(T::DbWeight::get().reads(1));
+                let actual_reward = T::Currency::withdraw(
+                    &T::PendingRewardsAccount::get(),
+                    chains_to_reward.rewards_per_chain,
+                    Precision::BestEffort,
+                    Preservation::Expendable,
+                    Fortitude::Force,
+                )
+                .unwrap_or_else(|_e| {
+                    log::debug!("failed to withdraw from PendingRewardsAccount");
+
+                    CreditOf::<T>::zero()
+                });
+                let actual_reward_for_event = actual_reward.peek();
+                if actual_reward_for_event != chains_to_reward.rewards_per_chain {
+                    log::warn!("collator reward different than expected");
+                }
                 match T::StakingRewardsDistributor::distribute_rewards(
                     orchestrator_author.clone(),
-                    T::Currency::withdraw(
-                        &T::PendingRewardsAccount::get(),
-                        chains_to_reward.rewards_per_chain,
-                        Precision::BestEffort,
-                        Preservation::Expendable,
-                        Fortitude::Force,
-                    )
-                    .unwrap_or(CreditOf::<T>::zero()),
+                    actual_reward,
                 ) {
                     Ok(frame_support::dispatch::PostDispatchInfo { actual_weight, .. }) => {
                         Self::deposit_event(Event::RewardedOrchestrator {
                             account_id: orchestrator_author,
-                            balance: chains_to_reward.rewards_per_chain,
+                            balance: actual_reward_for_event,
                         });
 
                         if let Some(weight) = actual_weight {
@@ -288,24 +335,34 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
                 let author = &info.author;
                 let para_id = info.para_id;
 
-                // If we find the index is because we still have not rewarded it
-                if let Ok(index) = container_chains_to_reward.para_ids.binary_search(&para_id) {
+                // If we find the para id is because we still have not rewarded it
+                // this makes sure we dont reward it twice in the same block
+                if container_chains_to_reward.para_ids.remove(&para_id) {
                     // we distribute rewards to the author
+                    let actual_reward = T::Currency::withdraw(
+                        &T::PendingRewardsAccount::get(),
+                        container_chains_to_reward.rewards_per_chain,
+                        Precision::BestEffort,
+                        Preservation::Expendable,
+                        Fortitude::Force,
+                    )
+                    .unwrap_or_else(|_e| {
+                        log::debug!("failed to withdraw from PendingRewardsAccount");
+
+                        CreditOf::<T>::zero()
+                    });
+                    let actual_reward_for_event = actual_reward.peek();
+                    if actual_reward_for_event != container_chains_to_reward.rewards_per_chain {
+                        log::warn!("collator reward different than expected");
+                    }
                     match T::StakingRewardsDistributor::distribute_rewards(
                         author.clone(),
-                        T::Currency::withdraw(
-                            &T::PendingRewardsAccount::get(),
-                            container_chains_to_reward.rewards_per_chain,
-                            Precision::BestEffort,
-                            Preservation::Expendable,
-                            Fortitude::Force,
-                        )
-                        .unwrap_or(CreditOf::<T>::zero()),
+                        actual_reward,
                     ) {
                         Ok(frame_support::dispatch::PostDispatchInfo { actual_weight, .. }) => {
                             Self::deposit_event(Event::RewardedContainer {
                                 account_id: author.clone(),
-                                balance: container_chains_to_reward.rewards_per_chain,
+                                balance: actual_reward_for_event,
                                 para_id,
                             });
                             if let Some(weight) = actual_weight {
@@ -316,9 +373,11 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
                             log::warn!("Fail to distribute rewards: {:?}", e)
                         }
                     }
-                    // we remove the para id from container-chains to reward
-                    // this makes sure we dont reward it twice in the same block
-                    container_chains_to_reward.para_ids.remove(index);
+                } else {
+                    // para id not found in list, either
+                    // * tried to reward a chain that doesn't have any collators assigned
+                    // * tried to reward the same chain twice in the same block
+                    log::warn!("ChainsToReward: para id not found");
                 }
             }
 
@@ -326,7 +385,7 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
             // Keep track of chains to reward
             ChainsToReward::<T>::put(container_chains_to_reward);
         } else {
-            // TODO: why would ChainsToReward ever be None?
+            // Unreachable because we always write ChainsToReward in on_initialize
             log::warn!("ChainsToReward is None");
         }
 
@@ -352,9 +411,11 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
             .map(|x| x.para_ids.into_iter().collect())
             .unwrap_or_default();
         ChainsToReward::<T>::put(ChainsToRewardValue {
-            para_ids: alloc::vec::Vec::from_iter(old_para_ids.into_iter().chain([para_id]))
-                .try_into()
-                .expect("to be in bound"),
+            para_ids: alloc::collections::BTreeSet::from_iter(
+                old_para_ids.into_iter().chain([para_id]),
+            )
+            .try_into()
+            .expect("to be in bound"),
             rewards_per_chain: BalanceOf::<T>::from(reward_amount),
         });
 
@@ -370,4 +431,19 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
     fn bench_execute_pending() {
         T::StakingRewardsDistributor::bench_execute_pending()
     }
+}
+
+/// Convert a `BoundedVec` into a `BoundedBTreeSet` with the same bound.
+// TODO: upstream this into BoundedVec crate
+fn bounded_vec_into_bounded_btree_set<T: core::cmp::Ord + core::fmt::Debug, S: Get<u32>>(
+    x: BoundedVec<T, S>,
+) -> BoundedBTreeSet<T, S> {
+    let mut set = BoundedBTreeSet::default();
+
+    for item in x {
+        set.try_insert(item)
+            .expect("insert must have enough space because vec and set use the same type as bound");
+    }
+
+    set
 }

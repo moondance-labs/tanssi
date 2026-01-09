@@ -152,7 +152,16 @@ describeSuite({
 
                 if (pendingChainRewards.isSome) {
                     const rewardPerChain = pendingChainRewards.unwrap().rewardsPerChain.toBigInt();
-                    const pendingChainsToReward = BigInt(pendingChainRewards.unwrap().paraIds.length);
+                    const paraIds = pendingChainRewards.unwrap().paraIds;
+                    // paraIds was Vec in old runtimes, now is Set. Need to use size/length accordingly.
+                    const pendingChainsToReward = BigInt(
+                        paraIds.size ??
+                            // @ts-expect-error transition period: old metadata exposes `.length`
+                            paraIds.length ??
+                            (() => {
+                                throw new Error("paraIds has neither .size nor .length");
+                            })()
+                    );
                     expectedAmountParachainBond += pendingChainsToReward * rewardPerChain;
                 }
 
