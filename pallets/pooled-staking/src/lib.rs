@@ -77,7 +77,7 @@ pub mod pallet {
         frame_support::{
             pallet_prelude::*,
             storage::types::{StorageDoubleMap, StorageValue, ValueQuery},
-            traits::{fungible, tokens::Balance},
+            traits::{fungible, fungible::Balanced, tokens::Balance, Imbalance},
             Blake2_128Concat,
         },
         frame_system::pallet_prelude::*,
@@ -86,7 +86,7 @@ pub mod pallet {
         serde::{Deserialize, Serialize},
         sp_core::Get,
         sp_runtime::{BoundedVec, Perbill},
-        tp_maths::MulDiv,
+        tp_maths::{ErrAdd, MulDiv},
     };
 
     /// A reason for this pallet placing a hold on funds.
@@ -328,6 +328,9 @@ pub mod pallet {
         type JoiningRequestTimer: Timer;
         /// Condition for when a leaving request can be executed.
         type LeavingRequestTimer: Timer;
+        /// Condition for when rewards should effectively be distributed.
+        type RewardsDistributionTimer: Timer;
+
         /// All eligible candidates are stored in a sorted list that is modified each time
         /// delegations changes. It is safer to bound this list, in which case eligible candidate
         /// could fall out of this list if they have less stake than the top `EligibleCandidatesBufferSize`
@@ -405,6 +408,22 @@ pub mod pallet {
     #[pallet::storage]
     pub type PausePoolsExtrinsics<T: Config> = StorageValue<_, bool, ValueQuery>;
 
+    /// Aggregates rewards to be effectively distributed later.
+    /// Size is unbounded to ensure new collators can be registered, but is
+    /// indirectly bounded by how many collators can be rewarded before
+    /// `RewardsDistributionTimer` is elapsed, which will empty the map.
+    #[pallet::storage]
+    #[pallet::unbounded]
+    pub type PendingRewards<T: Config> = StorageValue<
+        _,
+        pools::PendingRewards<
+            <T::RewardsDistributionTimer as Timer>::Instant,
+            Candidate<T>,
+            T::Balance,
+        >,
+        OptionQuery,
+    >;
+
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -454,11 +473,13 @@ pub mod pallet {
         },
 
         /// Stake of that Candidate increased.
+        #[deprecated]
         IncreasedStake {
             candidate: Candidate<T>,
             stake_diff: T::Balance,
         },
         /// Stake of that Candidate decreased.
+        #[deprecated]
         DecreasedStake {
             candidate: Candidate<T>,
             stake_diff: T::Balance,
@@ -492,16 +513,26 @@ pub mod pallet {
             stake: T::Balance,
         },
         /// Collator has been rewarded.
+        #[deprecated]
         RewardedCollator {
             collator: Candidate<T>,
             auto_compounding_rewards: T::Balance,
             manual_claim_rewards: T::Balance,
         },
         /// Delegators have been rewarded.
+        #[deprecated]
         RewardedDelegators {
             collator: Candidate<T>,
             auto_compounding_rewards: T::Balance,
             manual_claim_rewards: T::Balance,
+        },
+        /// Rewards has been distributed to a collator and its delegators.
+        RewardsDistributed {
+            collator: Candidate<T>,
+            collator_ac_rewards: T::Balance,
+            collator_mc_rewards: T::Balance,
+            delegators_ac_rewards: T::Balance,
+            delegators_mc_rewards: T::Balance,
         },
         /// Rewards manually claimed.
         ClaimedManualRewards {
@@ -791,7 +822,49 @@ pub mod pallet {
             candidate: Candidate<T>,
             rewards: CreditOf<T>,
         ) -> DispatchResultWithPostInfo {
-            pools::distribute_rewards::<T>(&candidate, rewards)
+            let rewards_amount = rewards.peek();
+            // Resolve rewards currency in staking account.
+            T::Currency::resolve(&T::StakingAccount::get(), rewards)
+                .map_err(|_| DispatchError::NoProviders)?;
+
+            let mut pending = PendingRewards::<T>::get().unwrap_or_else(|| pools::PendingRewards {
+                last_distribution: T::RewardsDistributionTimer::now(),
+                rewards: Default::default(),
+            });
+
+            // Aggregate rewards
+            let entry: &mut T::Balance = pending.rewards.entry(candidate.clone()).or_default();
+            *entry = entry.err_add(&rewards_amount).map_err(Error::<T>::from)?;
+
+            // Distribute only when the timer is elapsed.
+            let mut distribution_weight = Weight::zero();
+            if dbg!(T::RewardsDistributionTimer::is_elapsed(
+                &pending.last_distribution
+            )) {
+                println!("Distribution !");
+
+                pending.last_distribution = T::RewardsDistributionTimer::now();
+                let rewards = core::mem::take(&mut pending.rewards); // reset pending rewards
+
+                for (candidate, reward) in rewards.into_iter() {
+                    // skip empty rewards if any
+                    if reward.is_zero() {
+                        continue;
+                    }
+
+                    let weight = pools::distribute_rewards::<T>(&candidate, reward)?
+                        .actual_weight
+                        .unwrap_or_default();
+
+                    distribution_weight = distribution_weight
+                        .err_add(&weight)
+                        .map_err(Error::<T>::from)?;
+                }
+            }
+
+            // Update storage
+            PendingRewards::<T>::put(pending);
+            Ok(Some(distribution_weight).into())
         }
 
         #[cfg(feature = "runtime-benchmarks")]
@@ -841,6 +914,7 @@ pub mod pallet {
                 .expect("failed to execute pending operations");
         }
     }
+
     impl<T: Config> tp_traits::StakingCandidateHelper<Candidate<T>> for Pallet<T> {
         fn is_candidate_selected(candidate: &Candidate<T>) -> bool {
             <SortedEligibleCandidates<T>>::get()

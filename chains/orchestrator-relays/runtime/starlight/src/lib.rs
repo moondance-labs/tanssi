@@ -1844,6 +1844,8 @@ parameter_types! {
     pub const RewardsCollatorCommission: Perbill = Perbill::from_percent(20);
     // Need to wait 2 sessions before being able to join or leave staking pools
     pub const StakingSessionDelay: u32 = 2;
+    // Rewards distribution occurs at session boundary.
+    pub const RewardsDistributionSessionDelay: u32 = 1;
 }
 
 pub struct CandidateHasRegisteredKeys;
@@ -1898,6 +1900,7 @@ impl pallet_pooled_staking::Config for Runtime {
     type RewardsCollatorCommission = RewardsCollatorCommission;
     type JoiningRequestTimer = SessionTimer<Runtime, StakingSessionDelay>;
     type LeavingRequestTimer = SessionTimer<Runtime, StakingSessionDelay>;
+    type RewardsDistributionTimer = SessionTimer<Runtime, RewardsDistributionSessionDelay>;
     type EligibleCandidatesBufferSize = MaxCandidatesBufferSize;
     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;

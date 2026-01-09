@@ -39,33 +39,11 @@ pool_test!(
             .test::<P>();
 
             assert_eq_events!(vec![
-                Event::IncreasedStake {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake_diff: round_down(requested_amount, 2),
-                },
-                Event::UpdatedCandidatePosition {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake: round_down(requested_amount, 2),
-                    self_delegation: round_down(requested_amount, 2),
-                    before: None,
-                    after: None,
-                },
                 Event::RequestedDelegate {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_CANDIDATE_1,
                     pool: P::target_pool(),
                     pending: round_down(requested_amount, 2),
-                },
-                Event::DecreasedStake {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake_diff: round_down(requested_amount, 2) - final_amount,
-                },
-                Event::UpdatedCandidatePosition {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake: final_amount,
-                    self_delegation: final_amount,
-                    before: None,
-                    after: None,
                 },
                 P::event_staked(ACCOUNT_CANDIDATE_1, ACCOUNT_CANDIDATE_1, 9, final_amount),
                 Event::ExecutedDelegate {
@@ -121,10 +99,6 @@ pool_test!(
 
             assert_eq_events!(vec![
                 // delegation 1
-                Event::IncreasedStake {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake_diff: round_down(requested_amount, 2),
-                },
                 Event::UpdatedCandidatePosition {
                     candidate: ACCOUNT_CANDIDATE_1,
                     stake: round_down(requested_amount, 2),
@@ -147,17 +121,6 @@ pool_test!(
                     released: round_down(requested_amount, 2) - final_amount,
                 },
                 // delegation 2
-                Event::IncreasedStake {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake_diff: round_down(requested_amount, 2),
-                },
-                Event::UpdatedCandidatePosition {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake: round_down(requested_amount * 2, 2),
-                    self_delegation: round_down(requested_amount * 2, 2),
-                    before: Some(0),
-                    after: Some(0),
-                },
                 Event::RequestedDelegate {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_CANDIDATE_1,
@@ -173,10 +136,6 @@ pool_test!(
                     released: round_down(requested_amount, 2) - final_amount,
                 },
                 // undelegation
-                Event::DecreasedStake {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake_diff: requested_amount * 2,
-                },
                 Event::UpdatedCandidatePosition {
                     candidate: ACCOUNT_CANDIDATE_1,
                     stake: 0,
@@ -242,18 +201,19 @@ fn many_candidates_mixed_pools() {
                         }
                         .test::<pools::AutoCompounding<Runtime>>();
 
-                        assert_eq_last_events!(vec![
-                            Event::<Runtime>::IncreasedStake {
-                                candidate: action.candidate,
-                                stake_diff: action.amount,
-                            },
-                            Event::UpdatedCandidatePosition {
+                        let mut expected_events = vec![];
+
+                        if action.rank_before != action.rank_after {
+                            expected_events.push(Event::<Runtime>::UpdatedCandidatePosition {
                                 candidate: action.candidate,
                                 stake: action.total_stake,
                                 self_delegation: action.total_self,
                                 before: action.rank_before,
                                 after: action.rank_after,
-                            },
+                            });
+                        }
+
+                        expected_events.extend_from_slice(&vec![
                             Event::RequestedDelegate {
                                 candidate: action.candidate,
                                 delegator: action.delegator,
@@ -273,7 +233,9 @@ fn many_candidates_mixed_pools() {
                                 staked: action.amount,
                                 released: 0,
                             },
-                        ])
+                        ]);
+
+                        assert_eq_last_events!(expected_events)
                     }
                     Action {
                         join: true,
@@ -289,18 +251,19 @@ fn many_candidates_mixed_pools() {
                         }
                         .test::<pools::ManualRewards<Runtime>>();
 
-                        assert_eq_last_events!(vec![
-                            Event::<Runtime>::IncreasedStake {
-                                candidate: action.candidate,
-                                stake_diff: action.amount,
-                            },
-                            Event::UpdatedCandidatePosition {
+                        let mut expected_events = vec![];
+
+                        if action.rank_before != action.rank_after {
+                            expected_events.push(Event::<Runtime>::UpdatedCandidatePosition {
                                 candidate: action.candidate,
                                 stake: action.total_stake,
                                 self_delegation: action.total_self,
                                 before: action.rank_before,
                                 after: action.rank_after,
-                            },
+                            });
+                        }
+
+                        expected_events.extend_from_slice(&vec![
                             Event::RequestedDelegate {
                                 candidate: action.candidate,
                                 delegator: action.delegator,
@@ -320,7 +283,9 @@ fn many_candidates_mixed_pools() {
                                 staked: action.amount,
                                 released: 0,
                             },
-                        ])
+                        ]);
+
+                        assert_eq_last_events!(expected_events)
                     }
                     Action {
                         join: false,
@@ -337,18 +302,19 @@ fn many_candidates_mixed_pools() {
                         }
                         .test::<pools::AutoCompounding<Runtime>>();
 
-                        assert_eq_last_events!(vec![
-                            Event::<Runtime>::DecreasedStake {
-                                candidate: action.candidate,
-                                stake_diff: action.amount,
-                            },
-                            Event::UpdatedCandidatePosition {
+                        let mut expected_events = vec![];
+
+                        if action.rank_before != action.rank_after {
+                            expected_events.push(Event::<Runtime>::UpdatedCandidatePosition {
                                 candidate: action.candidate,
                                 stake: action.total_stake,
                                 self_delegation: action.total_self,
                                 before: action.rank_before,
                                 after: action.rank_after,
-                            },
+                            });
+                        }
+
+                        expected_events.extend_from_slice(&vec![
                             Event::RequestedUndelegate {
                                 candidate: action.candidate,
                                 delegator: action.delegator,
@@ -361,7 +327,9 @@ fn many_candidates_mixed_pools() {
                                 delegator: action.delegator,
                                 released: round_down(action.amount, 3),
                             },
-                        ])
+                        ]);
+
+                        assert_eq_last_events!(expected_events)
                     }
                     _ => todo!(),
                 }

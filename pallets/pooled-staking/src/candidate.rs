@@ -78,12 +78,6 @@ impl<T: Config> Candidates<T> {
         }
 
         let new_stake = Self::total_stake(candidate).0.err_add(&stake.0)?;
-
-        Pallet::<T>::deposit_event(Event::<T>::IncreasedStake {
-            candidate: candidate.clone(),
-            stake_diff: stake.0,
-        });
-
         Self::update_total_stake(candidate, Stake(new_stake))?;
 
         Ok(())
@@ -98,12 +92,6 @@ impl<T: Config> Candidates<T> {
         }
 
         let new_stake = Self::total_stake(candidate).0.err_sub(&stake.0)?;
-
-        Pallet::<T>::deposit_event(Event::<T>::DecreasedStake {
-            candidate: candidate.clone(),
-            stake_diff: stake.0,
-        });
-
         Self::update_total_stake(candidate, Stake(new_stake))?;
 
         Ok(())
@@ -195,13 +183,16 @@ impl<T: Config> Candidates<T> {
             None
         };
 
-        Pallet::<T>::deposit_event(Event::<T>::UpdatedCandidatePosition {
-            candidate: candidate.clone(),
-            stake: new_stake.0,
-            self_delegation,
-            before: old_position,
-            after: new_position,
-        });
+        // Only emit event if position actually changed.
+        if old_position != new_position {
+            Pallet::<T>::deposit_event(Event::<T>::UpdatedCandidatePosition {
+                candidate: candidate.clone(),
+                stake: new_stake.0,
+                self_delegation,
+                before: old_position,
+                after: new_position,
+            });
+        }
 
         SortedEligibleCandidates::<T>::set(list);
 

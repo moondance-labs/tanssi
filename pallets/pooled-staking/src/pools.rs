@@ -17,14 +17,15 @@
 use {
     crate::{
         candidate::Candidates, weights::WeightInfo, Candidate, CandidateSummaries, Config,
-        CreditOf, Delegator, DelegatorCandidateSummaries, Error, Event, Pallet, Pools, PoolsKey,
-        Shares, Stake,
+        Delegator, DelegatorCandidateSummaries, Error, Event, Pallet, Pools, PoolsKey, Shares,
+        Stake,
     },
+    alloc::collections::BTreeMap,
     core::marker::PhantomData,
     frame_support::{
         ensure,
         pallet_prelude::*,
-        traits::{fungible::Balanced, Imbalance},
+        traits::{fungible::Mutate, tokens::Preservation},
     },
     serde::{Deserialize, Serialize},
     sp_core::Get,
@@ -529,19 +530,18 @@ impl<T: Config> ManualRewards<T> {
 #[frame_support::transactional]
 pub fn distribute_rewards<T: Config>(
     candidate: &Candidate<T>,
-    rewards: CreditOf<T>,
+    rewards: T::Balance,
 ) -> DispatchResultWithPostInfo {
-    let candidate_manual_rewards = distribute_rewards_inner::<T>(candidate, rewards.peek())?;
+    let candidate_manual_rewards = distribute_rewards_inner::<T>(candidate, rewards)?;
 
-    let (candidate_manual_rewards, other_rewards) = rewards.split(candidate_manual_rewards);
-
-    if !candidate_manual_rewards.peek().is_zero() {
-        T::Currency::resolve(candidate, candidate_manual_rewards)
-            .map_err(|_| DispatchError::NoProviders)?;
+    if !candidate_manual_rewards.is_zero() {
+        T::Currency::transfer(
+            &T::StakingAccount::get(),
+            candidate,
+            candidate_manual_rewards,
+            Preservation::Preserve,
+        )?;
     }
-
-    T::Currency::resolve(&T::StakingAccount::get(), other_rewards)
-        .map_err(|_| DispatchError::NoProviders)?;
 
     Ok(Some(T::WeightInfo::distribute_rewards()).into())
 }
@@ -619,15 +619,12 @@ fn distribute_rewards_inner<T: Config>(
     let additional_stake = delegators_auto_rewards.err_add(&candidate_auto_rewards)?;
     Candidates::<T>::add_total_stake(candidate, &Stake(additional_stake))?;
 
-    Pallet::<T>::deposit_event(Event::<T>::RewardedCollator {
+    Pallet::<T>::deposit_event(Event::<T>::RewardsDistributed {
         collator: candidate.clone(),
-        auto_compounding_rewards: candidate_auto_rewards,
-        manual_claim_rewards: candidate_manual_rewards,
-    });
-    Pallet::<T>::deposit_event(Event::<T>::RewardedDelegators {
-        collator: candidate.clone(),
-        auto_compounding_rewards: delegators_auto_rewards,
-        manual_claim_rewards: delegators_manual_rewards,
+        collator_ac_rewards: candidate_auto_rewards,
+        collator_mc_rewards: candidate_manual_rewards,
+        delegators_ac_rewards: delegators_auto_rewards,
+        delegators_mc_rewards: delegators_manual_rewards,
     });
 
     Ok(candidate_manual_rewards)
@@ -837,4 +834,10 @@ impl CandidateSummary {
         *pool = count;
         self
     }
+}
+
+#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize)]
+pub struct PendingRewards<Instant, Candidate: Ord, Balance> {
+    pub last_distribution: Instant,
+    pub rewards: BTreeMap<Candidate, Balance>,
 }
