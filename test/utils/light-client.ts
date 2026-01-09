@@ -116,14 +116,13 @@ function encodeLayerZeroMessage(
         throw new Error(`lzSourceAddress must be exactly 32 bytes, got ${lzSourceAddress.length} bytes`);
     }
 
-    const MAGIC_BYTES = new Uint8Array([0x6c, 0x7a, 0x62, 0x31]); // "lzb1"
     const defaultAbiCoder = AbiCoder.defaultAbiCoder();
 
-    // Encode as InboundSolPayload struct: tuple(bytes4 magicBytes, tuple(bytes32,uint32,uint32,bytes) message)
-    // The nested tuple is InboundSolMessage: (lzSourceAddress, lzSourceEndpoint, destinationChain, message)
+    // Encode as InboundSolMessage struct: tuple(bytes32,uint32,uint32,bytes)
+    // (lzSourceAddress, lzSourceEndpoint, destinationChain, message)
     const encoded = defaultAbiCoder.encode(
-        ["tuple(bytes4,tuple(bytes32,uint32,uint32,bytes))"],
-        [[MAGIC_BYTES, [lzSourceAddress, lzSourceEndpoint, destinationChain, message]]]
+        ["tuple(bytes32,uint32,uint32,bytes)"],
+        [[lzSourceAddress, lzSourceEndpoint, destinationChain, message]]
     );
     return getBytes(encoded);
 }

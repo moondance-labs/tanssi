@@ -31,8 +31,7 @@ use parity_scale_codec::Decode;
 use snowbridge_inbound_queue_primitives::v2::{Message, MessageProcessorError, Payload};
 use sp_core::{Get, H160};
 use tp_bridge::layerzero_message::{
-    InboundMessage as LayerZeroInboundMessage,
-    InboundSolMessageEnvelope as LayerZeroInboundSolEnvelope, MAGIC_BYTES as LZ_MAGIC_BYTES,
+    InboundMessage as LayerZeroInboundMessage, InboundSolMessage as LayerZeroInboundSolMessage,
 };
 use v2_processor_proc_macro::MessageProcessor;
 use xcm::latest::{ExecuteXcm, InteriorLocation, NetworkId};
@@ -68,28 +67,19 @@ pub fn try_extract_message<T: pallet_lz_router::Config>(
                         });
                     }
 
-                    let sol_payload =
-                        LayerZeroInboundSolEnvelope::abi_decode_validate(&mut payload.as_slice())
+                    let sol_message =
+                        LayerZeroInboundSolMessage::abi_decode_validate(&mut payload.as_slice())
                             .map_err(|error| MessageExtractionError::InvalidMessage {
-                            context: "Unable to decode LayerZero Payload".to_string(),
-                            source: Some(Box::new(error)),
-                        })?;
-                    if &sol_payload.magicBytes.0 != LZ_MAGIC_BYTES {
-                        return Err(MessageExtractionError::InvalidMessage {
-                            context: format!(
-                                "LayerZero magic bytes expected: {:?} got: {:?}",
-                                LZ_MAGIC_BYTES, sol_payload.magicBytes.0,
-                            ),
-                            source: None,
-                        });
-                    }
+                                context: "Unable to decode LayerZero Payload".to_string(),
+                                source: Some(Box::new(error)),
+                            })?;
 
-                    sol_payload.message.try_into().map_err(|e| {
-                        MessageExtractionError::InvalidMessage {
+                    sol_message
+                        .try_into()
+                        .map_err(|e| MessageExtractionError::InvalidMessage {
                             context: format!("LayerZero message conversion failed: {}", e),
                             source: None,
-                        }
-                    })
+                        })
                 }
                 _ => Err(MessageExtractionError::UnsupportedMessage {
                     context: "Unsupported Message".to_string(),

@@ -40,8 +40,8 @@
 //!
 //! 1. Container chain calls `send_message_to_ethereum` via XCM
 //! 2. Router validates origin, minimum reward, and transfers fee from sovereign account
-//! 3. Router creates LayerZero message envelope (with magic bytes)
-//! 4. Router ABI-encodes the envelope and creates `CallContract` command
+//! 3. Router creates LayerZero message
+//! 4. Router ABI-encodes the message and creates `CallContract` command
 //! 5. Router sends to Snowbridge V2 outbound queue targeting LayerZero hub on Ethereum
 //! 6. Snowbridge relays to Ethereum, which forwards via LayerZero to the destination
 //!
@@ -114,7 +114,7 @@ use {
     tp_bridge::{
         layerzero_message::{
             InboundMessage, LayerZeroAddress, LayerZeroEndpoint, LayerZeroOutboundPayload,
-            OutboundMessage, OutboundSolMessageEnvelope,
+            OutboundMessage, OutboundSolMessage,
         },
         ConvertLocation, TicketInfo,
     },
@@ -342,12 +342,12 @@ pub mod pallet {
                 payload,
             };
 
-            // Convert to ABI-encodable envelope (includes magic bytes)
-            let envelope: OutboundSolMessageEnvelope = message.clone().into();
-            // TODO: incode the function selctor also
+            // Convert to ABI-encodable message
+            let sol_message: OutboundSolMessage = message.clone().into();
+            // TODO: encode the function selector also
             // | 4 bytes  |   N × 32 bytes |
             // | selector | ABI-encoded arguments |
-            let calldata = envelope.abi_encode();
+            let calldata = sol_message.abi_encode();
 
             // Create CallContract command targeting the LayerZero hub on Ethereum
             let command = SnowbridgeCommandV2::CallContract {

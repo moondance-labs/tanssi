@@ -20,13 +20,6 @@ use scale_info::TypeInfo;
 use sp_core::{ConstU32, DecodeWithMemTracking};
 use sp_runtime::BoundedVec;
 
-/// Magic bytes are added in every payload intended for this processor to make sure
-/// that we are the intended recipient of the message. Reason being scale encoding is not type aware.
-/// So a same set of bytes can be decoded for two different data structures if their
-/// total size is same. Magic bytes can be checked after decoding to make sure that the sender
-/// indeed send a message intended for this processor.
-pub const MAGIC_BYTES: &[u8; 4] = b"lzb1";
-
 /// Maximum size of a LayerZero message payload in bytes (8 KB).
 /// This limit prevents memory exhaustion from arbitrarily large payloads.
 pub const MAX_LAYERZERO_PAYLOAD_SIZE: u32 = 8 * 1024;
@@ -41,10 +34,6 @@ pub type LayerZeroAddress = BoundedVec<u8, ConstU32<32>>;
 pub type LayerZeroEndpoint = u32;
 
 sol! {
-    struct InboundSolMessageEnvelope {
-        bytes4  magicBytes;
-        InboundSolMessage message;
-    }
     struct InboundSolMessage {
         bytes32 lzSourceAddress;
         uint32  lzSourceEndpoint;
@@ -106,10 +95,6 @@ impl TryFrom<InboundSolMessage> for InboundMessage {
 }
 
 sol! {
-    struct OutboundSolMessageEnvelope {
-        bytes4  magicBytes;
-        OutboundSolMessage message;
-    }
     struct OutboundSolMessage {
         uint32  sourceChain;
         bytes32 lzDestinationAddress;
@@ -139,16 +124,6 @@ impl From<OutboundMessage> for OutboundSolMessage {
             lzDestinationAddress: alloy_core::primitives::FixedBytes(destination_address),
             lzDestinationEndpoint: message.lz_destination_endpoint,
             payload: message.payload.to_vec().into(),
-        }
-    }
-}
-
-// from OutboundMessage to OutboundSolMessageEnvelope (includes magic bytes)
-impl From<OutboundMessage> for OutboundSolMessageEnvelope {
-    fn from(message: OutboundMessage) -> Self {
-        Self {
-            magicBytes: (*MAGIC_BYTES).into(),
-            message: message.into(),
         }
     }
 }

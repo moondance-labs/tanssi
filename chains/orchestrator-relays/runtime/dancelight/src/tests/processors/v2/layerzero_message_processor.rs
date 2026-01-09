@@ -28,10 +28,7 @@ use {
     tanssi_runtime_common::processors::v2::{
         LayerZeroMessageProcessor, MessageExtractionError, MessageProcessorWithFallback, RawPayload,
     },
-    tp_bridge::layerzero_message::{
-        InboundSolMessage as LayerZeroInboundSolMessage,
-        InboundSolMessageEnvelope as LayerZeroInboundSolEnvelope, MAGIC_BYTES as LZ_MAGIC_BYTES,
-    },
+    tp_bridge::layerzero_message::InboundSolMessage as LayerZeroInboundSolMessage,
     xcm::latest::prelude::*,
 };
 
@@ -69,35 +66,7 @@ fn create_layerzero_payload(
         payload: message.into(),
     };
 
-    let sol_envelope = LayerZeroInboundSolEnvelope {
-        magicBytes: (*LZ_MAGIC_BYTES).into(),
-        message: sol_message,
-    };
-
-    LayerZeroInboundSolEnvelope::abi_encode(&sol_envelope)
-}
-
-/// Helper function to create a valid LayerZero ABI-encoded payload with custom magic bytes
-fn create_layerzero_payload_with_magic(
-    magic_bytes: [u8; 4],
-    source_address: [u8; 32],
-    source_endpoint: u32,
-    destination_chain: u32,
-    message: Vec<u8>,
-) -> Vec<u8> {
-    let sol_message = LayerZeroInboundSolMessage {
-        lzSourceAddress: source_address.into(),
-        lzSourceEndpoint: source_endpoint,
-        destinationChain: destination_chain,
-        payload: message.into(),
-    };
-
-    let sol_envelope = LayerZeroInboundSolEnvelope {
-        magicBytes: magic_bytes.into(),
-        message: sol_message,
-    };
-
-    LayerZeroInboundSolEnvelope::abi_encode(&sol_envelope)
+    LayerZeroInboundSolMessage::abi_encode(&sol_message)
 }
 
 #[test]
@@ -252,47 +221,6 @@ fn layerzero_try_extract_message_fails_with_value() {
         assert!(
             matches!(result, Err(MessageExtractionError::InvalidMessage { ref context, .. }) if context.contains("assets")),
             "Expected InvalidMessage error about assets/value, got: {:?}",
-            result
-        );
-    });
-}
-
-#[test]
-fn layerzero_try_extract_message_fails_with_wrong_magic_bytes() {
-    ExtBuilder::default().build().execute_with(|| {
-        let gateway_address = GatewayAddress::get();
-        let sender: AccountId = AccountId::from(ALICE);
-
-        let lz_payload = create_layerzero_payload_with_magic(
-            [0xBA, 0xAD, 0xF0, 0x0D], // Wrong magic bytes
-            [1u8; 32],
-            30101,
-            2000,
-            vec![0xAA],
-        );
-
-        let raw_payload = RawPayload::LayerZero(lz_payload);
-
-        let message = Message {
-            gateway: gateway_address,
-            nonce: 1,
-            origin: gateway_address,
-            assets: vec![],
-            payload: Payload::Raw(raw_payload.encode()),
-            claimer: None,
-            value: 0,
-            execution_fee: 0,
-            relayer_fee: 0,
-        };
-
-        let result =
-            <Processor as MessageProcessorWithFallback<AccountId>>::try_extract_message(
-                &sender, &message,
-            );
-
-        assert!(
-            matches!(result, Err(MessageExtractionError::InvalidMessage { ref context, .. }) if context.contains("magic bytes")),
-            "Expected InvalidMessage error about magic bytes, got: {:?}",
             result
         );
     });
