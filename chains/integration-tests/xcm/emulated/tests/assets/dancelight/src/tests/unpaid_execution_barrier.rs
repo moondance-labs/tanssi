@@ -30,7 +30,9 @@ use {
     simple_template_emulated_chain::{genesis::PARA_ID, SimpleTemplateParaPallet},
     sp_runtime::FixedU128,
     xcm::{latest::prelude::*, VersionedLocation, VersionedXcm},
-    xcm_emulator::{assert_expected_events, bx, Chain, Encode, Parachain, TestExt},
+    xcm_emulator::{
+        assert_expected_events, bx, Chain, ConvertLocation, Encode, Parachain, TestExt,
+    },
 };
 
 /// Test that the parent (relay chain) can send UnpaidExecution messages without being charged fees.
