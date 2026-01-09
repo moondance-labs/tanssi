@@ -271,7 +271,6 @@ fn user_transfer_assets_from_relay_to_container_charges_fees() {
 /// will have their messages rejected at the barrier.
 #[test]
 fn user_unpaid_execution_with_transact_is_rejected() {
-
     // Make the parachain reachable
     Dancelight::execute_with(|| {
         Dmp::make_parachain_reachable(SimpleTemplate::para_id());
