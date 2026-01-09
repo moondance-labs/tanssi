@@ -235,11 +235,9 @@ where
     fn try_extract_message(
         _sender: &AccountId,
         message: &Message,
-    ) -> Result<(Self::ExtractedMessage, Option<Weight>), MessageExtractionError> {
+    ) -> Result<Self::ExtractedMessage, MessageExtractionError> {
         let gateway_proxy_address = T::GatewayAddress::get();
-        // TODO: Add proper consumed weight
         try_extract_message(message, gateway_proxy_address)
-            .map(|extracted_message| (extracted_message, None))
     }
 
     fn process_extracted_message(

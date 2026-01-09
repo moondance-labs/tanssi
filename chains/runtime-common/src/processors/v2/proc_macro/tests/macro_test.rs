@@ -69,13 +69,13 @@ where
     fn try_extract_message(
         _who: &AccountId,
         message: &Message,
-    ) -> Result<(Self::ExtractedMessage, Option<Weight>), MessageExtractionError> {
+    ) -> Result<Self::ExtractedMessage, MessageExtractionError> {
         match message.value {
             1 => Err(MessageExtractionError::InvalidMessage {
                 context: "TestImpl1ExtractionError1".to_string(),
                 source: None,
             }),
-            2 => Ok((message.value, None)),
+            2 => Ok(message.value),
             3 | 4 => Err(MessageExtractionError::UnsupportedMessage {
                 context: "TestImpl1ExtractionError34".to_string(),
                 source: None,
@@ -102,7 +102,7 @@ where
     fn calculate_message_id(message: &Message) -> [u8; 32] {
         let response = Self::try_extract_message(&AccountId::from([1u8; 32]), message);
         match response {
-            Ok((value, _)) => [value as u8; 32],
+            Ok(value) => [value as u8; 32],
             Err(MessageExtractionError::UnsupportedMessage { .. }) => [0; 32],
             Err(MessageExtractionError::InvalidMessage { .. }) => {
                 [(message.execution_fee + 1) as u8; 32]
@@ -141,7 +141,7 @@ where
     fn try_extract_message(
         _sender: &AccountId,
         message: &Message,
-    ) -> Result<(Self::ExtractedMessage, Option<Weight>), MessageExtractionError> {
+    ) -> Result<Self::ExtractedMessage, MessageExtractionError> {
         match message.value {
             1 | 2 => Err(MessageExtractionError::UnsupportedMessage {
                 context: "TestImpl2ExtractionError12".to_string(),
@@ -151,7 +151,7 @@ where
                 context: "TestImpl2ExtractionError3".to_string(),
                 source: None,
             }),
-            4 => Ok((message.value, None)),
+            4 => Ok(message.value),
             _ => Err(MessageExtractionError::Other {
                 context: "TestImpl2ExtractionError.".to_string(),
                 source: None,
@@ -174,7 +174,7 @@ where
     fn calculate_message_id(message: &Message) -> [u8; 32] {
         let response = Self::try_extract_message(&AccountId::from([1u8; 32]), message);
         match response {
-            Ok((value, _)) => [value as u8; 32],
+            Ok(value) => [value as u8; 32],
             Err(MessageExtractionError::UnsupportedMessage { .. }) => [0; 32],
             Err(MessageExtractionError::InvalidMessage { .. }) => [(message.value + 1) as u8; 32],
             _ => [0u8; 32],

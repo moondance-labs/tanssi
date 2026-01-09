@@ -204,9 +204,8 @@ where
     fn try_extract_message(
         _sender: &AccountId,
         message: &Message,
-    ) -> Result<(Self::ExtractedMessage, Option<Weight>), MessageExtractionError> {
-        // TODO: Add proper consumed weight
-        try_extract_message::<T>(message).map(|extracted_message| (extracted_message, None))
+    ) -> Result<Self::ExtractedMessage, MessageExtractionError> {
+        try_extract_message::<T>(message)
     }
 
     fn process_extracted_message(

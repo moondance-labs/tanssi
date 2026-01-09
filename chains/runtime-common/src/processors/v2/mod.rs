@@ -373,7 +373,7 @@ pub trait MessageProcessorWithFallback<AccountId> {
     fn try_extract_message(
         sender: &AccountId,
         message: &Message,
-    ) -> Result<(Self::ExtractedMessage, Option<Weight>), MessageExtractionError>;
+    ) -> Result<Self::ExtractedMessage, MessageExtractionError>;
 
     fn process_extracted_message(
         sender: AccountId,

@@ -103,13 +103,7 @@ fn message_processor_trait_derive_impl(ast: DeriveInput) -> proc_macro2::TokenSt
                 let result = #name::try_extract_message(&who, &message);
                 let message_id = #name::calculate_message_id(&message);
                 match result {
-                    Ok((extracted_message, optional_extraction_weight)) => #name::process_extracted_message(who, extracted_message).map(|optional_processing_weight| {
-                        let combined_weight = match optional_processing_weight {
-                            None => optional_extraction_weight,
-                            Some(weight) => Some(weight.saturating_add(optional_extraction_weight.unwrap_or(Weight::zero()))),
-                        };
-                        (message_id, combined_weight)
-                    }),
+                    Ok(extracted_message) => #name::process_extracted_message(who, extracted_message).map(|optional_processing_weight| (message_id, optional_processing_weight)),
                     Err(MessageExtractionError::InvalidMessage { .. }) => <#name #ty_generics as MessageProcessorWithFallback<AccountId>>::Fallback::handle_message(who, message).map(|optional_fallback_weight| (message_id, optional_fallback_weight)),
                     Err(message_extraction_error) => Err(message_extraction_error.into())
                 }
@@ -171,22 +165,12 @@ where
         let result = TestProcessor::try_extract_message(&who, &message);
         let message_id = TestProcessor::calculate_message_id(&message);
         match result {
-            Ok((extracted_message, optional_extraction_weight)) => {
+            Ok(extracted_message) => {
                 TestProcessor::process_extracted_message(who, extracted_message)
-                    .map(|optional_processing_weight| {
-                        let combined_weight = match optional_processing_weight {
-                            None => optional_extraction_weight,
-                            Some(weight) => {
-                                Some(
-                                    weight
-                                        .saturating_add(
-                                            optional_extraction_weight.unwrap_or(Weight::zero()),
-                                        ),
-                                )
-                            }
-                        };
-                        (message_id, combined_weight)
-                    })
+                    .map(|optional_processing_weight| (
+                        message_id,
+                        optional_processing_weight,
+                    ))
             }
             Err(MessageExtractionError::InvalidMessage { .. }) => {
                 <TestProcessor<
