@@ -87,7 +87,6 @@ pallet-offences = { workspace = true }
 pallet-parameters = { workspace = true }
 pallet-preimage = { workspace = true }
 pallet-proxy = { workspace = true }
-pallet-ranked-collective = { workspace = true }
 pallet-referenda = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-scheduler = { workspace = true }
@@ -178,6 +177,7 @@ bp-relayers = { workspace = true }
 bridge-hub-common = { workspace = true }
 pallet-bridge-relayers = { workspace = true }
 snowbridge-pallet-inbound-queue-v2 = { workspace = true }
+snowbridge-pallet-inbound-queue-v2-fixtures = { workspace = true, optional = true }
 snowbridge-pallet-outbound-queue-v2 = { workspace = true }
 snowbridge-pallet-system-v2 = { workspace = true }
 
@@ -276,7 +276,6 @@ std = [
 	"pallet-pooled-staking/std",
 	"pallet-preimage/std",
 	"pallet-proxy/std",
-	"pallet-ranked-collective/std",
 	"pallet-referenda/std",
 	"pallet-registrar-runtime-api/std",
 	"pallet-registrar/std",
@@ -316,6 +315,7 @@ std = [
 	"snowbridge-pallet-ethereum-client/fuzzing",
 	"snowbridge-pallet-ethereum-client/std",
 	"snowbridge-pallet-inbound-queue-fixtures/std",
+	"snowbridge-pallet-inbound-queue-v2-fixtures/std",
 	"snowbridge-pallet-inbound-queue-v2/std",
 	"snowbridge-pallet-inbound-queue/std",
 	"snowbridge-pallet-outbound-queue-v2/std",
@@ -407,7 +407,6 @@ runtime-benchmarks = [
 	"pallet-pooled-staking/runtime-benchmarks",
 	"pallet-preimage/runtime-benchmarks",
 	"pallet-proxy/runtime-benchmarks",
-	"pallet-ranked-collective/runtime-benchmarks",
 	"pallet-referenda/runtime-benchmarks",
 	"pallet-registrar/runtime-benchmarks",
 	"pallet-scheduler/runtime-benchmarks",
@@ -429,8 +428,8 @@ runtime-benchmarks = [
 	"snowbridge-core/runtime-benchmarks",
 	"snowbridge-inbound-queue-primitives/runtime-benchmarks",
 	"snowbridge-pallet-ethereum-client/runtime-benchmarks",
-	"snowbridge-pallet-inbound-queue-fixtures",
 	"snowbridge-pallet-inbound-queue-fixtures/runtime-benchmarks",
+	"snowbridge-pallet-inbound-queue-v2-fixtures/runtime-benchmarks",
 	"snowbridge-pallet-inbound-queue-v2/runtime-benchmarks",
 	"snowbridge-pallet-inbound-queue/runtime-benchmarks",
 	"snowbridge-pallet-outbound-queue-v2/runtime-benchmarks",
@@ -500,7 +499,6 @@ try-runtime = [
 	"pallet-pooled-staking/try-runtime",
 	"pallet-preimage/try-runtime",
 	"pallet-proxy/try-runtime",
-	"pallet-ranked-collective/try-runtime",
 	"pallet-referenda/try-runtime",
 	"pallet-registrar/try-runtime",
 	"pallet-root-testing/try-runtime",

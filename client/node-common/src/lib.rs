@@ -21,3 +21,4 @@ pub mod command;
 pub mod cli;
 
 pub mod chain_spec;
+pub mod timestamp;

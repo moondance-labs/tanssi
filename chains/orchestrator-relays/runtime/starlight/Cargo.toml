@@ -71,6 +71,7 @@ pallet-balances = { workspace = true }
 pallet-beefy = { workspace = true }
 pallet-beefy-mmr = { workspace = true }
 pallet-collator-assignment = { workspace = true }
+pallet-collective = { workspace = true }
 pallet-conviction-voting = { workspace = true }
 pallet-ethereum-token-transfers = { workspace = true }
 pallet-external-validator-slashes = { workspace = true }
@@ -90,7 +91,6 @@ pallet-offences = { workspace = true }
 pallet-parameters = { workspace = true }
 pallet-preimage = { workspace = true }
 pallet-proxy = { workspace = true }
-pallet-ranked-collective = { workspace = true }
 pallet-referenda = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-scheduler = { workspace = true }
@@ -236,6 +236,7 @@ std = [
 	"pallet-beefy-mmr/std",
 	"pallet-beefy/std",
 	"pallet-collator-assignment/std",
+	"pallet-collective/std",
 	"pallet-configuration/std",
 	"pallet-conviction-voting/std",
 	"pallet-data-preservers-runtime-api/std",
@@ -264,7 +265,6 @@ std = [
 	"pallet-pooled-staking/std",
 	"pallet-preimage/std",
 	"pallet-proxy/std",
-	"pallet-ranked-collective/std",
 	"pallet-referenda/std",
 	"pallet-registrar-runtime-api/std",
 	"pallet-registrar/std",
@@ -365,7 +365,7 @@ runtime-benchmarks = [
 	"pallet-balances/runtime-benchmarks",
 	"pallet-beefy-mmr/runtime-benchmarks",
 	"pallet-collator-assignment/runtime-benchmarks",
-	"pallet-collator-assignment/runtime-benchmarks",
+	"pallet-collective/runtime-benchmarks",
 	"pallet-configuration/runtime-benchmarks",
 	"pallet-conviction-voting/runtime-benchmarks",
 	"pallet-data-preservers/runtime-benchmarks",
@@ -390,7 +390,6 @@ runtime-benchmarks = [
 	"pallet-pooled-staking/runtime-benchmarks",
 	"pallet-preimage/runtime-benchmarks",
 	"pallet-proxy/runtime-benchmarks",
-	"pallet-ranked-collective/runtime-benchmarks",
 	"pallet-referenda/runtime-benchmarks",
 	"pallet-registrar/runtime-benchmarks",
 	"pallet-scheduler/runtime-benchmarks",
@@ -454,6 +453,7 @@ try-runtime = [
 	"pallet-beefy-mmr/try-runtime",
 	"pallet-beefy/try-runtime",
 	"pallet-collator-assignment/try-runtime",
+	"pallet-collective/try-runtime",
 	"pallet-configuration/try-runtime",
 	"pallet-conviction-voting/try-runtime",
 	"pallet-data-preservers/try-runtime",
@@ -480,7 +480,6 @@ try-runtime = [
 	"pallet-pooled-staking/try-runtime",
 	"pallet-preimage/try-runtime",
 	"pallet-proxy/try-runtime",
-	"pallet-ranked-collective/try-runtime",
 	"pallet-referenda/try-runtime",
 	"pallet-registrar/try-runtime",
 	"pallet-root-testing/try-runtime",

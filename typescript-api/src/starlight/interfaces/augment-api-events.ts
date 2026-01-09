@@ -36,8 +36,6 @@ import type {
     PalletMultisigTimepoint,
     PalletPooledStakingPoolsActivePoolKind,
     PalletProxyDepositKind,
-    PalletRankedCollectiveTally,
-    PalletRankedCollectiveVoteRecord,
     PalletStreamPaymentDepositChange,
     PalletStreamPaymentParty,
     PalletStreamPaymentStreamConfig,
@@ -570,159 +568,6 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [messageId: H256, rewardsCommand: TpBridgeCommand],
                 { messageId: H256; rewardsCommand: TpBridgeCommand }
-            >;
-            /**
-             * Generic event
-             **/
-            [key: string]: AugmentedEvent<ApiType>;
-        };
-        fellowshipCollective: {
-            /**
-             * A member `who` has been added.
-             **/
-            MemberAdded: AugmentedEvent<ApiType, [who: AccountId32], { who: AccountId32 }>;
-            /**
-             * The member `who` had their `AccountId` changed to `new_who`.
-             **/
-            MemberExchanged: AugmentedEvent<
-                ApiType,
-                [who: AccountId32, newWho: AccountId32],
-                { who: AccountId32; newWho: AccountId32 }
-            >;
-            /**
-             * The member `who` of given `rank` has been removed from the collective.
-             **/
-            MemberRemoved: AugmentedEvent<ApiType, [who: AccountId32, rank: u16], { who: AccountId32; rank: u16 }>;
-            /**
-             * The member `who`se rank has been changed to the given `rank`.
-             **/
-            RankChanged: AugmentedEvent<ApiType, [who: AccountId32, rank: u16], { who: AccountId32; rank: u16 }>;
-            /**
-             * The member `who` has voted for the `poll` with the given `vote` leading to an updated
-             * `tally`.
-             **/
-            Voted: AugmentedEvent<
-                ApiType,
-                [
-                    who: AccountId32,
-                    poll: u32,
-                    vote: PalletRankedCollectiveVoteRecord,
-                    tally: PalletRankedCollectiveTally,
-                ],
-                {
-                    who: AccountId32;
-                    poll: u32;
-                    vote: PalletRankedCollectiveVoteRecord;
-                    tally: PalletRankedCollectiveTally;
-                }
-            >;
-            /**
-             * Generic event
-             **/
-            [key: string]: AugmentedEvent<ApiType>;
-        };
-        fellowshipReferenda: {
-            /**
-             * A referendum has been approved and its proposal has been scheduled.
-             **/
-            Approved: AugmentedEvent<ApiType, [index: u32], { index: u32 }>;
-            /**
-             * A referendum has been cancelled.
-             **/
-            Cancelled: AugmentedEvent<
-                ApiType,
-                [index: u32, tally: PalletRankedCollectiveTally],
-                { index: u32; tally: PalletRankedCollectiveTally }
-            >;
-            ConfirmAborted: AugmentedEvent<ApiType, [index: u32], { index: u32 }>;
-            /**
-             * A referendum has ended its confirmation phase and is ready for approval.
-             **/
-            Confirmed: AugmentedEvent<
-                ApiType,
-                [index: u32, tally: PalletRankedCollectiveTally],
-                { index: u32; tally: PalletRankedCollectiveTally }
-            >;
-            ConfirmStarted: AugmentedEvent<ApiType, [index: u32], { index: u32 }>;
-            /**
-             * The decision deposit has been placed.
-             **/
-            DecisionDepositPlaced: AugmentedEvent<
-                ApiType,
-                [index: u32, who: AccountId32, amount: u128],
-                { index: u32; who: AccountId32; amount: u128 }
-            >;
-            /**
-             * The decision deposit has been refunded.
-             **/
-            DecisionDepositRefunded: AugmentedEvent<
-                ApiType,
-                [index: u32, who: AccountId32, amount: u128],
-                { index: u32; who: AccountId32; amount: u128 }
-            >;
-            /**
-             * A referendum has moved into the deciding phase.
-             **/
-            DecisionStarted: AugmentedEvent<
-                ApiType,
-                [index: u32, track: u16, proposal: FrameSupportPreimagesBounded, tally: PalletRankedCollectiveTally],
-                { index: u32; track: u16; proposal: FrameSupportPreimagesBounded; tally: PalletRankedCollectiveTally }
-            >;
-            /**
-             * A deposit has been slashed.
-             **/
-            DepositSlashed: AugmentedEvent<
-                ApiType,
-                [who: AccountId32, amount: u128],
-                { who: AccountId32; amount: u128 }
-            >;
-            /**
-             * A referendum has been killed.
-             **/
-            Killed: AugmentedEvent<
-                ApiType,
-                [index: u32, tally: PalletRankedCollectiveTally],
-                { index: u32; tally: PalletRankedCollectiveTally }
-            >;
-            /**
-             * Metadata for a referendum has been cleared.
-             **/
-            MetadataCleared: AugmentedEvent<ApiType, [index: u32, hash_: H256], { index: u32; hash_: H256 }>;
-            /**
-             * Metadata for a referendum has been set.
-             **/
-            MetadataSet: AugmentedEvent<ApiType, [index: u32, hash_: H256], { index: u32; hash_: H256 }>;
-            /**
-             * A proposal has been rejected by referendum.
-             **/
-            Rejected: AugmentedEvent<
-                ApiType,
-                [index: u32, tally: PalletRankedCollectiveTally],
-                { index: u32; tally: PalletRankedCollectiveTally }
-            >;
-            /**
-             * The submission deposit has been refunded.
-             **/
-            SubmissionDepositRefunded: AugmentedEvent<
-                ApiType,
-                [index: u32, who: AccountId32, amount: u128],
-                { index: u32; who: AccountId32; amount: u128 }
-            >;
-            /**
-             * A referendum has been submitted.
-             **/
-            Submitted: AugmentedEvent<
-                ApiType,
-                [index: u32, track: u16, proposal: FrameSupportPreimagesBounded],
-                { index: u32; track: u16; proposal: FrameSupportPreimagesBounded }
-            >;
-            /**
-             * A referendum has been timed out without being decided.
-             **/
-            TimedOut: AugmentedEvent<
-                ApiType,
-                [index: u32, tally: PalletRankedCollectiveTally],
-                { index: u32; tally: PalletRankedCollectiveTally }
             >;
             /**
              * Generic event
@@ -1529,6 +1374,82 @@ declare module "@polkadot/api-base/types/events" {
              * The value of the spot price has likely changed
              **/
             SpotPriceSet: AugmentedEvent<ApiType, [spotPrice: u128], { spotPrice: u128 }>;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        openTechCommitteeCollective: {
+            /**
+             * A motion was approved by the required threshold.
+             **/
+            Approved: AugmentedEvent<ApiType, [proposalHash: H256], { proposalHash: H256 }>;
+            /**
+             * A proposal was closed because its threshold was reached or after its duration was up.
+             **/
+            Closed: AugmentedEvent<
+                ApiType,
+                [proposalHash: H256, yes: u32, no: u32],
+                { proposalHash: H256; yes: u32; no: u32 }
+            >;
+            /**
+             * A motion was not approved by the required threshold.
+             **/
+            Disapproved: AugmentedEvent<ApiType, [proposalHash: H256], { proposalHash: H256 }>;
+            /**
+             * A motion was executed; result will be `Ok` if it returned without error.
+             **/
+            Executed: AugmentedEvent<
+                ApiType,
+                [proposalHash: H256, result: Result<Null, SpRuntimeDispatchError>],
+                { proposalHash: H256; result: Result<Null, SpRuntimeDispatchError> }
+            >;
+            /**
+             * A proposal was killed.
+             **/
+            Killed: AugmentedEvent<ApiType, [proposalHash: H256], { proposalHash: H256 }>;
+            /**
+             * A single member did some action; result will be `Ok` if it returned without error.
+             **/
+            MemberExecuted: AugmentedEvent<
+                ApiType,
+                [proposalHash: H256, result: Result<Null, SpRuntimeDispatchError>],
+                { proposalHash: H256; result: Result<Null, SpRuntimeDispatchError> }
+            >;
+            /**
+             * Some cost for storing a proposal was burned.
+             **/
+            ProposalCostBurned: AugmentedEvent<
+                ApiType,
+                [proposalHash: H256, who: AccountId32],
+                { proposalHash: H256; who: AccountId32 }
+            >;
+            /**
+             * Some cost for storing a proposal was released.
+             **/
+            ProposalCostReleased: AugmentedEvent<
+                ApiType,
+                [proposalHash: H256, who: AccountId32],
+                { proposalHash: H256; who: AccountId32 }
+            >;
+            /**
+             * A motion (given hash) has been proposed (by given account) with a threshold (given
+             * `MemberCount`).
+             **/
+            Proposed: AugmentedEvent<
+                ApiType,
+                [account: AccountId32, proposalIndex: u32, proposalHash: H256, threshold: u32],
+                { account: AccountId32; proposalIndex: u32; proposalHash: H256; threshold: u32 }
+            >;
+            /**
+             * A motion (given hash) has been voted on by given account, leaving
+             * a tally (yes votes and no votes given respectively as `MemberCount`).
+             **/
+            Voted: AugmentedEvent<
+                ApiType,
+                [account: AccountId32, proposalHash: H256, voted: bool, yes: u32, no: u32],
+                { account: AccountId32; proposalHash: H256; voted: bool; yes: u32; no: u32 }
+            >;
             /**
              * Generic event
              **/

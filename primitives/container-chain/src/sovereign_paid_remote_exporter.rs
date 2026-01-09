@@ -100,6 +100,14 @@ where
             xcm: xcm.clone(),
         };
 
+        // Check if xcm contains AliasOrigin instruction.
+        // We use the presence of an AliasOrigin instruction to distinguish
+        // between Snowbridge V2 and Snowbridge V1 messages.
+        let has_alias_origin = xcm
+            .0
+            .iter()
+            .any(|instruction| matches!(instruction, AliasOrigin(_)));
+
         // For now hardcoding fees, but later it should be converted from fixed Tanssi relay amount
         let fees = Asset {
             id: AssetId(Location::here()),
@@ -108,18 +116,26 @@ where
         let container_location = Location::new(0, Parachain(SelfParaId::get().into()));
 
         // Prepare the message to send
-        let mut message = Xcm(vec![
+        let mut message_instructions = vec![
             WithdrawAsset(fees.clone().into()),
             BuyExecution {
                 fees,
                 weight_limit: Unlimited,
             },
-            SetAppendix(Xcm(vec![DepositAsset {
-                assets: AllCounted(1).into(),
-                beneficiary: container_location,
-            }])),
-            export_instruction,
-        ]);
+        ];
+
+        // Add SetFeesMode if AliasOrigin is present in the exported xcm
+        if has_alias_origin {
+            message_instructions.push(SetFeesMode { jit_withdraw: true });
+        }
+
+        message_instructions.push(SetAppendix(Xcm(vec![DepositAsset {
+            assets: AllCounted(1).into(),
+            beneficiary: container_location,
+        }])));
+        message_instructions.push(export_instruction);
+
+        let mut message = Xcm(message_instructions);
 
         let tanssi_location = Location {
             parents: 1,

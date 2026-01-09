@@ -139,7 +139,9 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
-        #[pallet::weight((T::WeightInfo::set_latest_author_data(T::MaxContainerChains::get()), DispatchClass::Mandatory))]
+        #[pallet::weight((T::WeightInfo::set_latest_author_data(T::MaxContainerChains::get()).saturating_add(T::WeightInfo::on_container_authors_noted(
+            T::MaxContainerChains::get(),
+        )), DispatchClass::Mandatory))]
         #[allow(clippy::useless_conversion)]
         pub fn set_latest_author_data(
             origin: OriginFor<T>,
@@ -157,6 +159,15 @@ pub mod pallet {
                     .into_iter()
                     .filter_map(|(para_id, collators)| (!collators.is_empty()).then_some(para_id))
                     .collect();
+            // We have two benchmarks, one for `set_latest_author_data`, which disables hooks,
+            // and one benchmark only for only hooks: `on_container_authors_noted`.
+            // The weight hint needs to include both of them to account for the worst case.
+            // The returned weight will be lower than the hint, because we never have
+            // `T::MaxContainerChains::get()` chains registered.
+            // Here we initialize the weight to the base weight, without hooks, but for the real
+            // number of chains. Later we will add the weight reported by the hooks.
+            // The weight used by hooks is not calculated using the `on_container_authors_noted`
+            // benchmark, instead it is a manual guess of the number of storage reads and writes.
             let mut total_weight =
                 T::WeightInfo::set_latest_author_data(container_chains_to_check.len() as u32);
 
@@ -176,7 +187,7 @@ pub mod pallet {
                         parent_tanssi_slot,
                     ) {
                         Ok(block_info) => {
-                            LatestAuthor::<T>::mutate(
+                            let _ = LatestAuthor::<T>::try_mutate(
                                 para_id,
                                 |maybe_old_block_info: &mut Option<
                                     ContainerChainBlockInfo<T::AccountId>,
@@ -198,6 +209,10 @@ pub mod pallet {
                                         };
                                         infos.push(info);
                                         *maybe_old_block_info = Some(bi);
+                                        Ok(())
+                                    } else {
+                                        // No need to mutate value if block number didn't change
+                                        Err(())
                                     }
                                 },
                             );
@@ -210,6 +225,16 @@ pub mod pallet {
                     }
                 }
 
+                // Call AuthorNotingHook
+                // When benchmarking, we want the possibility to not call hooks, to get the base
+                // weight of this inherent.
+                #[cfg(feature = "runtime-benchmarks")]
+                if crate::benchmarks::should_run_author_noting_hooks() {
+                    total_weight
+                        .saturating_accrue(T::AuthorNotingHook::on_container_authors_noted(&infos));
+                }
+                // not runtime-benchmarks: always call hook
+                #[cfg(not(feature = "runtime-benchmarks"))]
                 total_weight
                     .saturating_accrue(T::AuthorNotingHook::on_container_authors_noted(&infos));
             }

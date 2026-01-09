@@ -559,118 +559,6 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             [key: string]: AugmentedError<ApiType>;
         };
-        fellowshipCollective: {
-            /**
-             * Account is already a member.
-             **/
-            AlreadyMember: AugmentedError<ApiType>;
-            /**
-             * Unexpected error in state.
-             **/
-            Corruption: AugmentedError<ApiType>;
-            /**
-             * The information provided is incorrect.
-             **/
-            InvalidWitness: AugmentedError<ApiType>;
-            /**
-             * There are no further records to be removed.
-             **/
-            NoneRemaining: AugmentedError<ApiType>;
-            /**
-             * The origin is not sufficiently privileged to do the operation.
-             **/
-            NoPermission: AugmentedError<ApiType>;
-            /**
-             * Account is not a member.
-             **/
-            NotMember: AugmentedError<ApiType>;
-            /**
-             * The given poll index is unknown or has closed.
-             **/
-            NotPolling: AugmentedError<ApiType>;
-            /**
-             * The given poll is still ongoing.
-             **/
-            Ongoing: AugmentedError<ApiType>;
-            /**
-             * The member's rank is too low to vote.
-             **/
-            RankTooLow: AugmentedError<ApiType>;
-            /**
-             * The new member to exchange is the same as the old member
-             **/
-            SameMember: AugmentedError<ApiType>;
-            /**
-             * The max member count for the rank has been reached.
-             **/
-            TooManyMembers: AugmentedError<ApiType>;
-            /**
-             * Generic error
-             **/
-            [key: string]: AugmentedError<ApiType>;
-        };
-        fellowshipReferenda: {
-            /**
-             * The referendum index provided is invalid in this context.
-             **/
-            BadReferendum: AugmentedError<ApiType>;
-            /**
-             * The referendum status is invalid for this operation.
-             **/
-            BadStatus: AugmentedError<ApiType>;
-            /**
-             * The track identifier given was invalid.
-             **/
-            BadTrack: AugmentedError<ApiType>;
-            /**
-             * There are already a full complement of referenda in progress for this track.
-             **/
-            Full: AugmentedError<ApiType>;
-            /**
-             * Referendum's decision deposit is already paid.
-             **/
-            HasDeposit: AugmentedError<ApiType>;
-            /**
-             * The deposit cannot be refunded since none was made.
-             **/
-            NoDeposit: AugmentedError<ApiType>;
-            /**
-             * The deposit refunder is not the depositor.
-             **/
-            NoPermission: AugmentedError<ApiType>;
-            /**
-             * There was nothing to do in the advancement.
-             **/
-            NothingToDo: AugmentedError<ApiType>;
-            /**
-             * Referendum is not ongoing.
-             **/
-            NotOngoing: AugmentedError<ApiType>;
-            /**
-             * No track exists for the proposal origin.
-             **/
-            NoTrack: AugmentedError<ApiType>;
-            /**
-             * The preimage does not exist.
-             **/
-            PreimageNotExist: AugmentedError<ApiType>;
-            /**
-             * The preimage is stored with a different length than the one provided.
-             **/
-            PreimageStoredWithDifferentLength: AugmentedError<ApiType>;
-            /**
-             * The queue of the track is empty.
-             **/
-            QueueEmpty: AugmentedError<ApiType>;
-            /**
-             * Any deposit cannot be refunded until after the decision is over.
-             **/
-            Unfinished: AugmentedError<ApiType>;
-            /**
-             * Generic error
-             **/
-            [key: string]: AugmentedError<ApiType>;
-        };
         foreignAssets: {
             /**
              * The asset-account already exists.
@@ -1254,6 +1142,60 @@ declare module "@polkadot/api-base/types/errors" {
              * call, making it invalid.
              **/
             SpotPriceHigherThanMaxAmount: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
+        openTechCommitteeCollective: {
+            /**
+             * Members are already initialized!
+             **/
+            AlreadyInitialized: AugmentedError<ApiType>;
+            /**
+             * Duplicate proposals not allowed
+             **/
+            DuplicateProposal: AugmentedError<ApiType>;
+            /**
+             * Duplicate vote ignored
+             **/
+            DuplicateVote: AugmentedError<ApiType>;
+            /**
+             * Account is not a member
+             **/
+            NotMember: AugmentedError<ApiType>;
+            /**
+             * Prime account is not a member
+             **/
+            PrimeAccountNotMember: AugmentedError<ApiType>;
+            /**
+             * Proposal is still active.
+             **/
+            ProposalActive: AugmentedError<ApiType>;
+            /**
+             * Proposal must exist
+             **/
+            ProposalMissing: AugmentedError<ApiType>;
+            /**
+             * The close call was made too early, before the end of the voting.
+             **/
+            TooEarly: AugmentedError<ApiType>;
+            /**
+             * There can only be a maximum of `MaxProposals` active proposals.
+             **/
+            TooManyProposals: AugmentedError<ApiType>;
+            /**
+             * Mismatched index
+             **/
+            WrongIndex: AugmentedError<ApiType>;
+            /**
+             * The given length bound for the proposal was too low.
+             **/
+            WrongProposalLength: AugmentedError<ApiType>;
+            /**
+             * The given weight bound for the proposal was too low.
+             **/
+            WrongProposalWeight: AugmentedError<ApiType>;
             /**
              * Generic error
              **/

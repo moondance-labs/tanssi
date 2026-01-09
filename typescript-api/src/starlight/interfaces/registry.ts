@@ -86,6 +86,12 @@ import type {
     PalletBeefyError,
     PalletCollatorAssignmentCall,
     PalletCollatorAssignmentEvent,
+    PalletCollectiveCall,
+    PalletCollectiveError,
+    PalletCollectiveEvent,
+    PalletCollectiveHoldReason,
+    PalletCollectiveRawOrigin,
+    PalletCollectiveVotes,
     PalletConfigurationCall,
     PalletConfigurationError,
     PalletConfigurationHostConfiguration,
@@ -199,22 +205,14 @@ import type {
     PalletProxyError,
     PalletProxyEvent,
     PalletProxyProxyDefinition,
-    PalletRankedCollectiveCall,
-    PalletRankedCollectiveError,
-    PalletRankedCollectiveEvent,
-    PalletRankedCollectiveMemberRecord,
-    PalletRankedCollectiveTally,
-    PalletRankedCollectiveVoteRecord,
     PalletReferendaCall,
     PalletReferendaCurve,
     PalletReferendaDecidingStatus,
     PalletReferendaDeposit,
     PalletReferendaError,
     PalletReferendaEvent,
-    PalletReferendaReferendumInfoConvictionVotingTally,
-    PalletReferendaReferendumInfoRankedCollectiveTally,
-    PalletReferendaReferendumStatusConvictionVotingTally,
-    PalletReferendaReferendumStatusRankedCollectiveTally,
+    PalletReferendaReferendumInfo,
+    PalletReferendaReferendumStatus,
     PalletReferendaTrackDetails,
     PalletRegistrarCall,
     PalletRegistrarDepositInfo,
@@ -644,6 +642,12 @@ declare module "@polkadot/types/types/registry" {
         PalletBeefyError: PalletBeefyError;
         PalletCollatorAssignmentCall: PalletCollatorAssignmentCall;
         PalletCollatorAssignmentEvent: PalletCollatorAssignmentEvent;
+        PalletCollectiveCall: PalletCollectiveCall;
+        PalletCollectiveError: PalletCollectiveError;
+        PalletCollectiveEvent: PalletCollectiveEvent;
+        PalletCollectiveHoldReason: PalletCollectiveHoldReason;
+        PalletCollectiveRawOrigin: PalletCollectiveRawOrigin;
+        PalletCollectiveVotes: PalletCollectiveVotes;
         PalletConfigurationCall: PalletConfigurationCall;
         PalletConfigurationError: PalletConfigurationError;
         PalletConfigurationHostConfiguration: PalletConfigurationHostConfiguration;
@@ -757,22 +761,14 @@ declare module "@polkadot/types/types/registry" {
         PalletProxyError: PalletProxyError;
         PalletProxyEvent: PalletProxyEvent;
         PalletProxyProxyDefinition: PalletProxyProxyDefinition;
-        PalletRankedCollectiveCall: PalletRankedCollectiveCall;
-        PalletRankedCollectiveError: PalletRankedCollectiveError;
-        PalletRankedCollectiveEvent: PalletRankedCollectiveEvent;
-        PalletRankedCollectiveMemberRecord: PalletRankedCollectiveMemberRecord;
-        PalletRankedCollectiveTally: PalletRankedCollectiveTally;
-        PalletRankedCollectiveVoteRecord: PalletRankedCollectiveVoteRecord;
         PalletReferendaCall: PalletReferendaCall;
         PalletReferendaCurve: PalletReferendaCurve;
         PalletReferendaDecidingStatus: PalletReferendaDecidingStatus;
         PalletReferendaDeposit: PalletReferendaDeposit;
         PalletReferendaError: PalletReferendaError;
         PalletReferendaEvent: PalletReferendaEvent;
-        PalletReferendaReferendumInfoConvictionVotingTally: PalletReferendaReferendumInfoConvictionVotingTally;
-        PalletReferendaReferendumInfoRankedCollectiveTally: PalletReferendaReferendumInfoRankedCollectiveTally;
-        PalletReferendaReferendumStatusConvictionVotingTally: PalletReferendaReferendumStatusConvictionVotingTally;
-        PalletReferendaReferendumStatusRankedCollectiveTally: PalletReferendaReferendumStatusRankedCollectiveTally;
+        PalletReferendaReferendumInfo: PalletReferendaReferendumInfo;
+        PalletReferendaReferendumStatus: PalletReferendaReferendumStatus;
         PalletReferendaTrackDetails: PalletReferendaTrackDetails;
         PalletRegistrarCall: PalletRegistrarCall;
         PalletRegistrarDepositInfo: PalletRegistrarDepositInfo;

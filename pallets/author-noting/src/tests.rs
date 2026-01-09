@@ -14,6 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use crate::Call;
+use frame_support::traits::Get;
+use parity_scale_codec::Decode;
+use tp_author_noting_inherent::OwnParachainInherentData;
 use {
     crate::{mock::*, ContainerChainBlockInfo, Event},
     cumulus_primitives_core::ParaId,
@@ -700,6 +704,22 @@ fn weights_assigned_to_extrinsics_are_correct() {
                 .len() as u32
             )
         );
+    });
+}
+
+#[test]
+fn inherent_weight_is_base_plus_hooks() {
+    new_test_ext().execute_with(|| {
+        // weight hint assumes worst case of 100 chains
+        let num_chains = <Test as crate::Config>::MaxContainerChains::get();
+        let base_weight = <() as crate::weights::WeightInfo>::set_latest_author_data(num_chains);
+        let hooks_weight =
+            <() as crate::weights::WeightInfo>::on_container_authors_noted(num_chains);
+        // dummy inherent data, we only need to calculate weight
+        let data = OwnParachainInherentData::decode(&mut [0x00; 16].as_slice()).unwrap();
+        let call = Call::<Test>::set_latest_author_data { data };
+        let extrinsic_weight = call.get_dispatch_info().call_weight;
+        assert_eq!(extrinsic_weight, base_weight.saturating_add(hooks_weight));
     });
 }
 

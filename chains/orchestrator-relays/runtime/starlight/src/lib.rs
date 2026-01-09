@@ -44,7 +44,7 @@ use {
         traits::{
             fungible::Inspect,
             tokens::{PayFromAccount, UnityAssetBalanceConversion},
-            ConstBool, Contains, EverythingBut, InsideBoth,
+            ConstBool, Contains, EitherOf, EverythingBut, InsideBoth,
         },
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
@@ -124,7 +124,7 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit, HoldConsideration},
-            EitherOf, EitherOfDiverse, EnsureOriginWithArg, InstanceFilter, KeyOwnerProofSystem,
+            EitherOfDiverse, EnsureOriginWithArg, InstanceFilter, KeyOwnerProofSystem,
             LinearStoragePrice, PrivilegeCmp, ProcessMessage, ProcessMessageError,
         },
         weights::{ConstantMultiplier, WeightMeter, WeightToFee as _},
@@ -181,9 +181,7 @@ mod weights;
 // Governance and configurations.
 pub mod governance;
 use {
-    governance::{
-        pallet_custom_origins, AuctionAdmin, Fellows, GeneralAdmin, Treasurer, TreasurySpender,
-    },
+    governance::{councils::*, pallet_custom_origins, TreasurySpender},
     pallet_collator_assignment::CoreAllocationConfiguration,
 };
 
@@ -321,8 +319,6 @@ impl Contains<RuntimeCall> for IsDemocracyExtrinsics {
             RuntimeCall::Treasury(_)
                 | RuntimeCall::ConvictionVoting(_)
                 | RuntimeCall::Referenda(_)
-                | RuntimeCall::FellowshipCollective(_)
-                | RuntimeCall::FellowshipReferenda(_)
                 | RuntimeCall::Whitelist(_)
                 | RuntimeCall::Preimage(_)
         )
@@ -464,9 +460,7 @@ impl pallet_scheduler::Config for Runtime {
     type PalletsOrigin = OriginCaller;
     type RuntimeCall = RuntimeCall;
     type MaximumWeight = MaximumSchedulerWeight;
-    // The goal of having ScheduleOrigin include AuctionAdmin is to allow the auctions track of
-    // OpenGov to schedule periodic auctions.
-    type ScheduleOrigin = EitherOf<EnsureRoot<AccountId>, AuctionAdmin>;
+    type ScheduleOrigin = EnsureRoot<AccountId>;
     type MaxScheduledPerBlock = MaxScheduledPerBlock;
     type WeightInfo = weights::pallet_scheduler::SubstrateWeight<Runtime>;
     type OriginPrivilegeCmp = OriginPrivilegeCmp;
@@ -694,7 +688,7 @@ where
 impl pallet_treasury::Config for Runtime {
     type PalletId = TreasuryPalletId;
     type Currency = Balances;
-    type RejectOrigin = EitherOfDiverse<EnsureRoot<AccountId>, Treasurer>;
+    type RejectOrigin = EnsureRoot<AccountId>;
     type RuntimeEvent = RuntimeEvent;
     type SpendPeriod = SpendPeriod;
     type Burn = ();
@@ -842,8 +836,8 @@ impl pallet_identity::Config for Runtime {
     type IdentityInformation = IdentityInfo<MaxAdditionalFields>;
     type MaxRegistrars = MaxRegistrars;
     type Slashed = Treasury;
-    type ForceOrigin = EitherOf<EnsureRoot<Self::AccountId>, GeneralAdmin>;
-    type RegistrarOrigin = EitherOf<EnsureRoot<Self::AccountId>, GeneralAdmin>;
+    type ForceOrigin = EnsureRoot<Self::AccountId>;
+    type RegistrarOrigin = EnsureRoot<Self::AccountId>;
     type OffchainSignature = Signature;
     type SigningPublicKey = <Signature as Verify>::Signer;
     type UsernameAuthorityOrigin = EnsureRoot<Self::AccountId>;
@@ -948,9 +942,8 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				RuntimeCall::Treasury(..) |
 				RuntimeCall::ConvictionVoting(..) |
 				RuntimeCall::Referenda(..) |
-				RuntimeCall::FellowshipCollective(..) |
-				RuntimeCall::FellowshipReferenda(..) |
 				RuntimeCall::Whitelist(..) |
+                RuntimeCall::OpenTechCommitteeCollective(..) |
 				RuntimeCall::Utility(..) |
 				RuntimeCall::Identity(..) |
 				RuntimeCall::Scheduler(..) |
@@ -970,9 +963,8 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 					// OpenGov calls
 					RuntimeCall::ConvictionVoting(..) |
 					RuntimeCall::Referenda(..) |
-					RuntimeCall::FellowshipCollective(..) |
-					RuntimeCall::FellowshipReferenda(..) |
-					RuntimeCall::Whitelist(..)
+					RuntimeCall::Whitelist(..) |
+                    RuntimeCall::OpenTechCommitteeCollective(..)
             ),
             ProxyType::IdentityJudgement => matches!(
                 c,
@@ -1697,16 +1689,15 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
 }
 
 /// Normal Call Filter
-type NormalFilter = EverythingBut<(
-    IsRelayRegister,
-    IsParathreadRegistrar,
-    IsDemocracyExtrinsics,
-)>;
+type NormalFilter = EverythingBut<(IsRelayRegister, IsParathreadRegistrar)>;
 
 impl pallet_maintenance_mode::Config for Runtime {
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
-    type MaintenanceOrigin = EnsureRoot<AccountId>;
+    type MaintenanceOrigin = EitherOf<
+        EnsureRoot<AccountId>,
+        pallet_collective::EnsureProportionAtLeast<AccountId, OpenTechCommitteeInstance, 5, 9>,
+    >;
     type XcmExecutionManager = ();
 }
 
@@ -1991,12 +1982,9 @@ construct_runtime! {
         Treasury: pallet_treasury = 40,
         ConvictionVoting: pallet_conviction_voting = 41,
         Referenda: pallet_referenda = 42,
-        //	pub type FellowshipCollectiveInstance = pallet_ranked_collective::Instance1;
-        FellowshipCollective: pallet_ranked_collective::<Instance1> = 43,
-        // pub type FellowshipReferendaInstance = pallet_referenda::Instance2;
-        FellowshipReferenda: pallet_referenda::<Instance2> = 44,
         Origins: pallet_custom_origins = 45,
         Whitelist: pallet_whitelist = 46,
+        OpenTechCommitteeCollective: pallet_collective::<Instance3> = 47,
 
         // Parachains pallets. Start indices at 50 to leave room.
         ParachainsOrigin: parachains_origin = 50,
@@ -2358,12 +2346,12 @@ mod benches {
         [pallet_parameters, Parameters]
         [pallet_preimage, Preimage]
         [pallet_proxy, Proxy]
-        [pallet_ranked_collective, FellowshipCollective]
         [pallet_referenda, Referenda]
         [pallet_scheduler, Scheduler]
         [pallet_sudo, Sudo]
         [frame_system, SystemBench::<Runtime>]
         [frame_system_extensions, frame_system_benchmarking::extensions::Pallet::<Runtime>]
+        [pallet_collective, OpenTechCommitteeCollective]
         [pallet_timestamp, Timestamp]
         [pallet_transaction_payment, TransactionPayment]
         [pallet_treasury, Treasury]
@@ -3110,7 +3098,7 @@ sp_api::impl_runtime_apis! {
         }
     }
 
-    impl pallet_services_payment_runtime_api::ServicesPaymentApi<Block, Balance, ParaId> for Runtime {
+    impl pallet_services_payment_runtime_api::ServicesPaymentApi<Block, AccountId, Balance, ParaId> for Runtime {
         fn block_cost(para_id: ParaId) -> Balance {
             let (block_production_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideBlockProductionCost::block_cost(&para_id);
             block_production_costs
@@ -3119,6 +3107,10 @@ sp_api::impl_runtime_apis! {
         fn collator_assignment_cost(para_id: ParaId) -> Balance {
             let (collator_assignment_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);
             collator_assignment_costs
+        }
+
+        fn parachain_tank_account(para_id: ParaId) -> AccountId {
+            ServicesPayment::parachain_tank(para_id)
         }
     }
 

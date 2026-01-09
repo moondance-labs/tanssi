@@ -325,6 +325,9 @@ pub mod pallet {
 // Any additional check should be done in the calling function
 impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
     fn on_container_authors_noted(info: &[AuthorNotingInfo<T::AccountId>]) -> Weight {
+        if info.is_empty() {
+            return Weight::zero();
+        }
         let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
         // We take chains to reward, to see what containers are left to reward
         if let Some(mut container_chains_to_reward) = ChainsToReward::<T>::get() {
@@ -390,7 +393,7 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
     }
 
     #[cfg(feature = "runtime-benchmarks")]
-    fn prepare_worst_case_for_bench(_a: &T::AccountId, _b: BlockNumber, para_id: ParaId) {
+    fn prepare_worst_case_for_bench(a: &T::AccountId, _b: BlockNumber, para_id: ParaId) {
         // arbitrary amount to perform rewarding
         // we mint twice as much to the rewards account to make it possible
         let reward_amount = 1_000_000_000u32;
@@ -402,12 +405,31 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
         )
         .expect("to mint tokens");
 
+        // TODO: this API doesn't make sense, we want to add a para id to the list of chains to
+        // reward. So change `prepare_worst_case_for_bench` into something that takes a list
+        let old_para_ids: alloc::vec::Vec<_> = ChainsToReward::<T>::get()
+            .map(|x| x.para_ids.into_iter().collect())
+            .unwrap_or_default();
         ChainsToReward::<T>::put(ChainsToRewardValue {
-            para_ids: alloc::collections::BTreeSet::from_iter([para_id])
-                .try_into()
-                .expect("to be in bound"),
+            para_ids: alloc::collections::BTreeSet::from_iter(
+                old_para_ids.into_iter().chain([para_id]),
+            )
+            .try_into()
+            .expect("to be in bound"),
             rewards_per_chain: BalanceOf::<T>::from(reward_amount),
         });
+
+        T::StakingRewardsDistributor::prepare_worst_case_for_bench(a);
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_advance_block() {
+        T::StakingRewardsDistributor::bench_advance_block()
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_execute_pending() {
+        T::StakingRewardsDistributor::bench_execute_pending()
     }
 }
 

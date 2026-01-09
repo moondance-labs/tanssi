@@ -294,37 +294,6 @@ declare module "@polkadot/api-base/types/consts" {
              **/
             [key: string]: Codec;
         };
-        fellowshipReferenda: {
-            /**
-             * Quantization level for the referendum wakeup scheduler. A higher number will result in
-             * fewer storage reads/writes needed for smaller voters, but also result in delays to the
-             * automatic referendum status changes. Explicit servicing instructions are unaffected.
-             **/
-            alarmInterval: u32 & AugmentedConst<ApiType>;
-            /**
-             * Maximum size of the referendum queue for a single track.
-             **/
-            maxQueued: u32 & AugmentedConst<ApiType>;
-            /**
-             * The minimum amount to be used as a deposit for a public referendum proposal.
-             **/
-            submissionDeposit: u128 & AugmentedConst<ApiType>;
-            /**
-             * A list of tracks.
-             *
-             * Note: if the tracks are dynamic, the value in the static metadata might be inaccurate.
-             **/
-            tracks: Vec<ITuple<[u16, PalletReferendaTrackDetails]>> & AugmentedConst<ApiType>;
-            /**
-             * The number of blocks after submission that a referendum must begin being decided by.
-             * Once this passes, then anyone may cancel the referendum.
-             **/
-            undecidingTimeout: u32 & AugmentedConst<ApiType>;
-            /**
-             * Generic const
-             **/
-            [key: string]: Codec;
-        };
         foreignAssets: {
             /**
              * The amount of funds that must be reserved when creating a new approval.
@@ -579,6 +548,16 @@ declare module "@polkadot/api-base/types/consts" {
              **/
             [key: string]: Codec;
         };
+        openTechCommitteeCollective: {
+            /**
+             * The maximum weight of a dispatch call that can be proposed and executed.
+             **/
+            maxProposalWeight: SpWeightsWeightV2Weight & AugmentedConst<ApiType>;
+            /**
+             * Generic const
+             **/
+            [key: string]: Codec;
+        };
         paras: {
             unsignedPriority: u64 & AugmentedConst<ApiType>;
             /**
@@ -739,7 +718,7 @@ declare module "@polkadot/api-base/types/consts" {
              **/
             freeBlockProductionCredits: u32 & AugmentedConst<ApiType>;
             /**
-             * The maximum number of collator assigment production credits that can be accumulated
+             * The maximum number of collator assignment production credits that can be accumulated
              **/
             freeCollatorAssignmentCredits: u32 & AugmentedConst<ApiType>;
             /**
