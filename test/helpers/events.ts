@@ -160,7 +160,7 @@ export async function findEventInBlockRange(
 export async function findEventInRecentBlocks(
     api: ApiPromise,
     predicate: (record: any) => boolean,
-    maxBlocksBack: number = 20
+    maxBlocksBack = 20
 ): Promise<{ blockNum: number; event: any } | null> {
     const currentBlock = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
     const startBlock = Math.max(1, currentBlock - maxBlocksBack);

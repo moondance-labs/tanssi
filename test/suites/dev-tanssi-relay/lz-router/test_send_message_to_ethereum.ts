@@ -212,7 +212,9 @@ describeSuite({
                 const paraSovereignAccount = sovereignAccountOfChildForAddress32(context, testParaId);
 
                 // Get current balance
-                const currentBalance = (await polkadotJs.query.system.account(paraSovereignAccount)).data.free.toBigInt();
+                const currentBalance = (
+                    await polkadotJs.query.system.account(paraSovereignAccount)
+                ).data.free.toBigInt();
                 console.log(`Para ${testParaId} sovereign account balance before drain: ${currentBalance}`);
 
                 // Drain most of the balance, leaving only existential deposit + small amount
@@ -227,7 +229,9 @@ describeSuite({
                 }
 
                 // Verify balance is now minimal
-                const balanceAfterDrain = (await polkadotJs.query.system.account(paraSovereignAccount)).data.free.toBigInt();
+                const balanceAfterDrain = (
+                    await polkadotJs.query.system.account(paraSovereignAccount)
+                ).data.free.toBigInt();
                 console.log(`Para ${testParaId} sovereign account balance after drain: ${balanceAfterDrain}`);
 
                 const lzDestinationAddress = hexToU8a("0xabcdef1234567890abcdef1234567890abcdef12");
@@ -277,7 +281,7 @@ describeSuite({
                 // Restore balance for subsequent tests
                 const restoreTx = polkadotJs.tx.balances.transferAllowDeath(paraSovereignAccount, fundAmount);
                 await context.createBlock(await restoreTx.signAsync(alice), { allowFailures: false });
-                console.log(`Restored sovereign account balance for subsequent tests`);
+                console.log("Restored sovereign account balance for subsequent tests");
             },
         });
 

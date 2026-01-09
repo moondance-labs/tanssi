@@ -314,12 +314,13 @@ describeSuite({
                 // Check container chain for the MessageReceived event from LzReceiverExample
                 const lzEventResult = await findEventInRecentBlocks(
                     container2000Api,
-                    (record) => record.event.section === "lzReceiverExample" && record.event.method === "MessageReceived",
+                    (record) =>
+                        record.event.section === "lzReceiverExample" && record.event.method === "MessageReceived",
                     20
                 );
 
-                expect(lzEventResult, "LzReceiverExample.MessageReceived event should exist on container chain").to.not.be
-                    .null;
+                expect(lzEventResult, "LzReceiverExample.MessageReceived event should exist on container chain").to.not
+                    .be.null;
                 console.log(`Found MessageReceived event at block ${lzEventResult.blockNum}`);
                 console.log(`Event data: ${JSON.stringify(lzEventResult.event.event.toHuman())}`);
                 console.log("LayerZero message successfully forwarded to container chain!");

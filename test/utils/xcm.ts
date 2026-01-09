@@ -1238,10 +1238,8 @@ export const sendCallAsChildPara = async (
 
         expect(processedEventResult, "messageQueue.Processed event should exist").to.exist;
         // Check that the message was processed successfully
-        expect(
-            processedEventResult.event.event.data[3].toJSON(),
-            "XCM message should be processed successfully"
-        ).to.be.true;
+        expect(processedEventResult.event.event.data[3].toJSON(), "XCM message should be processed successfully").to.be
+            .true;
     }
 
     return { blockRes };

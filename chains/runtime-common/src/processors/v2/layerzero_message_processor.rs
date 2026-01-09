@@ -27,6 +27,7 @@ use alloc::format;
 use alloc::string::ToString;
 use alloy_core::sol_types::SolType;
 use core::marker::PhantomData;
+use cumulus_primitives_core::Weight;
 use parity_scale_codec::Decode;
 use snowbridge_inbound_queue_primitives::v2::{Message, MessageProcessorError, Payload};
 use sp_core::{Get, H160};
@@ -191,7 +192,7 @@ where
     fn process_extracted_message(
         _sender: AccountId,
         extracted_message: Self::ExtractedMessage,
-    ) -> Result<(), MessageProcessorError> {
-        process_message::<T>(extracted_message)
+    ) -> Result<Option<Weight>, MessageProcessorError> {
+        process_message::<T>(extracted_message).map(|_| None)
     }
 }
