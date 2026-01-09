@@ -98,7 +98,7 @@ fn message_processor_trait_derive_impl(ast: DeriveInput) -> proc_macro2::TokenSt
                 }
             }
 
-            fn process_message(who: AccountId, message: Message) -> Result<([u8; 32], Option<Weight>), snowbridge_inbound_queue_primitives::v2::MessageProcessorError> {
+            fn process_message(who: AccountId, message: Message) -> Result<([u8; 32], Option<sp_runtime::Weight>), snowbridge_inbound_queue_primitives::v2::MessageProcessorError> {
                 // Do extraction
                 let result = #name::try_extract_message(&who, &message);
                 let message_id = #name::calculate_message_id(&message);
@@ -159,7 +159,7 @@ where
         who: AccountId,
         message: Message,
     ) -> Result<
-        ([u8; 32], Option<Weight>),
+        ([u8; 32], Option<sp_runtime::Weight>),
         snowbridge_inbound_queue_primitives::v2::MessageProcessorError,
     > {
         let result = TestProcessor::try_extract_message(&who, &message);
