@@ -139,6 +139,8 @@ type LocalOriginConverter = (
     ChildParachainAsNative<parachains_origin::Origin, RuntimeOrigin>,
     // The AccountId32 location type can be expressed natively as a `Signed` origin.
     SignedAccountId32AsNative<ThisNetwork, RuntimeOrigin>,
+    // Xcm origins can be represented natively under the Xcm pallet's Xcm origin.
+    pallet_xcm::XcmPassthrough<RuntimeOrigin>,
 );
 
 parameter_types! {
@@ -350,6 +352,27 @@ impl pallet_foreign_asset_creator::Config for Runtime {
     type WeightInfo = weights::pallet_foreign_asset_creator::SubstrateWeight<Runtime>;
     type OnForeignAssetCreated = ();
     type OnForeignAssetDestroyed = ();
+}
+
+parameter_types! {
+    /// LayerZero hub contract address on Ethereum (placeholder - to be configured)
+    pub const LayerZeroHubAddress: sp_core::H160 = sp_core::H160([0u8; 20]);
+    /// Minimum reward for outbound LayerZero messages
+    pub const MinLzOutboundReward: u128 = 1;
+}
+
+impl pallet_lz_router::Config for Runtime {
+    type MaxWhitelistedSenders = ConstU32<100>;
+    type ContainerChainOrigin = pallet_xcm::EnsureXcm<OnlyParachains>;
+    type OutboundQueueV2 = crate::EthereumOutboundQueueV2;
+    type LayerZeroHubAddress = LayerZeroHubAddress;
+    type MinOutboundReward = MinLzOutboundReward;
+    type LocationHashOf = tp_bridge::TanssiAgentIdOf;
+    type EthereumLocation = EthereumLocation;
+    type UniversalLocation = UniversalLocation;
+    type Currency = Balances;
+    type FeesAccount = SnowbridgeFeesAccount;
+    type LocationToAccountId = LocationConverter;
 }
 
 parameter_types! {

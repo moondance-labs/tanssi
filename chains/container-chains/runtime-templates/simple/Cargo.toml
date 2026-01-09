@@ -27,6 +27,7 @@ dp-container-chain-genesis-data = { workspace = true, features = [ "json" ] }
 dp-impl-tanssi-pallets-config = { workspace = true }
 dp-slot-duration-runtime-api = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
+pallet-lz-receiver-example = { workspace = true }
 tanssi-runtime-common = { workspace = true }
 tp-xcm-commons = { workspace = true }
 
@@ -147,6 +148,7 @@ std = [
 	"pallet-balances/std",
 	"pallet-cc-authorities-noting/std",
 	"pallet-foreign-asset-creator/std",
+	"pallet-lz-receiver-example/std",
 	"pallet-maintenance-mode/std",
 	"pallet-message-queue/std",
 	"pallet-migrations/std",
@@ -220,6 +222,7 @@ runtime-benchmarks = [
 	"pallet-balances/runtime-benchmarks",
 	"pallet-cc-authorities-noting/runtime-benchmarks",
 	"pallet-foreign-asset-creator/runtime-benchmarks",
+	"pallet-lz-receiver-example/runtime-benchmarks",
 	"pallet-message-queue/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
 	"pallet-multiblock-migrations/runtime-benchmarks",
@@ -265,6 +268,7 @@ try-runtime = [
 	"pallet-balances/try-runtime",
 	"pallet-cc-authorities-noting/try-runtime",
 	"pallet-foreign-asset-creator/try-runtime",
+	"pallet-lz-receiver-example/try-runtime",
 	"pallet-maintenance-mode/try-runtime",
 	"pallet-message-queue/try-runtime",
 	"pallet-migrations/try-runtime",

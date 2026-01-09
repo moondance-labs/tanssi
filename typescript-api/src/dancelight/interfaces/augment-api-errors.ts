@@ -1127,6 +1127,32 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             [key: string]: AugmentedError<ApiType>;
         };
+        lzRouter: {
+            /**
+             * Failed to convert container chain location to account ID
+             **/
+            ChainAccountConversionFailed: AugmentedError<ApiType>;
+            /**
+             * The provided origin location is not a container chain
+             **/
+            LocationIsNotAContainerChain: AugmentedError<ApiType>;
+            /**
+             * No routing configuration found for the destination chain
+             **/
+            NoRoutingConfig: AugmentedError<ApiType>;
+            /**
+             * The sender (address+endpoint) is not whitelisted to forward messages to the destination chain
+             **/
+            NotWhitelistedSender: AugmentedError<ApiType>;
+            /**
+             * Setting the same configuration that already exists
+             **/
+            SameConfigAlreadyExists: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
         maintenanceMode: {
             /**
              * The chain cannot enter maintenance mode because it is already in maintenance mode

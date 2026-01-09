@@ -40,6 +40,7 @@ import type {
     PalletConvictionVotingVoteAccountVote,
     PalletExternalValidatorsForcing,
     PalletInactivityTrackingActivityTrackingStatus,
+    PalletLzRouterRoutingConfig,
     PalletMultisigTimepoint,
     PalletPooledStakingPoolsActivePoolKind,
     PalletProxyDepositKind,
@@ -67,6 +68,7 @@ import type {
     StagingXcmV5Xcm,
     TpBridgeChannelInfo,
     TpBridgeCommand,
+    TpBridgeInboundQueueLayerzeroMessageInboundMessage,
     TpTraitsFullRotationModes,
     XcmV3TraitsSendError,
     XcmV5TraitsError,
@@ -1256,6 +1258,36 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [accountId: AccountId32, balance: u128],
                 { accountId: AccountId32; balance: u128 }
+            >;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        lzRouter: {
+            /**
+             * Inbound message routed to a container chain
+             **/
+            InboundMessageRouted: AugmentedEvent<
+                ApiType,
+                [chainId: u32, message: TpBridgeInboundQueueLayerzeroMessageInboundMessage],
+                { chainId: u32; message: TpBridgeInboundQueueLayerzeroMessageInboundMessage }
+            >;
+            /**
+             * Outbound message queued for Ethereum/LayerZero
+             **/
+            OutboundMessageQueued: AugmentedEvent<
+                ApiType,
+                [sourceChainId: u32, destinationEndpoint: u32, destinationAddress: U8aFixed, payload: Bytes],
+                { sourceChainId: u32; destinationEndpoint: u32; destinationAddress: U8aFixed; payload: Bytes }
+            >;
+            /**
+             * Routing configuration updated for a container chain
+             **/
+            RoutingConfigUpdated: AugmentedEvent<
+                ApiType,
+                [chainId: u32, newConfig: PalletLzRouterRoutingConfig, oldConfig: Option<PalletLzRouterRoutingConfig>],
+                { chainId: u32; newConfig: PalletLzRouterRoutingConfig; oldConfig: Option<PalletLzRouterRoutingConfig> }
             >;
             /**
              * Generic event

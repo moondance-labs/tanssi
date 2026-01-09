@@ -178,6 +178,10 @@ import type {
     PalletInvulnerablesCall,
     PalletInvulnerablesError,
     PalletInvulnerablesEvent,
+    PalletLzRouterCall,
+    PalletLzRouterError,
+    PalletLzRouterEvent,
+    PalletLzRouterRoutingConfig,
     PalletMaintenanceModeCall,
     PalletMaintenanceModeError,
     PalletMaintenanceModeEvent,
@@ -536,6 +540,7 @@ import type {
     StagingXcmV5Xcm,
     TpBridgeChannelInfo,
     TpBridgeCommand,
+    TpBridgeInboundQueueLayerzeroMessageInboundMessage,
     TpBridgeSlashData,
     TpDataPreserversCommonAssignerExtra,
     TpDataPreserversCommonAssignmentWitness,
@@ -755,6 +760,10 @@ declare module "@polkadot/types/types/registry" {
         PalletInvulnerablesCall: PalletInvulnerablesCall;
         PalletInvulnerablesError: PalletInvulnerablesError;
         PalletInvulnerablesEvent: PalletInvulnerablesEvent;
+        PalletLzRouterCall: PalletLzRouterCall;
+        PalletLzRouterError: PalletLzRouterError;
+        PalletLzRouterEvent: PalletLzRouterEvent;
+        PalletLzRouterRoutingConfig: PalletLzRouterRoutingConfig;
         PalletMaintenanceModeCall: PalletMaintenanceModeCall;
         PalletMaintenanceModeError: PalletMaintenanceModeError;
         PalletMaintenanceModeEvent: PalletMaintenanceModeEvent;
@@ -1113,6 +1122,7 @@ declare module "@polkadot/types/types/registry" {
         StagingXcmV5Xcm: StagingXcmV5Xcm;
         TpBridgeChannelInfo: TpBridgeChannelInfo;
         TpBridgeCommand: TpBridgeCommand;
+        TpBridgeInboundQueueLayerzeroMessageInboundMessage: TpBridgeInboundQueueLayerzeroMessageInboundMessage;
         TpBridgeSlashData: TpBridgeSlashData;
         TpDataPreserversCommonAssignerExtra: TpDataPreserversCommonAssignerExtra;
         TpDataPreserversCommonAssignmentWitness: TpDataPreserversCommonAssignmentWitness;

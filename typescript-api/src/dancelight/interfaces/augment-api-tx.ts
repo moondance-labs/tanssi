@@ -48,6 +48,7 @@ import type {
     PalletExternalValidatorsForcing,
     PalletIdentityJudgement,
     PalletIdentityLegacyIdentityInfo,
+    PalletLzRouterRoutingConfig,
     PalletMigrationsHistoricCleanupSelector,
     PalletMigrationsMigrationCursor,
     PalletMultisigTimepoint,
@@ -3909,6 +3910,40 @@ declare module "@polkadot/api-base/types/submittable" {
             forceApprove: AugmentedSubmittable<
                 (upTo: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u32]
+            >;
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
+        lzRouter: {
+            /**
+             * Send an outbound message to Ethereum/LayerZero.
+             *
+             * Called via XCM from a container chain to send a message to an external chain.
+             **/
+            sendMessageToEthereum: AugmentedSubmittable<
+                (
+                    destinationEndpoint: u32 | AnyNumber | Uint8Array,
+                    destinationAddress: U8aFixed | string | Uint8Array,
+                    payload: Bytes | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, U8aFixed, Bytes]
+            >;
+            /**
+             * Update routing configuration for a container chain.
+             *
+             * Must be called via XCM from the container chain itself.
+             **/
+            updateRoutingConfig: AugmentedSubmittable<
+                (
+                    newConfig:
+                        | PalletLzRouterRoutingConfig
+                        | { whitelistedSenders?: any; notificationDestination?: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [PalletLzRouterRoutingConfig]
             >;
             /**
              * Generic tx

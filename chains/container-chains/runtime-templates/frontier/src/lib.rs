@@ -56,8 +56,8 @@ use {
         traits::{
             fungible::{Balanced, Credit, Inspect},
             tokens::ConversionToAssetBalance,
-            ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, FindAuthor, InsideBoth,
-            InstanceFilter, OnFinalize, OnUnbalanced,
+            ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, Equals, FindAuthor,
+            InsideBoth, InstanceFilter, OnFinalize, OnUnbalanced,
         },
         weights::{
             constants::{
@@ -1108,6 +1108,10 @@ impl pallet_multisig::Config for Runtime {
     type BlockNumberProvider = System;
 }
 
+impl pallet_lz_receiver_example::Config for Runtime {
+    type ParentOrigin = pallet_xcm::EnsureXcm<Equals<xcm_config::ParentLocation>>;
+}
+
 impl_tanssi_pallets_config!(Runtime);
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -1154,6 +1158,7 @@ construct_runtime!(
         ForeignAssetsCreator: pallet_foreign_asset_creator::{Pallet, Call, Storage, Event<T>, Config<T>} = 76,
         AssetRate: pallet_asset_rate::{Pallet, Call, Storage, Event<T>} = 77,
         XcmExecutorUtils: pallet_xcm_executor_utils::{Pallet, Call, Storage, Event<T>} = 78,
+        LzReceiverExample: pallet_lz_receiver_example::{Pallet, Call, Event<T>} = 79,
 
         WeightReclaim: cumulus_pallet_weight_reclaim = 80,
 

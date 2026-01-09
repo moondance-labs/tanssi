@@ -44,6 +44,7 @@ use {
 };
 
 use tanssi_runtime_common::relay::v2::{
+    LayerZeroMessageProcessor as LayerZeroMessageProcessorV2,
     RawMessageProcessor as RawMessageProcessorV2,
     SymbioticMessageProcessor as SymbioticMessageProcessorV2,
 };
@@ -770,6 +771,17 @@ pub type SymbioticInboundMessageProcessorV2 = SymbioticMessageProcessorV2<
     <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
 >;
 
+pub type LayerZeroInboundMessageProcessorV2 = LayerZeroMessageProcessorV2<
+    Runtime,
+    EthereumGatewayAddress,
+    TreasuryAccount,
+    dancelight_runtime_constants::snowbridge::EthereumNetwork,
+    dancelight_runtime_constants::snowbridge::EthereumUniversalLocation,
+    UniversalLocation,
+    xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
+    <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+>;
+
 impl snowbridge_pallet_inbound_queue_v2::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     #[cfg(all(not(test), not(feature = "testing-helpers")))]
@@ -781,6 +793,7 @@ impl snowbridge_pallet_inbound_queue_v2::Config for Runtime {
     type MessageProcessor = (
         RawMessageProcessorInboundV2,
         SymbioticInboundMessageProcessorV2,
+        LayerZeroInboundMessageProcessorV2,
     );
     #[cfg(feature = "runtime-benchmarks")]
     type MessageProcessor = (
