@@ -29,6 +29,7 @@ use parity_scale_codec::{Decode, DecodeLimit};
 use snowbridge_inbound_queue_primitives::v2::{message::Message, MessageProcessorError, Payload};
 use sp_core::{Get, H160};
 use sp_runtime::DispatchError;
+use sp_runtime::Weight;
 use thiserror::Error;
 use v2_processor_proc_macro::MessageProcessor;
 use xcm::latest::ExecuteXcm;
@@ -203,14 +204,15 @@ where
     fn try_extract_message(
         _sender: &AccountId,
         message: &Message,
-    ) -> Result<Self::ExtractedMessage, MessageExtractionError> {
-        try_extract_message::<T>(message)
+    ) -> Result<(Self::ExtractedMessage, Option<Weight>), MessageExtractionError> {
+        // TODO: Add proper consumed weight
+        try_extract_message::<T>(message).map(|extracted_message| (extracted_message, None))
     }
 
     fn process_extracted_message(
         _sender: AccountId,
         extracted_message: Self::ExtractedMessage,
-    ) -> Result<(), MessageProcessorError> {
+    ) -> Result<Option<Weight>, MessageProcessorError> {
         let prepared_xcm = prepare_raw_message_xcm_instructions::<T>(
             EthereumNetwork::get(),
             &EthereumUniversalLocation::get(),
@@ -260,6 +262,7 @@ where
             );
         }
 
-        Ok(())
+        // TODO: Add proper consumed weight
+        Ok(None)
     }
 }

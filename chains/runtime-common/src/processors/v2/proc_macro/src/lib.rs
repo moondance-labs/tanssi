@@ -17,7 +17,7 @@
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
-use syn::{DeriveInput, GenericParam, WhereClause, parse_macro_input, parse_quote};
+use syn::{parse_macro_input, parse_quote, DeriveInput, GenericParam, WhereClause};
 
 #[proc_macro_derive(MessageProcessor)]
 pub fn message_processor_trait_derive(input: TokenStream) -> TokenStream {
@@ -98,13 +98,13 @@ fn message_processor_trait_derive_impl(ast: DeriveInput) -> proc_macro2::TokenSt
                 }
             }
 
-            fn process_message(who: AccountId, message: Message) -> Result<[u8; 32], snowbridge_inbound_queue_primitives::v2::MessageProcessorError> {
+            fn process_message(who: AccountId, message: Message) -> Result<([u8; 32], Option<Weight>), snowbridge_inbound_queue_primitives::v2::MessageProcessorError> {
                 // Do extraction
                 let result = #name::try_extract_message(&who, &message);
                 let message_id = #name::calculate_message_id(&message);
                 match result {
-                    Ok(extracted_message) => #name::process_extracted_message(who, extracted_message).map(|_| message_id),
-                    Err(MessageExtractionError::InvalidMessage { .. }) => <#name #ty_generics as MessageProcessorWithFallback<AccountId>>::Fallback::handle_message(who, message).map(|_| message_id),
+                    Ok((extracted_message, optional_extraction_weight)) => #name::process_extracted_message(who, extracted_message).map(|optional_processing_weight| (message_id, optional_extraction_weight.map(|extraction_weight| extraction_weight.saturating_add(optional_processing_weight.unwrap_or(Weight::zero()))))),
+                    Err(MessageExtractionError::InvalidMessage { .. }) => <#name #ty_generics as MessageProcessorWithFallback<AccountId>>::Fallback::handle_message(who, message).map(|optional_fallback_weight| (message_id, optional_fallback_weight)),
                     Err(message_extraction_error) => Err(message_extraction_error.into())
                 }
             }
@@ -159,15 +159,24 @@ where
         who: AccountId,
         message: Message,
     ) -> Result<
-        [u8; 32],
+        ([u8; 32], Option<Weight>),
         snowbridge_inbound_queue_primitives::v2::MessageProcessorError,
     > {
         let result = TestProcessor::try_extract_message(&who, &message);
         let message_id = TestProcessor::calculate_message_id(&message);
         match result {
-            Ok(extracted_message) => {
+            Ok((extracted_message, optional_extraction_weight)) => {
                 TestProcessor::process_extracted_message(who, extracted_message)
-                    .map(|_| message_id)
+                    .map(|optional_processing_weight| (
+                        message_id,
+                        optional_extraction_weight
+                            .map(|extraction_weight| {
+                                extraction_weight
+                                    .saturating_add(
+                                        optional_processing_weight.unwrap_or(Weight::zero()),
+                                    )
+                            }),
+                    ))
             }
             Err(MessageExtractionError::InvalidMessage { .. }) => {
                 <TestProcessor<
@@ -177,7 +186,10 @@ where
                 > as MessageProcessorWithFallback<
                     AccountId,
                 >>::Fallback::handle_message(who, message)
-                    .map(|_| message_id)
+                    .map(|optional_fallback_weight| (
+                        message_id,
+                        optional_fallback_weight,
+                    ))
             }
             Err(message_extraction_error) => Err(message_extraction_error.into()),
         }
