@@ -218,6 +218,9 @@ impl tp_traits::DistributeRewards<AccountId, Credit<AccountId, Balances>>
         .map_err(|_| DispatchError::NoProviders)?;
         Ok(().into())
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn prepare_worst_case_for_bench(_: &AccountId) {}
 }
 
 parameter_types! {
