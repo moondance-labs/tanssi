@@ -278,7 +278,7 @@ where
                 }
                 Outcome::Error(instruction_error) => {
                     log::error!(
-                        "Error while staring xcm execution in raw message processor: {:?}",
+                        "Error while starting xcm execution in raw message processor: {:?}",
                         instruction_error
                     );
                     Ok(Some(Weight::zero()))

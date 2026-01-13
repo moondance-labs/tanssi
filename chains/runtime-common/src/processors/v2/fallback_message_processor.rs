@@ -177,7 +177,7 @@ where
                 }
                 Outcome::Error(instruction_error) => {
                     log::error!(
-                        "Error while staring xcm execution in fallback message processor: {:?}",
+                        "Error while starting xcm execution in fallback message processor: {:?}",
                         instruction_error
                     );
                     Ok(Some(Weight::zero()))
