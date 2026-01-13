@@ -52,7 +52,7 @@ use crate::xcm_config::UniversalLocation;
 use crate::{AccountId, BridgeRelayers, EthereumInboundQueueV2};
 use dancelight_runtime_constants::snowbridge::EthereumLocation;
 use snowbridge_outbound_queue_primitives::v2::ConstantGasMeter as ConstantGasMeterV2;
-
+use sp_runtime::Weight;
 use {
     crate::{
         parameter_types, weights, xcm_config, Balance, Balances, EthereumInboundQueue,
@@ -83,6 +83,7 @@ pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOT
 // Ethereum Bridge
 parameter_types! {
     pub storage EthereumGatewayAddress: H160 = H160(hex_literal::hex!("EDa338E4dC46038493b885327842fD3E301CaB39"));
+    pub const MaxXcmWeight: Weight = Weight::MAX; // TODO: Change this to appropriate value
 }
 
 parameter_types! {
@@ -757,6 +758,7 @@ pub type RawMessageProcessorInboundV2 = RawMessageProcessorV2<
     UniversalLocation,
     xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
     <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+    MaxXcmWeight,
 >;
 
 pub type SymbioticInboundMessageProcessorV2 = SymbioticMessageProcessorV2<
@@ -768,6 +770,7 @@ pub type SymbioticInboundMessageProcessorV2 = SymbioticMessageProcessorV2<
     UniversalLocation,
     xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
     <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+    MaxXcmWeight,
 >;
 
 impl snowbridge_pallet_inbound_queue_v2::Config for Runtime {
