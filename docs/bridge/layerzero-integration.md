@@ -92,6 +92,59 @@ A **central hub smart contract on Ethereum** acts as the bridge between LayerZer
 └───────────────┘      └───────────────┘      └───────────────┘
 ```
 
+## Ethereum Hub Contract
+
+The **TanssiLzHub** contract on Ethereum is the central bridge between LayerZero and Tanssi:
+
+```text
+                    ┌─────────────────────────────────────┐
+                    │         TanssiLzHub                 │
+                    │           (Ethereum)                │
+                    │                                     │
+   LayerZero ──────►│  lzReceive()                        │──────► Snowbridge
+   Messages         │    • Validates source chain         │        Gateway
+                    │    • Formats message for Snowbridge │        (to Tanssi)
+                    │    • Calls Gateway.sendMessage()    │
+                    │                                     │
+   Snowbridge ─────►│  receiveFromTanssi()                │──────► LayerZero
+   Messages         │    • Receives from Snowbridge       │        (to dest chain)
+                    │    • Sends via LayerZero            │
+                    └─────────────────────────────────────┘
+```
+
+### Responsibilities
+
+- **Inbound**: Receives LayerZero messages from all connected chains and forwards them to Snowbridge Gateway
+- **Outbound**: Receives messages from Snowbridge and sends them via LayerZero to destination chains
+- **Single Entry Point**: All cross-chain messages go through this hub, simplifying the trust model
+
+## Spoke Contracts (Other Chains)
+
+The **TanssiLzSpoke** contracts are deployed on each LayerZero-connected chain (Solana, Arbitrum, Base, etc.) and act as entry/exit points for messages to/from Tanssi:
+
+```text
+                    ┌─────────────────────────────────────┐
+                    │       TanssiLzSpoke                 │
+                    │   (Solana, Arbitrum, Base, etc.)    │
+                    │                                     │
+   User/App ───────►│  sendToTanssi()                     │──────► LayerZero
+   on this chain    │    • Accepts destination chain ID   │        (to TanssiLzHub)
+                    │    • Accepts payload bytes          │
+                    │    • Sends via LayerZero to Hub     │
+                    │                                     │
+   LayerZero ──────►│  lzReceive()                        │──────► Target App
+   (from Hub)       │    • Receives from TanssiLzHub      │        Contract
+                    │    • Validates origin is Hub        │
+                    │    • Forwards to destination app    │
+                    └─────────────────────────────────────┘
+```
+
+### Responsibilities
+
+- **Inbound (to Tanssi)**: Accepts user messages and sends them to `TanssiLzHub` on Ethereum via LayerZero
+- **Outbound (from Tanssi)**: Receives messages from `TanssiLzHub` and delivers them to target application contracts
+- **Origin Validation**: Only accepts incoming LayerZero messages from the trusted `TanssiLzHub` on Ethereum
+
 ## Inbound Message Flow (External Chain → Container Chain)
 
 ### Step-by-Step Flow
@@ -196,59 +249,6 @@ The container chain's receiver pallet will decode and process the message.
 5. **LayerZero Protocol**: Delivers the message to the target chain (Solana, Arbitrum, etc.)
 6. **TanssiLzSpoke**: The Tanssi-owned spoke contract on the destination chain receives the LayerZero message and relays it to the target application contract
 
-## Ethereum Hub Contract
-
-The **TanssiLzHub** contract on Ethereum is the central bridge between LayerZero and Tanssi:
-
-```text
-                    ┌─────────────────────────────────────┐
-                    │         TanssiLzHub                 │
-                    │           (Ethereum)                │
-                    │                                     │
-   LayerZero ──────►│  lzReceive()                        │──────► Snowbridge
-   Messages         │    • Validates source chain         │        Gateway
-                    │    • Formats message for Snowbridge │        (to Tanssi)
-                    │    • Calls Gateway.sendMessage()    │
-                    │                                     │
-   Snowbridge ─────►│  receiveFromTanssi()                │──────► LayerZero
-   Messages         │    • Receives from Snowbridge       │        (to dest chain)
-                    │    • Sends via LayerZero            │
-                    └─────────────────────────────────────┘
-```
-
-### Responsibilities
-
-- **Inbound**: Receives LayerZero messages from all connected chains and forwards them to Snowbridge Gateway
-- **Outbound**: Receives messages from Snowbridge and sends them via LayerZero to destination chains
-- **Single Entry Point**: All cross-chain messages go through this hub, simplifying the trust model
-
-## Spoke Contracts (Other Chains)
-
-The **TanssiLzSpoke** contracts are deployed on each LayerZero-connected chain (Solana, Arbitrum, Base, etc.) and act as entry/exit points for messages to/from Tanssi:
-
-```text
-                    ┌─────────────────────────────────────┐
-                    │       TanssiLzSpoke                 │
-                    │   (Solana, Arbitrum, Base, etc.)    │
-                    │                                     │
-   User/App ───────►│  sendToTanssi()                     │──────► LayerZero
-   on this chain    │    • Accepts destination chain ID   │        (to TanssiLzHub)
-                    │    • Accepts payload bytes          │
-                    │    • Sends via LayerZero to Hub     │
-                    │                                     │
-   LayerZero ──────►│  lzReceive()                        │──────► Target App
-   (from Hub)       │    • Receives from TanssiLzHub      │        Contract
-                    │    • Validates origin is Hub        │
-                    │    • Forwards to destination app    │
-                    └─────────────────────────────────────┘
-```
-
-### Responsibilities
-
-- **Inbound (to Tanssi)**: Accepts user messages and sends them to `TanssiLzHub` on Ethereum via LayerZero
-- **Outbound (from Tanssi)**: Receives messages from `TanssiLzHub` and delivers them to target application contracts
-- **Origin Validation**: Only accepts incoming LayerZero messages from the trusted `TanssiLzHub` on Ethereum
-
 ## Configuration
 
 ### Container Chain Setup
@@ -305,6 +305,45 @@ A container chain receiver pallet must:
 > The `payload` parameter contains the SCALE-encoded `InboundMessage` struct. Container chains must decode it to access the original LayerZero message fields and implement their own custom logic.
 
 See `pallet-lz-receiver-example` for a complete reference implementation.
+
+## Deployment
+
+### 1. Deploy TanssiLzHub on Ethereum
+
+- Deploy with LayerZero endpoint ID `30101` (Ethereum)
+- Set Snowbridge Gateway contract address
+- Wire the hub with spoke contracts
+
+### 2. Deploy TanssiLzSpoke Contracts
+
+For each target chain (Arbitrum, Base, Solana, etc.):
+- Deploy `TanssiLzSpoke` contract
+- Wire with the hub contract
+
+**Common LayerZero Endpoint IDs:**
+- Ethereum: `30101`
+- Arbitrum: `30110`
+- Base: `30184`
+- Solana: `30168`
+
+See [LayerZero deployed contracts](https://docs.layerzero.network/v2/deployments/deployed-contracts) for complete endpoint ID listings.
+
+### 3. Configure Container Chain Routing
+
+For each container chain:
+- Send XCM to relay chain calling `lz_router::update_routing_config()`
+- Set `whitelisted_senders`: `(endpoint_id, contract_address)` pairs
+- Set `notification_destination`: `(pallet_index, call_index)` of receiver pallet
+
+Example:
+```rust
+whitelisted_senders: vec![
+    (30110, vec![0x12, 0x34, ...]), // Arbitrum endpoint + TanssiLzSpoke address
+],
+notification_destination: (79, 0), // Receiver pallet index and call index
+```
+
+> **Note**: Contract source code and deployment scripts will be in a separate repository.
 
 ## Key Components
 
