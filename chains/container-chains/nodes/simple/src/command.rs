@@ -134,6 +134,7 @@ pub fn run() -> Result<()> {
         None => None,
     };
 
+    #[allow(deprecated)]
     match subcommand {
         Some(BaseSubcommand::BuildSpec(cmd)) => {
             let runner = cli.create_runner(cmd)?;
@@ -155,6 +156,19 @@ pub fn run() -> Result<()> {
                 };
                 cmd.base.run(chain_spec, config.network)
             })
+        }
+        Some(BaseSubcommand::ExportChainSpec(cmd)) => {
+            let chain_spec: Box<dyn sc_service::ChainSpec> =
+                if let Some(para_id) = cmd.extra.parachain_id {
+                    Box::new(chain_spec::local_testnet_config(
+                        para_id.into(),
+                        cmd.extra.add_bootnode.clone(),
+                    ))
+                } else {
+                    cli.load_spec(&cmd.base.chain)?
+                };
+
+            cmd.base.run(chain_spec)
         }
         Some(BaseSubcommand::CheckBlock(cmd)) => {
             construct_async_run!(|components, cli, cmd, config| {
