@@ -1019,6 +1019,25 @@
             ]
         },
         {
+            "name": "zombie_tanssi_test_build_spec",
+            "timeout": 600000,
+            "testFileDir": ["suites/zombie_tanssi_test_build_spec"],
+            "runScripts": [
+                "test-build-spec.sh"
+            ],
+            "foundation": {
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombie_tanssi_relay.json",
+                    "skipBlockCheck": ["Container2000", "Container2001", "Container2002"]
+                }
+            },
+            "vitestArgs": {
+                "bail": 1
+            },
+            "connections": []
+        },
+        {
             "name": "zombie_tanssi_collator_peers",
             "testFileDir": ["suites/zombie_tanssi_collator_peers"],
             "runScripts": [

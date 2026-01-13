@@ -231,10 +231,10 @@ describeSuite({
                 let args: string[];
                 if (runtimeName.includes("light")) {
                     command = "../target/release/tanssi-relay";
-                    args = ["build-spec", "--chain=dancelight-local", "--raw"];
+                    args = ["export-chain-spec", "--chain=dancelight-local", "--raw"];
                 } else {
                     command = "../target/release/tanssi-node";
-                    args = ["build-spec", "--chain=dancebox-local", "--raw"];
+                    args = ["export-chain-spec", "--chain=dancebox-local", "--raw"];
                 }
 
                 await testPalletVersions(api, command, args);
