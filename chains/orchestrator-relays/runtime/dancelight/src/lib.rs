@@ -947,7 +947,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				RuntimeCall::Treasury(..) |
 				RuntimeCall::ConvictionVoting(..) |
 				RuntimeCall::Referenda(..) |
-
                 RuntimeCall::OpenTechCommitteeCollective(..) |
 				RuntimeCall::Whitelist(..) |
 				RuntimeCall::Utility(..) |
@@ -1125,7 +1124,7 @@ impl ProcessMessage for MessageProcessor {
                     xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
                     RuntimeCall,
                 >::process_message(
-                    message, Junction::Parachain(para.into()), meter, id
+                    message, Junction::Parachain(para.into()), meter, id,
                 )
             }
             TanssiAggregateMessageOrigin::Snowbridge(_) => {
@@ -2435,6 +2434,7 @@ mod benches {
         [pallet_bridge_relayers, BridgeRelayersBench::<Runtime>]
         [snowbridge_pallet_inbound_queue, EthereumInboundQueue]
         [snowbridge_pallet_outbound_queue_v2, EthereumOutboundQueueV2]
+        [snowbridge_pallet_inbound_queue_v2, EthereumInboundQueueV2]
     );
 }
 
@@ -3140,7 +3140,7 @@ sp_api::impl_runtime_apis! {
         }
     }
 
-    impl pallet_services_payment_runtime_api::ServicesPaymentApi<Block, Balance, ParaId> for Runtime {
+    impl pallet_services_payment_runtime_api::ServicesPaymentApi<Block, AccountId, Balance, ParaId> for Runtime {
         fn block_cost(para_id: ParaId) -> Balance {
             let (block_production_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideBlockProductionCost::block_cost(&para_id);
             block_production_costs
@@ -3149,6 +3149,10 @@ sp_api::impl_runtime_apis! {
         fn collator_assignment_cost(para_id: ParaId) -> Balance {
             let (collator_assignment_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);
             collator_assignment_costs
+        }
+
+        fn parachain_tank_account(para_id: ParaId) -> AccountId {
+            ServicesPayment::parachain_tank(para_id)
         }
     }
 

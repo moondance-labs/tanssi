@@ -710,6 +710,9 @@ impl<T: Config> NodeActivityTrackingHelper<Collator<T>> for Pallet<T> {
 
 impl<T: Config> AuthorNotingHook<Collator<T>> for Pallet<T> {
     fn on_container_authors_noted(info: &[AuthorNotingInfo<Collator<T>>]) -> Weight {
+        if info.is_empty() {
+            return Weight::zero();
+        }
         let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
         if let ActivityTrackingStatus::Enabled { start, end: _ } =
             <CurrentActivityTrackingStatus<T>>::get()

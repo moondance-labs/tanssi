@@ -122,6 +122,10 @@ pub enum BuyingError<BlockNumber> {
 
 impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
     fn on_container_authors_noted(info: &[AuthorNotingInfo<T::AccountId>]) -> Weight {
+        if info.is_empty() {
+            return Weight::zero();
+        }
+
         let writes = info.len().saturated_into();
 
         for info in info {

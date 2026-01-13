@@ -111,9 +111,6 @@ where
                 validators,
                 external_index,
             }) => {
-                // Process message for v2 does not contain a channel-id whatsoever.
-                // We could possibly check the origin as v2 has an origin, or convert the origin into a channle or viceversa
-                // TODO for the inbound queue people
                 if let Some(channel_id) = channel_id {
                     if channel_id != PRIMARY_GOVERNANCE_CHANNEL {
                         return Err(DispatchError::Other(
@@ -145,10 +142,10 @@ where
     fn process_message(
         _who: AccountId,
         message: v2::Message,
-    ) -> Result<[u8; 32], MessageProcessorError> {
+    ) -> Result<([u8; 32], Option<Weight>), MessageProcessorError> {
         match &message.payload {
             v2::message::Payload::Raw(data) => Self::process_message(None, &data)
-                .map(|_| [0; 32])
+                .map(|_| ([0; 32], None))
                 .map_err(|e| MessageProcessorError::ProcessMessage(e)),
             v2::message::Payload::CreateAsset { .. } => Err(MessageProcessorError::ProcessMessage(
                 DispatchError::Other("Create asset is not supported"),

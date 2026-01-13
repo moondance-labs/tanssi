@@ -94,7 +94,7 @@ pallet-inflation-rewards = { path = "pallets/inflation-rewards", default-feature
 pallet-initializer = { path = "pallets/initializer", default-features = false }
 pallet-invulnerables = { path = "pallets/invulnerables", default-features = false }
 pallet-ocw-testing = { path = "pallets/ocw-testing", default-features = false }
-pallet-outbound-message-commitment-recorder = { path = "pallets/oubound-message-commitment-recorder", default-features = false }
+pallet-outbound-message-commitment-recorder = { path = "pallets/outbound-message-commitment-recorder", default-features = false }
 pallet-pooled-staking = { path = "pallets/pooled-staking", default-features = false }
 pallet-registrar = { path = "pallets/registrar", default-features = false }
 pallet-registrar-runtime-api = { path = "pallets/registrar/runtime-api", default-features = false }
@@ -335,6 +335,7 @@ bp-relayers = { git = "https://github.com/moondance-labs/polkadot-sdk", branch =
 bridge-hub-common = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
 pallet-bridge-relayers = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
 snowbridge-pallet-inbound-queue-v2 = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
+snowbridge-pallet-inbound-queue-v2-fixtures = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
 snowbridge-pallet-outbound-queue-v2 = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
 snowbridge-pallet-system-v2 = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
 
@@ -441,7 +442,7 @@ rand = { version = "0.8.5", default-features = false, features = [ "std_rng" ] }
 serde_json = { version = "1.0.114", default-features = false }
 similar-asserts = "1.1.0"
 tempfile = "3.1.0"
-thiserror = { version = "1.0.48" }
+thiserror = { version = "2.0.17", default-features = false }
 tokio = { version = "1.32.0", default-features = false }
 tokio-stream = "0.1.15"
 tokio-util = { version = "0.7.10", default-features = false }
@@ -544,7 +545,7 @@ consensus_common = { package = "sp-consensus", git = "https://github.com/moondan
 sc-authority-discovery = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
 sc-client-db = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
 sc-sync-state-rpc = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
-sp-authority-discovery= { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
+sp-authority-discovery = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
 
 babe = { package = "sc-consensus-babe", git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
 beefy = { package = "sc-consensus-beefy", git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
@@ -569,7 +570,7 @@ tikv-jemallocator = { version = "0.5.0", features = [ "unprefixed_malloc_on_supp
 
 polkadot-node-core-pvf-common = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
 polkadot-node-core-pvf-execute-worker = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
-polkadot-node-core-pvf-prepare-worker  = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
+polkadot-node-core-pvf-prepare-worker = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
 
 substrate-rpc-client = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2506", default-features = false }
 

@@ -253,6 +253,7 @@ pub fn run() -> Result<()> {
         return Err(Error::PyroscopeNotCompiledIn);
     }
 
+    #[allow(deprecated)]
     match &cli.subcommand {
         None => run_node_inner(
             cli,
@@ -270,6 +271,16 @@ pub fn run() -> Result<()> {
                 cmd.authority.clone(),
             )?;
             Ok(runner.sync_run(|config| cmd.base.run(chain_spec, config.network))?)
+        }
+        Some(Subcommand::ExportChainSpec(cmd)) => {
+            let chain_spec = load_spec(
+                &cmd.base.chain,
+                cmd.add_container_chain.clone().unwrap_or_default(),
+                cmd.mock_container_chain.clone().unwrap_or_default(),
+                cmd.invulnerable.clone(),
+                cmd.authority.clone(),
+            )?;
+            cmd.base.run(chain_spec).map_err(Error::SubstrateCli)
         }
         Some(Subcommand::CheckBlock(cmd)) => {
             let runner = cli.create_runner(cmd).map_err(Error::SubstrateCli)?;
