@@ -16,7 +16,10 @@
 
 use {
     clap::Parser,
-    node_common::{cli::BuildSpecCmd, service::node_builder::Sealing},
+    node_common::{
+        cli::{BuildSpecCmd, ExportChainSpecCmd},
+        service::node_builder::Sealing,
+    },
 };
 
 #[derive(Debug, Parser)]
@@ -81,7 +84,8 @@ pub struct DataPreserverCmd {
 }
 
 /// Common subcommands enum configured with frontier build spec.
-pub type BaseSubcommand = node_common::cli::Subcommand<BuildSpecCmdFrontier>;
+pub type BaseSubcommand =
+    node_common::cli::Subcommand<BuildSpecCmdFrontier, ExportChainSpecCmdFrontier>;
 
 /// Custom subcommand enum with `rpc-provider`
 #[derive(Debug, clap::Subcommand)]
@@ -129,7 +133,7 @@ pub struct Cli {
 }
 
 #[derive(Debug, Clone, clap::Args)]
-pub struct BuildSpecCmdExtraFields {
+pub struct ExtraFields {
     /// List of bootnodes to add to chain spec
     #[arg(long)]
     pub add_bootnode: Vec<String>,
@@ -140,7 +144,9 @@ pub struct BuildSpecCmdExtraFields {
     pub parachain_id: Option<u32>,
 }
 
-pub type BuildSpecCmdFrontier = BuildSpecCmd<BuildSpecCmdExtraFields>;
+pub type BuildSpecCmdFrontier = BuildSpecCmd<ExtraFields>;
+
+pub type ExportChainSpecCmdFrontier = ExportChainSpecCmd<ExtraFields>;
 
 #[derive(Clone)]
 pub struct RpcConfig {

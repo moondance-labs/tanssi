@@ -360,7 +360,10 @@ fn calculate_message_hash(message: &Message) -> [u8; 32] {
 }
 
 pub trait FallbackMessageProcessor<AccountId> {
-    fn handle_message(who: AccountId, message: Message) -> Result<(), MessageProcessorError>;
+    fn handle_message(
+        who: AccountId,
+        message: Message,
+    ) -> Result<Option<Weight>, MessageProcessorError>;
 }
 
 pub trait MessageProcessorWithFallback<AccountId> {
@@ -375,7 +378,7 @@ pub trait MessageProcessorWithFallback<AccountId> {
     fn process_extracted_message(
         sender: AccountId,
         extracted_message: Self::ExtractedMessage,
-    ) -> Result<(), MessageProcessorError>;
+    ) -> Result<Option<Weight>, MessageProcessorError>;
 
     fn calculate_message_id(message: &Message) -> [u8; 32] {
         calculate_message_hash(message)

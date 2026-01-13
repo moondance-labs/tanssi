@@ -149,6 +149,7 @@ macro_rules! construct_async_run {
 pub fn run() -> Result<()> {
     let cli = Cli::from_args();
 
+    #[allow(deprecated)]
     match &cli.subcommand {
         Some(Subcommand::BuildSpec(cmd)) => {
             let runner = cli.create_runner(cmd)?;
@@ -162,6 +163,16 @@ pub fn run() -> Result<()> {
                 )?;
                 cmd.base.run(chain_spec, config.network)
             })
+        }
+        Some(Subcommand::ExportChainSpec(cmd)) => {
+            let chain_spec = load_spec(
+                &cmd.base.chain,
+                cmd.extra.parachain_id,
+                cmd.extra.add_container_chain.clone().unwrap_or_default(),
+                cmd.extra.mock_container_chain.clone().unwrap_or_default(),
+                cmd.extra.invulnerable.clone(),
+            )?;
+            cmd.base.run(chain_spec)
         }
         Some(Subcommand::CheckBlock(cmd)) => {
             construct_async_run!(|components, cli, cmd, config| {

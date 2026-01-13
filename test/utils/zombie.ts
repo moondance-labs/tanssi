@@ -1,7 +1,7 @@
 import { expect } from "vitest";
 import fs from "node:fs/promises";
 import type { ApiPromise } from "@polkadot/api";
-import { exec } from "node:child_process";
+import { exec, execSync } from "node:child_process";
 import { getAuthorFromDigestRange, sleep } from "utils";
 import type { PathLike } from "node:fs";
 
@@ -377,4 +377,19 @@ export async function monitorBlockProduction(apis: ApiPromise[], blockProduction
             clearInterval(interval as unknown as NodeJS.Timeout);
         }
     };
+}
+
+// This function checks if the given binary command supports the `export-chain-spec` command.
+// If it does, it returns `export-chain-spec`, otherwise it returns `build-spec`.
+// After new release this function and it's usage should be removed:
+// https://opslayer.atlassian.net/browse/MD-1512
+export function getChainSpecCmd(binCommand: string): string {
+    return (() => {
+        try {
+            execSync(`${binCommand} export-chain-spec --help`, { stdio: "ignore" });
+            return "export-chain-spec";
+        } catch {
+            return "build-spec";
+        }
+    })();
 }
