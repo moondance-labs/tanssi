@@ -162,6 +162,7 @@ pub struct SymbioticMessageProcessor<
     TanssiUniversalLocation,
     XcmProcessor,
     XcmWeigher,
+    MaxXcmWeight,
 >(
     PhantomData<(
         T,
@@ -172,6 +173,7 @@ pub struct SymbioticMessageProcessor<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmWeight,
     )>,
 );
 
@@ -185,6 +187,7 @@ impl<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmWeight,
     > MessageProcessorWithFallback<AccountId>
     for SymbioticMessageProcessor<
         T,
@@ -195,6 +198,7 @@ impl<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmWeight,
     >
 where
     T: snowbridge_pallet_inbound_queue::Config
@@ -209,6 +213,7 @@ where
     TanssiUniversalLocation: Get<InteriorLocation>,
     XcmProcessor: ExecuteXcm<<T as pallet_xcm::Config>::RuntimeCall>,
     XcmWeigher: WeightBounds<<T as pallet_xcm::Config>::RuntimeCall>,
+    MaxXcmWeight: Get<Weight>,
 {
     type Fallback = SymbioticFallbackProcessor<
         T,
@@ -221,14 +226,9 @@ where
             TanssiUniversalLocation,
             XcmProcessor,
             XcmWeigher,
+            MaxXcmWeight,
         >,
         GatewayAddress,
-        DefaultClaimer,
-        EthereumNetwork,
-        EthereumUniversalLocation,
-        TanssiUniversalLocation,
-        XcmProcessor,
-        XcmWeigher,
     >;
     type ExtractedMessage = SymbioticMessage<T>;
 

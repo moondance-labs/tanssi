@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use crate::bridge_to_ethereum_config::MaxXcmWeight;
 use {
     super::ALICE,
     crate as dancelight_runtime,
@@ -126,6 +127,7 @@ fn raw_message_processor_works() {
         TanssiUniversalLocation,
         xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
         <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+        MaxXcmWeight,
     >::try_extract_message(&AccountId::from(ALICE), &message);
 
     assert!(result.is_ok());
@@ -171,6 +173,7 @@ fn message_processor_succeeds_even_if_xcm_is_invalid() {
             TanssiUniversalLocation,
             xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
             <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+            MaxXcmWeight,
         >;
 
         let result = <Processor as snowbridge_inbound_queue_primitives::v2::MessageProcessor<
@@ -224,6 +227,7 @@ fn message_processor_fails_with_invalid_symbiotic_payload() {
             TanssiUniversalLocation,
             xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
             <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+            MaxXcmWeight,
         >;
 
         let result = <Processor as snowbridge_inbound_queue_primitives::v2::MessageProcessor<
@@ -279,6 +283,7 @@ fn try_extract_message_fails_with_invalid_xcm_payload() {
             TanssiUniversalLocation,
             xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
             <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+            MaxXcmWeight,
         >;
 
         let result = <Processor as MessageProcessorWithFallback<AccountId>>::try_extract_message(
@@ -336,6 +341,7 @@ fn try_extract_message_fails_with_invalid_symbiotic_payload() {
             TanssiUniversalLocation,
             xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
             <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+            MaxXcmWeight,
         >;
 
         let result = <Processor as MessageProcessorWithFallback<AccountId>>::try_extract_message(
