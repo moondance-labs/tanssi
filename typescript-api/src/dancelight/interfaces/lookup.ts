@@ -7611,7 +7611,7 @@ export default {
      * Lookup724: pallet_inflation_rewards::pallet::ChainsToRewardValue<T>
      **/
     PalletInflationRewardsChainsToRewardValue: {
-        paraIds: "Vec<u32>",
+        paraIds: "BTreeSet<u32>",
         rewardsPerChain: "u128",
     },
     /**
