@@ -49,9 +49,11 @@ use tanssi_runtime_common::relay::v2::{
 };
 
 use crate::xcm_config::UniversalLocation;
-use crate::{AccountId, BridgeRelayers, EthereumInboundQueueV2};
+use crate::{AccountId, BlockWeights, BridgeRelayers, EthereumInboundQueueV2};
 use dancelight_runtime_constants::snowbridge::EthereumLocation;
+use pallet_external_validators::WeightInfo;
 use snowbridge_outbound_queue_primitives::v2::ConstantGasMeter as ConstantGasMeterV2;
+use sp_arithmetic::Perbill;
 use sp_runtime::Weight;
 use {
     crate::{
@@ -83,7 +85,8 @@ pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOT
 // Ethereum Bridge
 parameter_types! {
     pub storage EthereumGatewayAddress: H160 = H160(hex_literal::hex!("EDa338E4dC46038493b885327842fD3E301CaB39"));
-    pub const MaxXcmWeight: Weight = Weight::MAX; // TODO: Change this to appropriate value
+    pub MaxXcmWeight: Weight = Perbill::from_percent(25) * BlockWeights::get().max_block;
+    pub SetExternalValidatorsWeight: Weight = weights::pallet_external_validators::SubstrateWeight::<Runtime>::set_external_validators();
 }
 
 parameter_types! {
@@ -771,6 +774,7 @@ pub type SymbioticInboundMessageProcessorV2 = SymbioticMessageProcessorV2<
     xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
     <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
     MaxXcmWeight,
+    SetExternalValidatorsWeight,
 >;
 
 impl snowbridge_pallet_inbound_queue_v2::Config for Runtime {

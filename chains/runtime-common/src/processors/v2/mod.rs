@@ -385,6 +385,8 @@ pub trait MessageProcessorWithFallback<AccountId> {
         extracted_message: Self::ExtractedMessage,
     ) -> Result<Option<Weight>, MessageProcessorError>;
 
+    fn worst_case_message_processor_weight() -> Weight;
+
     fn calculate_message_id(message: &Message) -> [u8; 32] {
         calculate_message_hash(message)
     }

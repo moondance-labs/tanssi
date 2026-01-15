@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::bridge_to_ethereum_config::MaxXcmWeight;
+use crate::bridge_to_ethereum_config::{MaxXcmWeight, SetExternalValidatorsWeight};
 use {
     super::ALICE,
     crate as dancelight_runtime,
@@ -70,6 +70,7 @@ fn symbiotic_try_extract_message_fails_with_invalid_symbiotic_payload() {
             xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
             <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
             MaxXcmWeight,
+            SetExternalValidatorsWeight,
         >;
 
         let result = <Processor as MessageProcessorWithFallback<AccountId>>::try_extract_message(
@@ -114,6 +115,7 @@ fn symbiotic_try_extract_message_fails_with_invalid_origin_payload() {
             xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
             <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
             MaxXcmWeight,
+            SetExternalValidatorsWeight,
         >;
 
         let result = <Processor as MessageProcessorWithFallback<AccountId>>::try_extract_message(
