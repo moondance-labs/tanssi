@@ -526,14 +526,6 @@ pub mod pallet {
             auto_compounding_rewards: T::Balance,
             manual_claim_rewards: T::Balance,
         },
-        /// Rewards has been distributed to a collator and its delegators.
-        RewardsDistributed {
-            collator: Candidate<T>,
-            collator_ac_rewards: T::Balance,
-            collator_mc_rewards: T::Balance,
-            delegators_ac_rewards: T::Balance,
-            delegators_mc_rewards: T::Balance,
-        },
         /// Rewards manually claimed.
         ClaimedManualRewards {
             candidate: Candidate<T>,
@@ -551,6 +543,14 @@ pub mod pallet {
             target_stake: T::Balance,
             pending_leaving: T::Balance,
             released: T::Balance,
+        },
+        /// Rewards has been distributed to a collator and its delegators.
+        RewardsDistributed {
+            collator: Candidate<T>,
+            collator_ac_rewards: T::Balance,
+            collator_mc_rewards: T::Balance,
+            delegators_ac_rewards: T::Balance,
+            delegators_mc_rewards: T::Balance,
         },
     }
 
@@ -838,11 +838,7 @@ pub mod pallet {
 
             // Distribute only when the timer is elapsed.
             let mut distribution_weight = Weight::zero();
-            if dbg!(T::RewardsDistributionTimer::is_elapsed(
-                &pending.last_distribution
-            )) {
-                println!("Distribution !");
-
+            if T::RewardsDistributionTimer::is_elapsed(&pending.last_distribution) {
                 pending.last_distribution = T::RewardsDistributionTimer::now();
                 let rewards = core::mem::take(&mut pending.rewards); // reset pending rewards
 
