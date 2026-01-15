@@ -108,6 +108,10 @@ fn message_processor_trait_derive_impl(ast: DeriveInput) -> proc_macro2::TokenSt
                     Err(message_extraction_error) => Err(message_extraction_error.into())
                 }
             }
+
+            fn worst_case_message_processor_weight() -> Weight {
+                <#name #ty_generics as MessageProcessorWithFallback<AccountId>>::worst_case_message_processor_weight()
+            }
         }
     };
 
@@ -187,6 +191,15 @@ where
             }
             Err(message_extraction_error) => Err(message_extraction_error.into()),
         }
+    }
+    fn worst_case_message_processor_weight() -> Weight {
+        <TestProcessor<
+            T,
+            U,
+            V,
+        > as MessageProcessorWithFallback<
+            AccountId,
+        >>::worst_case_message_processor_weight()
     }
 }
 "##;

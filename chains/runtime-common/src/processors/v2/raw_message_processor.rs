@@ -293,4 +293,8 @@ where
             }
         }
     }
+
+    fn worst_case_message_processor_weight() -> Weight {
+        MaxXcmWeight::get()
+    }
 }
