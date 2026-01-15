@@ -77,3 +77,27 @@ where
         return false;
     }
 }
+
+/// Filter to ensure that Ethereum can be recognized as a reserve for container chain assets.
+/// Used when assets native to container chains are transferred back from Ethereum.
+pub struct EthereumAssetReserveForContainerAssets<EthereumLocation>(
+    core::marker::PhantomData<EthereumLocation>,
+);
+impl<EthereumLocation> frame_support::traits::ContainsPair<Asset, Location>
+    for EthereumAssetReserveForContainerAssets<EthereumLocation>
+where
+    EthereumLocation: Get<Location>,
+{
+    fn contains(asset: &Asset, origin: &Location) -> bool {
+        log::trace!(target: "xcm::contains", "EthereumAssetReserveForContainerAssets asset: {:?}, origin: {:?}, eth_location: {:?}", asset, origin, EthereumLocation::get());
+        if *origin == EthereumLocation::get() {
+            // Check if the asset has a Parachain junction as its first interior,
+            // indicating it's native to a container chain
+            return matches!(
+                (asset.id.0.parents, asset.id.0.first_interior()),
+                (0, Some(Parachain(_)))
+            );
+        }
+        false
+    }
+}

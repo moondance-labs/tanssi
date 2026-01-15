@@ -324,7 +324,8 @@ where
     }
     fn alias_origin(_: &Location) -> Weight {
         // XCM Executor does not currently support alias origin operations
-        Weight::MAX
+        // TODO: benchmark
+        Weight::from_parts(1_000_000_000, 10000)
     }
     fn unpaid_execution(_: &WeightLimit, _: &Option<Location>) -> Weight {
         XcmGeneric::<Runtime>::unpaid_execution()

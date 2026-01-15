@@ -18,6 +18,7 @@ name = "tanssi-utils"
 workspace = true
 
 [dependencies]
+alloy-core = { workspace = true, features = [ "std" ] }
 clap = { workspace = true, features = [ "derive", "std" ] }
 ethabi = { workspace = true }
 hex = { workspace = true }
@@ -31,5 +32,6 @@ snowbridge-inbound-queue-primitives = { workspace = true }
 snowbridge-merkle-tree = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true, features = [ "std" ] }
+tanssi-runtime-common = { workspace = true, features = [ "std", "relay" ] }
 xcm = { workspace = true }
 xcm-executor = { workspace = true }

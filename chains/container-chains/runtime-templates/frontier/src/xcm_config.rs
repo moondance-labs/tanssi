@@ -48,7 +48,7 @@ use {
     polkadot_runtime_common::xcm_sender::ExponentialPrice,
     sp_core::{ConstU32, H160},
     sp_runtime::Perbill,
-    tanssi_runtime_common::universal_aliases::CommonUniversalAliases,
+    tanssi_runtime_common::universal_aliases::{CommonUniversalAliases, ParentAsEthereumAliaser},
     tp_container_chain::{
         sovereign_paid_remote_exporter::SovereignPaidRemoteExporter,
         ContainerChainEthereumLocationConverter,
@@ -256,7 +256,7 @@ impl xcm_executor::Config for XcmConfig {
     type UniversalAliases = CommonUniversalAliases;
     type CallDispatcher = RuntimeCall;
     type SafeCallFilter = Everything;
-    type Aliasers = Nothing;
+    type Aliasers = ParentAsEthereumAliaser<EthereumLocation>;
     type TransactionalProcessor = xcm_builder::FrameTransactionalProcessor;
     type HrmpNewChannelOpenRequestHandler = ();
     type HrmpChannelAcceptedHandler = ();
