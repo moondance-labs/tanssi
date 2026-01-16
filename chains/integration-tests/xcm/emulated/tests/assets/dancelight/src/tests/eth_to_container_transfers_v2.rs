@@ -18,6 +18,32 @@
 //!
 //! These tests use the V2 message format with `IGatewayV2::OutboundMessageAccepted`
 //! and `RawPayload::Xcm` for the XCM payload encoding.
+//!
+//! ## Test Scenarios
+//!
+//! The tests cover four types of token transfers from Ethereum to container chains:
+//!
+//! 1. **ERC20 tokens** (kind: 0) - Native Ethereum ERC20 tokens transferred to containers
+//!    - `check_erc20_token_to_frontier_container_via_v2_works`
+//!    - `check_erc20_token_to_simple_container_via_v2_works`
+//!
+//! 2. **Native ETH** (via `value` field) - Ether transferred to containers as a foreign asset
+//!    - `check_eth_to_frontier_container_via_v2_works`
+//!    - `check_eth_to_simple_container_via_v2_works`
+//!
+//! 3. **Tanssi (relay) tokens** (kind: 1) - Relay chain tokens previously bridged to Ethereum,
+//!    now being sent back to container chains
+//!    - `check_tanssi_to_frontier_container_via_v2_works`
+//!    - `check_tanssi_to_simple_container_via_v2_works`
+//!
+//! 4. **Container native tokens** (kind: 1) - Container chain native tokens previously bridged
+//!    to Ethereum, now being sent back to their origin chain
+//!    - `check_container_native_to_frontier_container_via_v2_works`
+//!    - `check_container_native_to_simple_container_via_v2_works`
+//!
+//! Each scenario is tested against both container chain templates:
+//! - **Frontier** (EVM-compatible, uses `AccountId20`)
+//! - **Simple** (Substrate-native, uses `AccountId32`)
 
 use {
     alloy_core::{
