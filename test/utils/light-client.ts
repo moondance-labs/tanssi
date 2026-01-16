@@ -106,9 +106,31 @@ function encodeSymbioticMessage(api: ApiPromise, symbioticValidators: string[]):
     return payload.toU8a();
 }
 
+function encodeLayerZeroMessage(
+    lzSourceAddress: Uint8Array,
+    lzSourceEndpoint: number,
+    destinationChain: number,
+    message: Uint8Array
+): Uint8Array {
+    if (lzSourceAddress.length !== 32) {
+        throw new Error(`lzSourceAddress must be exactly 32 bytes, got ${lzSourceAddress.length} bytes`);
+    }
+
+    const defaultAbiCoder = AbiCoder.defaultAbiCoder();
+
+    // Encode as InboundSolMessage struct: tuple(bytes32,uint32,uint32,bytes)
+    // (lzSourceAddress, lzSourceEndpoint, destinationChain, message)
+    const encoded = defaultAbiCoder.encode(
+        ["tuple(bytes32,uint32,uint32,bytes)"],
+        [[lzSourceAddress, lzSourceEndpoint, destinationChain, message]]
+    );
+    return getBytes(encoded);
+}
+
 export enum PayloadEnum {
     XCM = "XCM",
     SYMBIOTIC = "SYMBIOTIC",
+    LAYER_ZERO = "LAYER_ZERO",
 }
 
 export function encodeRawPayload(api: ApiPromise, bytes: Uint8Array, payloadEnum: PayloadEnum): Uint8Array {
@@ -117,6 +139,7 @@ export function encodeRawPayload(api: ApiPromise, bytes: Uint8Array, payloadEnum
             _enum: {
                 Xcm: "Vec<u8>",
                 Symbiotic: "Vec<u8>",
+                LayerZero: "Vec<u8>",
             },
         },
     });
@@ -137,6 +160,14 @@ export function encodeRawPayload(api: ApiPromise, bytes: Uint8Array, payloadEnum
         return rawPayload.toU8a();
     }
 
+    if (payloadEnum === PayloadEnum.LAYER_ZERO) {
+        const rawPayload = api.createType("RawPayload", {
+            LayerZero: Array.from(bytes),
+        });
+
+        return rawPayload.toU8a();
+    }
+
     throw new Error(`Unsupported PayloadEnum: ${payloadEnum}`);
 }
 
@@ -152,14 +183,34 @@ function createSymbioticData(api: ApiPromise, symbioticValidators: string[]) {
     return encodeRawPayload(api, bytes, PayloadEnum.SYMBIOTIC);
 }
 
+function createLayerZeroData(
+    api: ApiPromise,
+    lzSourceAddress: Uint8Array,
+    lzSourceEndpoint: number,
+    destinationChain: number,
+    message: Uint8Array
+) {
+    const bytes = encodeLayerZeroMessage(lzSourceAddress, lzSourceEndpoint, destinationChain, message);
+
+    return encodeRawPayload(api, bytes, PayloadEnum.LAYER_ZERO);
+}
+
+export interface LayerZeroMessageParams {
+    lzSourceAddress: Uint8Array;
+    lzSourceEndpoint: number;
+    destinationChain: number;
+    message: Uint8Array;
+}
+
 export async function generateOutboundMessageAcceptedLog(
     api: ApiPromise,
-    nonce,
+    nonce: number,
     ethValue: bigint,
     instructions: any[] | null,
     nativeERC20Params: { value: bigint; tokenAddress: string }[] = [],
     foreignTokenParams: { value: bigint; tokenId: string }[] = [],
-    symbioticValidators: string[] | null = null
+    symbioticValidators: string[] | null = null,
+    layerZeroParams: LayerZeroMessageParams | null = null
 ) {
     const gatewayHex = "EDa338E4dC46038493b885327842fD3E301CaB39";
     const origin = `0x${gatewayHex}`;
@@ -167,11 +218,22 @@ export async function generateOutboundMessageAcceptedLog(
 
     const defaultAbiCoder = AbiCoder.defaultAbiCoder();
 
-    const xcmSymbioticData = symbioticValidators !== null ? createSymbioticData(api, symbioticValidators) : null;
+    const symbioticData = symbioticValidators !== null ? createSymbioticData(api, symbioticValidators) : null;
     const xcmData = instructions !== null ? createXcmData(api, instructions) : null;
+    const layerZeroData =
+        layerZeroParams !== null
+            ? createLayerZeroData(
+                  api,
+                  layerZeroParams.lzSourceAddress,
+                  layerZeroParams.lzSourceEndpoint,
+                  layerZeroParams.destinationChain,
+                  layerZeroParams.message
+              )
+            : null;
 
-    if (!xcmSymbioticData && !xcmData) {
-        throw new Error("You need to specify XCM instructions or Symbiotic payload!");
+    const payloadData = xcmData || symbioticData || layerZeroData;
+    if (!payloadData) {
+        throw new Error("You need to specify XCM instructions, Symbiotic payload, or LayerZero params!");
     }
 
     const payload = {
@@ -186,7 +248,7 @@ export async function generateOutboundMessageAcceptedLog(
                 data: encodeAsForeignTokenERC20(foreignTokenParam.tokenId, foreignTokenParam.value),
             })),
         ],
-        xcm: { kind: 0, data: xcmData || xcmSymbioticData },
+        xcm: { kind: 0, data: payloadData },
         claimer: "0x",
         value: ethValue,
         executionFee: 0n,
@@ -222,6 +284,44 @@ export async function generateOutboundMessageAcceptedLog(
         topics,
         data: [].slice.call(encodedData),
     });
+}
+
+/**
+ * Convenience function for generating LayerZero outbound message logs.
+ * Only requires the parameters relevant to LayerZero messages.
+ */
+export async function generateLayerZeroOutboundLog(
+    api: ApiPromise,
+    nonce: number,
+    layerZeroParams: LayerZeroMessageParams
+) {
+    return generateOutboundMessageAcceptedLog(
+        api,
+        nonce,
+        0n, // ethValue
+        null, // instructions
+        [], // nativeERC20Params
+        [], // foreignTokenParams
+        null, // symbioticValidators
+        layerZeroParams
+    );
+}
+
+/**
+ * Convenience function for generating Symbiotic outbound message logs.
+ * Only requires the parameters relevant to Symbiotic messages.
+ */
+export async function generateSymbioticOutboundLog(api: ApiPromise, nonce: number, validators: string[]) {
+    return generateOutboundMessageAcceptedLog(
+        api,
+        nonce,
+        0n, // ethValue
+        null, // instructions
+        [], // nativeERC20Params
+        [], // foreignTokenParams
+        validators, // symbioticValidators
+        null // layerZeroParams
+    );
 }
 
 function createSyncCommittee(seed: number) {

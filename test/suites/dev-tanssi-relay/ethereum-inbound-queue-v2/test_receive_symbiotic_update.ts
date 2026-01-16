@@ -7,7 +7,7 @@ import { type ApiPromise, Keyring } from "@polkadot/api";
 import {
     generateUpdate,
     ETHEREUM_NETWORK_TESTNET,
-    generateOutboundMessageAcceptedLog,
+    generateSymbioticOutboundLog,
     ETHEREUM_NETWORK_MAINNET,
     SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
     ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS,
@@ -69,7 +69,7 @@ describeSuite({
                     keyring.addFromUri("//Bob//stash").address,
                 ];
 
-                const log = await generateOutboundMessageAcceptedLog(polkadotJs, 1, 0, null, [], [], validators);
+                const log = await generateSymbioticOutboundLog(polkadotJs, 1, validators);
 
                 const { checkpointUpdate, messageExtrinsics } = await generateUpdate(polkadotJs, [log]);
 

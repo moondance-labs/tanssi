@@ -757,6 +757,7 @@ dependencies = [
  "dancelight-system-emulated-network",
  "fp-account",
  "frame-support",
+ "frame-system",
  "frontier-template-emulated-chain",
  "hex-literal",
  "pallet-message-queue",
@@ -2436,6 +2437,7 @@ dependencies = [
  "pallet-evm-precompile-xcm-utils",
  "pallet-evm-precompileset-assets-erc20",
  "pallet-foreign-asset-creator",
+ "pallet-lz-receiver-example",
  "pallet-maintenance-mode",
  "pallet-message-queue",
  "pallet-migrations 0.1.0",
@@ -2521,6 +2523,7 @@ dependencies = [
  "pallet-balances",
  "pallet-cc-authorities-noting",
  "pallet-foreign-asset-creator",
+ "pallet-lz-receiver-example",
  "pallet-maintenance-mode",
  "pallet-message-queue",
  "pallet-migrations 0.1.0",
@@ -3979,6 +3982,7 @@ dependencies = [
  "pallet-inflation-rewards",
  "pallet-initializer",
  "pallet-invulnerables",
+ "pallet-lz-router",
  "pallet-maintenance-mode",
  "pallet-message-queue",
  "pallet-migrations 0.1.0",
@@ -10895,6 +10899,47 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-staking",
+ "tp-traits",
+]
+
+[[package]]
+name = "pallet-lz-receiver-example"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "staging-xcm",
+]
+
+[[package]]
+name = "pallet-lz-router"
+version = "0.1.0"
+dependencies = [
+ "alloy-core",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-balances",
+ "pallet-session",
+ "pallet-xcm",
+ "parity-scale-codec",
+ "rand 0.8.5",
+ "scale-info",
+ "snowbridge-inbound-queue-primitives",
+ "snowbridge-outbound-queue-primitives",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "staging-xcm",
+ "staging-xcm-builder",
+ "staging-xcm-executor",
+ "tp-bridge",
  "tp-traits",
 ]
 
@@ -20110,6 +20155,7 @@ dependencies = [
 name = "tanssi-runtime-common"
 version = "0.1.0"
 dependencies = [
+ "alloy-core",
  "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
  "frame-support",
@@ -20127,6 +20173,7 @@ dependencies = [
  "pallet-external-validators",
  "pallet-foreign-asset-creator",
  "pallet-inactivity-tracking",
+ "pallet-lz-router",
  "pallet-migrations 0.1.0",
  "pallet-pooled-staking",
  "pallet-registrar",

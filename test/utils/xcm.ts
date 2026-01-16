@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { type DevModeContext, customDevRpcRequest, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 import type { XcmpMessageFormat } from "@polkadot/types/interfaces";
@@ -10,6 +8,8 @@ import type {
 } from "@polkadot/types/lookup";
 import { type BN, hexToU8a, stringToU8a, u8aToHex } from "@polkadot/util";
 import { xxhashAsU8a } from "@polkadot/util-crypto";
+import * as console from "node:console";
+import { findEventInBlockRange } from "../helpers/events";
 
 // Creates and returns the tx that overrides the paraHRMP existence
 // This needs to be inserted at every block in which you are willing to test
@@ -170,6 +170,20 @@ export function sovereignAccountOfSiblingForAddress20(context: DevModeContext, p
             ...new TextEncoder().encode("sibl"),
             ...context.polkadotJs().createType("u32", paraId).toU8a(),
             ...new Uint8Array(12),
+        ])
+    );
+}
+
+/**
+ * Get the sovereign account of a child parachain on the relay chain.
+ * Uses "para" prefix as defined in polkadot-sdk/polkadot/parachain/src/primitives.rs
+ */
+export function sovereignAccountOfChildForAddress32(context: DevModeContext, paraId: number): string {
+    return u8aToHex(
+        new Uint8Array([
+            ...new TextEncoder().encode("para"),
+            ...context.polkadotJs().createType("u32", paraId).toU8a(),
+            ...new Uint8Array(24),
         ])
     );
 }
@@ -448,7 +462,20 @@ export class XcmFragment {
     }
 
     // Add a `DepositAsset` instruction
-    deposit_asset(max_assets = 1n, network: "Any" | XcmV3JunctionNetworkId["type"] = "Any"): this {
+    deposit_asset(
+        max_assets = 1n,
+        network: "Any" | XcmV3JunctionNetworkId["type"] | null = "Any",
+        customBeneficiary?: MultiLocation
+    ): this {
+        if (customBeneficiary) {
+            this.instructions.push({
+                DepositAsset: {
+                    assets: { Wild: "All" },
+                    beneficiary: customBeneficiary,
+                },
+            });
+            return this;
+        }
         if (this.config.beneficiary === null) {
             console.warn("!Building a DepositAsset instruction without a configured beneficiary");
         } else {
@@ -629,6 +656,20 @@ export class XcmFragment {
     as_v3(): any {
         return {
             V3: replaceNetworkAny(this.instructions),
+        };
+    }
+
+    /// XCM V4 calls
+    as_v4(): any {
+        return {
+            V4: replaceNetworkAny(this.instructions),
+        };
+    }
+
+    /// XCM V5 calls
+    as_v5(): any {
+        return {
+            V5: replaceNetworkAny(this.instructions),
         };
     }
 
@@ -1103,4 +1144,103 @@ export const getParathreadRelayTankAddress = async (
         },
     });
     return address.asOk.toHuman();
+};
+
+/**
+ * Send a call as a child parachain to the relay chain via UMP (Upward Message Passing)
+ *
+ * This function sends an XCM message from a parachain UP to the relay chain.
+ * Use this when testing on a relay chain and simulating messages from child parachains.
+ *
+ * Note: The parachain's sovereign account must be funded before calling this function.
+ */
+export const sendCallAsChildPara = async (
+    call: any,
+    paraId: number,
+    context: DevModeContext,
+    fungible = 10_000_000_000_000_000_000n, // Default 10 tokens
+    allowFailure = false,
+    opts?: {
+        originKind?: string;
+    }
+) => {
+    // Import jumpToSession dynamically to avoid circular dependencies
+    const { jumpToSession } = await import("./block");
+
+    const encodedCall = call.method.toHex();
+
+    // Get the sovereign account using the runtime API (most reliable)
+    const sovereignAccount = sovereignAccountOfChildForAddress32(context, paraId);
+
+    // For relay chains, the native token location is { parents: 0, interior: Here }
+    const xcmMessage = new XcmFragment({
+        assets: [
+            {
+                multilocation: {
+                    parents: 0,
+                    interior: { Here: null },
+                },
+                fungible: fungible,
+            },
+        ],
+        weight_limit: {
+            refTime: 40_000_000_000n,
+            proofSize: 150_713n,
+        },
+        beneficiary: sovereignAccount,
+    })
+        .withdraw_asset()
+        .buy_execution()
+        .push_any({
+            Transact: {
+                originKind: opts?.originKind ?? "Xcm",
+                requireWeightAtMost: {
+                    refTime: 20_089_165_000n,
+                    proofSize: 80_000n,
+                },
+                call: {
+                    encoded: encodedCall,
+                },
+            },
+        })
+        .refund_surplus()
+        .deposit_asset_v3()
+        .as_v3();
+
+    // Enable para inherent to process XCM message
+    await customDevRpcRequest("mock_enableParaInherentCandidate", []);
+
+    // Send UMP message from the parachain to the relay chain
+    await injectUmpMessageAndSeal(context, {
+        type: "XcmVersionedXcm",
+        payload: xcmMessage,
+    } as RawXcmMessage);
+
+    // Record the starting block number before jumpToSession
+    const startBlockNumber = (await context.polkadotJs().query.system.number()).toNumber();
+
+    // Wait for message to be processed
+    await jumpToSession(context, 3);
+
+    const blockRes = await context.createBlock();
+
+    if (!allowFailure) {
+        const api = context.polkadotJs();
+        const endBlockNumber = (await api.query.system.number()).toNumber();
+
+        // Search through all blocks from start+1 to end to find the messageQueue.Processed event
+        const processedEventResult = await findEventInBlockRange(
+            api,
+            startBlockNumber + 1,
+            endBlockNumber,
+            (record) => record.event.section === "messageQueue" && record.event.method === "Processed"
+        );
+
+        expect(processedEventResult, "messageQueue.Processed event should exist").to.exist;
+        // Check that the message was processed successfully
+        expect(processedEventResult.event.event.data[3].toJSON(), "XCM message should be processed successfully").to.be
+            .true;
+    }
+
+    return { blockRes };
 };

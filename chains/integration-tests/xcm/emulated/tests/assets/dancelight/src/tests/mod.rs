@@ -23,6 +23,7 @@ mod foreign_eth_token_to_container_chain_transfer;
 mod native_container_chain_token_to_eth_transfer;
 mod native_eth_token_to_container_chain_transfer;
 mod reserver_transfers_polkadot_xcm;
+mod unpaid_execution_barrier;
 mod xcm_message_exporter;
 
 pub fn ethereum_chain_id<N: Get<NetworkId>>() -> u64 {

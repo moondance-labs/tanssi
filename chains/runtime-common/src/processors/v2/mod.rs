@@ -17,9 +17,11 @@
 extern crate alloc;
 
 mod fallback_message_processor;
+pub mod layerzero_message_processor;
 mod raw_message_processor;
 mod symbiotic_message_processor;
 
+pub use layerzero_message_processor::LayerZeroMessageProcessor;
 pub use raw_message_processor::RawMessageProcessor;
 pub use symbiotic_message_processor::SymbioticMessageProcessor;
 
@@ -109,6 +111,7 @@ impl Into<MessageProcessorError> for MessageExtractionError {
 pub enum RawPayload {
     Xcm(Vec<u8>),
     Symbiotic(Vec<u8>),
+    LayerZero(Vec<u8>),
 }
 
 #[derive(Debug, Clone)]

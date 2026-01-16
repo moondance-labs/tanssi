@@ -142,6 +142,7 @@ pallet-data-preservers = { workspace = true }
 pallet-data-preservers-runtime-api = { workspace = true }
 pallet-inactivity-tracking = { workspace = true }
 pallet-inflation-rewards = { workspace = true }
+pallet-lz-router = { workspace = true }
 pallet-outbound-message-commitment-recorder = { workspace = true }
 pallet-pooled-staking = { workspace = true }
 pallet-registrar = { workspace = true }
@@ -264,6 +265,7 @@ std = [
 	"pallet-inflation-rewards/std",
 	"pallet-initializer/std",
 	"pallet-invulnerables/std",
+	"pallet-lz-router/std",
 	"pallet-maintenance-mode/std",
 	"pallet-message-queue/std",
 	"pallet-migrations/std",
@@ -396,6 +398,7 @@ runtime-benchmarks = [
 	"pallet-inactivity-tracking/runtime-benchmarks",
 	"pallet-inflation-rewards/runtime-benchmarks",
 	"pallet-invulnerables/runtime-benchmarks",
+	"pallet-lz-router/runtime-benchmarks",
 	"pallet-message-queue/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
 	"pallet-mmr/runtime-benchmarks",
@@ -487,6 +490,7 @@ try-runtime = [
 	"pallet-inflation-rewards/try-runtime",
 	"pallet-initializer/try-runtime",
 	"pallet-invulnerables/try-runtime",
+	"pallet-lz-router/try-runtime",
 	"pallet-maintenance-mode/try-runtime",
 	"pallet-message-queue/try-runtime",
 	"pallet-migrations/try-runtime",

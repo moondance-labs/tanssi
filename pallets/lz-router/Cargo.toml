@@ -1,0 +1,94 @@
+[package]
+name = "pallet-lz-router"
+authors = { workspace = true }
+description = "A pallet to route LayerZero messages between container chains and external LayerZero-connected chains."
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.1.0"
+
+[package.metadata.docs.rs]
+targets = [ "x86_64-unknown-linux-gnu" ]
+
+[lints]
+workspace = true
+
+[dependencies]
+alloy-core = { workspace = true, features = [ "sol-types" ] }
+log = { workspace = true }
+parity-scale-codec = { workspace = true }
+rand = { workspace = true, optional = true }
+scale-info = { workspace = true, features = [ "derive" ] }
+
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+sp-core = { workspace = true }
+sp-io = { workspace = true }
+sp-runtime = { workspace = true }
+tp-bridge = { workspace = true }
+tp-traits = { workspace = true }
+
+snowbridge-inbound-queue-primitives = { workspace = true }
+snowbridge-outbound-queue-primitives = { workspace = true }
+xcm = { workspace = true }
+xcm-executor = { workspace = true }
+
+frame-benchmarking = { workspace = true }
+
+pallet-balances = { workspace = true, optional = true }
+pallet-session = { workspace = true, features = [ "historical" ] }
+pallet-xcm = { workspace = true }
+
+[dev-dependencies]
+sp-core = { workspace = true }
+sp-io = { workspace = true }
+xcm-builder = { workspace = true }
+
+[features]
+default = [ "std" ]
+std = [
+	"alloy-core/std",
+	"frame-benchmarking/std",
+	"frame-support/std",
+	"frame-system/std",
+	"log/std",
+	"pallet-balances/std",
+	"pallet-session/std",
+	"pallet-xcm/std",
+	"parity-scale-codec/std",
+	"rand?/std",
+	"scale-info/std",
+	"snowbridge-inbound-queue-primitives/std",
+	"snowbridge-outbound-queue-primitives/std",
+	"sp-core/std",
+	"sp-io/std",
+	"sp-runtime/std",
+	"tp-bridge/std",
+	"tp-traits/std",
+	"xcm-builder/std",
+	"xcm-executor/std",
+	"xcm/std",
+]
+runtime-benchmarks = [
+	"frame-benchmarking/runtime-benchmarks",
+	"frame-support/runtime-benchmarks",
+	"frame-system/runtime-benchmarks",
+	"pallet-balances/runtime-benchmarks",
+	"pallet-xcm/runtime-benchmarks",
+	"rand",
+	"snowbridge-inbound-queue-primitives/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks",
+	"tp-bridge/runtime-benchmarks",
+	"tp-traits/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+
+try-runtime = [
+	"frame-support/try-runtime",
+	"frame-system/try-runtime",
+	"pallet-balances?/try-runtime",
+	"pallet-session/try-runtime",
+	"pallet-xcm/try-runtime",
+	"sp-runtime/try-runtime",
+]
