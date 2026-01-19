@@ -108,7 +108,7 @@ export async function buildRawSpecGenesisStorage(
     // what seems to be a non-raw chain spec, but no way to convert it. Maybe using the omni-node?
     // specs/tanssi-relay.json
     /*
-    $BINARY_FOLDER/tanssi-relay build-spec --chain dancelight-local --raw > raw_spec.json
+    $BINARY_FOLDER/tanssi-relay export-chain-spec --chain dancelight-local --raw > raw_spec.json
      */
 
     // Spawn child process with stdout/stderr appropriately configured.
