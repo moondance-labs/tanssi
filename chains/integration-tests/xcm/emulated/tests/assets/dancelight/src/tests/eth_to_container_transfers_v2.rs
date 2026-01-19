@@ -2225,3 +2225,232 @@ fn check_container_native_to_simple_container_via_v2_works() {
         );
     });
 }
+
+#[test]
+fn check_container_native_to_frontier_container_via_v2_fails_if_user_tries_draining_eth_acc() {
+    sp_tracing::try_init_simple();
+
+    let token_receiver: AccountId20 = [5u8; 20].into();
+    let container_para_id: u32 = <FrontierTemplate as xcm_emulator::Parachain>::para_id().into();
+
+    let container_token_transfer_amount: u128 = 25_000_000_000_000; // Amount of container native token to transfer
+    let dest_fee_amount: u128 = 5_000_000_000_000; // Relay tokens for container execution fees
+
+    let mut receiver_native_balance_before = 0u128;
+
+    // Container native token location from relay perspective
+    let container_native_token_location_relay = Location::new(0, [Parachain(container_para_id), PalletInstance(<<FrontierTemplate as FrontierTemplateParaPallet>::Balances as PalletInfoAccess>::index() as u8)]);
+
+    // Get Ethereum network ID
+    let ethereum_network_id = FrontierTemplate::execute_with(|| {
+        container_chain_template_frontier_runtime::EthereumNetwork::get()
+    });
+
+    // Get Ethereum sovereign account on the container chain
+    let ethereum_sovereign_on_container = FrontierTemplate::execute_with(|| {
+        container_chain_template_frontier_runtime::xcm_config::LocationToAccountId::convert_location(
+            &Location::new(1, [GlobalConsensus(ethereum_network_id)])
+        ).unwrap()
+    });
+
+    // Setup on Dancelight
+    Dancelight::execute_with(|| {
+        let root_origin = <Dancelight as Chain>::RuntimeOrigin::root();
+
+        // Register Tanssi native token with EthereumSystemV2 (for fees)
+        let tanssi_location = Location::here();
+        assert_ok!(dancelight_runtime::EthereumSystemV2::register_token(
+            root_origin.clone(),
+            Box::new(tanssi_location.clone().into()),
+            Box::new(tanssi_location.clone().into()),
+            snowbridge_core::AssetMetadata {
+                name: "relay".as_bytes().to_vec().try_into().unwrap(),
+                symbol: "relay".as_bytes().to_vec().try_into().unwrap(),
+                decimals: 12,
+            },
+            1
+        ));
+
+        // Register container native token with EthereumSystemV2
+        assert_ok!(dancelight_runtime::EthereumSystemV2::register_token(
+            root_origin.clone(),
+            Box::new(container_native_token_location_relay.clone().into()),
+            Box::new(container_native_token_location_relay.clone().into()),
+            snowbridge_core::AssetMetadata {
+                name: "container".as_bytes().to_vec().try_into().unwrap(),
+                symbol: "CTR".as_bytes().to_vec().try_into().unwrap(),
+                decimals: 18,
+            },
+            2
+        ));
+
+        // Add funds to Ethereum sovereign account for relay token fees
+        assert_ok!(
+            <<Dancelight as DancelightRelayPallet>::Balances as Mutate<_>>::mint_into(
+                &EthereumSovereignAccount::get(),
+                100_000_000_000_000_000_000u128
+            )
+        );
+    });
+
+    // Setup on FrontierTemplate container
+    FrontierTemplate::execute_with(|| {
+        let root_origin = <FrontierTemplate as Chain>::RuntimeOrigin::root();
+        let alice_account = FrontierTemplateSender::get();
+
+        // Register relay token (Tanssi) as foreign asset for fees
+        assert_ok!(
+            <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
+                root_origin.clone(),
+                RELAY_TOKEN_ASSET_LOCATION,
+                RELAY_NATIVE_TOKEN_ASSET_ID,
+                alice_account.clone().into(),
+                true,
+                1
+            )
+        );
+
+        // Create asset rate for relay token
+        assert_ok!(
+            <FrontierTemplate as FrontierTemplateParaPallet>::AssetRate::create(
+                root_origin.clone(),
+                Box::new(RELAY_NATIVE_TOKEN_ASSET_ID),
+                FixedU128::from_u32(500_000_000)
+            )
+        );
+
+        // Fund Ethereum sovereign account ON THE CONTAINER with native balance
+        // This simulates the container native tokens that were bridged to Ethereum and are now being sent back
+        assert_ok!(
+            <<FrontierTemplate as FrontierTemplateParaPallet>::Balances as Mutate<_>>::mint_into(
+                &ethereum_sovereign_on_container,
+                container_token_transfer_amount * 2
+            )
+        );
+
+        receiver_native_balance_before =
+            <FrontierTemplate as FrontierTemplateParaPallet>::Balances::free_balance(
+                &token_receiver,
+            );
+    });
+
+    // Send V2 inbound message
+    Dancelight::execute_with(|| {
+        // Get Tanssi token ID for fee asset
+        let tanssi_token_id: [u8; 32] =
+            snowbridge_pallet_system::NativeToForeignId::<dancelight_runtime::Runtime>::get(
+                &Location::here()
+                    .reanchored(&EthereumLocation::get(), &UniversalLocation::get())
+                    .expect("unable to reanchor token"),
+            )
+            .unwrap()
+            .into();
+
+        // Total amount to withdraw from Ethereum sovereign for fees (relay + container execution)
+        let relay_fee_amount = 10_000_000_000_000u128;
+
+        // Build Tanssi fee asset for V2 message (kind: 1 = foreign token)
+        let tanssi_fee_asset = IGatewayV2::AsForeignTokenERC20 {
+            token_id: FixedBytes(tanssi_token_id),
+            value: relay_fee_amount,
+        };
+
+        // Get container native token ID
+        let container_token_id: [u8; 32] =
+            snowbridge_pallet_system::NativeToForeignId::<dancelight_runtime::Runtime>::get(
+                &container_native_token_location_relay
+                    .clone()
+                    .reanchored(&EthereumLocation::get(), &UniversalLocation::get())
+                    .expect("unable to reanchor token"),
+            )
+            .unwrap()
+            .into();
+
+        // Build container native token asset for V2 message (kind: 1 = foreign token)
+        let container_asset_v2 = IGatewayV2::AsForeignTokenERC20 {
+            token_id: FixedBytes(container_token_id),
+            value: container_token_transfer_amount,
+        };
+
+        // Fee asset for execution on container (relay token)
+        let fee_asset =
+            AssetId(Location::here()).into_asset(Fungibility::Fungible(dest_fee_amount));
+
+        // Container native token reanchored to container's perspective (becomes Location::here())
+        let container_native_reanchored = Location::new(0, PalletInstance(<<FrontierTemplate as FrontierTemplateParaPallet>::Balances as PalletInfoAccess>::index() as u8));
+        let container_asset: Asset = (
+            container_native_reanchored.clone(),
+            // User tries to drain the Ethereum sovereign account entirely
+            container_token_transfer_amount * 2, 
+        )
+            .into();
+
+        // Build the XCM following native_container_tokens_processor pattern
+        let custom_xcm: Vec<Instruction<()>> = vec![InitiateTransfer {
+            destination: Location::new(0, Parachain(container_para_id)),
+            remote_fees: Some(AssetTransferFilter::ReserveDeposit(
+                fee_asset.clone().into(),
+            )),
+            preserve_origin: true,
+            assets: sp_runtime::BoundedVec::truncate_from(vec![]),
+            remote_xcm: Xcm(vec![
+                WithdrawAsset(vec![container_asset.clone()].into()),
+                DepositAsset {
+                    assets: Definite(container_asset.into()),
+                    beneficiary: Location::new(
+                        0,
+                        AccountKey20 {
+                            network: None,
+                            key: token_receiver.into(),
+                        },
+                    ),
+                },
+            ]),
+        }];
+
+        let versioned_destination_xcm: VersionedXcm<()> = VersionedXcm::V5(Xcm(custom_xcm));
+        let destination_xcm_bytes = RawPayload::Xcm(versioned_destination_xcm.encode());
+
+        // V2 message with relay fee token (Tanssi) and container native token in assets
+        let event = IGatewayV2::OutboundMessageAccepted {
+            nonce: 1u64,
+            payload: IGatewayV2::Payload {
+                // User tries to drain the Ethereum sovereign account on the container chain
+                origin: Address::from_slice(&[5u8; 20]),
+                assets: vec![
+                    // Relay fee token (Tanssi) for InitiateTransfer fees
+                    IGatewayV2::EthereumAsset {
+                        kind: 1,
+                        data: tanssi_fee_asset.abi_encode().into(),
+                    },
+                    // Container native token for transfer
+                    IGatewayV2::EthereumAsset {
+                        kind: 1,
+                        data: container_asset_v2.abi_encode().into(),
+                    },
+                ],
+                xcm: IGatewayV2::Xcm {
+                    kind: 0,
+                    data: destination_xcm_bytes.encode().into(),
+                },
+                claimer: vec![].into(),
+                value: 0,
+                executionFee: 0,
+                relayerFee: 0,
+            },
+        };
+
+        assert_ok!(send_inbound_message_v2(event));
+    });
+
+    // Check container native token is not received in container
+    FrontierTemplate::execute_with(|| {
+        let receiver_native_balance_after =
+            <FrontierTemplate as FrontierTemplateParaPallet>::Balances::free_balance(
+                &token_receiver,
+            );
+
+        assert_eq!(receiver_native_balance_after, receiver_native_balance_before, "Receiver should not have received container native tokens");
+        assert_eq!(receiver_native_balance_after, 0, "Receiver should not have received container native tokens");
+    });
+}
