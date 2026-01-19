@@ -960,7 +960,7 @@
             "timeout": 600000,
             "testFileDir": ["suites/zombie_tanssi_test_build_spec"],
             "runScripts": [
-                "test-build-spec.sh"
+                "build-spec-dancelight.sh", "test-build-spec.sh"
             ],
             "foundation": {
                 "type": "zombie",
