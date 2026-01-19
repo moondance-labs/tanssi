@@ -20163,7 +20163,6 @@ dependencies = [
 name = "tanssi-utils"
 version = "0.1.0"
 dependencies = [
- "alloy-core",
  "clap",
  "ethabi-decode",
  "hex",
@@ -20179,7 +20178,6 @@ dependencies = [
  "sp-runtime",
  "staging-xcm",
  "staging-xcm-executor",
- "tanssi-runtime-common",
 ]
 
 [[package]]
