@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::{RuntimeCall, UncheckedExtrinsic};
+use crate::{RuntimeCall, UncheckedExtrinsic, Utility};
 use frame_support::dispatch::{CallableCallFor, GetDispatchInfo};
 use sp_runtime::traits::Dispatchable;
 use frame_support::dispatch::DispatchErrorWithPostInfo;
@@ -893,7 +893,7 @@ fn test_inbound_queue_transfer_erc20_as_msg_sender_works() {
         };
 
         let foreign_asset_balance_before = ForeignAssets::balance(asset_id, AccountId::from(beneficiary.clone()));
-        assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
+        assert!(matches!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
                 topics: event
@@ -904,7 +904,7 @@ fn test_inbound_queue_transfer_erc20_as_msg_sender_works() {
                 data: event.encode_data(),
             },
             proof: dummy_proof.clone(),
-        })), Ok(()));
+        })), Ok(PostDispatchInfo { actual_weight: Some(Weight { .. }), pays_fee: Pays::Yes })));
         let foreign_asset_balance_after = ForeignAssets::balance(asset_id, AccountId::from(beneficiary.clone()));
         assert_eq!(foreign_asset_balance_after - foreign_asset_balance_before, token_value);
 
@@ -1014,6 +1014,7 @@ fn test_inbound_queue_xcm_transact_system_remark_as_msg_sender_works() {
         let foreign_asset_balance_before = ForeignAssets::balance(asset_id, AccountId::from(beneficiary.clone()));
         // relayer can be anything
         let relayer = AccountId::new([0xaa; 32]);
+        let relayer_balance_before = System::account(relayer.clone()).data.free;
         let call = RuntimeCall::EthereumInboundQueueV2(CallableCallFor::<EthereumInboundQueueV2, Runtime>::submit { event: Box::new(EventProof {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
@@ -1029,7 +1030,7 @@ fn test_inbound_queue_xcm_transact_system_remark_as_msg_sender_works() {
         let info = call.get_dispatch_info();
         assert!(info.call_weight.ref_time() > 0, "weight is zero");
         let post = call.dispatch(
-            <Runtime as frame_system::Config>::RuntimeOrigin::signed(relayer)
+            <Runtime as frame_system::Config>::RuntimeOrigin::signed(relayer.clone())
         );
         assert_ok!(post);
         let used = post.unwrap().actual_weight.unwrap_or(info.call_weight);
@@ -1038,6 +1039,11 @@ fn test_inbound_queue_xcm_transact_system_remark_as_msg_sender_works() {
         let events = frame_system::Pallet::<Runtime>::events();
 
         println!("{:?}", events);
+
+        let relayer_balance_after = System::account(relayer.clone()).data.free;
+
+        println!("relayer_balance_before: {}", relayer_balance_before);
+        println!("relayer_balance_after:  {}", relayer_balance_after);
 
         let mut found_message = false;
         let mut found_remark = false;
