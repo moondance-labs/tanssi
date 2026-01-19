@@ -41,7 +41,7 @@ sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-tracing = { workspace = true, features = [ "std", "test-utils" ] }
 tanssi-emulated-integration-tests-common = { workspace = true }
-tanssi-runtime-common = { workspace = true, features = [ "std", "relay" ] }
+tanssi-runtime-common = { workspace = true, features = [ "relay", "std" ] }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }
 xcm-executor = { workspace = true }
