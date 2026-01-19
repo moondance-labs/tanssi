@@ -339,20 +339,25 @@ where
 
 pub fn execute_xcm<T, XcmProcessor, XcmWeigher>(
     origin: impl Into<Location>,
+    max_xcm_weight: Weight,
     mut xcm: Xcm<<T as pallet_xcm::Config>::RuntimeCall>,
-) -> Result<(), InstructionError>
+) -> Result<Outcome, InstructionError>
 where
     T: pallet_xcm::Config,
     XcmProcessor: ExecuteXcm<<T as pallet_xcm::Config>::RuntimeCall>,
     XcmWeigher: WeightBounds<<T as pallet_xcm::Config>::RuntimeCall>,
 {
-    // Using Weight::MAX here because we don't have a limit, same as they do in pallet-xcm
-    let weight = XcmWeigher::weight(&mut xcm, Weight::MAX)?;
+    let weight = XcmWeigher::weight(&mut xcm, max_xcm_weight)?;
 
     let mut message_id = xcm.using_encoded(blake2_256);
 
-    XcmProcessor::prepare_and_execute(origin, xcm, &mut message_id, weight, weight)
-        .ensure_complete()
+    Ok(XcmProcessor::prepare_and_execute(
+        origin,
+        xcm,
+        &mut message_id,
+        weight,
+        weight,
+    ))
 }
 
 fn calculate_message_hash(message: &Message) -> [u8; 32] {
@@ -379,6 +384,8 @@ pub trait MessageProcessorWithFallback<AccountId> {
         sender: AccountId,
         extracted_message: Self::ExtractedMessage,
     ) -> Result<Option<Weight>, MessageProcessorError>;
+
+    fn worst_case_message_processor_weight() -> Weight;
 
     fn calculate_message_id(message: &Message) -> [u8; 32] {
         calculate_message_hash(message)
