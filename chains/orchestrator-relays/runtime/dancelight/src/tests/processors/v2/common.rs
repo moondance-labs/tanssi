@@ -15,11 +15,15 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use crate::tests::common::ExtBuilder;
-use crate::{xcm_config, Runtime};
+use crate::{xcm_config, Runtime, RuntimeCall, RuntimeEvent, System};
+use parity_scale_codec::Encode;
+use sp_core::Hasher;
 use tanssi_runtime_common::processors::v2::execute_xcm;
 use xcm::latest::Error::WeightLimitReached;
-use xcm::latest::Instruction::{RefundSurplus, WithdrawAsset};
-use xcm::latest::{Asset, AssetId, Fungibility, InstructionError, Location, Outcome, Weight};
+use xcm::latest::Instruction::{RefundSurplus, Transact, WithdrawAsset};
+use xcm::latest::{
+    Asset, AssetId, Fungibility, InstructionError, Junction, Location, OriginKind, Outcome, Weight,
+};
 
 #[test]
 fn test_execute_xcm() {
@@ -30,7 +34,10 @@ fn test_execute_xcm() {
         // detail of xcm executor, and we can't assume anything since we work with trait) before we pass
         // xcm to executor that logic will never be triggerred.
 
+        type Hashing = <Runtime as frame_system::Config>::Hashing;
+
         // Scenario 1: execute xcm that uses more weight than this limit
+        let remark = vec![1];
         assert!(matches!(
             execute_xcm::<
                 Runtime,
@@ -39,7 +46,16 @@ fn test_execute_xcm() {
             >(
                 Location::here(),
                 Weight::from_all(200),
-                vec![RefundSurplus].into(),
+                vec![Transact {
+                    origin_kind: OriginKind::Native,
+                    fallback_max_weight: None,
+                    call: RuntimeCall::System(frame_system::Call::remark_with_event {
+                        remark: remark.clone(),
+                    })
+                    .encode()
+                    .into(),
+                }]
+                .into(),
             ),
             Err(InstructionError {
                 index: 0,
@@ -47,42 +63,112 @@ fn test_execute_xcm() {
             })
         ));
 
+        assert_eq!(
+            System::events()
+                .iter()
+                .filter(|r| {
+                    matches!(
+                        r.event,
+                        RuntimeEvent::System(frame_system::Event::Remarked { hash, .. },) if hash == Hashing::hash(&remark)
+                    )
+                })
+                .count(),
+            0
+        );
+
         // Scenario 2: execute xcm that is valid
+        let remark = vec![2];
         assert!(matches!(
             execute_xcm::<
                 Runtime,
                 xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
                 <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
             >(
-                Location::here(),
-                Weight::from_all(20000000),
-                vec![RefundSurplus].into(),
+                Location::new(
+                    0,
+                    [Junction::AccountId32 {
+                        network: None,
+                        id: [0; 32]
+                    }]
+                ),
+                Weight::from_all(400000000),
+                vec![Transact {
+                    origin_kind: OriginKind::Native,
+                    fallback_max_weight: None,
+                    call: RuntimeCall::System(frame_system::Call::remark_with_event {
+                        remark: remark.clone()
+                    })
+                    .encode()
+                    .into()
+                }]
+                .into(),
             ),
             Ok(Outcome::Complete { .. })
         ));
 
+        assert_eq!(
+            System::events()
+                .iter()
+                .filter(|r| {
+                    matches!(
+                        r.event,
+                        RuntimeEvent::System(frame_system::Event::Remarked {
+                            hash,
+                            ..
+                        },) if hash == Hashing::hash(&remark)
+                    )
+                })
+                .count(),
+            1
+        );
+
         // Scenario 3: Xcm starts executing but there is an error at nth instruction
+        let remark_before_failure = vec![3];
+        let remark_after_failure = vec![4];
         let response = execute_xcm::<
             Runtime,
             xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
             <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
         >(
-            Location::here(),
+            Location::new(
+                0,
+                [Junction::AccountId32 {
+                    network: None,
+                    id: [0; 32]
+                }]
+            ),
             Weight::from_all(4616410000),
             vec![
                 RefundSurplus,
-                RefundSurplus,
+                Transact {
+                    origin_kind: OriginKind::Native,
+                    fallback_max_weight: None,
+                    call: RuntimeCall::System(frame_system::Call::remark_with_event {
+                        remark: remark_before_failure.clone()
+                    })
+                        .encode()
+                        .into()
+                },
                 WithdrawAsset(
                     vec![Asset {
                         id: AssetId(Location::here()),
                         fun: Fungibility::Fungible(1111),
                     }]
-                    .into(),
+                        .into(),
                 ),
-                RefundSurplus,
+                Transact {
+                    origin_kind: OriginKind::Native,
+                    fallback_max_weight: None,
+                    call: RuntimeCall::System(frame_system::Call::remark_with_event {
+                        remark: remark_after_failure.clone()
+                    })
+                        .encode()
+                        .into()
+                },
             ]
-            .into(),
+                .into(),
         );
+
         assert!(matches!(
             response,
             Ok(Outcome::Incomplete {
@@ -90,5 +176,38 @@ fn test_execute_xcm() {
                 error: InstructionError { index: 2, .. }
             })
         ));
+
+        // Side effect before failure instruction will be preserved
+        assert_eq!(
+            System::events()
+                .iter()
+                .filter(|r| {
+                    matches!(
+                        r.event,
+                        RuntimeEvent::System(frame_system::Event::Remarked {
+                            hash,
+                            ..
+                        },) if hash == Hashing::hash(&remark_before_failure)
+                    )
+                })
+                .count(),
+            1
+        );
+
+        assert_eq!(
+            System::events()
+                .iter()
+                .filter(|r| {
+                    matches!(
+                        r.event,
+                        RuntimeEvent::System(frame_system::Event::Remarked {
+                            hash,
+                            ..
+                        },) if hash == Hashing::hash(&remark_after_failure)
+                    )
+                })
+                .count(),
+            0
+        );
     });
 }

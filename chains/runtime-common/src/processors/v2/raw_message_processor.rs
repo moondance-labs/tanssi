@@ -276,6 +276,9 @@ where
                     );
                     Ok(Some(used))
                 }
+                // This branch will never be executed since current xcm executor implementation only returns
+                // this Outcome when the weight limit is less than required which is already checked earlier
+                // in execute_xcm.
                 Outcome::Error(instruction_error) => {
                     log::error!(
                         "Error while starting xcm execution in raw message processor: {:?}",
