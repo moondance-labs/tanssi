@@ -2381,7 +2381,7 @@ fn check_container_native_to_frontier_container_via_v2_fails_if_user_tries_drain
         let container_asset: Asset = (
             container_native_reanchored.clone(),
             // User tries to drain the Ethereum sovereign account entirely
-            container_token_transfer_amount * 2, 
+            container_token_transfer_amount * 2,
         )
             .into();
 
@@ -2450,7 +2450,13 @@ fn check_container_native_to_frontier_container_via_v2_fails_if_user_tries_drain
                 &token_receiver,
             );
 
-        assert_eq!(receiver_native_balance_after, receiver_native_balance_before, "Receiver should not have received container native tokens");
-        assert_eq!(receiver_native_balance_after, 0, "Receiver should not have received container native tokens");
+        assert_eq!(
+            receiver_native_balance_after, receiver_native_balance_before,
+            "Receiver should not have received container native tokens"
+        );
+        assert_eq!(
+            receiver_native_balance_after, 0,
+            "Receiver should not have received container native tokens"
+        );
     });
 }
