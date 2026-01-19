@@ -56,12 +56,12 @@ use {
     tp_xcm_commons::{EthereumAssetReserveForTanssi, EthereumAssetReserveFromParent},
     xcm::latest::prelude::*,
     xcm_builder::{
-        AccountKey20Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
-        AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
-        IsConcrete, MintLocation, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
-        SiblingParachainConvertsVia, SignedAccountKey20AsNative, SovereignSignedViaLocation,
-        TakeWeightCredit, UsingComponents, WeightInfoBounds, WithComputedOrigin, WithUniqueTopic,
-        XcmFeeManagerFromComponents,
+        AccountKey20Aliases, AllowExplicitUnpaidExecutionFrom, AllowKnownQueryResponses,
+        AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, ConvertedConcreteId,
+        EnsureXcmOrigin, FungibleAdapter, IsConcrete, MintLocation, ParentIsPreset,
+        RelayChainAsNative, SiblingParachainAsNative, SiblingParachainConvertsVia,
+        SignedAccountKey20AsNative, SovereignSignedViaLocation, TakeWeightCredit, UsingComponents,
+        WeightInfoBounds, WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
     },
     xcm_executor::XcmExecutor,
     xcm_primitives::AccountIdAssetIdConversion,
@@ -104,6 +104,9 @@ parameter_types! {
 
     // TODO: Revisit later
     pub const ContainerToEthTransferFee: u128 = 2_700_000_000_000u128;
+
+    /// Parent (relay/orchestrator chain) location for unpaid execution
+    pub ParentLocation: Location = Location::parent();
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -116,6 +119,8 @@ pub type XcmBarrier = (
     TakeWeightCredit,
     // Expected responses are OK.
     AllowKnownQueryResponses<PolkadotXcm>,
+    // Allow unpaid execution from the parent chain (for LayerZero forwarded messages)
+    AllowExplicitUnpaidExecutionFrom<Equals<ParentLocation>>,
     WithComputedOrigin<
         (
             // If the message is one that immediately attemps to pay for execution, then allow it.

@@ -32,6 +32,7 @@ use {
     xcm::latest::{prelude::*, Junctions::*, Location},
 };
 
+mod layerzero_message_processor;
 mod raw_message_processor;
 mod symbiotic_message_processor;
 

@@ -484,6 +484,13 @@ declare module "@polkadot/api-base/types/consts" {
              **/
             [key: string]: Codec;
         };
+        lzRouter: {
+            maxWhitelistedSenders: u32 & AugmentedConst<ApiType>;
+            /**
+             * Generic const
+             **/
+            [key: string]: Codec;
+        };
         messageQueue: {
             /**
              * The size of the page; this implies the maximum message size which can be sent.

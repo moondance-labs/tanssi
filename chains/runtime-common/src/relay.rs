@@ -50,7 +50,9 @@ pub mod v1 {
 
 #[cfg(feature = "relay")]
 pub mod v2 {
-    pub use crate::processors::v2::{RawMessageProcessor, SymbioticMessageProcessor};
+    pub use crate::processors::v2::{
+        LayerZeroMessageProcessor, RawMessageProcessor, SymbioticMessageProcessor,
+    };
 }
 
 /// Rewards the relayer that processed a native token transfer message

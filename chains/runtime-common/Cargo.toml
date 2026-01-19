@@ -13,6 +13,7 @@ targets = [ "x86_64-unknown-linux-gnu" ]
 workspace = true
 
 [dependencies]
+alloy-core = { workspace = true, features = [ "sol-types" ] }
 hex-literal = { workspace = true }
 log = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive" ] }
@@ -65,6 +66,7 @@ pallet-babe = { workspace = true, optional = true }
 pallet-ethereum-token-transfers = { workspace = true, optional = true }
 pallet-external-validator-slashes = { workspace = true, optional = true }
 pallet-external-validators = { workspace = true, optional = true }
+pallet-lz-router = { workspace = true, optional = true }
 snowbridge-pallet-inbound-queue = { workspace = true, optional = true }
 thiserror = { workspace = true, optional = true }
 tp-bridge = { workspace = true, optional = true }
@@ -75,6 +77,7 @@ default = [
 	"std",
 ]
 std = [
+	"alloy-core/std",
 	"cumulus-pallet-xcmp-queue/std",
 	"cumulus-primitives-core/std",
 	"frame-support/std",
@@ -91,6 +94,7 @@ std = [
 	"pallet-external-validators?/std",
 	"pallet-foreign-asset-creator/std",
 	"pallet-inactivity-tracking/std",
+	"pallet-lz-router?/std",
 	"pallet-migrations/std",
 	"pallet-pooled-staking/std",
 	"pallet-registrar/std",
@@ -122,6 +126,7 @@ relay = [
 	"pallet-ethereum-token-transfers",
 	"pallet-external-validator-slashes",
 	"pallet-external-validators",
+	"pallet-lz-router",
 	"snowbridge-pallet-inbound-queue",
 	"thiserror",
 	"tp-bridge",
@@ -142,6 +147,7 @@ runtime-benchmarks = [
 	"pallet-external-validators?/runtime-benchmarks",
 	"pallet-foreign-asset-creator/runtime-benchmarks",
 	"pallet-inactivity-tracking/runtime-benchmarks",
+	"pallet-lz-router?/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
 	"pallet-pooled-staking/runtime-benchmarks",
 	"pallet-registrar/runtime-benchmarks",
@@ -179,6 +185,7 @@ try-runtime = [
 	"pallet-external-validators?/try-runtime",
 	"pallet-foreign-asset-creator/try-runtime",
 	"pallet-inactivity-tracking/try-runtime",
+	"pallet-lz-router?/try-runtime",
 	"pallet-migrations/try-runtime",
 	"pallet-pooled-staking/try-runtime",
 	"pallet-registrar/try-runtime",

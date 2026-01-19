@@ -21,6 +21,7 @@ dancelight-runtime-constants = { workspace = true, features = [ "std" ] }
 dancelight-system-emulated-network  = { workspace = true }
 fp-account = { workspace = true, features = [ "serde" ] }
 frame-support = { workspace = true, features = [ "tuples-96" ] }
+frame-system = { workspace = true }
 frontier-template-emulated-chain = { workspace = true }
 hex-literal = { workspace = true }
 pallet-message-queue = { workspace = true }
