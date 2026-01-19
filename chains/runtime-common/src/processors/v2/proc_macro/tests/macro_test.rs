@@ -16,7 +16,7 @@
 
 use snowbridge_inbound_queue_primitives::v2::*;
 use sp_runtime::AccountId32;
-use sp_runtime::DispatchError;
+use sp_runtime::{DispatchError, Weight};
 use tanssi_runtime_common::processors::v2::*;
 use v2_processor_proc_macro::MessageProcessor as MessageProcessorDerive;
 
@@ -43,12 +43,15 @@ use v2_processor_proc_macro::MessageProcessor as MessageProcessorDerive;
 struct TestFallback1;
 
 impl<AccountId> FallbackMessageProcessor<AccountId> for TestFallback1 {
-    fn handle_message(_who: AccountId, message: Message) -> Result<(), MessageProcessorError> {
+    fn handle_message(
+        _who: AccountId,
+        message: Message,
+    ) -> Result<Option<Weight>, MessageProcessorError> {
         match message.execution_fee {
             1 => Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
                 "TestFallback1ProcessorError",
             ))),
-            _ => Ok(()),
+            _ => Ok(None),
         }
     }
 }
@@ -87,13 +90,17 @@ where
     fn process_extracted_message(
         _sender: AccountId,
         extracted_message: Self::ExtractedMessage,
-    ) -> Result<(), MessageProcessorError> {
+    ) -> Result<Option<Weight>, MessageProcessorError> {
         match extracted_message {
-            2 => Ok(()),
+            2 => Ok(None),
             _ => Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
                 "TestImpl1MainProcessorError",
             ))),
         }
+    }
+
+    fn worst_case_message_processor_weight() -> Weight {
+        Weight::zero()
     }
 
     fn calculate_message_id(message: &Message) -> [u8; 32] {
@@ -112,12 +119,15 @@ where
 struct TestFallback2;
 
 impl<AccountId> FallbackMessageProcessor<AccountId> for TestFallback2 {
-    fn handle_message(_who: AccountId, message: Message) -> Result<(), MessageProcessorError> {
+    fn handle_message(
+        _who: AccountId,
+        message: Message,
+    ) -> Result<Option<Weight>, MessageProcessorError> {
         match message.execution_fee {
             2 => Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
                 "TestFallback1ProcessorError",
             ))),
-            _ => Ok(()),
+            _ => Ok(None),
         }
     }
 }
@@ -156,13 +166,17 @@ where
     fn process_extracted_message(
         _sender: AccountId,
         extracted_message: Self::ExtractedMessage,
-    ) -> Result<(), MessageProcessorError> {
+    ) -> Result<Option<Weight>, MessageProcessorError> {
         match extracted_message {
-            4 => Ok(()),
+            4 => Ok(None),
             _ => Err(MessageProcessorError::ProcessMessage(DispatchError::Other(
                 "TestImpl2MainProcessorError",
             ))),
         }
+    }
+
+    fn worst_case_message_processor_weight() -> Weight {
+        Weight::zero()
     }
 
     fn calculate_message_id(message: &Message) -> [u8; 32] {
@@ -280,7 +294,7 @@ fn test_macro_process_message_semantics() {
                 "Other error while processing v2 message",
             ))),
         ),
-        (1, 0, Ok([1u8; 32])),
+        (1, 0, Ok(([1u8; 32], None))),
         (
             1,
             1,
@@ -288,10 +302,10 @@ fn test_macro_process_message_semantics() {
                 "TestFallback1ProcessorError",
             ))),
         ),
-        (1, 2, Ok([3u8; 32])),
-        (2, 0, Ok([2u8; 32])),
-        (2, 1, Ok([2u8; 32])),
-        (2, 2, Ok([2u8; 32])),
+        (1, 2, Ok(([3u8; 32], None))),
+        (2, 0, Ok(([2u8; 32], None))),
+        (2, 1, Ok(([2u8; 32], None))),
+        (2, 2, Ok(([2u8; 32], None))),
         (
             3,
             0,
@@ -443,8 +457,8 @@ fn test_macro_process_message_semantics() {
                 "Unsupported v2 message",
             ))),
         ),
-        (3, 0, Ok([4u8; 32])),
-        (3, 1, Ok([4u8; 32])),
+        (3, 0, Ok(([4u8; 32], None))),
+        (3, 1, Ok(([4u8; 32], None))),
         (
             3,
             2,
@@ -452,9 +466,9 @@ fn test_macro_process_message_semantics() {
                 "TestFallback1ProcessorError",
             ))),
         ),
-        (4, 0, Ok([4u8; 32])),
-        (4, 1, Ok([4u8; 32])),
-        (4, 2, Ok([4u8; 32])),
+        (4, 0, Ok(([4u8; 32], None))),
+        (4, 1, Ok(([4u8; 32], None))),
+        (4, 2, Ok(([4u8; 32], None))),
         (
             5,
             0,

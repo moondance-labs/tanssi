@@ -16,11 +16,15 @@
 
 use {
     clap::Parser,
-    node_common::{cli::BuildSpecCmd, service::node_builder::Sealing},
+    node_common::{
+        cli::{BuildSpecCmd, ExportChainSpecCmd},
+        service::node_builder::Sealing,
+    },
     tc_service_container_chain_data_preserver::DataPreserverCmd,
 };
 
-pub type BaseSubcommand = node_common::cli::Subcommand<BuildSpecCmdSimple>;
+pub type BaseSubcommand =
+    node_common::cli::Subcommand<BuildSpecCmdSimple, ExportChainSpecCmdSimple>;
 
 /// Custom subcommand enum with `rpc-provider`
 #[derive(Debug, clap::Subcommand)]
@@ -94,7 +98,7 @@ pub struct Cli {
 }
 
 #[derive(Debug, Clone, clap::Args)]
-pub struct BuildSpecCmdExtraFields {
+pub struct ExtraFields {
     /// List of bootnodes to add to chain spec
     #[arg(long)]
     pub add_bootnode: Vec<String>,
@@ -105,4 +109,6 @@ pub struct BuildSpecCmdExtraFields {
     pub parachain_id: Option<u32>,
 }
 
-pub type BuildSpecCmdSimple = BuildSpecCmd<BuildSpecCmdExtraFields>;
+pub type BuildSpecCmdSimple = BuildSpecCmd<ExtraFields>;
+
+pub type ExportChainSpecCmdSimple = ExportChainSpecCmd<ExtraFields>;

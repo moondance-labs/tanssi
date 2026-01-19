@@ -198,7 +198,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned_simple_template()
     Westend::execute_with(|| {
         let fees_id: VersionedAssetId = AssetId(Location::here()).into();
         let xcm_on_dest = Xcm::<()>(vec![DepositAsset {
-            assets: Definite(assets.clone()),
+            assets: Wild(AllCounted(assets.len() as u32)),
             beneficiary: simple_template_beneficiary,
         }]);
         assert_ok!(
@@ -276,7 +276,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered_simple_templat
     Westend::execute_with(|| {
         let fees_id: VersionedAssetId = AssetId(Location::here()).into();
         let xcm_on_dest = Xcm::<()>(vec![DepositAsset {
-            assets: Definite(assets.clone()),
+            assets: Wild(AllCounted(assets.len() as u32)),
             beneficiary: simple_template_beneficiary,
         }]);
         assert_ok!(

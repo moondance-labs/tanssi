@@ -29,9 +29,10 @@ use parity_scale_codec::{Decode, DecodeLimit};
 use snowbridge_inbound_queue_primitives::v2::{message::Message, MessageProcessorError, Payload};
 use sp_core::{Get, H160};
 use sp_runtime::DispatchError;
+use sp_runtime::Weight;
 use thiserror::Error;
 use v2_processor_proc_macro::MessageProcessor;
-use xcm::latest::ExecuteXcm;
+use xcm::latest::{ExecuteXcm, Outcome};
 use xcm::prelude::{InteriorLocation, NetworkId, VersionedXcm, Xcm};
 use xcm::{IdentifyVersion, Version, MAX_XCM_DECODE_DEPTH};
 use xcm_executor::traits::WeightBounds;
@@ -141,6 +142,7 @@ pub struct RawMessageProcessor<
     TanssiUniversalLocation,
     XcmProcessor,
     XcmWeigher,
+    MaxXcmWeight,
 >(
     PhantomData<(
         T,
@@ -151,6 +153,7 @@ pub struct RawMessageProcessor<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmWeight,
     )>,
 );
 
@@ -164,6 +167,7 @@ impl<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmWeight,
     > MessageProcessorWithFallback<AccountId>
     for RawMessageProcessor<
         T,
@@ -174,6 +178,7 @@ impl<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmWeight,
     >
 where
     T: snowbridge_pallet_inbound_queue::Config
@@ -187,6 +192,7 @@ where
     TanssiUniversalLocation: Get<InteriorLocation>,
     XcmProcessor: ExecuteXcm<<T as pallet_xcm::Config>::RuntimeCall>,
     XcmWeigher: WeightBounds<<T as pallet_xcm::Config>::RuntimeCall>,
+    MaxXcmWeight: Get<Weight>,
 {
     type Fallback = AssetTrapFallbackProcessor<
         T,
@@ -197,6 +203,7 @@ where
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmWeight,
     >;
     type ExtractedMessage = ExtractedXcmConstructionInfo<<T as pallet_xcm::Config>::RuntimeCall>;
 
@@ -210,7 +217,7 @@ where
     fn process_extracted_message(
         _sender: AccountId,
         extracted_message: Self::ExtractedMessage,
-    ) -> Result<(), MessageProcessorError> {
+    ) -> Result<Option<Weight>, MessageProcessorError> {
         let prepared_xcm = prepare_raw_message_xcm_instructions::<T>(
             EthereumNetwork::get(),
             &EthereumUniversalLocation::get(),
@@ -250,16 +257,47 @@ where
         // (i.e xcm that sends a message in another container chain and then return an error).
         // Another reason we are not returning error here as otherwise the tx will be reverted and assets will be in limbo in ethereum.
         // By returning success here, the assets will be trapped here and claimable by the claimer.
-        if let Err(instruction_error) = execute_xcm::<T, XcmProcessor, XcmWeigher>(
+        let execution_result = execute_xcm::<T, XcmProcessor, XcmWeigher>(
             eth_location_reanchored_to_tanssi,
+            MaxXcmWeight::get(),
             prepared_xcm,
-        ) {
-            log::error!(
-                "Error while executing xcm in raw message processor: {:?}",
-                instruction_error
-            );
-        }
+        );
 
-        Ok(())
+        match execution_result {
+            Ok(outcome) => match outcome {
+                Outcome::Complete { used } => Ok(Some(used)),
+                Outcome::Incomplete {
+                    used,
+                    error: instruction_error,
+                } => {
+                    log::error!(
+                        "Error while executing xcm in raw message processor: {:?}",
+                        instruction_error
+                    );
+                    Ok(Some(used))
+                }
+                // This branch will never be executed since current xcm executor implementation only returns
+                // this Outcome when the weight limit is less than required which is already checked earlier
+                // in execute_xcm.
+                Outcome::Error(instruction_error) => {
+                    log::error!(
+                        "Error while starting xcm execution in raw message processor: {:?}",
+                        instruction_error
+                    );
+                    Ok(Some(Weight::zero()))
+                }
+            },
+            Err(instruction_error) => {
+                log::error!(
+                    "Error while estimating weight for xcm execution in raw message processor: {:?}",
+                    instruction_error
+                );
+                Ok(Some(Weight::zero()))
+            }
+        }
+    }
+
+    fn worst_case_message_processor_weight() -> Weight {
+        MaxXcmWeight::get()
     }
 }

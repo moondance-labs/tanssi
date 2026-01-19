@@ -17,6 +17,8 @@
 use crate::{RuntimeCall, UncheckedExtrinsic};
 use frame_support::dispatch::{CallableCallFor, GetDispatchInfo};
 use sp_runtime::traits::Dispatchable;
+use frame_support::dispatch::DispatchErrorWithPostInfo;
+use frame_support::pallet_prelude::Pays;
 use {
     crate::{
         bridge_to_ethereum_config::EthereumGatewayAddress,
@@ -33,6 +35,7 @@ use {
     },
     dancelight_runtime_constants::snowbridge::{EthereumLocation, EthereumNetwork},
     frame_support::assert_ok,
+    frame_support::dispatch::PostDispatchInfo,
     frame_system::pallet_prelude::OriginFor,
     keyring::Sr25519Keyring,
     parity_scale_codec::Encode,
@@ -95,7 +98,7 @@ fn test_inbound_queue_message_symbiotic_passing() {
             },
         };
 
-        assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
+        assert!(matches!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
                 topics: event
@@ -106,7 +109,7 @@ fn test_inbound_queue_message_symbiotic_passing() {
                 data: event.encode_data(),
             },
             proof: dummy_proof.clone(),
-        })), Ok(()));
+        })), Ok(PostDispatchInfo { actual_weight: Some(Weight { .. }), pays_fee: Pays::Yes })));
 
         let expected_validators = [ExternalValidators::whitelisted_validators(), payload_validators].concat();
         assert_eq!(ExternalValidators::validators(), expected_validators);
@@ -169,7 +172,7 @@ fn test_inbound_queue_message_symbiotic_incorrect_magic_bytes() {
             }),
         );
 
-        assert!(matches!(result, Err(sp_runtime::DispatchError::Other(_))));
+        assert!(matches!(result, Err(DispatchErrorWithPostInfo{ error: sp_runtime::DispatchError::Other(_), ..})));
     });
 }
 
@@ -228,7 +231,7 @@ fn test_inbound_queue_message_symbiotic_incorrect_gateway_origin() {
                 proof: dummy_proof.clone(),
             }),
         );
-        assert_eq!(result, Ok(()));
+        assert!(matches!(result, Ok(PostDispatchInfo { actual_weight: Some(Weight { .. }), pays_fee: Pays::Yes })));
 
         // Validators have not been set
         let validators = pallet_external_validators::ExternalValidators::<Runtime>::get();
@@ -295,7 +298,7 @@ fn test_inbound_queue_message_symbiotic_incorrect_payload() {
             }),
         );
 
-        assert!(matches!(result, Err(sp_runtime::DispatchError::Other(_))));
+        assert!(matches!(result, Err(DispatchErrorWithPostInfo{ error: sp_runtime::DispatchError::Other(_), ..})));
     });
 }
 
@@ -366,7 +369,7 @@ fn test_inbound_queue_transfer_eth_works() {
             },
         };
 
-        assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
+        assert!(matches!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
                 topics: event
@@ -377,7 +380,7 @@ fn test_inbound_queue_transfer_eth_works() {
                 data: event.encode_data(),
             },
             proof: dummy_proof.clone(),
-        })), Ok(()));
+        })), Ok(PostDispatchInfo { actual_weight: Some(Weight { .. }), pays_fee: Pays::Yes })));
 
         let foreign_asset_balance_after = ForeignAssets::balance(asset_id, AccountId::from(beneficiary.clone()));
 
@@ -493,7 +496,7 @@ fn test_inbound_queue_transfer_tanssi_works() {
         };
 
         let native_balance_before = System::account(beneficiary.clone()).data.free;
-        assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
+        assert!(matches!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
                 topics: event
@@ -504,7 +507,7 @@ fn test_inbound_queue_transfer_tanssi_works() {
                 data: event.encode_data(),
             },
             proof: dummy_proof.clone(),
-        })), Ok(()));
+        })), Ok(PostDispatchInfo { actual_weight: Some(Weight { .. }), pays_fee: Pays::Yes })));
         let native_balance_after = System::account(beneficiary.clone()).data.free;
         assert_eq!(native_balance_after - native_balance_before, tanssi_token_transfer_value);
 
@@ -637,7 +640,7 @@ fn test_inbound_queue_transfer_tanssi_and_eth_works() {
         let native_balance_before = System::account(beneficiary.clone()).data.free;
         let foreign_asset_balance_before = ForeignAssets::balance(asset_id, AccountId::from(beneficiary.clone()));
 
-        assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
+        assert!(matches!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
                 topics: event
@@ -648,7 +651,7 @@ fn test_inbound_queue_transfer_tanssi_and_eth_works() {
                 data: event.encode_data(),
             },
             proof: dummy_proof.clone(),
-        })), Ok(()));
+        })), Ok(PostDispatchInfo { actual_weight: Some(Weight { .. }), pays_fee: Pays::Yes })));
 
         let native_balance_after = System::account(beneficiary.clone()).data.free;
         let foreign_asset_balance_after = ForeignAssets::balance(asset_id, AccountId::from(beneficiary.clone()));
@@ -769,7 +772,7 @@ fn test_inbound_queue_transfer_erc20_works() {
         };
 
         let foreign_asset_balance_before = ForeignAssets::balance(asset_id, AccountId::from(beneficiary.clone()));
-        assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
+        assert!(matches!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
                 topics: event
@@ -780,7 +783,7 @@ fn test_inbound_queue_transfer_erc20_works() {
                 data: event.encode_data(),
             },
             proof: dummy_proof.clone(),
-        })), Ok(()));
+        })), Ok(PostDispatchInfo { actual_weight: Some(Weight { .. }), pays_fee: Pays::Yes })));
         let foreign_asset_balance_after = ForeignAssets::balance(asset_id, AccountId::from(beneficiary.clone()));
         assert_eq!(foreign_asset_balance_after - foreign_asset_balance_before, token_value);
 
@@ -1132,7 +1135,7 @@ fn test_inbound_queue_tanssi_assets_trapped_incorrect_xcm_works() {
             },
         };
 
-        assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
+        assert!(matches!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
                 topics: event
@@ -1143,7 +1146,7 @@ fn test_inbound_queue_tanssi_assets_trapped_incorrect_xcm_works() {
                 data: event.encode_data(),
             },
             proof: dummy_proof.clone(),
-        })), Ok(()));
+        })), Ok(PostDispatchInfo { actual_weight: Some(Weight { .. }), pays_fee: Pays::Yes })));
 
         let events = frame_system::Pallet::<Runtime>::events();
 
@@ -1245,7 +1248,7 @@ fn test_inbound_queue_erc20_assets_trapped_incorrect_xcm_works() {
             },
         };
 
-        assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
+        assert!(matches!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
                 topics: event
@@ -1256,7 +1259,7 @@ fn test_inbound_queue_erc20_assets_trapped_incorrect_xcm_works() {
                 data: event.encode_data(),
             },
             proof: dummy_proof.clone(),
-        })), Ok(()));
+        })), Ok(PostDispatchInfo { actual_weight: Some(Weight { .. }), pays_fee: Pays::Yes })));
 
         let events = frame_system::Pallet::<Runtime>::events();
 
@@ -1361,7 +1364,7 @@ fn test_inbound_queue_incorrect_xcm_trap_assets_works() {
             },
         };
 
-        assert_eq!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
+        assert!(matches!(EthereumInboundQueueV2::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Box::new(EventProof {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
                 topics: event
@@ -1372,7 +1375,7 @@ fn test_inbound_queue_incorrect_xcm_trap_assets_works() {
                 data: event.encode_data(),
             },
             proof: dummy_proof.clone(),
-        })), Ok(()));
+        })), Ok(PostDispatchInfo { actual_weight: Some(Weight { .. }), pays_fee: Pays::Yes })));
 
         let events = frame_system::Pallet::<Runtime>::events();
 

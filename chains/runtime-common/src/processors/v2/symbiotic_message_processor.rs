@@ -29,6 +29,7 @@ use core::marker::PhantomData;
 use parity_scale_codec::Decode;
 use snowbridge_inbound_queue_primitives::v2::{Message, MessageProcessorError, Payload};
 use sp_core::{Get, H160};
+use sp_runtime::Weight;
 use tp_bridge::symbiotic_message_processor::{
     InboundCommand, Message as SymbioticMessage, Payload as SymbioticPayload, MAGIC_BYTES,
 };
@@ -161,6 +162,8 @@ pub struct SymbioticMessageProcessor<
     TanssiUniversalLocation,
     XcmProcessor,
     XcmWeigher,
+    MaxXcmWeight,
+    SetExternalValidatorsWeight,
 >(
     PhantomData<(
         T,
@@ -171,6 +174,8 @@ pub struct SymbioticMessageProcessor<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmWeight,
+        SetExternalValidatorsWeight,
     )>,
 );
 
@@ -184,6 +189,8 @@ impl<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmWeight,
+        SetExternalValidatorsWeight,
     > MessageProcessorWithFallback<AccountId>
     for SymbioticMessageProcessor<
         T,
@@ -194,6 +201,8 @@ impl<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmWeight,
+        SetExternalValidatorsWeight,
     >
 where
     T: snowbridge_pallet_inbound_queue::Config
@@ -208,6 +217,8 @@ where
     TanssiUniversalLocation: Get<InteriorLocation>,
     XcmProcessor: ExecuteXcm<<T as pallet_xcm::Config>::RuntimeCall>,
     XcmWeigher: WeightBounds<<T as pallet_xcm::Config>::RuntimeCall>,
+    MaxXcmWeight: Get<Weight>,
+    SetExternalValidatorsWeight: Get<Weight>,
 {
     type Fallback = SymbioticFallbackProcessor<
         T,
@@ -220,14 +231,9 @@ where
             TanssiUniversalLocation,
             XcmProcessor,
             XcmWeigher,
+            MaxXcmWeight,
         >,
         GatewayAddress,
-        DefaultClaimer,
-        EthereumNetwork,
-        EthereumUniversalLocation,
-        TanssiUniversalLocation,
-        XcmProcessor,
-        XcmWeigher,
     >;
     type ExtractedMessage = SymbioticMessage<T>;
 
@@ -242,7 +248,12 @@ where
     fn process_extracted_message(
         _sender: AccountId,
         extracted_message: Self::ExtractedMessage,
-    ) -> Result<(), MessageProcessorError> {
-        process_message(extracted_message)
+    ) -> Result<Option<Weight>, MessageProcessorError> {
+        process_message(extracted_message).map(|_| Some(SetExternalValidatorsWeight::get()))
+    }
+
+    fn worst_case_message_processor_weight() -> Weight {
+        // This ensures the worst case covers both the primary and fallback paths regardless of configuration.
+        MaxXcmWeight::get().max(SetExternalValidatorsWeight::get())
     }
 }
