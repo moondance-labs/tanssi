@@ -24,6 +24,7 @@ import type {
     SnowbridgeVerificationPrimitivesEventProof,
     SnowbridgeVerificationPrimitivesLog,
     SnowbridgeVerificationPrimitivesProof,
+    StagingXcmV5Xcm,
 } from "@polkadot/types/lookup";
 import { hexToU8a, u8aToHex } from "@polkadot/util";
 import { AbiCoder } from "ethers/abi";
@@ -54,7 +55,7 @@ function encodeAsForeignTokenERC20(tokenId: string, value: bigint): Uint8Array {
     return getBytes(encoded);
 }
 
-function encodeXcmMessage(api: ApiPromise, xcmInstructions): Uint8Array {
+function encodeXcmMessage(api: ApiPromise, xcmInstructions: StagingXcmV5Xcm): Uint8Array {
     const xcm = api.createType("XcmVersionedXcm", {
         V5: xcmInstructions,
     });
@@ -140,7 +141,7 @@ export function encodeRawPayload(api: ApiPromise, bytes: Uint8Array, payloadEnum
     throw new Error(`Unsupported PayloadEnum: ${payloadEnum}`);
 }
 
-function createXcmData(api: ApiPromise, xcmInstructions: any[]): Uint8Array {
+function createXcmData(api: ApiPromise, xcmInstructions: StagingXcmV5Xcm): Uint8Array {
     const xcmBytes = encodeXcmMessage(api, xcmInstructions);
 
     return encodeRawPayload(api, xcmBytes, PayloadEnum.XCM);
@@ -156,7 +157,7 @@ export async function generateOutboundMessageAcceptedLog(
     api: ApiPromise,
     nonce,
     ethValue: bigint,
-    instructions: any[] | null,
+    instructions: StagingXcmV5Xcm | null,
     nativeERC20Params: { value: bigint; tokenAddress: string }[] = [],
     foreignTokenParams: { value: bigint; tokenId: string }[] = [],
     symbioticValidators: string[] | null = null

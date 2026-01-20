@@ -2,22 +2,17 @@
 
 import "@tanssi/api-augment";
 
-import { beforeAll, describeSuite } from "@moonwall/cli";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import {
     generateUpdate,
     ETHEREUM_NETWORK_TESTNET,
     ETHEREUM_NETWORK_MAINNET,
-    encodeRawPayload,
-    PayloadEnum,
     SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
     ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS,
     generateOutboundMessageAcceptedLog,
 } from "utils";
 import type { KeyringPair } from "@moonwall/util";
-import { hexToU8a } from "@polkadot/util";
-import { getBytes } from "ethers/utils";
-import { AbiCoder } from "ethers/abi";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2 } from "../../../helpers";
 
 describeSuite({
@@ -25,7 +20,7 @@ describeSuite({
     // and the relayer pays for the execution. So the message should have 0 value and 0 assets, and 0 reward. So the relayer
     // final balance should be less than the relayer initial balance.
     id: "ETHINBV2SYSTEMREMARK",
-    title: "Receive Symbiotic update from Ethereum is failing",
+    title: "Snowbridge InboundQueueV2 receive raw xcm",
     foundationMethods: "dev",
 
     testCases: ({ it, context }) => {
@@ -36,6 +31,7 @@ describeSuite({
         let shouldSkipStarlightSnV2TT: boolean;
         let specVersion: number;
         let sovereignAccountAddress: string;
+        let balanceDiff1: number | undefined;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -63,21 +59,20 @@ describeSuite({
 
         it({
             id: "E01",
-            title: "Receive ETH native token from Ethereum in Tanssi chain",
+            title: "Execute xcm transact 1 system remark",
             test: async () => {
                 if (shouldSkipStarlightSnV2TT) {
                     console.log("Skipping test for Starlight runtime");
                     return;
                 }
                 const transferAmount = 0n;
-
                 const systemRemarkCall = polkadotJs.tx.system.remarkWithEvent("0xaabbccdd");
                 const systemRemarkCallEncoded = systemRemarkCall?.method.toHex();
 
                 const instructions = [
                     {
                         Transact: {
-                            originType: "SovereignAccount",
+                            originKind: "SovereignAccount",
                             requireWeightAtMost: null,
                             call: {
                                 encoded: systemRemarkCallEncoded,
@@ -94,13 +89,158 @@ describeSuite({
                 const signedTx = await polkadotJs.tx.sudo.sudo(tx).signAsync(alice);
                 await context.createBlock([signedTx], { allowFailures: false });
 
+                const balanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
                 const tx3 = await polkadotJs.tx.ethereumInboundQueueV2.submit(messageExtrinsics[0]).signAsync(alice);
                 await context.createBlock([tx3], { allowFailures: false });
 
                 const events = await polkadotJs.query.system.events();
-                console.log(events.toJSON());
-                const remarkEventFound = events.find((event) => event.toHuman().event.method === "Remarked");
-                expect(!!remarkEventFound).to.equal(true);
+                const remarkedEvents = events.filter((event) => event.toHuman().event.method === "Remarked");
+                expect(remarkedEvents.length).to.equal(1);
+
+                const balanceAfter = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
+
+                // Reward is 0, so alice balance must be lower after submitting this inbound message
+                balanceDiff1 = balanceBefore - balanceAfter;
+                expect(balanceAfter < balanceBefore).to.be.true;
+
+                // Also, reward is stored in this pallet and must be claimed. Assert that the reward is zero.
+                const pendingReward = await polkadotJs.query.bridgeRelayers.relayerRewards(
+                    alice.address,
+                    "SnowbridgeRewardInbound"
+                );
+                expect(pendingReward.isNone).to.equal(true);
+            },
+        });
+
+        it({
+            id: "E02",
+            title: "Execute xcm transact 100 system remark is more expensive than 1 system remark",
+            test: async () => {
+                if (shouldSkipStarlightSnV2TT) {
+                    console.log("Skipping test for Starlight runtime");
+                    return;
+                }
+                const transferAmount = 0n;
+                const batchTxs = [];
+                for (let i = 0; i < 100; i++) {
+                    batchTxs.push(polkadotJs.tx.system.remarkWithEvent(`remark number ${i}`));
+                }
+                const systemRemarkCall = polkadotJs.tx.utility.batchAll(batchTxs);
+                const systemRemarkCallEncoded = systemRemarkCall?.method.toHex();
+
+                const instructions = [
+                    {
+                        Transact: {
+                            originKind: "SovereignAccount",
+                            requireWeightAtMost: null,
+                            call: {
+                                encoded: systemRemarkCallEncoded,
+                            },
+                        },
+                    },
+                ];
+
+                const log = await generateOutboundMessageAcceptedLog(polkadotJs, 2, transferAmount, instructions);
+
+                const { checkpointUpdate, messageExtrinsics } = await generateUpdate(polkadotJs, [log]);
+
+                const tx = polkadotJs.tx.ethereumBeaconClient.forceCheckpoint(checkpointUpdate);
+                const signedTx = await polkadotJs.tx.sudo.sudo(tx).signAsync(alice);
+                await context.createBlock([signedTx], { allowFailures: false });
+
+                const balanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
+                const tx3 = await polkadotJs.tx.ethereumInboundQueueV2.submit(messageExtrinsics[0]).signAsync(alice);
+                await context.createBlock([tx3], { allowFailures: false });
+
+                const events = await polkadotJs.query.system.events();
+                const remarkedEvents = events.filter((event) => event.toHuman().event.method === "Remarked");
+                expect(remarkedEvents.length).to.equal(100);
+                const balanceAfter = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
+
+                // Reward is 0, so alice balance must be lower after submitting this inbound message
+                const balanceDiff2 = balanceBefore - balanceAfter;
+                expect(balanceAfter < balanceBefore).to.be.true;
+
+                // Assert that executing 100 system remark is more expensive than executing 1 system remark
+                // It is not 100 times more expensive because the submit tx does other things aside from the remark
+                expect(balanceDiff2 > balanceDiff1).to.be.true;
+
+                // Also, reward is stored in this pallet and must be claimed. Assert that the reward is zero.
+                const pendingReward = await polkadotJs.query.bridgeRelayers.relayerRewards(
+                    alice.address,
+                    "SnowbridgeRewardInbound"
+                );
+                expect(pendingReward.isNone).to.equal(true);
+            },
+        });
+
+        it({
+            id: "E03",
+            title: "Try to execute overweight xcm message fails with overweight error",
+            test: async () => {
+                if (shouldSkipStarlightSnV2TT) {
+                    console.log("Skipping test for Starlight runtime");
+                    return;
+                }
+                const transferAmount = 0n;
+                const BILLION = 1_000_000_000n;
+                const perBill = (50n * BILLION) / 100n;
+                // We can use any extrinsic that takes more than 25% of the block weight.
+                // Use rootTesting.fillBlock because it allows to explicitly specify the weight.
+                // This extrinsic can only be called by root, so we cannot use it to test that a smaller weight works.
+                // But we can use it to create a weight error because the weight is calculated before the origin check.
+                const systemRemarkCall = polkadotJs.tx.rootTesting.fillBlock(perBill);
+                const systemRemarkCallEncoded = systemRemarkCall?.method.toHex();
+
+                const instructions = [
+                    {
+                        Transact: {
+                            originKind: "SovereignAccount",
+                            requireWeightAtMost: null,
+                            call: {
+                                encoded: systemRemarkCallEncoded,
+                            },
+                        },
+                    },
+                ];
+
+                const log = await generateOutboundMessageAcceptedLog(polkadotJs, 3, transferAmount, instructions);
+
+                const { checkpointUpdate, messageExtrinsics } = await generateUpdate(polkadotJs, [log]);
+
+                const tx = polkadotJs.tx.ethereumBeaconClient.forceCheckpoint(checkpointUpdate);
+                const signedTx = await polkadotJs.tx.sudo.sudo(tx).signAsync(alice);
+                await context.createBlock([signedTx], { allowFailures: false });
+
+                const balanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
+                const tx3 = await polkadotJs.tx.ethereumInboundQueueV2.submit(messageExtrinsics[0]).signAsync(alice);
+                await context.createBlock([tx3], { allowFailures: false });
+
+                const events = await polkadotJs.query.system.events();
+                const xcmEvents = events.filter((event) => event.toHuman().event.method === "Attempted");
+                expect(xcmEvents.length).to.equal(1);
+                const xcmEvent = xcmEvents[0];
+                const weightLimitReachedError = xcmEvent.event.data[0].toJSON().error.error.weightLimitReached;
+                expect(
+                    weightLimitReachedError,
+                    `expected weightLimitReached error, found unexpected xcm error: ${JSON.stringify(xcmEvent.event.data.toJSON())}`
+                ).to.not.be.undefined;
+
+                const balanceAfter = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
+
+                // Reward is 0, so alice balance must be lower after submitting this inbound message
+                const balanceDiff3 = balanceBefore - balanceAfter;
+                expect(balanceAfter < balanceBefore).to.be.true;
+
+                // Assert that an execution error is less expensive than executing 1 system remark
+                expect(balanceDiff3 < balanceDiff1).to.be.true;
+
+                // Also, reward is stored in this pallet and must be claimed. Assert that the reward is zero.
+                const pendingReward = await polkadotJs.query.bridgeRelayers.relayerRewards(
+                    alice.address,
+                    "SnowbridgeRewardInbound"
+                );
+                expect(pendingReward.isNone).to.equal(true);
             },
         });
     },
