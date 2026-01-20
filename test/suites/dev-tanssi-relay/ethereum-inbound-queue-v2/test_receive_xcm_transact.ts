@@ -16,11 +16,8 @@ import type { KeyringPair } from "@moonwall/util";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SNOWBRIDGE_V2 } from "../../../helpers";
 
 describeSuite({
-    // TODO: this test suite should receive an xcm transact (system.remarkWithEvent) and assert that the event is emitted
-    // and the relayer pays for the execution. So the message should have 0 value and 0 assets, and 0 reward. So the relayer
-    // final balance should be less than the relayer initial balance.
     id: "ETHINBV2SYSTEMREMARK",
-    title: "Snowbridge InboundQueueV2 receive raw xcm",
+    title: "Snowbridge InboundQueueV2 receive raw xcm transact",
     foundationMethods: "dev",
 
     testCases: ({ it, context }) => {
@@ -103,7 +100,7 @@ describeSuite({
                 balanceDiff1 = balanceBefore - balanceAfter;
                 expect(balanceAfter < balanceBefore).to.be.true;
 
-                // Also, reward is stored in this pallet and must be claimed. Assert that the reward is zero.
+                // Reward is stored in bridgeRelayers pallet and must be manually claimed. Assert that the reward is zero.
                 const pendingReward = await polkadotJs.query.bridgeRelayers.relayerRewards(
                     alice.address,
                     "SnowbridgeRewardInbound"
@@ -162,10 +159,10 @@ describeSuite({
                 expect(balanceAfter < balanceBefore).to.be.true;
 
                 // Assert that executing 100 system remark is more expensive than executing 1 system remark
-                // It is not 100 times more expensive because the submit tx does other things aside from the remark
+                // It is not 100 times more expensive because the submit extrinsic does other things aside from the remark
                 expect(balanceDiff2 > balanceDiff1).to.be.true;
 
-                // Also, reward is stored in this pallet and must be claimed. Assert that the reward is zero.
+                // Reward is stored in bridgeRelayers pallet and must be manually claimed. Assert that the reward is zero.
                 const pendingReward = await polkadotJs.query.bridgeRelayers.relayerRewards(
                     alice.address,
                     "SnowbridgeRewardInbound"
@@ -183,6 +180,8 @@ describeSuite({
                     return;
                 }
                 const transferAmount = 0n;
+                // InboundQueueV2 xcm execution is limited to 25% of the block weight.
+                // So try to execute an xcm message that takes 50% of the block weight, it should fail.
                 const BILLION = 1_000_000_000n;
                 const perBill = (50n * BILLION) / 100n;
                 // We can use any extrinsic that takes more than 25% of the block weight.
@@ -235,7 +234,7 @@ describeSuite({
                 // Assert that an execution error is less expensive than executing 1 system remark
                 expect(balanceDiff3 < balanceDiff1).to.be.true;
 
-                // Also, reward is stored in this pallet and must be claimed. Assert that the reward is zero.
+                // Reward is stored in bridgeRelayers pallet and must be manually claimed. Assert that the reward is zero.
                 const pendingReward = await polkadotJs.query.bridgeRelayers.relayerRewards(
                     alice.address,
                     "SnowbridgeRewardInbound"
