@@ -236,7 +236,10 @@ describeSuite({
                     .balance.toBigInt();
 
                 const receiverTanssiBalanceAfter = (
-                    await containerChainPolkadotJs.query.foreignAssets.account(RELAY_NATIVE_TOKEN_ASSET_ID, tokenReceiver)
+                    await containerChainPolkadotJs.query.foreignAssets.account(
+                        RELAY_NATIVE_TOKEN_ASSET_ID,
+                        tokenReceiver
+                    )
                 )
                     .unwrapOrDefault()
                     .balance.toBigInt();

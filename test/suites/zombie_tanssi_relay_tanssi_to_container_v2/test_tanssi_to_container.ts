@@ -2,12 +2,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 
-import {
-    generateOutboundMessageAcceptedLog,
-    generateUpdate,
-    signAndSendAndInclude,
-    waitSessions,
-} from "utils";
+import { generateOutboundMessageAcceptedLog, generateUpdate, signAndSendAndInclude, waitSessions } from "utils";
 
 describeSuite({
     id: "ZOMBIETANSSITANSSICONT",
@@ -121,7 +116,10 @@ describeSuite({
 
                 // === Check balances before ===
                 const receiverTanssiBalanceBefore = (
-                    await containerChainPolkadotJs.query.foreignAssets.account(RELAY_NATIVE_TOKEN_ASSET_ID, tokenReceiver)
+                    await containerChainPolkadotJs.query.foreignAssets.account(
+                        RELAY_NATIVE_TOKEN_ASSET_ID,
+                        tokenReceiver
+                    )
                 )
                     .unwrapOrDefault()
                     .balance.toBigInt();
@@ -193,7 +191,10 @@ describeSuite({
 
                 // === Verify on Container ===
                 const receiverTanssiBalanceAfter = (
-                    await containerChainPolkadotJs.query.foreignAssets.account(RELAY_NATIVE_TOKEN_ASSET_ID, tokenReceiver)
+                    await containerChainPolkadotJs.query.foreignAssets.account(
+                        RELAY_NATIVE_TOKEN_ASSET_ID,
+                        tokenReceiver
+                    )
                 )
                     .unwrapOrDefault()
                     .balance.toBigInt();
