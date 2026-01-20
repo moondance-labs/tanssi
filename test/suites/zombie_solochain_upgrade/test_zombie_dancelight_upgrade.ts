@@ -4,7 +4,7 @@ import { MoonwallContext, beforeAll, describeSuite, expect } from "@moonwall/cli
 import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import fs from "node:fs";
-import { testPalletVersions } from "utils";
+import { getChainSpecCmd, testPalletVersions } from "utils";
 
 describeSuite({
     id: "ZO01",
@@ -111,7 +111,7 @@ describeSuite({
                 const runtime = relayApi.consts.system.version.specName.toString();
 
                 const command = "../target/release/tanssi-relay";
-                const args = ["build-spec", `--chain=${runtime}-local`, "--raw"];
+                const args = [getChainSpecCmd(command), `--chain=${runtime}-local`, "--raw"];
 
                 await testPalletVersions(relayApi, command, args);
             },

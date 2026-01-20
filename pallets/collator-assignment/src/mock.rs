@@ -26,7 +26,6 @@ use {
     frame_support::{
         parameter_types,
         traits::{ConstBool, ConstU16, ConstU64},
-        weights::Weight,
     },
     frame_system as system,
     parity_scale_codec::{Decode, Encode},
@@ -421,9 +420,8 @@ impl<AC> ParaIdAssignmentHooks<u32, AC> for MockParaIdAssignmentHooksImpl {
         _current_assigned: &BTreeSet<ParaId>,
         new_assigned: &mut BTreeMap<ParaId, Vec<AC>>,
         _maybe_tip: &Option<u32>,
-    ) -> Weight {
+    ) {
         new_assigned.retain(|para_id, _| *para_id <= ParaId::from(5000));
-        Weight::zero()
     }
 
     #[cfg(feature = "runtime-benchmarks")]

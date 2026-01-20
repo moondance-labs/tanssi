@@ -25,7 +25,8 @@ use frame_support::__private::Get;
 use snowbridge_inbound_queue_primitives::v2::{Message, MessageProcessorError};
 use sp_core::H160;
 use sp_runtime::DispatchError;
-use xcm::latest::{ExecuteXcm, InteriorLocation, NetworkId, Xcm};
+use sp_runtime::Weight;
+use xcm::latest::{ExecuteXcm, InteriorLocation, NetworkId, Outcome, Xcm};
 use xcm_executor::traits::WeightBounds;
 
 /// Fallback message processor that traps assets from failed Snowbridge V2 messages.
@@ -48,6 +49,7 @@ pub struct AssetTrapFallbackProcessor<
     TanssiUniversalLocation,
     XcmProcessor,
     XcmWeigher,
+    MaxXcmWeight,
 >(
     PhantomData<(
         T,
@@ -58,6 +60,7 @@ pub struct AssetTrapFallbackProcessor<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmWeight,
     )>,
 );
 
@@ -71,6 +74,7 @@ impl<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmWeight,
     > FallbackMessageProcessor<AccountId>
     for AssetTrapFallbackProcessor<
         T,
@@ -81,6 +85,7 @@ impl<
         TanssiUniversalLocation,
         XcmProcessor,
         XcmWeigher,
+        MaxXcmWeight,
     >
 where
     T: snowbridge_pallet_inbound_queue::Config
@@ -94,8 +99,12 @@ where
     TanssiUniversalLocation: Get<InteriorLocation>,
     XcmProcessor: ExecuteXcm<<T as pallet_xcm::Config>::RuntimeCall>,
     XcmWeigher: WeightBounds<<T as pallet_xcm::Config>::RuntimeCall>,
+    MaxXcmWeight: Get<Weight>,
 {
-    fn handle_message(_who: AccountId, message: Message) -> Result<(), MessageProcessorError> {
+    fn handle_message(
+        _who: AccountId,
+        message: Message,
+    ) -> Result<Option<Weight>, MessageProcessorError> {
         let extracted_message: ExtractedXcmConstructionInfo<
             <T as pallet_xcm::Config>::RuntimeCall,
         > = ExtractedXcmConstructionInfo {
@@ -147,17 +156,44 @@ where
         // (i.e xcm that sends a message in another container chain and then return an error).
         // Another reason we are not returning error here as otherwise the tx will be reverted and assets will be in limbo in ethereum.
         // By returning success here, the assets will be trapped here and claimable by the claimer.
-        if let Err(instruction_error) = execute_xcm::<T, XcmProcessor, XcmWeigher>(
+        let execution_result = execute_xcm::<T, XcmProcessor, XcmWeigher>(
             eth_location_reanchored_to_tanssi,
+            MaxXcmWeight::get(),
             prepared_xcm,
-        ) {
-            log::error!(
-                "Error while executing xcm in fallback message processor: {:?}",
-                instruction_error
-            );
-        }
+        );
 
-        Ok(())
+        match execution_result {
+            Ok(outcome) => match outcome {
+                Outcome::Complete { used } => Ok(Some(used)),
+                Outcome::Incomplete {
+                    used,
+                    error: instruction_error,
+                } => {
+                    log::error!(
+                        "Error while executing xcm in fallback message processor: {:?}",
+                        instruction_error
+                    );
+                    Ok(Some(used))
+                }
+                // This branch will never be executed since current xcm executor implementation only returns
+                // this Outcome when the weight limit is less than required which is already checked earlier
+                // in execute_xcm.
+                Outcome::Error(instruction_error) => {
+                    log::error!(
+                        "Error while starting xcm execution in fallback message processor: {:?}",
+                        instruction_error
+                    );
+                    Ok(Some(Weight::zero()))
+                }
+            },
+            Err(instruction_error) => {
+                log::error!(
+                    "Error while estimating weight for xcm execution in fallback message processor: {:?}",
+                    instruction_error
+                );
+                Ok(Some(Weight::zero()))
+            }
+        }
     }
 }
 
@@ -174,53 +210,12 @@ where
 ///
 /// This conditional behavior prevents unnecessary asset trapping for genuinely invalid
 /// Symbiotic messages while still protecting user funds in case of errors.
-pub struct SymbioticFallbackProcessor<
-    T,
-    AssetTrapFallbackProcessor,
-    GatewayAddress,
-    DefaultClaimer,
-    EthereumNetwork,
-    EthereumUniversalLocation,
-    TanssiUniversalLocation,
-    XcmProcessor,
-    XcmWeigher,
->(
-    PhantomData<(
-        T,
-        AssetTrapFallbackProcessor,
-        GatewayAddress,
-        DefaultClaimer,
-        EthereumNetwork,
-        EthereumUniversalLocation,
-        TanssiUniversalLocation,
-        XcmProcessor,
-        XcmWeigher,
-    )>,
+pub struct SymbioticFallbackProcessor<T, AssetTrapFallbackProcessor, GatewayAddress>(
+    PhantomData<(T, AssetTrapFallbackProcessor, GatewayAddress)>,
 );
 
-impl<
-        T,
-        AssetTrapFallbackProcessor,
-        AccountId,
-        GatewayAddress,
-        DefaultClaimer,
-        EthereumNetwork,
-        EthereumUniversalLocation,
-        TanssiUniversalLocation,
-        XcmProcessor,
-        XcmWeigher,
-    > FallbackMessageProcessor<AccountId>
-    for SymbioticFallbackProcessor<
-        T,
-        AssetTrapFallbackProcessor,
-        GatewayAddress,
-        DefaultClaimer,
-        EthereumNetwork,
-        EthereumUniversalLocation,
-        TanssiUniversalLocation,
-        XcmProcessor,
-        XcmWeigher,
-    >
+impl<T, AssetTrapFallbackProcessor, AccountId, GatewayAddress> FallbackMessageProcessor<AccountId>
+    for SymbioticFallbackProcessor<T, AssetTrapFallbackProcessor, GatewayAddress>
 where
     T: snowbridge_pallet_inbound_queue::Config
         + pallet_xcm::Config
@@ -228,14 +223,11 @@ where
     AssetTrapFallbackProcessor: FallbackMessageProcessor<AccountId>,
     [u8; 32]: From<<T as frame_system::Config>::AccountId>,
     GatewayAddress: Get<H160>,
-    DefaultClaimer: Get<<T as frame_system::Config>::AccountId>,
-    EthereumNetwork: Get<NetworkId>,
-    EthereumUniversalLocation: Get<InteriorLocation>,
-    TanssiUniversalLocation: Get<InteriorLocation>,
-    XcmProcessor: ExecuteXcm<<T as pallet_xcm::Config>::RuntimeCall>,
-    XcmWeigher: WeightBounds<<T as pallet_xcm::Config>::RuntimeCall>,
 {
-    fn handle_message(who: AccountId, message: Message) -> Result<(), MessageProcessorError> {
+    fn handle_message(
+        who: AccountId,
+        message: Message,
+    ) -> Result<Option<Weight>, MessageProcessorError> {
         // If origin is not gateway proxy, a user mistakenly or maliciously sent Symbiotic message
         // If origin is gateway proxy, the symbiotic middleware sent the message with wrong semantics
         // Based on above assumption we do conditional fallback
