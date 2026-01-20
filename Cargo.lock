@@ -11131,6 +11131,7 @@ dependencies = [
  "frame-system",
  "parity-scale-codec",
  "scale-info",
+ "snowbridge-merkle-tree",
  "sp-core",
  "sp-runtime",
 ]

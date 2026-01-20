@@ -25,6 +25,7 @@ mod author_noting_tests;
 mod beefy;
 mod bridge_relayers;
 mod collator_assignment_tests;
+mod commitment_recorder;
 mod common;
 mod container_token_transfers;
 mod core_scheduling_tests;

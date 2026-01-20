@@ -25,10 +25,13 @@ pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
-    use {frame_support::pallet_prelude::*, sp_core::H256};
+    use {
+        frame_support::pallet_prelude::*, snowbridge_merkle_tree::merkle_root, sp_core::H256,
+        sp_runtime::traits::Keccak256,
+    };
 
     /// The current storage version.
-    const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
+    const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
     /// Configure the pallet by specifying the parameters and types on which it depends.
     #[pallet::config]
@@ -45,24 +48,52 @@ pub mod pallet {
         CommitmentRootRead { commitment: H256 },
     }
 
-    /// Message commitment from last block.
+    /// Message commitment from last block (v1).
     /// This will be set only when there are messages to relay.
     #[pallet::storage]
     pub type RecordedCommitment<T: Config> = StorageValue<_, H256, OptionQuery>;
 
+    /// Message commitment from last block (v2).
+    /// This will be set only when there are messages to relay.
+    #[pallet::storage]
+    pub type RecordedCommitmentV2<T: Config> = StorageValue<_, H256, OptionQuery>;
+
     impl<T: Config> Pallet<T> {
         pub fn take_commitment_root() -> Option<H256> {
-            let maybe_commitment = RecordedCommitment::<T>::take();
-            if let Some(commitment) = maybe_commitment {
-                Pallet::<T>::deposit_event(Event::<T>::CommitmentRootRead { commitment });
-                Some(commitment)
-            } else {
-                None
+            let v1 = RecordedCommitment::<T>::take();
+            let v2 = RecordedCommitmentV2::<T>::take();
+            match (v1, v2) {
+                (Some(v1_commit), Some(v2_commit)) => {
+                    // Both v1 and v2, compute unified merkle root
+                    let root = merkle_root::<Keccak256, _>([v1_commit, v2_commit].into_iter());
+                    Pallet::<T>::deposit_event(Event::<T>::CommitmentRootRead { commitment: root });
+                    Some(root)
+                }
+                (Some(v1_commit), None) => {
+                    // Only v1, return v1
+                    Pallet::<T>::deposit_event(Event::<T>::CommitmentRootRead {
+                        commitment: v1_commit,
+                    });
+                    Some(v1_commit)
+                }
+                (None, Some(v2_commit)) => {
+                    // Only v2, return v2
+                    Pallet::<T>::deposit_event(Event::<T>::CommitmentRootRead {
+                        commitment: v2_commit,
+                    });
+                    Some(v2_commit)
+                }
+                (None, None) => None,
             }
         }
 
         pub fn record_commitment_root(commitment: H256) {
             RecordedCommitment::<T>::put(commitment);
+            Pallet::<T>::deposit_event(Event::<T>::NewCommitmentRootRecorded { commitment });
+        }
+
+        pub fn record_commitment_root_v2(commitment: H256) {
+            RecordedCommitmentV2::<T>::put(commitment);
             Pallet::<T>::deposit_event(Event::<T>::NewCommitmentRootRecorded { commitment });
         }
     }

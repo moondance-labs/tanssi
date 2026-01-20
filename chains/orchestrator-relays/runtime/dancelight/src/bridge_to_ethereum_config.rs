@@ -108,7 +108,7 @@ impl OnNewCommitment for CommitmentRecorder {
 
 impl OnNewCommitmentV2 for CommitmentRecorder {
     fn on_new_commitment(commitment: H256) {
-        OutboundMessageCommitmentRecorder::record_commitment_root(commitment);
+        OutboundMessageCommitmentRecorder::record_commitment_root_v2(commitment);
     }
 }
 impl pallet_outbound_message_commitment_recorder::Config for Runtime {}
