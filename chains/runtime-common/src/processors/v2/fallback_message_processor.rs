@@ -21,7 +21,8 @@ use crate::processors::v2::{
     FallbackMessageProcessor,
 };
 use core::marker::PhantomData;
-use frame_support::__private::Get;
+use frame_support::traits::Get;
+use pallet_xcm::Event;
 use snowbridge_inbound_queue_primitives::v2::{Message, MessageProcessorError};
 use sp_core::H160;
 use sp_runtime::DispatchError;
@@ -183,6 +184,9 @@ where
                         "Error while starting xcm execution in fallback message processor: {:?}",
                         instruction_error
                     );
+                    frame_system::Pallet::<T>::deposit_event(Event::Attempted {
+                        outcome: Outcome::Error(instruction_error),
+                    });
                     Ok(Some(Weight::zero()))
                 }
             },
@@ -191,6 +195,9 @@ where
                     "Error while estimating weight for xcm execution in fallback message processor: {:?}",
                     instruction_error
                 );
+                frame_system::Pallet::<T>::deposit_event(Event::Attempted {
+                    outcome: Outcome::Error(instruction_error),
+                });
                 Ok(Some(Weight::zero()))
             }
         }

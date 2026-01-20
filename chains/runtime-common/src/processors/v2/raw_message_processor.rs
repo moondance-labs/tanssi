@@ -25,6 +25,7 @@ use crate::processors::v2::{reanchor_location_to_tanssi, RAW_MESSAGE_PROCESSOR_T
 use alloc::boxed::Box;
 use alloc::string::ToString;
 use core::marker::PhantomData;
+use pallet_xcm::Event;
 use parity_scale_codec::{Decode, DecodeLimit};
 use snowbridge_inbound_queue_primitives::v2::{message::Message, MessageProcessorError, Payload};
 use sp_core::{Get, H160};
@@ -284,6 +285,9 @@ where
                         "Error while starting xcm execution in raw message processor: {:?}",
                         instruction_error
                     );
+                    frame_system::Pallet::<T>::deposit_event(Event::Attempted {
+                        outcome: Outcome::Error(instruction_error),
+                    });
                     Ok(Some(Weight::zero()))
                 }
             },
@@ -292,6 +296,9 @@ where
                     "Error while estimating weight for xcm execution in raw message processor: {:?}",
                     instruction_error
                 );
+                frame_system::Pallet::<T>::deposit_event(Event::Attempted {
+                    outcome: Outcome::Error(instruction_error),
+                });
                 Ok(Some(Weight::zero()))
             }
         }
