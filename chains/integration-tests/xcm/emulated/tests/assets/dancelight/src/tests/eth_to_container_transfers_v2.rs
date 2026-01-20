@@ -84,7 +84,7 @@ use {
         v5::Xcm,
         VersionedXcm,
     },
-    xcm_emulator::{Chain, ConvertLocation, TestExt},
+    xcm_emulator::{assert_expected_events, Chain, ConvertLocation, TestExt},
 };
 
 const RELAY_NATIVE_TOKEN_ASSET_ID: u16 = 42;
@@ -522,6 +522,31 @@ fn check_erc20_token_to_frontier_container_via_v2_works() {
 
         assert_eq!(container_sovereign_erc20_balance, TRANSFER_AMOUNT);
         assert!(container_sovereign_native_balance == dest_fee_amount);
+
+        // Check events in Dancelight
+        type RuntimeEvent = <Dancelight as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            Dancelight,
+            vec![
+                // EthereumInboundQueueV2 MessageReceived event
+                RuntimeEvent::EthereumInboundQueueV2(
+                    snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce: 1, .. }
+                ) => {},
+                // ForeignAssets Issued event for ERC20 tokens
+                RuntimeEvent::ForeignAssets(
+                    pallet_assets::Event::Issued { asset_id, amount, .. }
+                ) => {
+                    asset_id: *asset_id == ERC20_ASSET_ID,
+                    amount: *amount == TRANSFER_AMOUNT,
+                },
+                // Tanssi fees minted to container sovereign account
+                RuntimeEvent::Balances(
+                    pallet_balances::Event::Minted { amount, .. }
+                ) => {
+                    amount: *amount == dest_fee_amount,
+                },
+            ]
+        );
     });
 
     // Check ERC20 token is received in container
@@ -544,6 +569,27 @@ fn check_erc20_token_to_frontier_container_via_v2_works() {
         assert_eq!(
             receiver_erc20_balance_after,
             receiver_erc20_balance_before + TRANSFER_AMOUNT
+        );
+
+        // Check events in FrontierTemplate
+        type RuntimeEvent = <FrontierTemplate as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            FrontierTemplate,
+            vec![
+                // ForeignAssets Issued event for ERC20 tokens received
+                RuntimeEvent::ForeignAssets(
+                    pallet_assets::Event::Issued { asset_id, amount, .. }
+                ) => {
+                    asset_id: *asset_id == ERC20_ASSET_ID,
+                    amount: *amount == TRANSFER_AMOUNT,
+                },
+                RuntimeEvent::ForeignAssets(
+                    pallet_assets::Event::Issued { asset_id, amount, .. }
+                ) => {
+                    asset_id: *asset_id == RELAY_NATIVE_TOKEN_ASSET_ID,
+                    amount: *amount == receiver_tanssi_balance_after,
+                },
+            ]
         );
     });
 }
@@ -804,6 +850,31 @@ fn check_erc20_token_to_simple_container_via_v2_works() {
 
         assert_eq!(container_sovereign_erc20_balance, TRANSFER_AMOUNT);
         assert!(container_sovereign_native_balance == dest_fee_amount);
+
+        // Check events in Dancelight
+        type RuntimeEvent = <Dancelight as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            Dancelight,
+            vec![
+                // EthereumInboundQueueV2 MessageReceived event
+                RuntimeEvent::EthereumInboundQueueV2(
+                    snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce: 1, .. }
+                ) => {},
+                // ForeignAssets Issued event for ERC20 tokens
+                RuntimeEvent::ForeignAssets(
+                    pallet_assets::Event::Issued { asset_id, amount, .. }
+                ) => {
+                    asset_id: *asset_id == ERC20_ASSET_ID,
+                    amount: *amount == TRANSFER_AMOUNT,
+                },
+                // Tanssi fees minted to container sovereign account
+                RuntimeEvent::Balances(
+                    pallet_balances::Event::Minted { amount, .. }
+                ) => {
+                    amount: *amount == dest_fee_amount,
+                },
+            ]
+        );
     });
 
     // Check ERC20 token is received in container
@@ -826,6 +897,27 @@ fn check_erc20_token_to_simple_container_via_v2_works() {
         assert_eq!(
             receiver_erc20_balance_after,
             receiver_erc20_balance_before + TRANSFER_AMOUNT
+        );
+
+        // Check events in SimpleTemplate
+        type RuntimeEvent = <SimpleTemplate as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            SimpleTemplate,
+            vec![
+                // ForeignAssets Issued event for ERC20 tokens received
+                RuntimeEvent::ForeignAssets(
+                    pallet_assets::Event::Issued { asset_id, amount, .. }
+                ) => {
+                    asset_id: *asset_id == ERC20_ASSET_ID,
+                    amount: *amount == TRANSFER_AMOUNT,
+                },
+                RuntimeEvent::ForeignAssets(
+                    pallet_assets::Event::Issued { asset_id, amount, .. }
+                ) => {
+                    asset_id: *asset_id == RELAY_NATIVE_TOKEN_ASSET_ID,
+                    amount: *amount == receiver_tanssi_balance_after,
+                },
+            ]
         );
     });
 }
@@ -1058,6 +1150,31 @@ fn check_eth_to_frontier_container_via_v2_works() {
 
         assert_eq!(container_sovereign_eth_balance, eth_transfer_amount);
         assert!(container_sovereign_native_balance == dest_fee_amount);
+
+        // Check events in Dancelight
+        type RuntimeEvent = <Dancelight as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            Dancelight,
+            vec![
+                // EthereumInboundQueueV2 MessageReceived event
+                RuntimeEvent::EthereumInboundQueueV2(
+                    snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce: 1, .. }
+                ) => {},
+                // ForeignAssets Issued event for native ETH
+                RuntimeEvent::ForeignAssets(
+                    pallet_assets::Event::Issued { asset_id, amount, .. }
+                ) => {
+                    asset_id: *asset_id == eth_asset_id,
+                    amount: *amount == eth_transfer_amount,
+                },
+                // Tanssi fees minted to container sovereign account
+                RuntimeEvent::Balances(
+                    pallet_balances::Event::Minted { amount, .. }
+                ) => {
+                    amount: *amount == dest_fee_amount,
+                },
+            ]
+        );
     });
 
     // Check ETH is received in container
@@ -1080,6 +1197,27 @@ fn check_eth_to_frontier_container_via_v2_works() {
         assert_eq!(
             receiver_eth_balance_after,
             receiver_eth_balance_before + eth_transfer_amount
+        );
+
+        // Check events in FrontierTemplate
+        type RuntimeEvent = <FrontierTemplate as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            FrontierTemplate,
+            vec![
+                // ForeignAssets Issued event for native ETH received
+                RuntimeEvent::ForeignAssets(
+                    pallet_assets::Event::Issued { asset_id, amount, .. }
+                ) => {
+                    asset_id: *asset_id == eth_asset_id,
+                    amount: *amount == eth_transfer_amount,
+                },
+                RuntimeEvent::ForeignAssets(
+                    pallet_assets::Event::Issued { asset_id, amount, .. }
+                ) => {
+                    asset_id: *asset_id == RELAY_NATIVE_TOKEN_ASSET_ID,
+                    amount: *amount == receiver_tanssi_balance_after,
+                },
+            ]
         );
     });
 }
@@ -1313,6 +1451,31 @@ fn check_eth_to_simple_container_via_v2_works() {
 
         assert_eq!(container_sovereign_eth_balance, eth_transfer_amount);
         assert!(container_sovereign_native_balance == dest_fee_amount);
+
+        // Check events in Dancelight
+        type RuntimeEvent = <Dancelight as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            Dancelight,
+            vec![
+                // EthereumInboundQueueV2 MessageReceived event
+                RuntimeEvent::EthereumInboundQueueV2(
+                    snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce: 1, .. }
+                ) => {},
+                // ForeignAssets Issued event for native ETH
+                RuntimeEvent::ForeignAssets(
+                    pallet_assets::Event::Issued { asset_id, amount, .. }
+                ) => {
+                    asset_id: *asset_id == eth_asset_id,
+                    amount: *amount == eth_transfer_amount,
+                },
+                // Tanssi fees minted to container sovereign account
+                RuntimeEvent::Balances(
+                    pallet_balances::Event::Minted { amount, .. }
+                ) => {
+                    amount: *amount == dest_fee_amount,
+                },
+            ]
+        );
     });
 
     // Check ETH is received in container
@@ -1335,6 +1498,27 @@ fn check_eth_to_simple_container_via_v2_works() {
         assert_eq!(
             receiver_eth_balance_after,
             receiver_eth_balance_before + eth_transfer_amount
+        );
+
+        // Check events in SimpleTemplate
+        type RuntimeEvent = <SimpleTemplate as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            SimpleTemplate,
+            vec![
+                // ForeignAssets Issued event for native ETH received
+                RuntimeEvent::ForeignAssets(
+                    pallet_assets::Event::Issued { asset_id, amount, .. }
+                ) => {
+                    asset_id: *asset_id == eth_asset_id,
+                    amount: *amount == eth_transfer_amount,
+                },
+                RuntimeEvent::ForeignAssets(
+                    pallet_assets::Event::Issued { asset_id, amount, .. }
+                ) => {
+                    asset_id: *asset_id == RELAY_NATIVE_TOKEN_ASSET_ID,
+                    amount: *amount == receiver_tanssi_balance_after,
+                },
+            ]
         );
     });
 }
@@ -1513,7 +1697,31 @@ fn check_tanssi_to_frontier_container_via_v2_works() {
                 .free;
 
         // Should have both fee + transfer amount deposited
-        assert!(container_sovereign_native_balance >= tanssi_amount_to_transfer + dest_fee_amount);
+        assert!(container_sovereign_native_balance == tanssi_amount_to_transfer + dest_fee_amount);
+
+        // Check events in Dancelight
+        type RuntimeEvent = <Dancelight as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            Dancelight,
+            vec![
+                // EthereumInboundQueueV2 MessageReceived event
+                RuntimeEvent::EthereumInboundQueueV2(
+                    snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce: 1, .. }
+                ) => {},
+                // Tanssi transfer amount minted to container sovereign account
+                RuntimeEvent::Balances(
+                    pallet_balances::Event::Minted { amount, .. }
+                ) => {
+                    amount: *amount == tanssi_amount_to_transfer,
+                },
+                // Tanssi fees minted to container sovereign account
+                RuntimeEvent::Balances(
+                    pallet_balances::Event::Minted { amount, .. }
+                ) => {
+                    amount: *amount == dest_fee_amount,
+                },
+            ]
+        );
     });
 
     // Check Tanssi is received in container
@@ -1532,6 +1740,21 @@ fn check_tanssi_to_frontier_container_via_v2_works() {
         assert!(
             receiver_tanssi_balance_after == tanssi_amount_to_transfer,
             "Receiver should have the transfer amount"
+        );
+
+        // Check events in FrontierTemplate
+        type RuntimeEvent = <FrontierTemplate as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            FrontierTemplate,
+            vec![
+                // ForeignAssets Issued event for Tanssi tokens received
+                RuntimeEvent::ForeignAssets(
+                    pallet_assets::Event::Issued { asset_id, amount, .. }
+                ) => {
+                    asset_id: *asset_id == RELAY_NATIVE_TOKEN_ASSET_ID,
+                    amount: *amount == tanssi_amount_to_transfer,
+                },
+            ]
         );
     });
 }
@@ -1710,7 +1933,31 @@ fn check_tanssi_to_simple_container_via_v2_works() {
                 .free;
 
         // Should have both fee + transfer amount deposited
-        assert!(container_sovereign_native_balance >= tanssi_amount_to_transfer + dest_fee_amount);
+        assert!(container_sovereign_native_balance == tanssi_amount_to_transfer + dest_fee_amount);
+
+        // Check events in Dancelight
+        type RuntimeEvent = <Dancelight as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            Dancelight,
+            vec![
+                // EthereumInboundQueueV2 MessageReceived event
+                RuntimeEvent::EthereumInboundQueueV2(
+                    snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce: 1, .. }
+                ) => {},
+                // Tanssi transfer amount minted to container sovereign account
+                RuntimeEvent::Balances(
+                    pallet_balances::Event::Minted { amount, .. }
+                ) => {
+                    amount: *amount == tanssi_amount_to_transfer,
+                },
+                // Tanssi fees minted to container sovereign account
+                RuntimeEvent::Balances(
+                    pallet_balances::Event::Minted { amount, .. }
+                ) => {
+                    amount: *amount == dest_fee_amount,
+                },
+            ]
+        );
     });
 
     // Check Tanssi is received in container
@@ -1729,6 +1976,21 @@ fn check_tanssi_to_simple_container_via_v2_works() {
         assert!(
             receiver_tanssi_balance_after == tanssi_amount_to_transfer,
             "Receiver should have the transfer amount"
+        );
+
+        // Check events in SimpleTemplate
+        type RuntimeEvent = <SimpleTemplate as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            SimpleTemplate,
+            vec![
+                // ForeignAssets Issued event for Tanssi tokens received
+                RuntimeEvent::ForeignAssets(
+                    pallet_assets::Event::Issued { asset_id, amount, .. }
+                ) => {
+                    asset_id: *asset_id == RELAY_NATIVE_TOKEN_ASSET_ID,
+                    amount: *amount == tanssi_amount_to_transfer,
+                },
+            ]
         );
     });
 }
@@ -1950,6 +2212,24 @@ fn check_container_native_to_frontier_container_via_v2_works() {
         };
 
         assert_ok!(send_inbound_message_v2(event));
+
+        // Check events in Dancelight
+        type RuntimeEvent = <Dancelight as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            Dancelight,
+            vec![
+                // EthereumInboundQueueV2 MessageReceived event
+                RuntimeEvent::EthereumInboundQueueV2(
+                    snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce: 1, .. }
+                ) => {},
+                // Tanssi fees minted to container sovereign account
+                RuntimeEvent::Balances(
+                    pallet_balances::Event::Minted { amount, .. }
+                ) => {
+                    amount: *amount == dest_fee_amount,
+                },
+            ]
+        );
     });
 
     // Check container native token is received in container
@@ -1967,6 +2247,21 @@ fn check_container_native_to_frontier_container_via_v2_works() {
             receiver_native_balance_after - receiver_native_balance_before,
             container_token_transfer_amount,
             "Receiver should have received the exact transfer amount"
+        );
+
+        // Check events in FrontierTemplate
+        type RuntimeEvent = <FrontierTemplate as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            FrontierTemplate,
+            vec![
+                // Balances Minted event for container native tokens received
+                RuntimeEvent::Balances(
+                    pallet_balances::Event::Minted { who, amount }
+                ) => {
+                    who: *who == token_receiver,
+                    amount: *amount == container_token_transfer_amount,
+                },
+            ]
         );
     });
 }
@@ -2205,6 +2500,24 @@ fn check_container_native_to_simple_container_via_v2_works() {
         };
 
         assert_ok!(send_inbound_message_v2(event));
+
+        // Check events in Dancelight
+        type RuntimeEvent = <Dancelight as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            Dancelight,
+            vec![
+                // EthereumInboundQueueV2 MessageReceived event
+                RuntimeEvent::EthereumInboundQueueV2(
+                    snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce: 1, .. }
+                ) => {},
+                // Tanssi fees minted to container sovereign account
+                RuntimeEvent::Balances(
+                    pallet_balances::Event::Minted { amount, .. }
+                ) => {
+                    amount: *amount == dest_fee_amount,
+                },
+            ]
+        );
     });
 
     // Check container native token is received in container
@@ -2222,6 +2535,21 @@ fn check_container_native_to_simple_container_via_v2_works() {
             receiver_native_balance_after - receiver_native_balance_before,
             container_token_transfer_amount,
             "Receiver should have received the exact transfer amount"
+        );
+
+        // Check events in SimpleTemplate
+        type RuntimeEvent = <SimpleTemplate as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            SimpleTemplate,
+            vec![
+                // Balances Minted event for container native tokens received
+                RuntimeEvent::Balances(
+                    pallet_balances::Event::Minted { who, amount }
+                ) => {
+                    who: *who == token_receiver.into(),
+                    amount: *amount == container_token_transfer_amount,
+                },
+            ]
         );
     });
 }
@@ -2441,6 +2769,18 @@ fn check_container_native_to_frontier_container_via_v2_fails_if_user_tries_drain
         };
 
         assert_ok!(send_inbound_message_v2(event));
+
+        // Check events in Dancelight - message should still be received even though XCM will fail on container
+        type RuntimeEvent = <Dancelight as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            Dancelight,
+            vec![
+                // EthereumInboundQueueV2 MessageReceived event - message is received but XCM execution will fail
+                RuntimeEvent::EthereumInboundQueueV2(
+                    snowbridge_pallet_inbound_queue_v2::Event::MessageReceived { nonce: 1, .. }
+                ) => {},
+            ]
+        );
     });
 
     // Check container native token is not received in container
@@ -2457,6 +2797,24 @@ fn check_container_native_to_frontier_container_via_v2_fails_if_user_tries_drain
         assert_eq!(
             receiver_native_balance_after, 0,
             "Receiver should not have received container native tokens"
+        );
+
+        // For this negative test, we verify no Balances::Minted event was emitted for the malicious transfer amount
+        // The XCM execution should fail because the origin doesn't have permission to withdraw from Ethereum sovereign
+        type RuntimeEvent = <FrontierTemplate as Chain>::RuntimeEvent;
+        let events = <FrontierTemplate as FrontierTemplateParaPallet>::System::events();
+        let balance_minted_events: Vec<_> = events
+            .iter()
+            .filter(|e| {
+                matches!(
+                    e.event,
+                    RuntimeEvent::Balances(pallet_balances::Event::Minted { .. })
+                )
+            })
+            .collect();
+        assert!(
+            balance_minted_events.is_empty(),
+            "No Balances::Minted event should be emitted for failed drain attempt"
         );
     });
 }
