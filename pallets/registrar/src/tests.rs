@@ -70,6 +70,22 @@ fn register_para_id_42() {
 }
 
 #[test]
+fn register_para_should_fail_with_not_sufficient_deposit() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+        assert_noop!(
+            ParaRegistrar::register(
+                RuntimeOrigin::signed(CHARLIE),
+                1.into(),
+                empty_genesis_data(),
+                None
+            ),
+            Error::<Test>::NotSufficientDeposit
+        );
+    });
+}
+
+#[test]
 fn register_para_id_42_twice() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
