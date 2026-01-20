@@ -19,6 +19,7 @@ parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
+snowbridge-merkle-tree = { workspace = true }
 
 
 [features]
