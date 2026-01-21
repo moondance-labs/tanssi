@@ -3141,11 +3141,17 @@ sp_api::impl_runtime_apis! {
 
     impl snowbridge_outbound_queue_runtime_api::OutboundQueueApi<Block, Balance> for Runtime {
         fn prove_message(leaf_index: u64) -> Option<MerkleProof> {
-            snowbridge_pallet_outbound_queue::api::prove_message::<Runtime>(leaf_index)
+            OutboundMessageCommitmentRecorder::prove_message_v1(leaf_index)
         }
 
         fn calculate_fee(command: Command, parameters: Option<PricingParameters<Balance>>) -> Fee<Balance> {
             snowbridge_pallet_outbound_queue::api::calculate_fee::<Runtime>(command, parameters)
+        }
+    }
+
+    impl snowbridge_outbound_queue_v2_runtime_api::OutboundQueueV2Api<Block, Balance> for Runtime {
+        fn prove_message(leaf_index: u64) -> Option<MerkleProof> {
+            OutboundMessageCommitmentRecorder::prove_message_v2(leaf_index)
         }
     }
 
