@@ -73,7 +73,7 @@ jobs:
     chopsticks-upgrade-test:
         runs-on:
             labels: ubuntu-latest
-        needs: ["build"]
+        needs: ["enforce-ready-to-merge-label", "build"]
         strategy:
             fail-fast: false
             matrix:
@@ -132,7 +132,7 @@ jobs:
 
     zombienet-test-upgrade:
         runs-on: ubuntu-latest
-        needs: ["build"]
+        needs: ["enforce-ready-to-merge-label", "build"]
         strategy:
             fail-fast: false
             matrix:
@@ -188,7 +188,7 @@ jobs:
 
     zombienet-test-upgrade-containers:
         runs-on: self-hosted
-        needs: ["build"]
+        needs: ["enforce-ready-to-merge-label", "build"]
         strategy:
             fail-fast: false
             matrix:
@@ -235,7 +235,7 @@ jobs:
 
     zombienet-test-upgrade-starlight:
         runs-on: self-hosted
-        needs: ["build"]
+        needs: ["enforce-ready-to-merge-label", "build"]
         strategy:
             fail-fast: false
             matrix:
