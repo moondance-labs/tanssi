@@ -2026,10 +2026,16 @@ declare module "@polkadot/api-base/types/storage" {
         };
         outboundMessageCommitmentRecorder: {
             /**
-             * Message commitment from last block.
+             * Message commitment from last block (v1).
              * This will be set only when there are messages to relay.
              **/
-            recordedCommitment: AugmentedQuery<ApiType, () => Observable<Option<H256>>, []> &
+            recordedCommitment: AugmentedQuery<ApiType, () => Observable<Option<ITuple<[H256, Vec<H256>]>>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Message commitment from last block (v2).
+             * This will be set only when there are messages to relay.
+             **/
+            recordedCommitmentV2: AugmentedQuery<ApiType, () => Observable<Option<ITuple<[H256, Vec<H256>]>>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
              * Generic query
