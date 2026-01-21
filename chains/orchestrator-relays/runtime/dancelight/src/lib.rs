@@ -1608,18 +1608,6 @@ impl pallet_root_testing::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
 
-impl pallet_asset_rate::Config for Runtime {
-    type WeightInfo = weights::pallet_asset_rate::SubstrateWeight<Runtime>;
-    type RuntimeEvent = RuntimeEvent;
-    type CreateOrigin = EnsureRoot<AccountId>;
-    type RemoveOrigin = EnsureRoot<AccountId>;
-    type UpdateOrigin = EnsureRoot<AccountId>;
-    type Currency = Balances;
-    type AssetKind = <Runtime as pallet_treasury::Config>::AssetKind;
-    #[cfg(feature = "runtime-benchmarks")]
-    type BenchmarkHelper = ();
-}
-
 parameter_types! {
     pub const MaxInvulnerables: u32 = 100;
     pub const MaxWhitelistedValidators: u32 = 100;
@@ -1705,7 +1693,6 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
                 | RuntimeCall::ServicesPayment(..)
                 | RuntimeCall::DataPreservers(..)
                 | RuntimeCall::Hrmp(..)
-                | RuntimeCall::AssetRate(..)
                 | RuntimeCall::StreamPayment(..)
                 | RuntimeCall::Treasury(..)
                 | RuntimeCall::EthereumSystemV2(..)
@@ -2048,9 +2035,6 @@ construct_runtime! {
 
         // Preimage registrar.
         Preimage: pallet_preimage = 85,
-
-        // Asset rate.
-        AssetRate: pallet_asset_rate = 86,
 
         // Foreign assets.
         ForeignAssets: pallet_assets::<Instance1> = 87,
@@ -2395,7 +2379,6 @@ mod benches {
         [pallet_transaction_payment, TransactionPayment]
         [pallet_treasury, Treasury]
         [pallet_utility, Utility]
-        [pallet_asset_rate, AssetRate]
         [pallet_whitelist, Whitelist]
         [pallet_services_payment, ServicesPayment]
         [pallet_mmr, Mmr]

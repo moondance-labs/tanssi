@@ -52,7 +52,7 @@ use {
     frame_support::{
         pallet_prelude::*,
         traits::{
-            fungible::{Inspect, InspectHold, Mutate, MutateHold},
+            fungible::{Inspect, Mutate, MutateHold},
             tokens::{Fortitude, Precision, Restriction},
             EnsureOriginWithArg,
         },
@@ -933,10 +933,6 @@ pub mod pallet {
             let genesis_data_size = genesis_data.encoded_size();
 
             let deposit = Self::get_genesis_cost(genesis_data_size);
-            // Verify we can hold
-            if !T::Currency::can_hold(&HoldReason::RegistrarDeposit.into(), &account, deposit) {
-                return Err(Error::<T>::NotSufficientDeposit.into());
-            }
 
             // Check if the para id is already registered by looking at the genesis data
             if ParaGenesisData::<T>::contains_key(para_id) {
@@ -956,8 +952,8 @@ pub mod pallet {
                 return Err(Error::<T>::GenesisDataTooBig.into());
             }
 
-            // Hold the deposit, we verified we can do this
-            T::Currency::hold(&HoldReason::RegistrarDeposit.into(), &account, deposit)?;
+            T::Currency::hold(&HoldReason::RegistrarDeposit.into(), &account, deposit)
+                .map_err(|_| Error::<T>::NotSufficientDeposit)?;
 
             // Register the paraId also in the relay context (if any).
             T::InnerRegistrar::register(
