@@ -385,4 +385,14 @@ impl<T: frame_system::Config> WeightInfo<T> {
 		// Minimum execution time: 928_000 picoseconds.
 		Weight::from_parts(968_000, 0)
 	}
+	/// Storage: `Parameters::Parameters` (r:1 w:0)
+	/// Proof: `Parameters::Parameters` (`max_values`: None, `max_size`: Some(61), added: 2536, mode: `MaxEncodedLen`)
+	pub(crate) fn alias_origin() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `4`
+		//  Estimated: `3526`
+		// Minimum execution time: 3_000_000 picoseconds.
+		Weight::from_parts(3_000_000, 3526)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+	}
 }

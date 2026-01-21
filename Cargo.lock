@@ -748,6 +748,7 @@ dependencies = [
 name = "asset-dancelight-integration-tests"
 version = "0.0.0"
 dependencies = [
+ "alloy-core",
  "container-chain-template-frontier-runtime",
  "container-chain-template-simple-runtime",
  "cumulus-pallet-parachain-system",
@@ -759,22 +760,29 @@ dependencies = [
  "frame-support",
  "frontier-template-emulated-chain",
  "hex-literal",
+ "pallet-assets",
+ "pallet-balances",
  "pallet-message-queue",
  "pallet-xcm",
+ "parity-scale-codec",
  "polkadot-primitives",
  "polkadot-runtime-parachains",
  "simple-template-emulated-chain",
  "snowbridge-beacon-primitives",
  "snowbridge-core",
  "snowbridge-inbound-queue-primitives",
+ "snowbridge-pallet-inbound-queue-v2",
  "snowbridge-pallet-outbound-queue",
  "snowbridge-pallet-outbound-queue-v2",
+ "snowbridge-pallet-system",
+ "snowbridge-verification-primitives",
  "sp-core",
  "sp-runtime",
  "sp-tracing",
  "staging-xcm",
  "staging-xcm-executor",
  "tanssi-emulated-integration-tests-common",
+ "tanssi-runtime-common",
  "xcm-emulator",
 ]
 
