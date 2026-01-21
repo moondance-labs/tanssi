@@ -53,10 +53,6 @@ jobs:
                     - zombie_data_preservers_embedded_dancebox
                     - zombie_data_preservers_embedded_dancelight
                     - zombie_tanssi_rotation
-                    - zombie_tanssi_relay_container_native_to_container_v2
-                    - zombie_tanssi_relay_eth_to_container_v2
-                    - zombie_tanssi_relay_erc20_to_container_v2
-                    - zombie_tanssi_relay_tanssi_to_container_v2
         steps:
             - name: Checkout
               uses: actions/checkout@v6
