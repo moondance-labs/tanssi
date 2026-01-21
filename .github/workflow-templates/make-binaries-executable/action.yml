@@ -1,4 +1,5 @@
 name: Make binaries executable
+description: "Marks downloaded binaries as executable for CI tests."
 
 runs:
   using: "composite"
