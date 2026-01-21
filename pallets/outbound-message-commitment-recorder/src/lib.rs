@@ -123,7 +123,13 @@ pub mod pallet {
         pub fn prove_message_v2(leaf_index: u64) -> Option<MerkleProof> {
             let v1 = RecordedCommitment::<T>::get();
             if let Some((_, leaves)) = v1 {
-                Self::prove_message((leaves.len() as u64).saturating_add(leaf_index))
+                let maybe_combined_index = (leaves.len() as u64).checked_add(leaf_index);
+                if let Some(combined_index) = maybe_combined_index {
+                    Self::prove_message(combined_index)
+                } else {
+                    // Overflow
+                    None
+                }
             } else {
                 Self::prove_message(leaf_index)
             }
