@@ -107,39 +107,6 @@ export type __SubmittableExtrinsicFunction<ApiType extends ApiTypes> = Submittab
 
 declare module "@polkadot/api-base/types/submittable" {
     interface AugmentedSubmittables<ApiType extends ApiTypes> {
-        assetRate: {
-            /**
-             * Initialize a conversion rate to native balance for the given asset.
-             *
-             * ## Complexity
-             * - O(1)
-             **/
-            create: AugmentedSubmittable<
-                (assetKind: Null | null, rate: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
-                [Null, u128]
-            >;
-            /**
-             * Remove an existing conversion rate to native balance for the given asset.
-             *
-             * ## Complexity
-             * - O(1)
-             **/
-            remove: AugmentedSubmittable<(assetKind: Null | null) => SubmittableExtrinsic<ApiType>, [Null]>;
-            /**
-             * Update the conversion rate to native balance for the given asset.
-             *
-             * ## Complexity
-             * - O(1)
-             **/
-            update: AugmentedSubmittable<
-                (assetKind: Null | null, rate: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
-                [Null, u128]
-            >;
-            /**
-             * Generic tx
-             **/
-            [key: string]: SubmittableExtrinsicFunction<ApiType>;
-        };
         authorNoting: {
             killAuthorData: AugmentedSubmittable<
                 (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,

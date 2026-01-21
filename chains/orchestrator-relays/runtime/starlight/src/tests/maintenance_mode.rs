@@ -158,12 +158,6 @@ fn test_filtered_calls_maintenance_mode() {
                     sender: 1u32.into(),
                 },
             ));
-            assert_call_filtered(RuntimeCall::AssetRate(
-                pallet_asset_rate::Call::<Runtime>::create {
-                    asset_kind: Box::new(()),
-                    rate: 1u128.into(),
-                },
-            ));
             assert_call_filtered(RuntimeCall::StreamPayment(pallet_stream_payment::Call::<
                 Runtime,
             >::close_stream {
