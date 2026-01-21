@@ -123,7 +123,7 @@ pub mod pallet {
         pub fn prove_message_v2(leaf_index: u64) -> Option<MerkleProof> {
             let v1 = RecordedCommitment::<T>::get();
             if let Some((_, leaves)) = v1 {
-                Self::prove_message(leaves.len() as u64 + leaf_index)
+                Self::prove_message((leaves.len() as u64).saturating_add(leaf_index))
             } else {
                 Self::prove_message(leaf_index)
             }
