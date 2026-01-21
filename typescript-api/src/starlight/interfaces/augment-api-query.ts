@@ -155,19 +155,6 @@ export type __QueryableStorageEntry<ApiType extends ApiTypes> = QueryableStorage
 
 declare module "@polkadot/api-base/types/storage" {
     interface AugmentedQueries<ApiType extends ApiTypes> {
-        assetRate: {
-            /**
-             * Maps an asset to its fixed point representation in the native balance.
-             *
-             * E.g. `native_amount = asset_amount * ConversionRateToNative::<T>::get(asset_kind)`
-             **/
-            conversionRateToNative: AugmentedQuery<ApiType, (arg: Null | null) => Observable<Option<u128>>, [Null]> &
-                QueryableStorageEntry<ApiType, [Null]>;
-            /**
-             * Generic query
-             **/
-            [key: string]: QueryableStorageEntry<ApiType>;
-        };
         authorityDiscovery: {
             /**
              * Keys of the current authority set.
@@ -1578,7 +1565,12 @@ declare module "@polkadot/api-base/types/storage" {
         };
         inflationRewards: {
             /**
-             * Container chains to reward per block
+             * Container chains to reward per block.
+             * This gets initialized to the list of chains that should be producing blocks.
+             * Then, in the `set_latest_author_data` inherent, the chains that actually have produced
+             * blocks are rewarded and removed from this list, in the `on_container_authors_noted` hook.
+             * Chains that have not produced blocks stay in this list, and their rewards get accumulated as
+             * `not_distributed_rewards` and handled by `OnUnbalanced` in the next block `on_initialize`.
              **/
             chainsToReward: AugmentedQuery<
                 ApiType,

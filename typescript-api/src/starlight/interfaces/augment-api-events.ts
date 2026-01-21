@@ -73,19 +73,6 @@ export type __AugmentedEvent<ApiType extends ApiTypes> = AugmentedEvent<ApiType>
 
 declare module "@polkadot/api-base/types/events" {
     interface AugmentedEvents<ApiType extends ApiTypes> {
-        assetRate: {
-            AssetRateCreated: AugmentedEvent<ApiType, [assetKind: Null, rate: u128], { assetKind: Null; rate: u128 }>;
-            AssetRateRemoved: AugmentedEvent<ApiType, [assetKind: Null], { assetKind: Null }>;
-            AssetRateUpdated: AugmentedEvent<
-                ApiType,
-                [assetKind: Null, old: u128, new_: u128],
-                { assetKind: Null; old: u128; new_: u128 }
-            >;
-            /**
-             * Generic event
-             **/
-            [key: string]: AugmentedEvent<ApiType>;
-        };
         authorNoting: {
             /**
              * Latest author changed

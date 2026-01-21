@@ -99,6 +99,10 @@ where
         }
     }
 
+    fn worst_case_message_processor_weight() -> Weight {
+        Weight::zero()
+    }
+
     fn calculate_message_id(message: &Message) -> [u8; 32] {
         let response = Self::try_extract_message(&AccountId::from([1u8; 32]), message);
         match response {
@@ -169,6 +173,10 @@ where
                 "TestImpl2MainProcessorError",
             ))),
         }
+    }
+
+    fn worst_case_message_processor_weight() -> Weight {
+        Weight::zero()
     }
 
     fn calculate_message_id(message: &Message) -> [u8; 32] {

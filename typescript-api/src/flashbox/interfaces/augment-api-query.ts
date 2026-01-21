@@ -440,7 +440,12 @@ declare module "@polkadot/api-base/types/storage" {
         };
         inflationRewards: {
             /**
-             * Container chains to reward per block
+             * Container chains to reward per block.
+             * This gets initialized to the list of chains that should be producing blocks.
+             * Then, in the `set_latest_author_data` inherent, the chains that actually have produced
+             * blocks are rewarded and removed from this list, in the `on_container_authors_noted` hook.
+             * Chains that have not produced blocks stay in this list, and their rewards get accumulated as
+             * `not_distributed_rewards` and handled by `OnUnbalanced` in the next block `on_initialize`.
              **/
             chainsToReward: AugmentedQuery<
                 ApiType,
