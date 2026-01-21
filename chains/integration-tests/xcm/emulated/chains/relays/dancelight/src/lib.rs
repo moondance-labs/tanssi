@@ -46,7 +46,6 @@ decl_test_relay_chains! {
             EthereumTokenTransfers: dancelight_runtime::EthereumTokenTransfers,
             ForeignAssets: dancelight_runtime::ForeignAssets,
             ForeignAssetsCreator: dancelight_runtime::ForeignAssetsCreator,
-            AssetRate: dancelight_runtime::AssetRate,
         }
     }
 }

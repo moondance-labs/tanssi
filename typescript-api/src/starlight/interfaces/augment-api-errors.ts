@@ -11,24 +11,6 @@ export type __AugmentedError<ApiType extends ApiTypes> = AugmentedError<ApiType>
 
 declare module "@polkadot/api-base/types/errors" {
     interface AugmentedErrors<ApiType extends ApiTypes> {
-        assetRate: {
-            /**
-             * The given asset ID already has an assigned conversion rate and cannot be re-created.
-             **/
-            AlreadyExists: AugmentedError<ApiType>;
-            /**
-             * Overflow ocurred when calculating the inverse rate.
-             **/
-            Overflow: AugmentedError<ApiType>;
-            /**
-             * The given asset ID is unknown.
-             **/
-            UnknownAssetKind: AugmentedError<ApiType>;
-            /**
-             * Generic error
-             **/
-            [key: string]: AugmentedError<ApiType>;
-        };
         authorNoting: {
             AsPreRuntimeError: AugmentedError<ApiType>;
             AuraDigestFirstItem: AugmentedError<ApiType>;
