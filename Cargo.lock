@@ -4029,6 +4029,7 @@ dependencies = [
  "snowbridge-milagro-bls",
  "snowbridge-outbound-queue-primitives",
  "snowbridge-outbound-queue-runtime-api",
+ "snowbridge-outbound-queue-v2-runtime-api",
  "snowbridge-pallet-ethereum-client",
  "snowbridge-pallet-inbound-queue",
  "snowbridge-pallet-inbound-queue-fixtures",
@@ -17573,6 +17574,19 @@ dependencies = [
  "snowbridge-core",
  "snowbridge-merkle-tree",
  "snowbridge-outbound-queue-primitives",
+ "sp-api",
+ "sp-std",
+]
+
+[[package]]
+name = "snowbridge-outbound-queue-v2-runtime-api"
+version = "0.3.0"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2506#438e465727fbaa699a53c49161cb6af17764e362"
+dependencies = [
+ "frame-support",
+ "parity-scale-codec",
+ "scale-info",
+ "snowbridge-merkle-tree",
  "sp-api",
  "sp-std",
 ]

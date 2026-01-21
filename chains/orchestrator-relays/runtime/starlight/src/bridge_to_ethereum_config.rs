@@ -71,11 +71,14 @@ pub struct CommitmentRecorder;
 
 impl OnNewCommitment for CommitmentRecorder {
     fn on_new_commitment(commitment: H256) {
-        OutboundMessageCommitmentRecorder::record_commitment_root(commitment);
+        let message_leaves = snowbridge_pallet_outbound_queue::MessageLeaves::<Runtime>::get();
+        OutboundMessageCommitmentRecorder::record_commitment_root(commitment, message_leaves);
     }
 }
 
-impl pallet_outbound_message_commitment_recorder::Config for Runtime {}
+impl pallet_outbound_message_commitment_recorder::Config for Runtime {
+    type Hashing = Keccak256;
+}
 
 // https://github.com/paritytech/polkadot-sdk/blob/2ae79be8e028a995b850621ee55f46c041eceefe/cumulus/parachains/runtimes/bridge-hubs/bridge-hub-westend/src/bridge_to_ethereum_config.rs#L105
 impl snowbridge_pallet_outbound_queue::Config for Runtime {
