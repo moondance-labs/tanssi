@@ -28,7 +28,7 @@ describeSuite({
         let shouldSkipStarlightSnV2TT: boolean;
         let specVersion: number;
         let sovereignAccountAddress: string;
-        let balanceDiff1: number | undefined;
+        let balanceDiff1: bigint | undefined;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
