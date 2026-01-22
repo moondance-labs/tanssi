@@ -327,6 +327,9 @@ impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
     type Balance = Balance;
     type AssetId = AssetId;
     type AssetIdParameter = AssetId;
+    // TODO: ReserveData = ForeignAssetReserveData
+    // TODO: check if this needs a migration
+    type ReserveData = ();
     type Currency = Balances;
     type CreateOrigin = frame_support::traits::NeverEnsureOrigin<AccountId>;
     type ForceOrigin = EnsureRoot<AccountId>;

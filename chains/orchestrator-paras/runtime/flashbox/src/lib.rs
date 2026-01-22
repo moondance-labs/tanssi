@@ -507,6 +507,7 @@ pub const BLOCK_PROCESSING_VELOCITY: u32 = 1;
 
 type ConsensusHook = pallet_async_backing::consensus_hook::FixedVelocityConsensusHook<
     Runtime,
+    RELAY_CHAIN_SLOT_DURATION_MILLIS,
     BLOCK_PROCESSING_VELOCITY,
     UNINCLUDED_SEGMENT_CAPACITY,
 >;
@@ -524,7 +525,6 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type ReservedXcmpWeight = ();
     type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
     type ConsensusHook = ConsensusHook;
-    type SelectCore = cumulus_pallet_parachain_system::DefaultCoreSelector<Runtime>;
     type RelayParentOffset = ConstU32<0>;
 }
 
@@ -545,6 +545,8 @@ impl pallet_async_backing::Config for Runtime {
     type GetAndVerifySlot =
         pallet_async_backing::ParaSlot<RELAY_CHAIN_SLOT_DURATION_MILLIS, ParaSlotProvider>;
     type ExpectedBlockTime = ExpectedBlockTime;
+    // Not a typo, SlotDuration is equal to ExpectedBlockTime
+    type SlotDuration = ExpectedBlockTime;
 }
 
 pub struct OwnApplySession;
@@ -623,6 +625,8 @@ impl SessionManager<CollatorId> for CollatorsFromInvulnerables {
 parameter_types! {
     pub const Period: u32 = prod_or_fast!(5 * MINUTES, 1 * MINUTES);
     pub const Offset: u32 = 0;
+    // TODO: how to calculate KeyDeposit?
+    pub const KeyDeposit: Balance = currency::deposit(1, 5 * 32 + 33);
 }
 
 impl pallet_session::Config for Runtime {
@@ -638,6 +642,8 @@ impl pallet_session::Config for Runtime {
     type Keys = SessionKeys;
     type WeightInfo = weights::pallet_session::SubstrateWeight<Runtime>;
     type DisablingStrategy = ();
+    type Currency = Balances;
+    type KeyDeposit = KeyDeposit;
 }
 
 pub struct RemoveInvulnerablesImpl;
@@ -1604,7 +1610,7 @@ impl_runtime_apis! {
             VERSION
         }
 
-        fn execute_block(block: Block) {
+        fn execute_block(block: <Block as BlockT>::LazyBlock) {
             Executive::execute_block(block)
         }
 
@@ -1641,7 +1647,7 @@ impl_runtime_apis! {
         }
 
         fn check_inherents(
-            block: Block,
+            block: <Block as BlockT>::LazyBlock,
             data: sp_inherents::InherentData,
         ) -> sp_inherents::CheckInherentsResult {
             data.check_extrinsics(&block)
