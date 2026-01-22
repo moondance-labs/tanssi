@@ -21,7 +21,6 @@ use {
     core_extensions::TypeIdentity,
     cumulus_client_bootnodes::{start_bootnode_tasks, StartBootnodeTasksParams},
     cumulus_client_cli::CollatorOptions,
-    cumulus_client_consensus_common::ParachainConsensus,
     cumulus_client_service::{
         build_relay_chain_interface, CollatorSybilResistance, ParachainHostFunctions,
         StartFullNodeParams,
@@ -48,8 +47,8 @@ use {
     sc_network_sync::SyncingService,
     sc_network_transactions::TransactionsHandlerController,
     sc_service::{
-        config::Multiaddr, Configuration, KeystoreContainer, SpawnTaskHandle, TFullBackend,
-        TFullClient, TaskManager,
+        config::Multiaddr, Configuration, KeystoreContainer, TFullBackend, TFullClient,
+        TaskManager,
     },
     sc_telemetry::{Telemetry, TelemetryWorker, TelemetryWorkerHandle},
     sc_transaction_pool_api::{OffchainTransactionPoolFactory, TransactionPool},
