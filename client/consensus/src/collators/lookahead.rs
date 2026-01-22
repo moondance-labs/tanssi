@@ -335,8 +335,8 @@ pub struct Params<
     pub sync_oracle: SO,
     pub keystore: KeystorePtr,
     pub collator_key: CollatorPair,
-	/// The collator network peer id.
-	pub collator_peer_id: PeerId,
+    /// The collator network peer id.
+    pub collator_peer_id: PeerId,
     pub para_id: ParaId,
     pub overseer_handle: OverseerHandle,
     pub orchestrator_slot_duration: SlotDuration,

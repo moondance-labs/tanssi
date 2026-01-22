@@ -82,7 +82,7 @@ use {
         generic,
         generic::SignedPayload,
         impl_opaque_keys,
-        traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify, LazyBlock},
+        traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify},
         transaction_validity::{TransactionSource, TransactionValidity},
         ApplyExtrinsicResult, Cow, MultiSignature, SaturatedConversion,
     },
