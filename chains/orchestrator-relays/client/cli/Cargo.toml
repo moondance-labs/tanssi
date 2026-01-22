@@ -33,6 +33,7 @@ polkadot-node-metrics = { workspace = true }
 polkadot-node-primitives = { workspace = true }
 sc-cli = { workspace = true, optional = true }
 sc-executor = { workspace = true }
+sc-network = { workspace = true }
 sc-service = { workspace = true, optional = true }
 sc-storage-monitor = { workspace = true }
 sc-sysinfo = { workspace = true }

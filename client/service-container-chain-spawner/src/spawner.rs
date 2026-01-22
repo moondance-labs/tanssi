@@ -22,6 +22,7 @@
 //! [Keep db flowchart](https://raw.githubusercontent.com/moondance-labs/tanssi/master/docs/keep_db_flowchart.png)
 
 use node_common::service::node_builder::StartBootnodeParams;
+use sc_network::PeerId;
 use {
     crate::{
         cli::ContainerChainCli,
@@ -135,6 +136,7 @@ pub struct ContainerChainSpawnParams<
 #[derive(Clone)]
 pub struct CollationParams {
     pub collator_key: CollatorPair,
+    pub collator_peer_id: PeerId,
     pub orchestrator_tx_pool: Option<Arc<TransactionPoolHandle<OpaqueBlock, ParachainClient>>>,
     pub orchestrator_client: Option<Arc<ParachainClient>>,
     pub orchestrator_para_id: ParaId,

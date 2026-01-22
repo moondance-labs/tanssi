@@ -19,10 +19,10 @@ pub mod rpc;
 use cumulus_client_bootnodes::{start_bootnode_tasks, StartBootnodeTasksParams};
 use node_common::service::node_builder::StartBootnodeParams;
 use sc_client_api::TrieCacheContext;
+use sc_network::PeerId;
 use {
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
-    cumulus_client_consensus_proposer::Proposer,
     cumulus_client_service::{
         prepare_node_config, start_relay_chain_tasks, DARecoveryProfile, StartRelayChainTasksParams,
     },
@@ -57,6 +57,7 @@ use {
     sp_api::{ApiExt, StorageProof},
     sp_consensus::SyncOracle,
     sp_consensus_slots::Slot,
+    sp_core::Encode,
     sp_core::H256,
     sp_keystore::KeystorePtr,
     sp_state_machine::{Backend as StateBackend, StorageValue},
@@ -141,16 +142,15 @@ fn start_consensus_orchestrator(
     relay_chain_slot_duration: Duration,
     para_id: ParaId,
     collator_key: CollatorPair,
+    collator_peer_id: PeerId,
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
-    proposer_factory: ParachainProposerFactory,
+    proposer: ParachainProposerFactory,
     orchestrator_tx_pool: Arc<TransactionPoolHandle<Block, ParachainClient>>,
     max_pov_percentage: Option<u32>,
 ) -> (CancellationToken, futures::channel::oneshot::Receiver<()>) {
     let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)
         .expect("start_consensus_orchestrator: slot duration should exist");
-
-    let proposer = Proposer::new(proposer_factory);
 
     let collator_service = CollatorService::new(
         client.clone(),
@@ -277,6 +277,7 @@ fn start_consensus_orchestrator(
         sync_oracle,
         keystore,
         collator_key,
+        collator_peer_id,
         para_id,
         overseer_handle,
         orchestrator_slot_duration: slot_duration,
@@ -384,6 +385,7 @@ where
         let sync_service = node_builder.network.sync_service.clone();
         Arc::new(move |hash, data| sync_service.announce_block(hash, data))
     };
+    let collator_peer_id = node_builder.network.network.local_peer_id();
 
     let (mut node_builder, import_queue_service) = node_builder.extract_import_queue_service();
 
@@ -429,7 +431,7 @@ where
             request_receiver: paranode_rx,
             parachain_network: node_builder.network.network.clone(),
             advertise_non_global_ips,
-            parachain_genesis_hash: node_builder.client.chain_info().genesis_hash,
+            parachain_genesis_hash: node_builder.client.chain_info().genesis_hash.encode(),
             parachain_fork_id,
             parachain_public_addresses,
         });
@@ -492,6 +494,7 @@ where
                     relay_chain_slot_duration,
                     para_id,
                     collator_key.clone(),
+                    collator_peer_id.clone(),
                     overseer.clone(),
                     announce_block.clone(),
                     proposer_factory.clone(),
@@ -550,6 +553,7 @@ where
                         orchestrator_para_id: para_id,
                         collator_key: collator_key
                             .expect("there should be a collator key if we're a validator"),
+                        collator_peer_id,
                         solochain: false,
                     })
                 } else {

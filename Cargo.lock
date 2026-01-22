@@ -20572,6 +20572,7 @@ dependencies = [
  "pyroscope_pprofrs",
  "sc-cli",
  "sc-executor",
+ "sc-network",
  "sc-service",
  "sc-storage-monitor",
  "sc-sysinfo",

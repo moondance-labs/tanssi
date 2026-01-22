@@ -30,6 +30,7 @@
 //! 10. If amount of time passed between two block is less than slot duration, we emulate passing of time babe block import and runtime
 //!     by incrementing timestamp by slot duration.
 
+use sp_consensus_babe::inherents::BabeCreateInherentDataProviders;
 use {
     crate::dev_rpcs::{DevApiServer, DevRpc},
     async_io::Timer,
@@ -49,8 +50,8 @@ use {
     polkadot_overseer::Handle,
     polkadot_parachain_primitives::primitives::UpwardMessages,
     polkadot_primitives::{
-        runtime_api::ParachainHost, BackedCandidate, CandidateCommitments, CandidateDescriptor,
-        CollatorPair, CommittedCandidateReceipt, CompactStatement, EncodeAs,
+        runtime_api::ParachainHost, BackedCandidate, CandidateCommitments, CandidateDescriptorV2,
+        CommittedCandidateReceiptV2, CompactStatement, CoreIndex, EncodeAs,
         InherentData as ParachainsInherentData, OccupiedCoreAssumption, SigningContext,
         ValidityAttestation,
     },
@@ -73,7 +74,7 @@ use {
     sp_blockchain::{HeaderBackend, HeaderMetadata},
     sp_consensus_aura::{inherents::InherentType as AuraInherentType, AURA_ENGINE_ID},
     sp_consensus_babe::SlotDuration,
-    sp_core::{ByteArray, Pair, H256},
+    sp_core::{ByteArray, H256},
     sp_keystore::KeystorePtr,
     sp_runtime::{traits::BlakeTwo256, DigestItem, RuntimeAppPublic},
     std::{cmp::max, ops::Add, sync::Arc, time::Duration},
@@ -360,8 +361,6 @@ where
             })
             .collect();
 
-        // generate a random collator pair
-        let collator_pair = CollatorPair::generate().0;
         let mut backed_cand: Vec<BackedCandidate<H256>> = vec![];
 
         let container_chains_exclusion_messages: Vec<Vec<ParaId>> =
@@ -432,15 +431,6 @@ where
                                 .unwrap()
                                 .unwrap();
                             let pov_hash = Default::default();
-                            // generate a fake collator signature
-                            let payload = polkadot_primitives::collator_signature_payload(
-                                &parent,
-                                &para[0],
-                                &persisted_validation_data_hash,
-                                &pov_hash,
-                                &validation_code_hash,
-                            );
-                            let collator_signature = collator_pair.sign(&payload);
 
                             let upward_messages = UpwardMessages::try_from(
                                 upward_messages_receiver.drain().collect::<Vec<_>>(),
@@ -448,18 +438,18 @@ where
                             .expect("create upward messages from raw messages");
 
                             // generate a candidate with most of the values mocked
-                            let candidate = CommittedCandidateReceipt::<H256> {
-                                descriptor: CandidateDescriptor::<H256> {
-                                    para_id: para[0],
-                                    relay_parent: parent,
-                                    collator: collator_pair.public(),
+                            let candidate = CommittedCandidateReceiptV2::<H256> {
+                                descriptor: CandidateDescriptorV2::new(
+                                    para[0],
+                                    parent,
+                                    CoreIndex(0),
+                                    0,
                                     persisted_validation_data_hash,
                                     pov_hash,
-                                    erasure_root: Default::default(),
-                                    signature: collator_signature,
-                                    para_head: parachain_mocked_header.clone().hash(),
+                                    Default::default(),
+                                    parachain_mocked_header.clone().hash(),
                                     validation_code_hash,
-                                },
+                                ),
                                 commitments: CandidateCommitments::<u32> {
                                     upward_messages,
                                     horizontal_messages: Default::default(),
@@ -857,6 +847,7 @@ fn new_full<
         system_rpc_tx,
         tx_handler_controller,
         telemetry: telemetry.as_mut(),
+        tracing_execute_block: None,
     })?;
 
     Ok(NewFull {
@@ -888,7 +879,16 @@ fn new_partial<ChainSelection>(
         sc_consensus::DefaultImportQueue<Block>,
         sc_transaction_pool::TransactionPoolHandle<Block, FullClient>,
         (
-            BabeBlockImport<Block, FullClient, Arc<FullClient>>,
+            BabeBlockImport<
+                Block,
+                FullClient,
+                // TODO: this is different in polkadot-sdk:
+                //FullBeefyBlockImport<FullGrandpaBlockImport>,
+                //FullGrandpaBlockImport,
+                Arc<FullClient>,
+                BabeCreateInherentDataProviders<Block>,
+                ChainSelection,
+            >,
             BabeLink<Block>,
             SlotDuration,
             Option<Telemetry>,
@@ -907,13 +907,28 @@ where
     .with_options(config.transaction_pool.clone())
     .with_prometheus(config.prometheus_registry())
     .build();
+    let transaction_pool = Arc::new(transaction_pool);
 
     // Create babe block import queue; this is required to have correct epoch data
     // available for manual seal to produce block
     let babe_config = babe::configuration(&*client)?;
-    let (babe_block_import, babe_link) =
-        babe::block_import(babe_config.clone(), client.clone(), client.clone())?;
-    let slot_duration = babe_link.config().slot_duration();
+    let slot_duration = babe_config.slot_duration();
+    let (babe_block_import, babe_link) = babe::block_import(
+        babe_config.clone(),
+        client.clone(),
+        client.clone(),
+        Arc::new(move |_, _| async move {
+            let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+            let slot =
+			sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
+				*timestamp,
+				slot_duration,
+			);
+            Ok((slot, timestamp))
+        }) as BabeCreateInherentDataProviders<Block>,
+        select_chain.clone(),
+        OffchainTransactionPoolFactory::new(transaction_pool.clone()),
+    )?;
 
     // Create manual seal block import with manual seal block import queue
     let import_queue = sc_consensus_manual_seal::import_queue(
@@ -929,7 +944,7 @@ where
         keystore_container,
         select_chain,
         import_queue,
-        transaction_pool: transaction_pool.into(),
+        transaction_pool,
         other: (babe_block_import, babe_link, slot_duration, telemetry),
     })
 }

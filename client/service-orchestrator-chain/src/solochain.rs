@@ -16,6 +16,7 @@
 
 use node_common::service::node_builder::StartBootnodeParams;
 use polkadot_primitives::CollatorPair;
+use sc_network::PeerId;
 use sc_sysinfo::HwBench;
 use {
     cumulus_client_cli::CollatorOptions,
@@ -256,6 +257,8 @@ pub async fn start_solochain_node(
         let spawn_handle = task_manager.spawn_handle();
         let relay_chain_interface = relay_chain_interface.clone();
         let orchestrator_chain_interface = orchestrator_chain_interface.clone();
+        // TODO: how to get PeerId here?
+        let collator_peer_id: PeerId = PeerId::random();
 
         let container_chain_spawner = ContainerChainSpawner {
             params: ContainerChainSpawnParams {
@@ -274,6 +277,7 @@ pub async fn start_solochain_node(
                         orchestrator_para_id,
                         collator_key: collator_key
                             .expect("there should be a collator key if we're a validator"),
+                        collator_peer_id,
                         solochain: true,
                     })
                 } else {
@@ -609,6 +613,7 @@ pub fn dummy_config(tokio_handle: tokio::runtime::Handle, base_path: BasePath) -
             rate_limit: None,
             rate_limit_whitelisted_ips: vec![],
             rate_limit_trust_proxy_headers: false,
+            request_logger_limit: 1024,
         },
         prometheus_config: None,
         telemetry_endpoints: None,

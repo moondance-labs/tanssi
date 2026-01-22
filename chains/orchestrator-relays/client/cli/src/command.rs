@@ -27,8 +27,11 @@ use {
         HeaderBackend, IdentifyVariant, ParaId,
     },
     sc_cli::{CliConfiguration, SubstrateCli},
+    sc_network::PeerId,
     sp_core::crypto::Ss58AddressFormatRegistry,
     sp_keyring::Sr25519Keyring,
+    std::collections::HashSet,
+    std::time::Duration,
     tanssi_relay_service::dev_service::build_full as build_full_dev,
 };
 
@@ -44,6 +47,13 @@ fn get_exec_name() -> Option<String> {
         .ok()
         .and_then(|pb| pb.file_name().map(|s| s.to_os_string()))
         .and_then(|s| s.into_string().ok())
+}
+
+// We don't have AssetsHub, so this list is empty
+fn get_invulnerable_ah_collators(
+    _chain_spec: &Box<dyn polkadot_service::ChainSpec>,
+) -> HashSet<PeerId> {
+    HashSet::default()
 }
 
 impl SubstrateCli for Cli {
@@ -139,6 +149,13 @@ where
 
     let secure_validator_mode = cli.run.base.validator && !cli.run.insecure_validator;
 
+    // Parse collator protocol hold off value and get the list of the invlunerable collators.
+    let collator_protocol_hold_off = cli
+        .run
+        .collator_protocol_hold_off
+        .map(Duration::from_millis);
+    let invulnerable_ah_collators = get_invulnerable_ah_collators(&chain_spec);
+
     runner.run_node_until_exit(move |config| async move {
         let hwbench = (!cli.run.no_hardware_benchmarks)
             .then(|| {
@@ -177,8 +194,9 @@ where
                     execute_workers_max_num: cli.run.execute_workers_max_num,
                     prepare_workers_hard_max_num: cli.run.prepare_workers_hard_max_num,
                     prepare_workers_soft_max_num: cli.run.prepare_workers_soft_max_num,
-                    enable_approval_voting_parallel: cli.run.enable_approval_voting_parallel,
                     keep_finalized_for: cli.run.keep_finalized_for,
+                    invulnerable_ah_collators,
+                    collator_protocol_hold_off,
                 },
             )
             .map(|full| full.task_manager)?
@@ -206,8 +224,9 @@ where
                     execute_workers_max_num: cli.run.execute_workers_max_num,
                     prepare_workers_hard_max_num: cli.run.prepare_workers_hard_max_num,
                     prepare_workers_soft_max_num: cli.run.prepare_workers_soft_max_num,
-                    enable_approval_voting_parallel: cli.run.enable_approval_voting_parallel,
                     keep_finalized_for: cli.run.keep_finalized_for,
+                    invulnerable_ah_collators,
+                    collator_protocol_hold_off,
                 },
             )
             .map(|full| full.task_manager)?
