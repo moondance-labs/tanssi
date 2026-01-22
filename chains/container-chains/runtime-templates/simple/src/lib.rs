@@ -82,7 +82,7 @@ use {
         generic,
         generic::SignedPayload,
         impl_opaque_keys,
-        traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify},
+        traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify, LazyBlock},
         transaction_validity::{TransactionSource, TransactionValidity},
         ApplyExtrinsicResult, Cow, MultiSignature, SaturatedConversion,
     },
@@ -565,6 +565,7 @@ pub const BLOCK_PROCESSING_VELOCITY: u32 = 1;
 
 type ConsensusHook = pallet_async_backing::consensus_hook::FixedVelocityConsensusHook<
     Runtime,
+    RELAY_CHAIN_SLOT_DURATION_MILLIS,
     BLOCK_PROCESSING_VELOCITY,
     UNINCLUDED_SEGMENT_CAPACITY,
 >;
@@ -581,7 +582,6 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type ReservedXcmpWeight = ReservedXcmpWeight;
     type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
     type ConsensusHook = ConsensusHook;
-    type SelectCore = cumulus_pallet_parachain_system::DefaultCoreSelector<Runtime>;
     type RelayParentOffset = ConstU32<0>;
 }
 
@@ -602,6 +602,8 @@ impl pallet_async_backing::Config for Runtime {
     type GetAndVerifySlot =
         pallet_async_backing::ParaSlot<RELAY_CHAIN_SLOT_DURATION_MILLIS, ParaSlotProvider>;
     type ExpectedBlockTime = ExpectedBlockTime;
+    // Not a typo, SlotDuration is equal to ExpectedBlockTime
+    type SlotDuration = ExpectedBlockTime;
 }
 
 impl parachain_info::Config for Runtime {}
@@ -997,7 +999,7 @@ impl_runtime_apis! {
             VERSION
         }
 
-        fn execute_block(block: Block) {
+        fn execute_block(block: <Block as BlockT>::LazyBlock) {
             Executive::execute_block(block)
         }
 
@@ -1034,7 +1036,7 @@ impl_runtime_apis! {
         }
 
         fn check_inherents(
-            block: Block,
+            block: <Block as BlockT>::LazyBlock,
             data: sp_inherents::InherentData,
         ) -> sp_inherents::CheckInherentsResult {
             data.check_extrinsics(&block)
@@ -1548,8 +1550,9 @@ impl_runtime_apis! {
             PolkadotXcm::query_xcm_weight(message)
         }
 
-        fn query_delivery_fees(destination: VersionedLocation, message: VersionedXcm<()>) -> Result<VersionedAssets, XcmPaymentApiError> {
-            PolkadotXcm::query_delivery_fees(destination, message)
+        fn query_delivery_fees(destination: VersionedLocation, message: VersionedXcm<()>, asset_id: VersionedAssetId) -> Result<VersionedAssets, XcmPaymentApiError> {
+            type AssetExchanger = <xcm_config::XcmConfig as xcm_executor::Config>::AssetExchanger;
+            PolkadotXcm::query_delivery_fees::<AssetExchanger>(destination, message, asset_id)
         }
     }
 
@@ -1559,7 +1562,7 @@ impl_runtime_apis! {
         }
 
         fn dry_run_xcm(origin_location: VersionedLocation, xcm: VersionedXcm<RuntimeCall>) -> Result<XcmDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
-            PolkadotXcm::dry_run_xcm::<Runtime, xcm_config::XcmRouter, RuntimeCall, xcm_config::XcmConfig>(origin_location, xcm)
+            PolkadotXcm::dry_run_xcm::<xcm_config::XcmRouter>(origin_location, xcm)
         }
     }
 
@@ -1576,34 +1579,8 @@ impl_runtime_apis! {
     }
 }
 
-#[allow(dead_code)]
-struct CheckInherents;
-
-#[allow(deprecated)]
-impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
-    fn check_inherents(
-        block: &Block,
-        relay_state_proof: &cumulus_pallet_parachain_system::RelayChainStateProof,
-    ) -> sp_inherents::CheckInherentsResult {
-        let relay_chain_slot = relay_state_proof
-            .read_slot()
-            .expect("Could not read the relay chain slot from the proof");
-
-        let inherent_data =
-            cumulus_primitives_timestamp::InherentDataProvider::from_relay_chain_slot_and_duration(
-                relay_chain_slot,
-                core::time::Duration::from_secs(6),
-            )
-            .create_inherent_data()
-            .expect("Could not create the timestamp inherent data");
-
-        inherent_data.check_extrinsics(block)
-    }
-}
-
 cumulus_pallet_parachain_system::register_validate_block! {
     Runtime = Runtime,
-    CheckInherents = CheckInherents,
     BlockExecutor = pallet_author_inherent::BlockExecutor::<Runtime, Executive>,
 }
 
