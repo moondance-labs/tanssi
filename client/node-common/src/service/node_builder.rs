@@ -133,7 +133,6 @@ pub type BackendOf<T> = TFullBackend<BlockOf<T>>;
 pub type ConstructedRuntimeApiOf<T> =
     <RuntimeApiOf<T> as ConstructRuntimeApi<BlockOf<T>, ClientOf<T>>>::RuntimeApi;
 pub type ImportQueueServiceOf<T> = Box<dyn ImportQueueService<BlockOf<T>>>;
-pub type ParachainConsensusOf<T> = Box<dyn ParachainConsensus<BlockOf<T>>>;
 
 // `Cumulus` and `TxHandler` are types that will change during the life of
 // a `NodeBuilder` because they are generated and consumed when calling
