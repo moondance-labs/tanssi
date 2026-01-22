@@ -19,6 +19,7 @@ use xcm::latest::NetworkId;
 
 mod container_chain_to_eth_transfer_v2;
 mod erc20_token_transfer_from_container_to_eth;
+mod eth_to_container_transfers_v2;
 mod foreign_eth_token_to_container_chain_transfer;
 mod native_container_chain_token_to_eth_transfer;
 mod native_eth_token_to_container_chain_transfer;
