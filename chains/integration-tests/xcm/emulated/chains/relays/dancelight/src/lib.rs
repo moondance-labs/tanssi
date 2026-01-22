@@ -42,11 +42,13 @@ decl_test_relay_chains! {
             EthereumOutboundQueue: dancelight_runtime::EthereumOutboundQueue,
             EthereumInboundQueue: dancelight_runtime::EthereumInboundQueue,
             EthereumSystem: dancelight_runtime::EthereumSystem,
+            EthereumSystemV2: dancelight_runtime::EthereumSystemV2,
+            EthereumInboundQueueV2: dancelight_runtime::EthereumInboundQueueV2,
+            EthereumOutboundQueueV2: dancelight_runtime::EthereumOutboundQueueV2,
             ExternalValidators: dancelight_runtime::ExternalValidators,
             EthereumTokenTransfers: dancelight_runtime::EthereumTokenTransfers,
             ForeignAssets: dancelight_runtime::ForeignAssets,
             ForeignAssetsCreator: dancelight_runtime::ForeignAssetsCreator,
-            AssetRate: dancelight_runtime::AssetRate,
         }
     }
 }

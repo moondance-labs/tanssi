@@ -156,19 +156,6 @@ export type __QueryableStorageEntry<ApiType extends ApiTypes> = QueryableStorage
 
 declare module "@polkadot/api-base/types/storage" {
     interface AugmentedQueries<ApiType extends ApiTypes> {
-        assetRate: {
-            /**
-             * Maps an asset to its fixed point representation in the native balance.
-             *
-             * E.g. `native_amount = asset_amount * ConversionRateToNative::<T>::get(asset_kind)`
-             **/
-            conversionRateToNative: AugmentedQuery<ApiType, (arg: Null | null) => Observable<Option<u128>>, [Null]> &
-                QueryableStorageEntry<ApiType, [Null]>;
-            /**
-             * Generic query
-             **/
-            [key: string]: QueryableStorageEntry<ApiType>;
-        };
         authorityDiscovery: {
             /**
              * Keys of the current authority set.

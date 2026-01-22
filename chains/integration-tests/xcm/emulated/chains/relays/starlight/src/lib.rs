@@ -45,7 +45,6 @@ decl_test_relay_chains! {
             EthereumTokenTransfers: starlight_runtime::EthereumTokenTransfers,
             ForeignAssets: starlight_runtime::ForeignAssets,
             ForeignAssetsCreator: starlight_runtime::ForeignAssetsCreator,
-            AssetRate: starlight_runtime::AssetRate,
         }
     }
 }

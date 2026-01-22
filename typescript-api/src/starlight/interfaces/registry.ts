@@ -55,9 +55,6 @@ import type {
     FrameSystemLimitsWeightsPerClass,
     FrameSystemPhase,
     NimbusPrimitivesNimbusCryptoPublic,
-    PalletAssetRateCall,
-    PalletAssetRateError,
-    PalletAssetRateEvent,
     PalletAssetsAccountStatus,
     PalletAssetsApproval,
     PalletAssetsAssetAccount,
@@ -612,9 +609,6 @@ declare module "@polkadot/types/types/registry" {
         FrameSystemLimitsWeightsPerClass: FrameSystemLimitsWeightsPerClass;
         FrameSystemPhase: FrameSystemPhase;
         NimbusPrimitivesNimbusCryptoPublic: NimbusPrimitivesNimbusCryptoPublic;
-        PalletAssetRateCall: PalletAssetRateCall;
-        PalletAssetRateError: PalletAssetRateError;
-        PalletAssetRateEvent: PalletAssetRateEvent;
         PalletAssetsAccountStatus: PalletAssetsAccountStatus;
         PalletAssetsApproval: PalletAssetsApproval;
         PalletAssetsAssetAccount: PalletAssetsAssetAccount;

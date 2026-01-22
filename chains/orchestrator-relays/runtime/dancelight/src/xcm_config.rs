@@ -52,7 +52,9 @@ use {
         snowbridge_outbound_token_transfer_v2::EthereumBlobExporterV2,
         EthereumLocationsConverterFor,
     },
-    tp_xcm_commons::{EthereumAssetReserve, NativeAssetReserve},
+    tp_xcm_commons::{
+        EthereumAssetReserve, EthereumAssetReserveForContainerAssets, NativeAssetReserve,
+    },
     xcm::{
         latest::prelude::{AssetId as XcmAssetId, *},
         opaque::latest::WESTEND_GENESIS_HASH,
@@ -219,6 +221,7 @@ impl xcm_executor::Config for XcmConfig {
     type IsReserve = (
         NativeAssetReserve,
         EthereumAssetReserve<EthereumLocation, EthereumNetwork>,
+        EthereumAssetReserveForContainerAssets<EthereumLocation>,
     );
     type IsTeleporter = ();
     type UniversalLocation = UniversalLocation;
