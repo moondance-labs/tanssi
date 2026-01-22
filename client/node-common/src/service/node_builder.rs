@@ -47,8 +47,7 @@ use {
     sc_network_sync::SyncingService,
     sc_network_transactions::TransactionsHandlerController,
     sc_service::{
-        config::Multiaddr, Configuration, KeystoreContainer, TFullBackend, TFullClient,
-        TaskManager,
+        config::Multiaddr, Configuration, KeystoreContainer, TFullBackend, TFullClient, TaskManager,
     },
     sc_telemetry::{Telemetry, TelemetryWorker, TelemetryWorkerHandle},
     sc_transaction_pool_api::{OffchainTransactionPoolFactory, TransactionPool},
