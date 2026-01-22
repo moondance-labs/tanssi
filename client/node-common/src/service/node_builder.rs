@@ -899,44 +899,6 @@ where
             import_queue_service,
         )
     }
-
-    pub fn cumulus_client_collator_params_generator(
-        &self,
-        para_id: ParaId,
-        overseer_handle: cumulus_relay_chain_interface::OverseerHandle,
-        collator_key: CollatorPair,
-        parachain_consensus: ParachainConsensusOf<T>,
-    ) -> impl Fn() -> cumulus_client_collator::StartCollatorParams<
-        BlockOf<T>,
-        ClientOf<T>,
-        ClientOf<T>,
-        SpawnTaskHandle,
-    > + Send
-           + Clone
-           + 'static
-    where
-        SNetwork: TypeIdentity<Type = Network<BlockOf<T>>>,
-    {
-        let network = TypeIdentity::as_type(&self.network);
-
-        let client = self.client.clone();
-        let announce_block = {
-            let sync_service = network.sync_service.clone();
-            Arc::new(move |hash, data| sync_service.announce_block(hash, data))
-        };
-        let spawner = self.task_manager.spawn_handle();
-
-        move || cumulus_client_collator::StartCollatorParams {
-            runtime_api: client.clone(),
-            block_status: client.clone(),
-            announce_block: announce_block.clone(),
-            overseer_handle: overseer_handle.clone(),
-            spawner: spawner.clone(),
-            para_id,
-            key: collator_key.clone(),
-            parachain_consensus: parachain_consensus.clone(),
-        }
-    }
 }
 
 /// Block authoring scheme to be used by the dev service.
