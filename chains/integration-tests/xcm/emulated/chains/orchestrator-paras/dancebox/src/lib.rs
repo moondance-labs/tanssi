@@ -53,7 +53,7 @@ decl_test_parachains! {
             LocationToAccountId: dancebox_runtime::xcm_config::LocationToAccountId,
             ParachainInfo: dancebox_runtime::ParachainInfo,
             MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
-            DigestProvider: TestDigestProvider<dancebox_runtime::Runtime, Self::Network>,
+            DigestProvider: TestDigestProvider<dancebox_runtime::Runtime>,
             AdditionalInherentCode: OrchestratorAdditionalInherentCode,
         },
         pallets = {

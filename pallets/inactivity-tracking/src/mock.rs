@@ -33,6 +33,7 @@ use {
 
 type Block = frame_system::mocking::MockBlock<Test>;
 pub type AccountId = u64;
+pub type Balance = u128;
 
 pub const COLLATOR_1: AccountId = 1;
 pub const COLLATOR_2: AccountId = 2;
@@ -49,6 +50,7 @@ frame_support::construct_runtime!(
         System: frame_system,
         Session: pallet_session,
         InactivityTracking: pallet_inactivity_tracking,
+        Balances: pallet_balances,
     }
 );
 
@@ -69,7 +71,7 @@ impl frame_system::Config for Test {
     type BlockHashCount = ConstU64<250>;
     type Version = ();
     type PalletInfo = PalletInfo;
-    type AccountData = ();
+    type AccountData = pallet_balances::AccountData<Balance>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
@@ -83,6 +85,27 @@ impl frame_system::Config for Test {
     type PostInherents = ();
     type PostTransactions = ();
     type ExtensionsWeightInfo = ();
+}
+
+parameter_types! {
+    pub const ExistentialDeposit: u128 = 1;
+}
+
+impl pallet_balances::Config for Test {
+    type MaxReserves = ();
+    type ReserveIdentifier = [u8; 4];
+    type MaxLocks = ();
+    type Balance = Balance;
+    type RuntimeEvent = RuntimeEvent;
+    type DustRemoval = ();
+    type ExistentialDeposit = ExistentialDeposit;
+    type AccountStore = System;
+    type FreezeIdentifier = ();
+    type MaxFreezes = ();
+    type RuntimeHoldReason = RuntimeHoldReason;
+    type RuntimeFreezeReason = ();
+    type DoneSlashHandler = ();
+    type WeightInfo = ();
 }
 
 sp_runtime::impl_opaque_keys! {
@@ -151,6 +174,8 @@ impl pallet_session::Config for Test {
     type Keys = MockSessionKeys;
     type WeightInfo = ();
     type DisablingStrategy = ();
+    type Currency = Balances;
+    type KeyDeposit = ();
 }
 
 pub struct CurrentSessionIndexGetter;

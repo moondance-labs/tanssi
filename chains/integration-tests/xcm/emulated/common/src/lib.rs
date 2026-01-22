@@ -31,7 +31,7 @@ use {
     sp_runtime::traits::Convert,
     sp_runtime::Digest,
     sp_weights::Weight,
-    xcm_emulator::{HeaderT, Network, Parachain, RelayChain},
+    xcm_emulator::{HeaderT, Parachain, RelayChain},
 };
 
 pub mod accounts;
@@ -80,13 +80,12 @@ pub fn get_authority_keys_from_seed_no_beefy(
     )
 }
 
-pub struct TestDigestProvider<R: frame_system::Config, N: Network>(PhantomData<(R, N)>);
+pub struct TestDigestProvider<R: frame_system::Config>(PhantomData<R>);
 
-impl<R: frame_system::Config, N: Network> Convert<BlockNumberFor<R>, Digest> for TestDigestProvider<R, N>
+impl<R: frame_system::Config,> Convert<(BlockNumberFor<R>, BlockNumberFor<R>), Digest> for TestDigestProvider<R>
 where u64: From<<<<R as frame_system::Config>::Block as cumulus_primitives_core::BlockT>::Header as HeaderT>::Number> {
-    fn convert(_block_number: BlockNumberFor<R>) -> Digest {
-        let relay_block = N::relay_block_number();
-        let slot = u64::from(relay_block.into());
+    fn convert((_block_number, relay_block_number): (BlockNumberFor<R>, BlockNumberFor<R>)) -> Digest {
+        let slot = u64::from(relay_block_number);
 
         let new_slot_digest: Digest = Digest {
             logs: vec![

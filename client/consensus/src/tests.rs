@@ -26,7 +26,6 @@ use {
         OrchestratorAuraWorkerAuxData, SlotFrequency,
     },
     cumulus_client_collator::service::CollatorService,
-    cumulus_client_consensus_proposer::Proposer as ConsensusProposer,
     nimbus_primitives::{NimbusId, NimbusPair, NIMBUS_KEY_ID},
     parity_scale_codec::Encode,
     parking_lot::Mutex,
@@ -195,7 +194,7 @@ async fn collate_returns_correct_block() {
             relay_client: relay_client.clone(),
             keystore: keystore.into(),
             para_id: 1000.into(),
-            proposer: ConsensusProposer::new(environ.clone()),
+            proposer: environ.clone(),
             collator_service: CollatorService::new(
                 client.clone(),
                 Arc::new(spawner),

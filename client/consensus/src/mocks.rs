@@ -22,7 +22,6 @@ use {
     async_trait::async_trait,
     cumulus_client_collator::service::CollatorService,
     cumulus_client_consensus_common::{ParachainBlockImportMarker, ValidationCodeHashProvider},
-    cumulus_client_consensus_proposer::Proposer as ConsensusProposer,
     cumulus_primitives_core::{
         relay_chain::{BlockId, ValidationCodeHash},
         CollationInfo, CollectCollationInfo, ParaId,
@@ -45,9 +44,8 @@ use {
     polkadot_overseer::dummy::dummy_overseer_builder,
     polkadot_parachain_primitives::primitives::HeadData,
     polkadot_primitives::{
-        vstaging::{CandidateEvent, CoreState},
-        CollatorPair, CoreIndex, Hash as PHash, OccupiedCoreAssumption, PersistedValidationData,
-        ScheduledCore, ValidatorId,
+        CandidateEvent, CollatorPair, CoreIndex, CoreState, Hash as PHash, OccupiedCoreAssumption,
+        PersistedValidationData, ScheduledCore, ValidatorId,
     },
     sc_block_builder::BlockBuilderBuilder,
     sc_client_api::{
@@ -57,6 +55,7 @@ use {
     sc_consensus::{BoxJustificationImport, ForkChoiceStrategy},
     sc_keystore::LocalKeystore,
     sc_network_test::{Block as TestBlock, *},
+    sc_network_types::PeerId,
     sp_api::{ApiRef, ProvideRuntimeApi},
     sp_blockchain::{BlockStatus, CachedHeaderMetadata, HeaderMetadata, Info},
     sp_consensus::{Environment, NoNetwork as DummyOracle, Proposal, Proposer},
@@ -967,7 +966,7 @@ impl CollatorLookaheadTestBuilder {
             relay_client: relay_client.clone(),
             keystore: keystore.into(),
             para_id: self.para_id,
-            proposer: ConsensusProposer::new(environ.clone()),
+            proposer: environ.clone(),
             collator_service: CollatorService::new(
                 client.clone(),
                 Arc::new(spawner.clone()),
@@ -978,6 +977,7 @@ impl CollatorLookaheadTestBuilder {
             cancellation_token: cancellation_token.clone(),
             code_hash_provider: DummyCodeHashProvider,
             collator_key: CollatorPair::generate().0,
+            collator_peer_id: PeerId::random(),
             force_authoring: false,
             get_orchestrator_aux_data: move |_block_hash, _extra| async move {
                 let aux_data = OrchestratorAuraWorkerAuxData {

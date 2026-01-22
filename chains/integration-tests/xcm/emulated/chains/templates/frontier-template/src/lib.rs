@@ -57,7 +57,7 @@ decl_test_parachains! {
             LocationToAccountId: LocationToAccountId,
             ParachainInfo: ParachainInfo,
             MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
-            DigestProvider: TestDigestProvider<container_chain_template_frontier_runtime::Runtime, Self::Network>,
+            DigestProvider: TestDigestProvider<container_chain_template_frontier_runtime::Runtime>,
             AdditionalInherentCode: TemplateAdditionalInherentCode,
         },
         pallets = {

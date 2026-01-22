@@ -30,12 +30,11 @@ use {
     bitvec::prelude::BitVec,
     cumulus_primitives_core::{
         relay_chain::{
-            node_features::FeatureIndex, vstaging::BackedCandidate,
-            vstaging::CandidateDescriptorV2, vstaging::CommittedCandidateReceiptV2,
-            vstaging::InherentData as ParachainsInherentData, AvailabilityBitfield,
-            CandidateCommitments, CompactStatement, CoreIndex, GroupIndex, HeadData,
-            PersistedValidationData, SigningContext, UncheckedSigned, ValidationCode,
-            ValidatorIndex, ValidityAttestation,
+            node_features::FeatureIndex, AvailabilityBitfield, BackedCandidate,
+            CandidateCommitments, CandidateDescriptorV2, CommittedCandidateReceiptV2,
+            CompactStatement, CoreIndex, GroupIndex, HeadData,
+            InherentData as ParachainsInherentData, PersistedValidationData, SigningContext,
+            UncheckedSigned, ValidationCode, ValidatorIndex, ValidityAttestation,
         },
         ParaId,
     },
@@ -1495,7 +1494,7 @@ pub fn generate_ethereum_pub_keys(n: u32) -> Vec<Keypair> {
 }
 
 use primitives::vstaging::{ClaimQueueOffset, CoreSelector, UMPSignal, UMP_SEPARATOR};
-use primitives::{CandidateDescriptor, CollatorId, CollatorSignature};
+use primitives::{CandidateDescriptorV2, CollatorId, CollatorSignature};
 use sp_core::ByteArray;
 use {
     babe_primitives::AuthorityPair as BabeAuthorityPair,

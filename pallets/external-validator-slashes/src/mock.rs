@@ -45,6 +45,7 @@ frame_support::construct_runtime!(
         Historical: pallet_session::historical,
         ExternalValidatorSlashes: external_validator_slashes,
         Timestamp: pallet_timestamp,
+        Balances: pallet_balances,
     }
 );
 
@@ -72,7 +73,7 @@ impl system::Config for Test {
     type BlockHashCount = ConstU64<250>;
     type Version = ();
     type PalletInfo = PalletInfo;
-    type AccountData = ();
+    type AccountData = pallet_balances::AccountData<Balance>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
@@ -86,6 +87,27 @@ impl system::Config for Test {
     type PostInherents = ();
     type PostTransactions = ();
     type ExtensionsWeightInfo = ();
+}
+
+parameter_types! {
+    pub const ExistentialDeposit: u128 = 1;
+}
+
+impl pallet_balances::Config for Test {
+    type MaxReserves = ();
+    type ReserveIdentifier = [u8; 4];
+    type MaxLocks = ();
+    type Balance = Balance;
+    type RuntimeEvent = RuntimeEvent;
+    type DustRemoval = ();
+    type ExistentialDeposit = ExistentialDeposit;
+    type AccountStore = System;
+    type FreezeIdentifier = ();
+    type MaxFreezes = ();
+    type RuntimeHoldReason = RuntimeHoldReason;
+    type RuntimeFreezeReason = ();
+    type DoneSlashHandler = ();
+    type WeightInfo = ();
 }
 
 parameter_types! {
@@ -165,6 +187,8 @@ impl pallet_session::Config for Test {
     type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
     type WeightInfo = ();
     type DisablingStrategy = ();
+    type Currency = Balances;
+    type KeyDeposit = ();
 }
 
 sp_runtime::impl_opaque_keys! {
@@ -175,6 +199,7 @@ sp_runtime::impl_opaque_keys! {
 
 use sp_runtime::RuntimeAppPublic;
 type AccountId = u64;
+type Balance = u128;
 pub struct TestSessionHandler;
 impl pallet_session::SessionHandler<AccountId> for TestSessionHandler {
     const KEY_TYPE_IDS: &'static [sp_runtime::KeyTypeId] = &[UintAuthorityId::ID];

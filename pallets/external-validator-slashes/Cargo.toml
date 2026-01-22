@@ -30,6 +30,7 @@ tp-bridge = { workspace = true }
 tp-traits = { workspace = true }
 
 [dev-dependencies]
+pallet-balances = { workspace = true, features = [ "std" ] }
 pallet-timestamp = { workspace = true, features = [ "std" ] }
 polkadot-core-primitives = { workspace = true }
 sp-core = { workspace = true }
