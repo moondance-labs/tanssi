@@ -23,5 +23,6 @@ std = [
 ]
 runtime-benchmarks = [
 	"pallet-registrar/runtime-benchmarks",
+	"pallet-session/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
 ]

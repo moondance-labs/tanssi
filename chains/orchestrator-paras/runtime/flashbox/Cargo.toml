@@ -257,6 +257,7 @@ runtime-benchmarks = [
 	"pallet-registrar/runtime-benchmarks",
 	"pallet-relay-storage-roots/runtime-benchmarks",
 	"pallet-services-payment/runtime-benchmarks",
+	"pallet-session/runtime-benchmarks",
 	"pallet-stream-payment/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",

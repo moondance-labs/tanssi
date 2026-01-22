@@ -36,5 +36,6 @@ runtime-benchmarks = [
 	"runtime-common/runtime-benchmarks",
 	"runtime-parachains/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
+	"westend-runtime-constants/runtime-benchmarks",
 	"westend-runtime/runtime-benchmarks",
 ]
