@@ -1879,6 +1879,26 @@ declare module "@polkadot/api-base/types/events" {
                 { collator: AccountId32; autoCompoundingRewards: u128; manualClaimRewards: u128 }
             >;
             /**
+             * Rewards has been distributed to a collator and its delegators.
+             **/
+            RewardsDistributed: AugmentedEvent<
+                ApiType,
+                [
+                    collator: AccountId32,
+                    collatorAcRewards: u128,
+                    collatorMcRewards: u128,
+                    delegatorsAcRewards: u128,
+                    delegatorsMcRewards: u128,
+                ],
+                {
+                    collator: AccountId32;
+                    collatorAcRewards: u128;
+                    collatorMcRewards: u128;
+                    delegatorsAcRewards: u128;
+                    delegatorsMcRewards: u128;
+                }
+            >;
+            /**
              * Delegator staked towards a Candidate for AutoCompounding Shares.
              **/
             StakedAutoCompounding: AugmentedEvent<

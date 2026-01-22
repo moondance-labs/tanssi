@@ -78,6 +78,7 @@ import type {
     PalletPooledStakingPendingOperationKey,
     PalletPooledStakingPoolsCandidateSummary,
     PalletPooledStakingPoolsKey,
+    PalletPooledStakingPoolsPendingRewards,
     PalletPreimageOldRequestStatus,
     PalletPreimageRequestStatus,
     PalletProxyAnnouncement,
@@ -2600,6 +2601,18 @@ declare module "@polkadot/api-base/types/storage" {
                 [AccountId32, PalletPooledStakingPendingOperationKey]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32, PalletPooledStakingPendingOperationKey]>;
+            /**
+             * Aggregates rewards to be effectively distributed later.
+             * Size is unbounded to ensure new collators can be registered, but is
+             * indirectly bounded by how many collators can be rewarded before
+             * `RewardsDistributionTimer` is elapsed, which will empty the map.
+             **/
+            pendingRewards: AugmentedQuery<
+                ApiType,
+                () => Observable<Option<PalletPooledStakingPoolsPendingRewards>>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
             /**
              * Pools balances.
              **/
