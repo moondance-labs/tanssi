@@ -104,7 +104,7 @@ fn test_distribution(
     stakes: &[DelegatorState],
     distribution: Distribution,
 ) {
-    use crate::traits::Timer;
+    use frame_support::traits::Hooks;
 
     // Create new supply for rewards
     let new_supply = currency_issue(reward.rewards);
@@ -127,6 +127,7 @@ fn test_distribution(
         reward.collator,
         new_supply
     ));
+    let _ = Pallet::<Runtime>::on_initialize(Default::default());
     let candidate_balance_after = total_balance(&ACCOUNT_CANDIDATE_1);
 
     // Check events matches the expected distribution.
@@ -760,19 +761,13 @@ fn rewards_are_aggregated_then_distributed() {
         ];
         assert_eq!(candidates_balance_before, candidates_balance_after);
 
-        // Let's move to next block and call reward again. This should actually distribute aggregated
-        // rewards.
+        // Let's move to next block, rewards should be distributed in on_initialize.
         run_block();
         assert_eq!(
             <Runtime as crate::Config>::RewardsDistributionTimer::now(),
             block_number + 1
         );
 
-        let rewards = currency_issue(1_300_000);
-        assert_ok!(Pallet::<Runtime>::distribute_rewards(
-            ACCOUNT_CANDIDATE_2,
-            rewards
-        ));
         assert_eq!(
             crate::PendingRewards::<Runtime>::get(),
             Some(crate::pools::PendingRewards {
@@ -798,9 +793,9 @@ fn rewards_are_aggregated_then_distributed() {
             Event::RewardsDistributed {
                 collator: ACCOUNT_CANDIDATE_2,
                 collator_ac_rewards: 0,
-                collator_mc_rewards: 480_000,
-                delegators_ac_rewards: 1_280_000,
-                delegators_mc_rewards: 640_000
+                collator_mc_rewards: 220_000,
+                delegators_ac_rewards: 587_000,
+                delegators_mc_rewards: 293_000
             },
         ]);
     });

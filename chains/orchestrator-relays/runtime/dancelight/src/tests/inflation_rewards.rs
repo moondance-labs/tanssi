@@ -16,9 +16,11 @@
 
 #![cfg(test)]
 
-use crate::{MinimumSelfDelegation, PooledStaking, RewardsCollatorCommission};
+use crate::{MinimumSelfDelegation, PooledStaking};
 use frame_support::assert_ok;
-use pallet_pooled_staking::{ActivePoolKind, PendingOperationKey, PendingOperationQuery};
+use pallet_pooled_staking::{
+    traits::Timer, ActivePoolKind, PendingOperationKey, PendingOperationQuery,
+};
 use {
     crate::{tests::common::*, AuthorNoting, RewardsPortion},
     alloc::vec,
@@ -108,8 +110,19 @@ fn test_reward_to_staking_candidate() {
                 ]
             ));
 
+            {
+                let pending = pallet_pooled_staking::PendingRewards::<Runtime>::get().expect("pending rewards to exist");
+                assert_eq!(pending.last_distribution, 3u32, "timer should be up to date");
+            }
+
             // wait for next session so that DAVE is elected
             run_to_session(4u32);
+
+            {
+                let pending = pallet_pooled_staking::PendingRewards::<Runtime>::get().expect("pending rewards to exist");
+                assert_eq!(pending.last_distribution, 4u32, "timer should be up to date");
+            }
+
             run_block();
 
             let account: AccountId = DAVE.into();
@@ -161,11 +174,13 @@ fn test_reward_to_staking_candidate() {
             // Rewards are now aggregated in storage and then distributed at the start of the next session.
             // We'll thus check that the pending rewards contains DAVE rewards.
 
-            let pending = pallet_pooled_staking::PendingRewards::<Runtime>::get().expect("pending rewards to exist");
-            assert_eq!(pending.last_distribution, 4u32, "timer should be up to date");
-            let dave_rewards = pending.rewards.get(&account).expect("DAVE should have pending rewards");
+            {
+                let pending = pallet_pooled_staking::PendingRewards::<Runtime>::get().expect("pending rewards to exist");
+                assert_eq!(pending.last_distribution, 4u32, "timer should be up to date");
+                let dave_rewards = pending.rewards.get(&account).expect("DAVE should have pending rewards");
 
-            assert_eq!(*dave_rewards, rewards_per_chain, "dave should have pending rewards for 1 chain");
+                assert_eq!(*dave_rewards, rewards_per_chain, "dave should have pending rewards for 1 chain");
+            }
 
             let balance_after = System::account(&account).data.free;
             assert_eq!(
@@ -177,39 +192,11 @@ fn test_reward_to_staking_candidate() {
             // let's go to next session
             run_to_session(5u32);
 
-            let mut sproof = ParaHeaderSproofBuilder::default();
-            let slot: u64 = 7;
-            let other_para: ParaId = 1002u32.into();
-
-            // Build the proof needed to call AuthorNoting's inherent.
-            let s = ParaHeaderSproofBuilderItem {
-                para_id: other_para,
-                author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
-                    parent_hash: Default::default(),
-                    number: 2,
-                    state_root: Default::default(),
-                    extrinsics_root: Default::default(),
-                    digest: sp_runtime::generic::Digest {
-                        logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
-                    },
-                }),
-            };
-            sproof.items.push(s);
-
-            // this is not killed automatically in every block in tests.
-            pallet_author_noting::DidSetContainerAuthorData::<Runtime>::kill();
-
-            // We need to set the AuthorNoting's inherent for it to also run
-            // InflationRewards::on_container_authors_noted and reward the collator.
-            set_author_noting_inherent_data(sproof);
-            let container_block_author = AuthorNoting::latest_author(ParaId::from(1002u32))
-                .unwrap()
-                .author;
-            assert_eq!(container_block_author, AccountId::from(DAVE));
-
-            let pending = pallet_pooled_staking::PendingRewards::<Runtime>::get().expect("pending rewards to exist");
-            assert_eq!(pending.last_distribution, 5u32, "timer should be up to date");
-            assert!(pending.rewards.is_empty(), "rewards should be distributed including the latest ones, so the pending rewards should be empty");
+            {
+                let pending = pallet_pooled_staking::PendingRewards::<Runtime>::get().expect("pending rewards to exist");
+                assert_eq!(pending.last_distribution, 5u32, "timer should be up to date");
+                assert!(pending.rewards.is_empty(), "rewards should be distributed including the latest ones, so the pending rewards should be empty");
+            }
 
             let balance_after = System::account(&account).data.free;
             assert_ne!(

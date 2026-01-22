@@ -587,6 +587,60 @@ pub mod pallet {
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn on_initialize(_: BlockNumberFor<T>) -> Weight {
+            let mut weight = Weight::zero();
+
+            // 2 reads to cover timer read and pending rewards
+            weight.saturating_add(T::DbWeight::get().reads(2));
+
+            let mut pending = match PendingRewards::<T>::get() {
+                Some(x) => x,
+                None => {
+                    weight.saturating_add(T::DbWeight::get().writes(1));
+
+                    // if it doesn't exist yet we initialize it
+                    let pending = pools::PendingRewards {
+                        last_distribution: T::RewardsDistributionTimer::now(),
+                        rewards: Default::default(),
+                    };
+                    PendingRewards::<T>::put(pending.clone());
+                    pending
+                }
+            };
+
+            // Distribute only when the timer is elapsed.
+            if !T::RewardsDistributionTimer::is_elapsed(&pending.last_distribution) {
+                return weight;
+            }
+
+            weight.saturating_add(T::DbWeight::get().writes(1)); // 1 write to update the storage
+
+            pending.last_distribution = T::RewardsDistributionTimer::now();
+            let rewards = core::mem::take(&mut pending.rewards); // reset pending rewards
+            PendingRewards::<T>::put(pending);
+
+            for (candidate, reward) in rewards.into_iter() {
+                // skip empty rewards if any
+                if reward.is_zero() {
+                    continue;
+                }
+
+                let post_info = match pools::distribute_rewards::<T>(&candidate, reward) {
+                    Ok(x) => x,
+                    Err(x) => {
+                        log::error!("failed to distribute rewards: {:?}", x.error);
+                        x.post_info
+                    }
+                };
+
+                let fn_weight = post_info.actual_weight.unwrap_or_default();
+
+                weight = weight.saturating_add(fn_weight)
+            }
+
+            weight
+        }
+
         #[cfg(feature = "try-runtime")]
         fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
             use alloc::collections::btree_set::BTreeSet;
@@ -836,31 +890,9 @@ pub mod pallet {
             let entry: &mut T::Balance = pending.rewards.entry(candidate.clone()).or_default();
             *entry = entry.err_add(&rewards_amount).map_err(Error::<T>::from)?;
 
-            // Distribute only when the timer is elapsed.
-            let mut distribution_weight = Weight::zero();
-            if T::RewardsDistributionTimer::is_elapsed(&pending.last_distribution) {
-                pending.last_distribution = T::RewardsDistributionTimer::now();
-                let rewards = core::mem::take(&mut pending.rewards); // reset pending rewards
-
-                for (candidate, reward) in rewards.into_iter() {
-                    // skip empty rewards if any
-                    if reward.is_zero() {
-                        continue;
-                    }
-
-                    let weight = pools::distribute_rewards::<T>(&candidate, reward)?
-                        .actual_weight
-                        .unwrap_or_default();
-
-                    distribution_weight = distribution_weight
-                        .err_add(&weight)
-                        .map_err(Error::<T>::from)?;
-                }
-            }
-
             // Update storage
             PendingRewards::<T>::put(pending);
-            Ok(Some(distribution_weight).into())
+            Ok(Some(T::DbWeight::get().reads(1) + T::DbWeight::get().writes(1)).into())
         }
 
         #[cfg(feature = "runtime-benchmarks")]
