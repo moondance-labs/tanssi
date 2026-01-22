@@ -274,6 +274,7 @@ sc-network-common = { git = "https://github.com/moondance-labs/polkadot-sdk", br
 sc-network-sync = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2512" }
 sc-network-test = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2512" }
 sc-network-transactions = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2512" }
+sc-network-types = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2512" }
 sc-offchain = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2512" }
 sc-rpc = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2512" }
 sc-rpc-api = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2512", default-features = false }
@@ -433,7 +434,7 @@ fs2 = "0.4.3"
 futures = { version = "0.3.1" }
 futures-timer = "3.0.1"
 hex = { version = "0.4.3", default-features = false }
-jsonrpsee = { version = "0.24.3", features = [ "server" ] }
+jsonrpsee = { version = "0.24.10", features = [ "server" ] }
 num-traits = "0.2.8"
 orchestra = { version = "0.4.0", default-features = false }
 parking_lot = "0.12.1"
@@ -503,7 +504,7 @@ codec = { package = "parity-scale-codec", version = "3.7.4" }
 env_logger = "0.11"
 is_executable = "1.0.1"
 kvdb = "0.13.0"
-kvdb-rocksdb = "0.19.0"
+kvdb-rocksdb = "0.21.0"
 parity-db = "0.4.12"
 schnellru = "0.2.1"
 serial_test = "2.0.0"
@@ -566,7 +567,7 @@ sp-maybe-compressed-blob = { git = "https://github.com/moondance-labs/polkadot-s
 
 # Tanssi Relay Chain
 color-eyre = { version = "0.6.1", default-features = false }
-tikv-jemallocator = { version = "0.5.0", features = [ "unprefixed_malloc_on_supported_platforms" ] }
+tikv-jemallocator = { version = "0.6.0", features = [ "unprefixed_malloc_on_supported_platforms" ] }
 
 polkadot-node-core-pvf-common = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2512", default-features = false }
 polkadot-node-core-pvf-execute-worker = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2512", default-features = false }

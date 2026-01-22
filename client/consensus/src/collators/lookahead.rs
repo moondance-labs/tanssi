@@ -61,6 +61,7 @@ use {
     sc_client_api::{backend::AuxStore, BlockBackend, BlockOf},
     sc_consensus::BlockImport,
     sc_consensus_slots::InherentDataProviderExt,
+    sc_network_types::PeerId,
     sc_transaction_pool_api::TransactionPool,
     sp_api::{ApiError, ProvideRuntimeApi},
     sp_blockchain::{HeaderBackend, HeaderMetadata},
@@ -334,6 +335,8 @@ pub struct Params<
     pub sync_oracle: SO,
     pub keystore: KeystorePtr,
     pub collator_key: CollatorPair,
+	/// The collator network peer id.
+	pub collator_peer_id: PeerId,
     pub para_id: ParaId,
     pub overseer_handle: OverseerHandle,
     pub orchestrator_slot_duration: SlotDuration,
@@ -496,6 +499,7 @@ where
                 block_import: params.block_import,
                 relay_client: params.relay_client.clone(),
                 keystore: params.keystore.clone(),
+                collator_peer_id: params.collator_peer_id,
                 para_id: params.para_id,
                 proposer: params.proposer,
                 collator_service: params.collator_service,
@@ -719,7 +723,7 @@ where
                         // Build and announce collations recursively until
                         // `can_build_upon` fails or building a collation fails.
                         let (parachain_inherent_data, other_inherent_data) = match collator
-                            .create_inherent_data(relay_parent, &validation_data, parent_hash, None, None)
+                            .create_inherent_data(relay_parent, &validation_data, parent_hash, None, None, params.collator_peer_id)
                             .await
                         {
                             Err(err) => {

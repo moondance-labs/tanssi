@@ -39,6 +39,7 @@ use {
     sp_core::crypto::{ByteArray, Pair},
     sp_inherents::{CreateInherentDataProviders, InherentData, InherentDataProvider},
     sp_keystore::{Keystore, KeystorePtr},
+    sc_network_types::PeerId,
     sp_runtime::{
         generic::Digest,
         traits::{Block as BlockT, HashingFor, Header as HeaderT, Member, Zero},
@@ -60,6 +61,8 @@ pub struct Params<BI, CIDP, RClient, Proposer, CS> {
     pub keystore: KeystorePtr,
     /// The identifier of the parachain within the relay-chain.
     pub para_id: ParaId,
+    /// The collator network peer id.
+    pub collator_peer_id: PeerId,
     /// The block proposer used for building blocks.
     pub proposer: Proposer,
     /// The collator service used for bundling proposals into collations and announcing
@@ -114,7 +117,9 @@ where
         parent_hash: <Block as BlockT>::Hash,
         _timestamp: impl Into<Option<Timestamp>>,
         relay_parent_descendants: Option<RelayParentData>,
+        collator_peer_id: PeerId,
     ) -> Result<(ParachainInherentData, InherentData), Box<dyn Error + Send + Sync + 'static>> {
+        let additional_relay_state_keys = vec![];
         let paras_inherent_data = ParachainInherentDataProvider::create_at(
             relay_parent,
             &self.relay_client,
@@ -123,6 +128,8 @@ where
             relay_parent_descendants
                 .map(RelayParentData::into_inherent_descendant_list)
                 .unwrap_or_default(),
+            additional_relay_state_keys,
+            collator_peer_id,
         )
         .await;
 

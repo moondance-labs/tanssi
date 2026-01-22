@@ -35,7 +35,7 @@ snowbridge-pallet-outbound-queue = { workspace = true }
 snowbridge-pallet-outbound-queue-v2 = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
-sp-tracing = { workspace = true, features = [ "std", "test-utils" ] }
+sp-tracing = { workspace = true, features = [ "std" ] }
 tanssi-emulated-integration-tests-common = { workspace = true }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }
