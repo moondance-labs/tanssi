@@ -59,11 +59,11 @@ use {
     parachains_scheduler::common::Assignment,
     parity_scale_codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen},
     primitives::{
-        slashing, vstaging::async_backing::Constraints, vstaging::CandidateEvent,
-        vstaging::CommittedCandidateReceiptV2, vstaging::CoreState, vstaging::ScrapedOnChainVotes,
-        ApprovalVotingParams, BlockNumber, CandidateHash, CoreIndex, DisputeState, ExecutorParams,
-        GroupRotationInfo, Hash, Id as ParaId, InboundDownwardMessage, InboundHrmpMessage, Moment,
-        NodeFeatures, Nonce, OccupiedCoreAssumption, PersistedValidationData, SessionInfo,
+        async_backing::Constraints, slashing, ApprovalVotingParams, BlockNumber, CandidateEvent,
+        CandidateHash, CommittedCandidateReceiptV2 as CommittedCandidateReceipt, CoreIndex,
+        CoreState, DisputeState, ExecutorParams, GroupRotationInfo, Hash, Id as ParaId,
+        InboundDownwardMessage, InboundHrmpMessage, Moment, NodeFeatures, Nonce,
+        OccupiedCoreAssumption, PersistedValidationData, ScrapedOnChainVotes, SessionInfo,
         Signature, ValidationCodeHash, ValidatorId, ValidatorIndex, PARACHAIN_KEY_TYPE_ID,
     },
     runtime_common::{
@@ -83,7 +83,7 @@ use {
         origin as parachains_origin, paras as parachains_paras,
         paras_inherent as parachains_paras_inherent,
         runtime_api_impl::{
-            v11 as parachains_runtime_api_impl, vstaging as parachains_staging_runtime_api_impl,
+            v13 as parachains_runtime_api_impl, vstaging as parachains_staging_runtime_api_impl,
         },
         scheduler as parachains_scheduler, session_info as parachains_session_info,
         shared as parachains_shared,
@@ -598,6 +598,11 @@ impl sp_runtime::traits::Convert<AccountId, Option<AccountId>> for ValidatorIdOf
     }
 }
 
+parameter_types! {
+    // TODO: how to calculate KeyDeposit?
+    pub const KeyDeposit: Balance = deposit(1, 5 * 32 + 33);
+}
+
 impl pallet_session::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ValidatorId = AccountId;
@@ -609,6 +614,8 @@ impl pallet_session::Config for Runtime {
     type Keys = SessionKeys;
     type WeightInfo = weights::pallet_session::SubstrateWeight<Runtime>;
     type DisablingStrategy = ();
+    type Currency = Balances;
+    type KeyDeposit = KeyDeposit;
 }
 
 pub struct FullIdentificationOf;
@@ -2384,7 +2391,7 @@ sp_api::impl_runtime_apis! {
             VERSION
         }
 
-        fn execute_block(block: Block) {
+        fn execute_block(block: <Block as BlockT>::LazyBlock) {
             Executive::execute_block(block);
         }
 
@@ -2399,7 +2406,7 @@ sp_api::impl_runtime_apis! {
         }
 
         fn dry_run_xcm(origin_location: VersionedLocation, xcm: VersionedXcm<RuntimeCall>) -> Result<XcmDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
-            XcmPallet::dry_run_xcm::<Runtime, xcm_config::XcmRouter, RuntimeCall, xcm_config::XcmConfig>(origin_location, xcm)
+            XcmPallet::dry_run_xcm::<xcm_config::XcmRouter>(origin_location, xcm)
         }
     }
 
@@ -2429,8 +2436,9 @@ sp_api::impl_runtime_apis! {
             XcmPallet::query_xcm_weight(message)
         }
 
-        fn query_delivery_fees(destination: VersionedLocation, message: VersionedXcm<()>) -> Result<VersionedAssets, XcmPaymentApiError> {
-            XcmPallet::query_delivery_fees(destination, message)
+        fn query_delivery_fees(destination: VersionedLocation, message: VersionedXcm<()>, asset_id: VersionedAssetId) -> Result<VersionedAssets, XcmPaymentApiError> {
+            type AssetExchanger = <xcm_config::XcmConfig as xcm_executor::Config>::AssetExchanger;
+            XcmPallet::query_delivery_fees::<AssetExchanger>(destination, message, asset_id)
         }
     }
 
@@ -2474,7 +2482,7 @@ sp_api::impl_runtime_apis! {
         }
 
         fn check_inherents(
-            block: Block,
+            block: <Block as BlockT>::LazyBlock,
             data: inherents::InherentData,
         ) -> inherents::CheckInherentsResult {
             data.check_extrinsics(&block)
@@ -2497,7 +2505,7 @@ sp_api::impl_runtime_apis! {
         }
     }
 
-    #[api_version(13)]
+    #[api_version(15)]
     impl primitives::runtime_api::ParachainHost<Block> for Runtime {
         fn validators() -> Vec<ValidatorId> {
             parachains_runtime_api_impl::validators::<Runtime>()
@@ -2542,7 +2550,7 @@ sp_api::impl_runtime_apis! {
             parachains_runtime_api_impl::validation_code::<Runtime>(para_id, assumption)
         }
 
-        fn candidate_pending_availability(para_id: ParaId) -> Option<CommittedCandidateReceiptV2<Hash>> {
+        fn candidate_pending_availability(para_id: ParaId) -> Option<CommittedCandidateReceipt<Hash>> {
             #[allow(deprecated)]
             parachains_runtime_api_impl::candidate_pending_availability::<Runtime>(para_id)
         }
@@ -2606,8 +2614,13 @@ sp_api::impl_runtime_apis! {
         }
 
         fn unapplied_slashes(
-        ) -> Vec<(SessionIndex, CandidateHash, slashing::PendingSlashes)> {
+        ) -> Vec<(SessionIndex, CandidateHash, slashing::LegacyPendingSlashes)> {
             parachains_runtime_api_impl::unapplied_slashes::<Runtime>()
+        }
+
+        fn unapplied_slashes_v2(
+        ) -> Vec<(SessionIndex, CandidateHash, slashing::PendingSlashes)> {
+                parachains_runtime_api_impl::unapplied_slashes_v2::<Runtime>()
         }
 
         fn key_ownership_proof(
@@ -2634,7 +2647,7 @@ sp_api::impl_runtime_apis! {
             parachains_runtime_api_impl::minimum_backing_votes::<Runtime>()
         }
 
-        fn para_backing_state(para_id: ParaId) -> Option<primitives::vstaging::async_backing::BackingState> {
+        fn para_backing_state(para_id: ParaId) -> Option<primitives::async_backing::BackingState> {
             // TODO: the alternative is to use backing_constraints and candidates_pending_availability
             // but backing_constraints is private.
             #[allow(deprecated)]
@@ -2662,23 +2675,27 @@ sp_api::impl_runtime_apis! {
             parachains_runtime_api_impl::claim_queue::<Runtime>()
         }
 
-        fn candidates_pending_availability(para_id: ParaId) -> Vec<CommittedCandidateReceiptV2<Hash>> {
+        fn candidates_pending_availability(para_id: ParaId) -> Vec<CommittedCandidateReceipt<Hash>> {
             parachains_runtime_api_impl::candidates_pending_availability::<Runtime>(para_id)
         }
         fn backing_constraints(para_id: ParaId) -> Option<Constraints> {
-            parachains_staging_runtime_api_impl::backing_constraints::<Runtime>(para_id)
+            parachains_runtime_api_impl::backing_constraints::<Runtime>(para_id)
         }
 
         fn scheduling_lookahead() -> u32 {
-            parachains_staging_runtime_api_impl::scheduling_lookahead::<Runtime>()
+            parachains_runtime_api_impl::scheduling_lookahead::<Runtime>()
         }
 
         fn validation_code_bomb_limit() -> u32 {
-            parachains_staging_runtime_api_impl::validation_code_bomb_limit::<Runtime>()
+            parachains_runtime_api_impl::validation_code_bomb_limit::<Runtime>()
+        }
+
+        fn para_ids() -> Vec<ParaId> {
+            parachains_staging_runtime_api_impl::para_ids::<Runtime>()
         }
     }
 
-    #[api_version(5)]
+    #[api_version(6)]
     impl beefy_primitives::BeefyApi<Block, BeefyId> for Runtime {
         fn beefy_genesis() -> Option<BlockNumber> {
             pallet_beefy::GenesisBlock::<Runtime>::get()
@@ -2737,20 +2754,9 @@ sp_api::impl_runtime_apis! {
                 .map(|p| p.encode())
                 .map(beefy_primitives::OpaqueKeyOwnershipProof::new)
         }
-
-        fn generate_ancestry_proof(
-            prev_block_number: BlockNumber,
-            best_known_block_number: Option<BlockNumber>,
-        ) -> Option<sp_runtime::OpaqueValue> {
-            use beefy_primitives::AncestryHelper;
-
-            BeefyMmrLeaf::generate_proof(prev_block_number, best_known_block_number)
-                .map(|p| p.encode())
-                .map(sp_runtime::OpaqueValue::new)
-        }
     }
 
-    #[api_version(2)]
+    #[api_version(3)]
     impl mmr::MmrApi<Block, mmr::Hash, BlockNumber> for Runtime {
         fn mmr_root() -> Result<mmr::Hash, mmr::Error> {
             Ok(pallet_mmr::RootHash::<Runtime>::get())
@@ -2775,6 +2781,13 @@ sp_api::impl_runtime_apis! {
                     )
                 },
             )
+        }
+
+        fn generate_ancestry_proof(
+            prev_block_number: BlockNumber,
+            best_known_block_number: Option<BlockNumber>,
+        ) -> Result<mmr::AncestryProof<mmr::Hash>, mmr::Error> {
+            Mmr::generate_ancestry_proof(prev_block_number, best_known_block_number)
         }
 
         fn verify_proof(leaves: Vec<mmr::EncodableOpaqueLeaf>, proof: mmr::LeafProof<mmr::Hash>)
