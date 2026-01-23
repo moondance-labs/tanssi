@@ -20,7 +20,7 @@ use {
     crate::{tests::common::*, EthereumBeaconClient},
     alloc::vec,
     frame_support::{assert_noop, assert_ok},
-    snowbridge_pallet_ethereum_client::{functions::*, mock_electra::*},
+    snowbridge_pallet_ethereum_client::{functions::*, mock::*},
     sp_core::H256,
 };
 #[test]
@@ -37,7 +37,7 @@ fn test_ethereum_force_checkpoint() {
         .execute_with(|| {
             // This tests submits the initial checkpoint that contains the initial sync committee
             let checkpoint = Box::new(
-                snowbridge_pallet_ethereum_client::mock_electra::load_checkpoint_update_fixture(),
+                snowbridge_pallet_ethereum_client::mock::load_checkpoint_update_fixture(),
             );
             assert_ok!(EthereumBeaconClient::force_checkpoint(
                 root_origin(),
@@ -78,7 +78,7 @@ fn test_invalid_initial_checkpoint() {
             ])
             .build()
             .execute_with(|| {
-                let mut checkpoint_invalid_sync_committee_proof = Box::new(snowbridge_pallet_ethereum_client::mock_electra::load_checkpoint_update_fixture());
+                let mut checkpoint_invalid_sync_committee_proof = Box::new(snowbridge_pallet_ethereum_client::mock::load_checkpoint_update_fixture());
 
                 let mut checkpoint_invalid_blocks_root_proof = checkpoint_invalid_sync_committee_proof.clone();
 
@@ -123,9 +123,9 @@ fn test_submit_update_using_same_committee_same_checkpoint() {
             // This tests submits a new header signed by the sync committee members within the same
             // period BUT without injecting the next sync committee
             let initial_checkpoint =
-                Box::new(snowbridge_pallet_ethereum_client::mock_electra::load_checkpoint_update_fixture());
+                Box::new(snowbridge_pallet_ethereum_client::mock::load_checkpoint_update_fixture());
             let update_header = Box::new(
-                snowbridge_pallet_ethereum_client::mock_electra::load_finalized_header_update_fixture(),
+                snowbridge_pallet_ethereum_client::mock::load_finalized_header_update_fixture(),
             );
 
             let initial_period = compute_period(initial_checkpoint.header.slot);

@@ -30,9 +30,9 @@ use {
     bitvec::prelude::BitVec,
     cumulus_primitives_core::{
         relay_chain::{
-            node_features::FeatureIndex, vstaging::BackedCandidate,
-            vstaging::CandidateDescriptorV2, vstaging::CommittedCandidateReceiptV2,
-            vstaging::InherentData as ParachainsInherentData, AvailabilityBitfield,
+            node_features::FeatureIndex, BackedCandidate,
+            CandidateDescriptorV2, CommittedCandidateReceiptV2,
+            InherentData as ParachainsInherentData, AvailabilityBitfield,
             CandidateCommitments, CompactStatement, CoreIndex, GroupIndex, HeadData,
             PersistedValidationData, SigningContext, UncheckedSigned, ValidationCode,
             ValidatorIndex, ValidityAttestation,
@@ -251,7 +251,7 @@ pub fn start_block() -> RunSummary {
     // We need to create it here, because otherwise the block number increases
     // on-initialize.
     // This requires signatures so we should not run it unless we have a keystore
-    let mock_inherent_data: Option<cumulus_primitives_core::relay_chain::vstaging::InherentData> =
+    let mock_inherent_data: Option<cumulus_primitives_core::relay_chain::InherentData> =
         if is_para_inherent_enabled() {
             // We check the inherent data in storage else we construct an empty one
             Some(
@@ -866,9 +866,9 @@ pub const EVE: [u8; 32] = [8u8; 32];
 pub const FERDIE: [u8; 32] = [9u8; 32];
 
 // Whether we have custom data to inject in paras inherent
-fn take_new_inherent_data() -> Option<cumulus_primitives_core::relay_chain::vstaging::InherentData>
+fn take_new_inherent_data() -> Option<cumulus_primitives_core::relay_chain::InherentData>
 {
-    let data: Option<cumulus_primitives_core::relay_chain::vstaging::InherentData> =
+    let data: Option<cumulus_primitives_core::relay_chain::InherentData> =
         frame_support::storage::unhashed::take(b"ParasInherentData");
 
     data
@@ -881,7 +881,7 @@ fn is_para_inherent_enabled() -> bool {
 }
 
 // Set new data to inject in paras inherent
-pub fn set_new_inherent_data(data: cumulus_primitives_core::relay_chain::vstaging::InherentData) {
+pub fn set_new_inherent_data(data: cumulus_primitives_core::relay_chain::InherentData) {
     frame_support::storage::unhashed::put(b"ParasInherentData", &data);
 }
 
@@ -892,7 +892,7 @@ pub fn set_new_randomness_data(data: Option<[u8; 32]>) {
 /// Mock the inherent that sets validation data in ParachainSystem, which
 /// contains the `relay_chain_block_number`, which is used in `collator-assignment` as a
 /// source of randomness.
-pub fn set_paras_inherent(data: cumulus_primitives_core::relay_chain::vstaging::InherentData) {
+pub fn set_paras_inherent(data: cumulus_primitives_core::relay_chain::InherentData) {
     // In order for this inherent to work, we need to match the parent header
     // the parent header does not play a significant role in the rest of the framework so
     // we are simply going to mock it
@@ -1039,35 +1039,18 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
 
     fn candidate_descriptor_mock(
         para_id: ParaId,
-        candidate_descriptor_v2: bool,
     ) -> CandidateDescriptorV2<T::Hash> {
-        if candidate_descriptor_v2 {
-            CandidateDescriptorV2::new(
-                para_id,
-                Default::default(),
-                CoreIndex(200),
-                2,
-                Default::default(),
-                Default::default(),
-                Default::default(),
-                Default::default(),
-                mock_validation_code().hash(),
-            )
-        } else {
-            // Convert v1 to v2.
-            CandidateDescriptor::<T::Hash> {
-                para_id,
-                relay_parent: Default::default(),
-                collator: junk_collator(),
-                persisted_validation_data_hash: Default::default(),
-                pov_hash: Default::default(),
-                erasure_root: Default::default(),
-                signature: junk_collator_signature(),
-                para_head: Default::default(),
-                validation_code_hash: mock_validation_code().hash(),
-            }
-            .into()
-        }
+        CandidateDescriptorV2::new(
+            para_id,
+            Default::default(),
+            CoreIndex(200),
+            2,
+            Default::default(),
+            Default::default(),
+            Default::default(),
+            Default::default(),
+            mock_validation_code().hash(),
+        )
     }
 
     /*
@@ -1491,8 +1474,8 @@ pub fn generate_ethereum_pub_keys(n: u32) -> Vec<Keypair> {
     keys
 }
 
-use primitives::vstaging::{ClaimQueueOffset, CoreSelector, UMPSignal, UMP_SEPARATOR};
-use primitives::{CandidateDescriptor, CollatorId, CollatorSignature};
+use primitives::{ClaimQueueOffset, CoreSelector, UMPSignal, UMP_SEPARATOR};
+use primitives::{CollatorId, CollatorSignature};
 use sp_core::ByteArray;
 use {
     babe_primitives::AuthorityPair as BabeAuthorityPair,
