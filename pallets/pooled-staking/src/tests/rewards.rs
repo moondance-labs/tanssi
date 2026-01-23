@@ -104,11 +104,13 @@ fn test_distribution(
     stakes: &[DelegatorState],
     distribution: Distribution,
 ) {
-    use frame_support::traits::Hooks;
+    use {
+        crate::traits::Timer,
+        frame_support::traits::{Hooks, Imbalance},
+    };
 
     // Create new supply for rewards
     let new_supply = currency_issue(reward.rewards);
-    use frame_support::traits::Imbalance;
     let new_supply_amount = new_supply.peek();
 
     // Setup delegations before rewarding.
