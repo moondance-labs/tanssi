@@ -917,10 +917,10 @@ pub enum ProxyType {
     OnDemandOrdering,
     SudoRegistrar,
     SudoValidatorManagement,
-    SudoOraclePrice,
     SessionKeyManagement,
     Staking,
     Balances,
+    SudoOraclePrice,
 }
 impl Default for ProxyType {
     fn default() -> Self {
