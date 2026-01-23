@@ -33,7 +33,7 @@ mod benchmarks {
 
     impl_benchmark_test_suite!(
         ServicesPaymentPriceOracle,
-        crate::mock::ExtBuilder.build(),
+        crate::mock::new_test_ext(),
         crate::mock::Test,
     );
 }
