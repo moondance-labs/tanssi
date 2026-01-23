@@ -16,16 +16,20 @@
 
 use {
     crate::{
-        candidate::Candidates, weights::WeightInfo, Candidate, CandidateSummaries, Config,
-        Delegator, DelegatorCandidateSummaries, Error, Event, Pallet, Pools, PoolsKey, Shares,
-        Stake,
+        candidate::Candidates, traits::Timer, weights::WeightInfo, Candidate, CandidateSummaries,
+        Config, Delegator, DelegatorCandidateSummaries, Error, Event, Pallet, Pools, PoolsKey,
+        Shares, Stake,
     },
     alloc::collections::BTreeMap,
     core::marker::PhantomData,
     frame_support::{
         ensure,
         pallet_prelude::*,
-        traits::{fungible::Mutate, tokens::Preservation},
+        traits::{
+            fungible::{Balanced, Mutate},
+            tokens::Preservation,
+            Imbalance,
+        },
     },
     serde::{Deserialize, Serialize},
     sp_core::Get,
@@ -500,6 +504,107 @@ impl<T: Config> ManualRewards<T> {
 
         Ok(Stake(rewards))
     }
+}
+
+pub fn accumulate_rewards<T: Config>(
+    candidate: Candidate<T>,
+    rewards: crate::CreditOf<T>,
+) -> DispatchResultWithPostInfo {
+    let rewards_amount = rewards.peek();
+    // Resolve rewards currency in staking account.
+    T::Currency::resolve(&T::StakingAccount::get(), rewards)
+        .map_err(|_| DispatchError::NoProviders)?;
+
+    let mut pending = crate::PendingRewards::<T>::get().unwrap_or_else(|| PendingRewards {
+        last_distribution: T::RewardsDistributionTimer::now(),
+        rewards: Default::default(),
+    });
+
+    // Aggregate rewards
+    let entry: &mut T::Balance = pending.rewards.entry(candidate.clone()).or_default();
+    *entry = entry.err_add(&rewards_amount).map_err(Error::<T>::from)?;
+
+    // Update storage
+    crate::PendingRewards::<T>::put(pending);
+    Ok(Some(T::DbWeight::get().reads(1) + T::DbWeight::get().writes(1)).into())
+}
+
+pub fn distribute_accumulated_rewards<T: Config>(
+    pending_rewards: &mut PendingRewards<
+        <T::RewardsDistributionTimer as Timer>::Instant,
+        Candidate<T>,
+        T::Balance,
+    >,
+) -> DispatchResultWithPostInfo {
+    let mut weight = Weight::zero();
+
+    let rewards = core::mem::take(&mut pending_rewards.rewards); // reset pending rewards
+
+    for (candidate, reward) in rewards.into_iter() {
+        // skip empty rewards if any
+        if reward.is_zero() {
+            continue;
+        }
+
+        match distribute_rewards::<T>(&candidate, reward) {
+            Ok(post_info) => {
+                weight = weight.saturating_add(post_info.actual_weight.unwrap_or_default())
+            }
+            Err(mut err) => {
+                err.post_info.actual_weight =
+                    Some(weight.saturating_add(err.post_info.actual_weight.unwrap_or_default()));
+                return Err(err);
+            }
+        }
+    }
+
+    Ok(Some(weight).into())
+}
+
+pub fn distribute_accumulated_rewards_on_timer<T: Config>() -> DispatchResultWithPostInfo {
+    // 2 reads: PendingRewards + RewardsDistributionTimer inner
+    let mut weight = T::DbWeight::get().reads(2);
+    let mut pending = match crate::PendingRewards::<T>::get() {
+        Some(x) => x,
+        None => {
+            // 1 write: PendingRewards
+            weight = weight.saturating_add(T::DbWeight::get().writes(1));
+
+            // if it doesn't exist yet we initialize it
+            let pending = PendingRewards {
+                last_distribution: T::RewardsDistributionTimer::now(),
+                rewards: Default::default(),
+            };
+            crate::PendingRewards::<T>::put(pending.clone());
+            pending
+        }
+    };
+
+    // Distribute only when the timer is elapsed.
+    if !T::RewardsDistributionTimer::is_elapsed(&pending.last_distribution) {
+        return Ok(Some(weight).into());
+    }
+    pending.last_distribution = T::RewardsDistributionTimer::now();
+
+    let post_info = distribute_accumulated_rewards::<T>(&mut pending)?;
+    weight = weight.saturating_add(post_info.actual_weight.unwrap_or_default());
+
+    crate::PendingRewards::<T>::put(pending);
+
+    Ok(Some(weight).into())
+}
+
+/// Used in tests to more simply trigger distribution
+#[cfg(test)]
+pub fn distribute_accumulated_rewards_immediatly<T: Config>() -> DispatchResultWithPostInfo {
+    let Some(mut pending) = crate::PendingRewards::<T>::get() else {
+        return Ok(().into());
+    };
+
+    distribute_accumulated_rewards::<T>(&mut pending)?;
+    crate::PendingRewards::<T>::put(pending);
+
+    Ok(().into())
 }
 
 /// Perform rewards distribution for the provided candidate.

@@ -77,7 +77,7 @@ pub mod pallet {
         frame_support::{
             pallet_prelude::*,
             storage::types::{StorageDoubleMap, StorageValue, ValueQuery},
-            traits::{fungible, fungible::Balanced, tokens::Balance, Imbalance},
+            traits::{fungible, tokens::Balance},
             Blake2_128Concat,
         },
         frame_system::pallet_prelude::*,
@@ -86,7 +86,7 @@ pub mod pallet {
         serde::{Deserialize, Serialize},
         sp_core::Get,
         sp_runtime::{BoundedVec, Perbill},
-        tp_maths::{ErrAdd, MulDiv},
+        tp_maths::MulDiv,
     };
 
     /// A reason for this pallet placing a hold on funds.
@@ -588,57 +588,13 @@ pub mod pallet {
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_initialize(_: BlockNumberFor<T>) -> Weight {
-            let mut weight = Weight::zero();
-
-            // 2 reads to cover timer read and pending rewards
-            weight.saturating_add(T::DbWeight::get().reads(2));
-
-            let mut pending = match PendingRewards::<T>::get() {
-                Some(x) => x,
-                None => {
-                    weight.saturating_add(T::DbWeight::get().writes(1));
-
-                    // if it doesn't exist yet we initialize it
-                    let pending = pools::PendingRewards {
-                        last_distribution: T::RewardsDistributionTimer::now(),
-                        rewards: Default::default(),
-                    };
-                    PendingRewards::<T>::put(pending.clone());
-                    pending
+            match pools::distribute_accumulated_rewards_on_timer::<T>() {
+                Ok(post) => post.actual_weight.unwrap_or_default(),
+                Err(err) => {
+                    log::error!("failed to distribute rewards: {:?}", err.error);
+                    err.post_info.actual_weight.unwrap_or_default()
                 }
-            };
-
-            // Distribute only when the timer is elapsed.
-            if !T::RewardsDistributionTimer::is_elapsed(&pending.last_distribution) {
-                return weight;
             }
-
-            weight.saturating_add(T::DbWeight::get().writes(1)); // 1 write to update the storage
-
-            pending.last_distribution = T::RewardsDistributionTimer::now();
-            let rewards = core::mem::take(&mut pending.rewards); // reset pending rewards
-            PendingRewards::<T>::put(pending);
-
-            for (candidate, reward) in rewards.into_iter() {
-                // skip empty rewards if any
-                if reward.is_zero() {
-                    continue;
-                }
-
-                let post_info = match pools::distribute_rewards::<T>(&candidate, reward) {
-                    Ok(x) => x,
-                    Err(x) => {
-                        log::error!("failed to distribute rewards: {:?}", x.error);
-                        x.post_info
-                    }
-                };
-
-                let fn_weight = post_info.actual_weight.unwrap_or_default();
-
-                weight = weight.saturating_add(fn_weight)
-            }
-
-            weight
         }
 
         #[cfg(feature = "try-runtime")]
@@ -876,23 +832,9 @@ pub mod pallet {
             candidate: Candidate<T>,
             rewards: CreditOf<T>,
         ) -> DispatchResultWithPostInfo {
-            let rewards_amount = rewards.peek();
-            // Resolve rewards currency in staking account.
-            T::Currency::resolve(&T::StakingAccount::get(), rewards)
-                .map_err(|_| DispatchError::NoProviders)?;
-
-            let mut pending = PendingRewards::<T>::get().unwrap_or_else(|| pools::PendingRewards {
-                last_distribution: T::RewardsDistributionTimer::now(),
-                rewards: Default::default(),
-            });
-
-            // Aggregate rewards
-            let entry: &mut T::Balance = pending.rewards.entry(candidate.clone()).or_default();
-            *entry = entry.err_add(&rewards_amount).map_err(Error::<T>::from)?;
-
-            // Update storage
-            PendingRewards::<T>::put(pending);
-            Ok(Some(T::DbWeight::get().reads(1) + T::DbWeight::get().writes(1)).into())
+            // We don't distribute them immediatly and instead accumulate them
+            // to distribute them later.
+            pools::accumulate_rewards::<T>(candidate, rewards)
         }
 
         #[cfg(feature = "runtime-benchmarks")]

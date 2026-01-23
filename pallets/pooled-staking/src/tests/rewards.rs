@@ -116,20 +116,14 @@ fn test_distribution(
     // Setup delegations before rewarding.
     setup_delegations(delegations);
 
-    // Modify distribution timer to ensure rewards will immediately be distributed.
-    crate::PendingRewards::<Runtime>::put(crate::pools::PendingRewards {
-        last_distribution: <Runtime as crate::Config>::RewardsDistributionTimer::now() - 2,
-        rewards: Default::default(),
-    });
-
     // Distribute rewards
     let candidate_balance_before = total_balance(&ACCOUNT_CANDIDATE_1);
 
-    assert_ok!(Pallet::<Runtime>::distribute_rewards(
+    assert_ok!(crate::pools::accumulate_rewards::<Runtime>(
         reward.collator,
         new_supply
     ));
-    let _ = Pallet::<Runtime>::on_initialize(Default::default());
+    let _ = crate::pools::distribute_accumulated_rewards_immediatly::<Runtime>();
     let candidate_balance_after = total_balance(&ACCOUNT_CANDIDATE_1);
 
     // Check events matches the expected distribution.
@@ -654,6 +648,9 @@ fn rewards_are_aggregated_then_distributed() {
     use crate::traits::Timer;
 
     ExtBuilder::default().build().execute_with(|| {
+        // Pending rewards storage is empty at genesis
+        assert!(!crate::PendingRewards::<Runtime>::exists());
+
         setup_delegations(&[
             Delegation {
                 candidate: ACCOUNT_CANDIDATE_1,
@@ -692,9 +689,6 @@ fn rewards_are_aggregated_then_distributed() {
                 stake: 500_000_000,
             },
         ]);
-
-        // Since reward function has never been called, pending rewards storage is empty
-        assert!(!crate::PendingRewards::<Runtime>::exists());
 
         // First time calling it will never reward immediatly since it write the current instant for
         // the first time. We'll reward multiple times and ensure no distribution occurs.
