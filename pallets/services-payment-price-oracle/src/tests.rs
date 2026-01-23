@@ -156,11 +156,7 @@ fn total_monthly_cost_matches_target() {
         let expected_tokens = 2000 * 1_000_000_000_000_u128; // 2000 tokens
 
         // Allow 1% tolerance for rounding
-        let diff = if total_monthly_tokens > expected_tokens {
-            total_monthly_tokens - expected_tokens
-        } else {
-            expected_tokens - total_monthly_tokens
-        };
+        let diff = total_monthly_tokens.abs_diff(expected_tokens);
         let tolerance = expected_tokens / 100; // 1%
 
         assert!(
