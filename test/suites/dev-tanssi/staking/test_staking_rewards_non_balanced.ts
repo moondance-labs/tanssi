@@ -189,10 +189,7 @@ describeSuite({
                 // Second, autocompounding
                 const delegatorsAutoCompoundRewards = delegatorRewards - realDistributedManualDelegatorRewards;
 
-                const stakingRewarded = await filterRewardStakingDistributed(
-                    events,
-                    reward.accountId.toString()
-                );
+                const stakingRewarded = await filterRewardStakingDistributed(events, reward.accountId.toString());
 
                 // Test ranges, as we can have rounding errors for Perbill manipulation
                 expect(stakingRewarded.delegatorsMcRewards).toBeGreaterThanOrEqual(
@@ -201,22 +198,18 @@ describeSuite({
                 expect(stakingRewarded.delegatorsMcRewards).toBeLessThanOrEqual(
                     realDistributedManualDelegatorRewards + 1n
                 );
-                expect(stakingRewarded.delegatorsAcRewards).toBeGreaterThanOrEqual(
-                    delegatorsAutoCompoundRewards - 1n
-                );
-                expect(stakingRewarded.delegatorsAcRewards).toBeLessThanOrEqual(
-                    delegatorsAutoCompoundRewards + 1n
-                );
+                expect(stakingRewarded.delegatorsAcRewards).toBeGreaterThanOrEqual(delegatorsAutoCompoundRewards - 1n);
+                expect(stakingRewarded.delegatorsAcRewards).toBeLessThanOrEqual(delegatorsAutoCompoundRewards + 1n);
 
                 // TODO: test better what goes into auto and what goes into manual for collator
                 const delegatorDust =
                     delegatorRewards - realDistributedManualDelegatorRewards - delegatorsAutoCompoundRewards;
-                expect(
-                    stakingRewarded.collatorMcRewards + stakingRewarded.collatorAcRewards
-                ).toBeGreaterThanOrEqual(collatorPercentage + delegatorDust - 1n);
-                expect(
-                    stakingRewarded.collatorMcRewards + stakingRewarded.collatorAcRewards
-                ).toBeLessThanOrEqual(collatorPercentage + delegatorDust + 1n);
+                expect(stakingRewarded.collatorMcRewards + stakingRewarded.collatorAcRewards).toBeGreaterThanOrEqual(
+                    collatorPercentage + delegatorDust - 1n
+                );
+                expect(stakingRewarded.collatorMcRewards + stakingRewarded.collatorAcRewards).toBeLessThanOrEqual(
+                    collatorPercentage + delegatorDust + 1n
+                );
             },
         });
     },
