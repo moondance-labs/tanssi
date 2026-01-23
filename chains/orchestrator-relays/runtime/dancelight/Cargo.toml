@@ -147,6 +147,8 @@ pallet-pooled-staking = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
 pallet-services-payment = { workspace = true }
+pallet-services-payment-price-oracle = { workspace = true }
+pallet-services-payment-price-oracle-runtime-api = { workspace = true }
 pallet-services-payment-runtime-api = { workspace = true }
 pallet-stream-payment = { workspace = true }
 pallet-stream-payment-runtime-api = { workspace = true }
@@ -281,6 +283,8 @@ std = [
 	"pallet-registrar/std",
 	"pallet-root-testing/std",
 	"pallet-scheduler/std",
+	"pallet-services-payment-price-oracle-runtime-api/std",
+	"pallet-services-payment-price-oracle/std",
 	"pallet-services-payment-runtime-api/std",
 	"pallet-services-payment/std",
 	"pallet-session/std",
@@ -410,6 +414,7 @@ runtime-benchmarks = [
 	"pallet-referenda/runtime-benchmarks",
 	"pallet-registrar/runtime-benchmarks",
 	"pallet-scheduler/runtime-benchmarks",
+	"pallet-services-payment-price-oracle/runtime-benchmarks",
 	"pallet-services-payment/runtime-benchmarks",
 	"pallet-staking/runtime-benchmarks",
 	"pallet-stream-payment/runtime-benchmarks",
@@ -503,6 +508,7 @@ try-runtime = [
 	"pallet-registrar/try-runtime",
 	"pallet-root-testing/try-runtime",
 	"pallet-scheduler/try-runtime",
+	"pallet-services-payment-price-oracle/try-runtime",
 	"pallet-services-payment/try-runtime",
 	"pallet-session/try-runtime",
 	"pallet-staking/try-runtime",

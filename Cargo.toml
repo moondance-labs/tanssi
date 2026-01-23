@@ -29,6 +29,7 @@ members = [
 	"pallets/*",
 	"pallets/collator-assignment/runtime-api",
 	"pallets/registrar/runtime-api",
+	"pallets/services-payment-price-oracle/runtime-api",
 	"primitives/*",
 ]
 # default-members is the subset of members that is compiled when running cargo build.
@@ -99,6 +100,8 @@ pallet-pooled-staking = { path = "pallets/pooled-staking", default-features = fa
 pallet-registrar = { path = "pallets/registrar", default-features = false }
 pallet-registrar-runtime-api = { path = "pallets/registrar/runtime-api", default-features = false }
 pallet-services-payment = { path = "pallets/services-payment", default-features = false }
+pallet-services-payment-price-oracle = { path = "pallets/services-payment-price-oracle", default-features = false }
+pallet-services-payment-price-oracle-runtime-api = { path = "pallets/services-payment-price-oracle/runtime-api", default-features = false }
 pallet-services-payment-runtime-api = { path = "pallets/services-payment/runtime-api", default-features = false }
 pallet-stream-payment = { path = "pallets/stream-payment", default-features = false }
 pallet-stream-payment-runtime-api = { path = "pallets/stream-payment/runtime-api", default-features = false }

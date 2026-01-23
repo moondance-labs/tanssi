@@ -4005,6 +4005,8 @@ dependencies = [
  "pallet-root-testing",
  "pallet-scheduler",
  "pallet-services-payment",
+ "pallet-services-payment-price-oracle",
+ "pallet-services-payment-price-oracle-runtime-api",
  "pallet-services-payment-runtime-api",
  "pallet-session",
  "pallet-staking",
@@ -11441,6 +11443,30 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "tp-traits",
+]
+
+[[package]]
+name = "pallet-services-payment-price-oracle"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+]
+
+[[package]]
+name = "pallet-services-payment-price-oracle-runtime-api"
+version = "0.1.0"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api",
+ "sp-runtime",
 ]
 
 [[package]]
