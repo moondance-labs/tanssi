@@ -1010,13 +1010,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                 }
                 _ => false,
             },
-            // TODO: Add tests
-            ProxyType::SudoOraclePrice => match c {
-                RuntimeCall::Sudo(pallet_sudo::Call::sudo { call: ref x }) => {
-                    matches!(x.as_ref(), &RuntimeCall::ServicesPaymentPriceOracle(..))
-                }
-                _ => false,
-            },
             ProxyType::SessionKeyManagement => {
                 matches!(c, RuntimeCall::Session(..))
             }
@@ -1026,6 +1019,13 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
             ProxyType::Balances => {
                 matches!(c, RuntimeCall::Balances(..))
             }
+            // TODO: Add tests
+            ProxyType::SudoOraclePrice => match c {
+                RuntimeCall::Sudo(pallet_sudo::Call::sudo { call: ref x }) => {
+                    matches!(x.as_ref(), &RuntimeCall::ServicesPaymentPriceOracle(..))
+                }
+                _ => false,
+            },
         }
     }
     fn is_superset(&self, o: &Self) -> bool {
