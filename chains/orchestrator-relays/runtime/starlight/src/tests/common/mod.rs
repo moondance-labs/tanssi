@@ -292,7 +292,7 @@ pub fn start_block() -> RunSummary {
     Mmr::on_initialize(System::block_number());
     BeefyMmrLeaf::on_initialize(System::block_number());
     RunSummary {
-        inflation: new_issuance - current_issuance,
+        inflation: new_issuance.checked_sub(current_issuance).unwrap(),
     }
 }
 
