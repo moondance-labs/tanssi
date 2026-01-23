@@ -274,7 +274,7 @@ fn test_non_filtered_calls_maintenance_mode() {
 
             assert_call_not_filtered(RuntimeCall::EthereumBeaconClient(
                 snowbridge_pallet_ethereum_client::Call::<Runtime>::force_checkpoint {
-                    update: Box::new(snowbridge_pallet_ethereum_client::mock_electra::load_checkpoint_update_fixture()),
+                    update: Box::new(snowbridge_pallet_ethereum_client::mock::load_checkpoint_update_fixture()),
                 },
             ));
 
