@@ -21,7 +21,6 @@ use {
     core_extensions::TypeIdentity,
     cumulus_client_bootnodes::{start_bootnode_tasks, StartBootnodeTasksParams},
     cumulus_client_cli::CollatorOptions,
-    cumulus_client_consensus_common::ParachainConsensus,
     cumulus_client_service::{
         build_relay_chain_interface, CollatorSybilResistance, ParachainHostFunctions,
         StartFullNodeParams,
@@ -48,8 +47,7 @@ use {
     sc_network_sync::SyncingService,
     sc_network_transactions::TransactionsHandlerController,
     sc_service::{
-        config::Multiaddr, Configuration, KeystoreContainer, SpawnTaskHandle, TFullBackend,
-        TFullClient, TaskManager,
+        config::Multiaddr, Configuration, KeystoreContainer, TFullBackend, TFullClient, TaskManager,
     },
     sc_telemetry::{Telemetry, TelemetryWorker, TelemetryWorkerHandle},
     sc_transaction_pool_api::{OffchainTransactionPoolFactory, TransactionPool},
@@ -133,7 +131,6 @@ pub type BackendOf<T> = TFullBackend<BlockOf<T>>;
 pub type ConstructedRuntimeApiOf<T> =
     <RuntimeApiOf<T> as ConstructRuntimeApi<BlockOf<T>, ClientOf<T>>>::RuntimeApi;
 pub type ImportQueueServiceOf<T> = Box<dyn ImportQueueService<BlockOf<T>>>;
-pub type ParachainConsensusOf<T> = Box<dyn ParachainConsensus<BlockOf<T>>>;
 
 // `Cumulus` and `TxHandler` are types that will change during the life of
 // a `NodeBuilder` because they are generated and consumed when calling
@@ -857,83 +854,6 @@ where
         })
     }
 
-    pub async fn start_collator<RCInterface>(
-        self,
-        para_id: ParaId,
-        relay_chain_interface: RCInterface,
-        relay_chain_slot_duration: Duration,
-        parachain_consensus: ParachainConsensusOf<T>,
-        collator_key: CollatorPair,
-    ) -> sc_service::error::Result<NodeBuilder<T, SNetwork, STxHandler, ()>>
-    where
-        SNetwork: TypeIdentity<Type = Network<BlockOf<T>>>,
-        SImportQueueService: TypeIdentity<Type = ImportQueueServiceOf<T>>,
-        RCInterface: RelayChainInterface + Clone + 'static,
-    {
-        let NodeBuilder {
-            client,
-            backend,
-            transaction_pool,
-            telemetry,
-            telemetry_worker_handle,
-            mut task_manager,
-            keystore_container,
-            hwbench,
-            prometheus_registry,
-            network,
-            tx_handler_controller,
-            import_queue_service,
-        } = self;
-
-        let network = TypeIdentity::into_type(network);
-        let import_queue_service = TypeIdentity::into_type(import_queue_service);
-
-        let spawner = task_manager.spawn_handle();
-        let announce_block = {
-            let sync_service = network.sync_service.clone();
-            Arc::new(move |hash, data| sync_service.announce_block(hash, data))
-        };
-        let overseer_handle = relay_chain_interface
-            .overseer_handle()
-            .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
-
-        let params = cumulus_client_service::StartCollatorParams {
-            para_id,
-            block_status: client.clone(),
-            announce_block: announce_block.clone(),
-            client: client.clone(),
-            task_manager: &mut task_manager,
-            relay_chain_interface: relay_chain_interface.clone(),
-            spawner: spawner.clone(),
-            parachain_consensus,
-            import_queue: import_queue_service,
-            collator_key,
-            relay_chain_slot_duration,
-            recovery_handle: Box::new(overseer_handle.clone()),
-            sync_service: network.sync_service.clone(),
-            prometheus_registry: prometheus_registry.as_ref(),
-        };
-
-        // TODO: change for async backing
-        #[allow(deprecated)]
-        cumulus_client_service::start_collator(params).await?;
-
-        Ok(NodeBuilder {
-            client,
-            backend,
-            transaction_pool,
-            telemetry,
-            telemetry_worker_handle,
-            task_manager,
-            keystore_container,
-            hwbench,
-            prometheus_registry,
-            network: TypeIdentity::from_type(network),
-            tx_handler_controller,
-            import_queue_service: (),
-        })
-    }
-
     pub fn extract_import_queue_service(
         self,
     ) -> (
@@ -975,44 +895,6 @@ where
             },
             import_queue_service,
         )
-    }
-
-    pub fn cumulus_client_collator_params_generator(
-        &self,
-        para_id: ParaId,
-        overseer_handle: cumulus_relay_chain_interface::OverseerHandle,
-        collator_key: CollatorPair,
-        parachain_consensus: ParachainConsensusOf<T>,
-    ) -> impl Fn() -> cumulus_client_collator::StartCollatorParams<
-        BlockOf<T>,
-        ClientOf<T>,
-        ClientOf<T>,
-        SpawnTaskHandle,
-    > + Send
-           + Clone
-           + 'static
-    where
-        SNetwork: TypeIdentity<Type = Network<BlockOf<T>>>,
-    {
-        let network = TypeIdentity::as_type(&self.network);
-
-        let client = self.client.clone();
-        let announce_block = {
-            let sync_service = network.sync_service.clone();
-            Arc::new(move |hash, data| sync_service.announce_block(hash, data))
-        };
-        let spawner = self.task_manager.spawn_handle();
-
-        move || cumulus_client_collator::StartCollatorParams {
-            runtime_api: client.clone(),
-            block_status: client.clone(),
-            announce_block: announce_block.clone(),
-            overseer_handle: overseer_handle.clone(),
-            spawner: spawner.clone(),
-            para_id,
-            key: collator_key.clone(),
-            parachain_consensus: parachain_consensus.clone(),
-        }
     }
 }
 
