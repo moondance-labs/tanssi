@@ -538,11 +538,16 @@ pub fn distribute_accumulated_rewards<T: Config>(
 ) -> DispatchResultWithPostInfo {
     let mut weight = Weight::zero();
 
-    let rewards = core::mem::take(&mut pending_rewards.rewards); // reset pending rewards
+    let candidates: Vec<_> = pending_rewards.rewards().keys().cloned().collect();
 
-    for (candidate, reward) in rewards.into_iter() {
+    // Iterate over the rewards. Only remove the rewards on success. In case of issue this prevents
+    // rewards to be dropped and allow us to investigate more easily.
+    for candidate in candidates.into_iter() {
+        let reward = pending_rewards.get(&candidate).cloned().unwrap_or_default();
+
         // skip empty rewards if any
         if reward.is_zero() {
+            rewards.remove(&candidate);
             continue;
         }
 
@@ -556,6 +561,8 @@ pub fn distribute_accumulated_rewards<T: Config>(
                 return Err(err);
             }
         }
+
+        rewards.remove(&candidate);
     }
 
     Ok(Some(weight).into())
