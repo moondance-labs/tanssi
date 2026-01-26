@@ -273,7 +273,7 @@ std = [
 	"pallet-root-testing/std",
 	"pallet-scheduler/std",
 	"pallet-services-payment-price-oracle-runtime-api/std",
-    "pallet-services-payment-price-oracle/std",
+	"pallet-services-payment-price-oracle/std",
 	"pallet-services-payment-runtime-api/std",
 	"pallet-services-payment/std",
 	"pallet-session/std",
