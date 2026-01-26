@@ -120,7 +120,7 @@ fn test_distribution(
         reward.collator,
         new_supply
     ));
-    let _ = crate::pools::distribute_accumulated_rewards_immediatly::<Runtime>();
+    let _ = crate::pools::distribute_accumulated_rewards_immediately::<Runtime>();
     let candidate_balance_after = total_balance(&ACCOUNT_CANDIDATE_1);
 
     // Check events matches the expected distribution.

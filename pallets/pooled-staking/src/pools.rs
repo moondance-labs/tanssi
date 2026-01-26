@@ -556,9 +556,7 @@ pub fn distribute_accumulated_rewards<T: Config>(
         }
 
         match distribute_rewards::<T>(&candidate, reward) {
-            Ok(post_info) => {
-                weight = weight.saturating_add(post_info.actual_weight.unwrap_or_default())
-            }
+            Ok(post_info) => weight.saturating_accrue(post_info.actual_weight.unwrap_or_default()),
             Err(mut err) => {
                 err.post_info.actual_weight =
                     Some(weight.saturating_add(err.post_info.actual_weight.unwrap_or_default()));
@@ -583,7 +581,7 @@ pub fn distribute_accumulated_rewards_on_timer<T: Config>() -> DispatchResultWit
         Some(x) => x,
         None => {
             // 1 write: PendingRewards
-            weight = weight.saturating_add(T::DbWeight::get().writes(1));
+            weight.saturating_accrue(T::DbWeight::get().writes(1));
 
             // if it doesn't exist yet we initialize it
             let pending = PendingRewards {
@@ -605,18 +603,21 @@ pub fn distribute_accumulated_rewards_on_timer<T: Config>() -> DispatchResultWit
     // distributed, so we store the updated pending rewards in all cases.
     let result = distribute_accumulated_rewards::<T>(&mut pending);
     crate::PendingRewards::<T>::put(pending);
-    let post_info = result?;
+    let post_info = match result {
+        Ok(post) => post,
+        Err(err) => err.post_info,
+    };
 
     // 1 write: PendingRewards
     // + distribution weight
-    weight = weight.saturating_add(T::DbWeight::get().writes(1));
-    weight = weight.saturating_add(post_info.actual_weight.unwrap_or_default());
+    weight.saturating_accrue(T::DbWeight::get().writes(1));
+    weight.saturating_accrue(post_info.actual_weight.unwrap_or_default());
     Ok(Some(weight).into())
 }
 
 /// Used in tests to more simply trigger distribution
 #[cfg(test)]
-pub fn distribute_accumulated_rewards_immediatly<T: Config>() -> DispatchResultWithPostInfo {
+pub fn distribute_accumulated_rewards_immediately<T: Config>() -> DispatchResultWithPostInfo {
     let Some(mut pending) = crate::PendingRewards::<T>::get() else {
         return Ok(().into());
     };
