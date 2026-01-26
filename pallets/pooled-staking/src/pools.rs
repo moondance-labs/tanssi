@@ -20,7 +20,7 @@ use {
         Config, Delegator, DelegatorCandidateSummaries, Error, Event, Pallet, Pools, PoolsKey,
         Shares, Stake,
     },
-    alloc::collections::BTreeMap,
+    alloc::{collections::BTreeMap, vec::Vec},
     core::marker::PhantomData,
     frame_support::{
         ensure,
@@ -538,16 +538,20 @@ pub fn distribute_accumulated_rewards<T: Config>(
 ) -> DispatchResultWithPostInfo {
     let mut weight = Weight::zero();
 
-    let candidates: Vec<_> = pending_rewards.rewards().keys().cloned().collect();
+    let candidates: Vec<_> = pending_rewards.rewards.keys().cloned().collect();
 
     // Iterate over the rewards. Only remove the rewards on success. In case of issue this prevents
     // rewards to be dropped and allow us to investigate more easily.
     for candidate in candidates.into_iter() {
-        let reward = pending_rewards.get(&candidate).cloned().unwrap_or_default();
+        let reward = pending_rewards
+            .rewards
+            .get(&candidate)
+            .cloned()
+            .unwrap_or_default();
 
         // skip empty rewards if any
         if reward.is_zero() {
-            rewards.remove(&candidate);
+            pending_rewards.rewards.remove(&candidate);
             continue;
         }
 
@@ -562,7 +566,7 @@ pub fn distribute_accumulated_rewards<T: Config>(
             }
         }
 
-        rewards.remove(&candidate);
+        pending_rewards.rewards.remove(&candidate);
     }
 
     Ok(Some(weight).into())
