@@ -19021,6 +19021,8 @@ dependencies = [
  "pallet-root-testing",
  "pallet-scheduler",
  "pallet-services-payment",
+ "pallet-services-payment-price-oracle",
+ "pallet-services-payment-price-oracle-runtime-api",
  "pallet-services-payment-runtime-api",
  "pallet-session",
  "pallet-staking",
