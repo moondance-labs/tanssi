@@ -1731,6 +1731,9 @@ pub const USD_DECIMALS: u128 = 1_000_000;
 /// Fixed monthly services cost in USD (with 6 decimals)
 /// Includes block production + collator assignment
 pub const FIXED_MONTHLY_SERVICES_COST_USD: u128 = 2_000 * USD_DECIMALS;
+/// We allow the price to be in the range specified below
+pub const MIN_TOKEN_PRICE: u128 = 40_000_000_000_000; // $0.00004 with 18 decimals
+pub const MAX_TOKEN_PRICE: u128 = 10_000_000_000_000_000_000; // $10 with 18 decimals
 
 parameter_types! {
     pub const FixedMonthlyServicesCostUsd: u128 = FIXED_MONTHLY_SERVICES_COST_USD;
@@ -1739,6 +1742,8 @@ parameter_types! {
     pub const TokenDecimals: u32 = DECIMALS;
     pub const ReferenceBlockCost: u128 = FIXED_BLOCK_PRODUCTION_COST;
     pub const ReferenceSessionCost: u128 = FIXED_COLLATOR_ASSIGNMENT_COST;
+    pub const MinTokenPrice: u128 = MIN_TOKEN_PRICE;
+    pub const MaxTokenPrice: u128 = MAX_TOKEN_PRICE;
 }
 
 impl pallet_services_payment_price_oracle::Config for Runtime {
@@ -1750,6 +1755,8 @@ impl pallet_services_payment_price_oracle::Config for Runtime {
     type ReferenceBlockCost = ReferenceBlockCost;
     type ReferenceSessionCost = ReferenceSessionCost;
     type WeightInfo = weights::pallet_services_payment_price_oracle::SubstrateWeight<Runtime>;
+    type MinTokenPrice = MinTokenPrice;
+    type MaxTokenPrice = MaxTokenPrice;
 }
 
 pub struct BlockProductionCost<Runtime>(PhantomData<Runtime>);

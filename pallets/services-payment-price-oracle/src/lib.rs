@@ -109,12 +109,22 @@ pub mod pallet {
 
         /// Weight information for extrinsics in this pallet.
         type WeightInfo: WeightInfo;
+
+        /// The minimum acceptable token price in USD (with 18 decimals).
+        #[pallet::constant]
+        type MinTokenPrice: Get<u128>;
+
+        /// The maximum acceptable token price in USD (with 18 decimals).
+        #[pallet::constant]
+        type MaxTokenPrice: Get<u128>;
     }
 
     #[pallet::error]
     pub enum Error<T> {
         /// The price cannot be zero.
         PriceCannotBeZero,
+        /// The provided price is outside the acceptable bounds.
+        PriceOutOfBounds,
     }
 
     #[pallet::event]
@@ -171,6 +181,12 @@ pub mod pallet {
             T::SetPriceOrigin::ensure_origin(origin)?;
 
             ensure!(!price.is_zero(), Error::<T>::PriceCannotBeZero);
+
+            let price_inner = price.into_inner();
+            ensure!(
+                price_inner >= T::MinTokenPrice::get() && price_inner <= T::MaxTokenPrice::get(),
+                Error::<T>::PriceOutOfBounds
+            );
 
             TokenPriceUsd::<T>::put(price);
 

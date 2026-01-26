@@ -207,3 +207,54 @@ fn event_emitted_on_price_update() {
         ));
     });
 }
+
+#[test]
+fn set_token_price_below_minimum_fails() {
+    new_test_ext().execute_with(|| {
+        // Price below minimum ($0.00003)
+        let price = FixedU128::from_inner(30_000_000_000_000);
+        assert_noop!(
+            ServicesPaymentPriceOracle::set_token_price(RuntimeOrigin::root(), price),
+            Error::<Test>::PriceOutOfBounds
+        );
+    });
+}
+
+#[test]
+fn set_token_price_above_maximum_fails() {
+    new_test_ext().execute_with(|| {
+        // Price above maximum ($11)
+        let price = FixedU128::from_u32(11);
+        assert_noop!(
+            ServicesPaymentPriceOracle::set_token_price(RuntimeOrigin::root(), price),
+            Error::<Test>::PriceOutOfBounds
+        );
+    });
+}
+
+#[test]
+fn set_token_price_at_bounds_succeeds() {
+    new_test_ext().execute_with(|| {
+        // Price at minimum bound ($0.00004)
+        let min_price = FixedU128::from_inner(MinTokenPrice::get());
+        assert_ok!(ServicesPaymentPriceOracle::set_token_price(
+            RuntimeOrigin::root(),
+            min_price
+        ));
+        assert_eq!(
+            ServicesPaymentPriceOracle::token_price_usd(),
+            Some(min_price)
+        );
+
+        // Price at maximum bound ($10)
+        let max_price = FixedU128::from_inner(MaxTokenPrice::get());
+        assert_ok!(ServicesPaymentPriceOracle::set_token_price(
+            RuntimeOrigin::root(),
+            max_price
+        ));
+        assert_eq!(
+            ServicesPaymentPriceOracle::token_price_usd(),
+            Some(max_price)
+        );
+    });
+}

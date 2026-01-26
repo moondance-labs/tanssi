@@ -78,6 +78,8 @@ frame_support::parameter_types! {
     pub const TokenDecimals: u32 = 12;
     pub const ReferenceBlockCost: u128 = 30_000_000_000; // 0.03 STAR
     pub const ReferenceSessionCost: u128 = 50_000_000_000_000; // 50 STAR
+    pub const MinTokenPrice: u128 = 40_000_000_000_000; // $0.00004 with 18 decimals
+    pub const MaxTokenPrice: u128 = 10_000_000_000_000_000_000; // $10 with 18 decimals
 }
 
 impl pallet_services_payment_price_oracle::Config for Test {
@@ -89,6 +91,8 @@ impl pallet_services_payment_price_oracle::Config for Test {
     type ReferenceBlockCost = ReferenceBlockCost;
     type ReferenceSessionCost = ReferenceSessionCost;
     type WeightInfo = ();
+    type MinTokenPrice = MinTokenPrice;
+    type MaxTokenPrice = MaxTokenPrice;
 }
 
 // Build genesis storage according to the mock runtime.
