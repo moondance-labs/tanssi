@@ -18,9 +18,7 @@
 
 use crate::{MinimumSelfDelegation, PooledStaking};
 use frame_support::assert_ok;
-use pallet_pooled_staking::{
-    ActivePoolKind, PendingOperationKey, PendingOperationQuery,
-};
+use pallet_pooled_staking::{ActivePoolKind, PendingOperationKey, PendingOperationQuery};
 use {
     crate::{tests::common::*, AuthorNoting, RewardsPortion},
     alloc::vec,
