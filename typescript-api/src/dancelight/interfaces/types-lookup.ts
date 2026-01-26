@@ -4416,10 +4416,10 @@ declare module "@polkadot/types/lookup" {
         readonly isOnDemandOrdering: boolean;
         readonly isSudoRegistrar: boolean;
         readonly isSudoValidatorManagement: boolean;
-        readonly isSudoOraclePrice: boolean;
         readonly isSessionKeyManagement: boolean;
         readonly isStaking: boolean;
         readonly isBalances: boolean;
+        readonly isSudoOraclePrice: boolean;
         readonly type:
             | "Any"
             | "NonTransfer"
@@ -4430,10 +4430,10 @@ declare module "@polkadot/types/lookup" {
             | "OnDemandOrdering"
             | "SudoRegistrar"
             | "SudoValidatorManagement"
-            | "SudoOraclePrice"
             | "SessionKeyManagement"
             | "Staking"
-            | "Balances";
+            | "Balances"
+            | "SudoOraclePrice";
     }
 
     /** @name PalletMultisigCall (382) */

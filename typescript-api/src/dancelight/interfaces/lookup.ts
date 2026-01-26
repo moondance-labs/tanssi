@@ -3961,10 +3961,10 @@ export default {
             "OnDemandOrdering",
             "SudoRegistrar",
             "SudoValidatorManagement",
-            "SudoOraclePrice",
             "SessionKeyManagement",
             "Staking",
             "Balances",
+            "SudoOraclePrice",
         ],
     },
     /**
