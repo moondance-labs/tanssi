@@ -226,6 +226,9 @@ import type {
     PalletServicesPaymentCall,
     PalletServicesPaymentError,
     PalletServicesPaymentEvent,
+    PalletServicesPaymentPriceOracleCall,
+    PalletServicesPaymentPriceOracleError,
+    PalletServicesPaymentPriceOracleEvent,
     PalletSessionCall,
     PalletSessionError,
     PalletSessionEvent,
@@ -779,6 +782,9 @@ declare module "@polkadot/types/types/registry" {
         PalletServicesPaymentCall: PalletServicesPaymentCall;
         PalletServicesPaymentError: PalletServicesPaymentError;
         PalletServicesPaymentEvent: PalletServicesPaymentEvent;
+        PalletServicesPaymentPriceOracleCall: PalletServicesPaymentPriceOracleCall;
+        PalletServicesPaymentPriceOracleError: PalletServicesPaymentPriceOracleError;
+        PalletServicesPaymentPriceOracleEvent: PalletServicesPaymentPriceOracleEvent;
         PalletSessionCall: PalletSessionCall;
         PalletSessionError: PalletSessionError;
         PalletSessionEvent: PalletSessionEvent;

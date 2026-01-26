@@ -4775,6 +4775,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "SessionKeyManagement"
                         | "Staking"
                         | "Balances"
+                        | "SudoOraclePrice"
                         | number
                         | Uint8Array,
                     delay: u32 | AnyNumber | Uint8Array
@@ -4849,6 +4850,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "SessionKeyManagement"
                         | "Staking"
                         | "Balances"
+                        | "SudoOraclePrice"
                         | number
                         | Uint8Array,
                     delay: u32 | AnyNumber | Uint8Array,
@@ -4899,6 +4901,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "SessionKeyManagement"
                         | "Staking"
                         | "Balances"
+                        | "SudoOraclePrice"
                         | number
                         | Uint8Array,
                     index: u16 | AnyNumber | Uint8Array,
@@ -4957,6 +4960,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "SessionKeyManagement"
                         | "Staking"
                         | "Balances"
+                        | "SudoOraclePrice"
                         | number,
                     call: Call | IMethod | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -5012,6 +5016,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "SessionKeyManagement"
                         | "Staking"
                         | "Balances"
+                        | "SudoOraclePrice"
                         | number,
                     call: Call | IMethod | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -5114,6 +5119,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "SessionKeyManagement"
                         | "Staking"
                         | "Balances"
+                        | "SudoOraclePrice"
                         | number
                         | Uint8Array,
                     delay: u32 | AnyNumber | Uint8Array
@@ -5663,6 +5669,26 @@ declare module "@polkadot/api-base/types/submittable" {
                     refundAddress: Option<AccountId32> | null | Uint8Array | AccountId32 | string
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, Option<AccountId32>]
+            >;
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
+        servicesPaymentPriceOracle: {
+            /**
+             * Set the STAR|TANSSI token price in USD.
+             *
+             * The price is represented as a FixedU128 where the inner value
+             * represents the price with 18 decimal places.
+             *
+             * For example:
+             * - $1.00 = 1_000_000_000_000_000_000 (1 * 10^18)
+             * - $0.50 = 500_000_000_000_000_000 (0.5 * 10^18)
+             **/
+            setTokenPrice: AugmentedSubmittable<
+                (price: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u128]
             >;
             /**
              * Generic tx

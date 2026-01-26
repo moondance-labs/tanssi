@@ -2735,6 +2735,18 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             [key: string]: QueryableStorageEntry<ApiType>;
         };
+        servicesPaymentPriceOracle: {
+            /**
+             * The current STAR|TANSSI/USD price stored as FixedU128.
+             * Represents how many USD one STAR|TANSSI token is worth.
+             **/
+            tokenPriceUsd: AugmentedQuery<ApiType, () => Observable<Option<u128>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
         session: {
             /**
              * Current index of the session.
