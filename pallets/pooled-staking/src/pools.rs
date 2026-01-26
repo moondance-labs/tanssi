@@ -562,6 +562,10 @@ pub fn distribute_accumulated_rewards<T: Config>(
             Err(mut err) => {
                 err.post_info.actual_weight =
                     Some(weight.saturating_add(err.post_info.actual_weight.unwrap_or_default()));
+                log::error!(
+                    "failed to distribute rewards for candidate {candidate}: {:?}",
+                    err.error
+                );
                 return Err(err);
             }
         }
@@ -597,11 +601,16 @@ pub fn distribute_accumulated_rewards_on_timer<T: Config>() -> DispatchResultWit
     }
     pending.last_distribution = T::RewardsDistributionTimer::now();
 
-    let post_info = distribute_accumulated_rewards::<T>(&mut pending)?;
-    weight = weight.saturating_add(post_info.actual_weight.unwrap_or_default());
-
+    // We try to distribute the rewards. In case of issue some of the rewards may already have been
+    // distributed, so we store the updated pending rewards in all cases.
+    let result = distribute_accumulated_rewards::<T>(&mut pending);
     crate::PendingRewards::<T>::put(pending);
+    let post_info = result?;
 
+    // 1 write: PendingRewards
+    // + distribution weight
+    weight = weight.saturating_add(T::DbWeight::get().writes(1));
+    weight = weight.saturating_add(post_info.actual_weight.unwrap_or_default());
     Ok(Some(weight).into())
 }
 

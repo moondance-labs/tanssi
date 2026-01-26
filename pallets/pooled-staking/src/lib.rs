@@ -591,7 +591,7 @@ pub mod pallet {
             match pools::distribute_accumulated_rewards_on_timer::<T>() {
                 Ok(post) => post.actual_weight.unwrap_or_default(),
                 Err(err) => {
-                    log::error!("failed to distribute rewards: {:?}", err.error);
+                    // error is logged inside distribute_accumulated_rewards
                     err.post_info.actual_weight.unwrap_or_default()
                 }
             }
