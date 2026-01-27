@@ -30,11 +30,9 @@ sp_api::decl_runtime_apis! {
         fn token_price_usd() -> Option<FixedU128>;
 
         /// Get the calculated block production cost in tokens.
-        /// Returns None if price is not set or calculation fails.
         fn block_cost() -> Balance;
 
         /// Get the calculated collator assignment cost in tokens per session.
-        /// Returns None if price is not set or calculation fails.
         fn collator_assignment_cost() -> Balance;
     }
 }
