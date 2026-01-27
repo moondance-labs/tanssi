@@ -7350,7 +7350,7 @@ export default {
      * Lookup678: pallet_services_payment_price_oracle::pallet::Error<T>
      **/
     PalletServicesPaymentPriceOracleError: {
-        _enum: ["PriceCannotBeZero"],
+        _enum: ["PriceCannotBeZero", "PriceOutOfBounds"],
     },
     /**
      * Lookup679: pallet_data_preservers::types::RegisteredProfile<T>

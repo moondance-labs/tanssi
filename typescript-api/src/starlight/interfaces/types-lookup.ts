@@ -8243,7 +8243,8 @@ declare module "@polkadot/types/lookup" {
     /** @name PalletServicesPaymentPriceOracleError (662) */
     interface PalletServicesPaymentPriceOracleError extends Enum {
         readonly isPriceCannotBeZero: boolean;
-        readonly type: "PriceCannotBeZero";
+        readonly isPriceOutOfBounds: boolean;
+        readonly type: "PriceCannotBeZero" | "PriceOutOfBounds";
     }
 
     /** @name PalletDataPreserversRegisteredProfile (663) */

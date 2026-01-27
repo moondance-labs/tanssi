@@ -151,7 +151,8 @@ describeSuite({
 
                 // Price below minimum
                 // Ensure belowMinPriceValue is not zero, as price cannot be zero.
-                const belowMinPriceValue = minPriceConst > 1n ? minPriceConst - 1n : minPriceConst;
+                const belowMinPriceValue = minPriceConst > 0n ? minPriceConst - 1n : 0n;
+                const expectedBelowMinError = belowMinPriceValue === 0n ? "PriceCannotBeZero" : "PriceOutOfBounds";
                 const belowMinPrice = polkadotJs.createType("FixedU128", belowMinPriceValue);
 
                 const setBelowMinPriceTx = polkadotJs.tx.sudo.sudo(
@@ -160,7 +161,7 @@ describeSuite({
                 await context.createBlock([await setBelowMinPriceTx.signAsync(sudo_alice)]);
                 const errorEvents = await retrieveSudoDispatchErrors(context.polkadotJs());
                 expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
-                expect(errorEvents[0].method).to.be.eq("PriceOutOfBounds");
+                expect(errorEvents[0].method).to.be.eq(expectedBelowMinError);
 
                 // Price above maximum
                 const aboveMaxPriceValue = maxPriceConst + 1n;

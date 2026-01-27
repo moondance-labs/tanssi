@@ -774,6 +774,14 @@ declare module "@polkadot/api-base/types/consts" {
              **/
             fixedMonthlyServicesCostUsd: u128 & AugmentedConst<ApiType>;
             /**
+             * The maximum acceptable token price in USD (with 18 decimals).
+             **/
+            maxTokenPrice: u128 & AugmentedConst<ApiType>;
+            /**
+             * The minimum acceptable token price in USD (with 18 decimals).
+             **/
+            minTokenPrice: u128 & AugmentedConst<ApiType>;
+            /**
              * Reference block production cost in token base units.
              * This is used to maintain the ratio between block and session costs.
              * Example: 0.03 STAR|TANSSI = 30_000_000_000 (with 12 decimals)

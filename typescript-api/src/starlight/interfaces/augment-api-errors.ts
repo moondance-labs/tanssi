@@ -1738,6 +1738,10 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             PriceCannotBeZero: AugmentedError<ApiType>;
             /**
+             * The provided price is outside the acceptable bounds.
+             **/
+            PriceOutOfBounds: AugmentedError<ApiType>;
+            /**
              * Generic error
              **/
             [key: string]: AugmentedError<ApiType>;
