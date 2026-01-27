@@ -25,19 +25,27 @@ describeSuite({
         let api: ApiPromise;
         let isStarlight: boolean;
         let numberOfChains: number;
+        let runtimeVersion: number;
         beforeAll(async () => {
             api = context.polkadotJs();
             const latestBlock = await api.rpc.chain.getBlock();
             const latestBlockHash = latestBlock.block.hash;
             isStarlight = isStarlightRuntime(api);
 
+            runtimeVersion = api.runtimeVersion.specVersion.toNumber();
+
             // ApiAt to evaluate rewards
             apiAt = await api.at(latestBlockHash);
 
-            // If the number of chains with collators is 0, there is no point on running this
-            numberOfChains = Object.entries(
-                (await apiAt.query.tanssiCollatorAssignment.collatorContainerChain()).toJSON().containerChains
-            ).length;
+            if (runtimeVersion > 1600) {
+                // If the number of chains with collators is 0, there is no point on running this
+                numberOfChains = Object.entries(
+                    (await apiAt.query.tanssiCollatorAssignment.collatorContainerChain()).toJSON().containerChains
+                ).length;
+            } else {
+                // If the number of registered chains is 0, there is no point on running this
+                numberOfChains = (await apiAt.query.containerRegistrar.registeredParaIds()).length;
+            }
         });
 
         it({
@@ -139,14 +147,23 @@ describeSuite({
 
                 // Pending chains to reward should be read with previous api
                 const pendingChainRewards = await apiAtIssuanceBefore.query.inflationRewards.chainsToReward();
-                const numberOfChains = BigInt(
-                    Object.entries(
-                        (await apiAtIssuanceBefore.query.tanssiCollatorAssignment.collatorContainerChain()).toJSON()
-                            .containerChains
-                    ).length
-                );
+
+                let numOfChains: bigint;
+                if (runtimeVersion > 1600) {
+                    numOfChains = BigInt(
+                        Object.entries(
+                            (await apiAtIssuanceBefore.query.tanssiCollatorAssignment.collatorContainerChain()).toJSON()
+                                .containerChains
+                        ).length
+                    );
+                } else {
+                    numOfChains = BigInt(
+                        (await apiAtIssuanceBefore.query.containerRegistrar.registeredParaIds()).length
+                    );
+                }
+
                 // Issuance is 0 when number of chain is 0
-                if (numberOfChains === 0n) {
+                if (numOfChains === 0n) {
                     skip();
                 }
 
