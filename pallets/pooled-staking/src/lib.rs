@@ -841,6 +841,7 @@ pub mod pallet {
                 .expect("failed to execute pending operations");
         }
     }
+
     impl<T: Config> tp_traits::StakingCandidateHelper<Candidate<T>> for Pallet<T> {
         fn is_candidate_selected(candidate: &Candidate<T>) -> bool {
             <SortedEligibleCandidates<T>>::get()
@@ -877,6 +878,21 @@ pub mod pallet {
                 },
             }])
             .expect("execute_pending_operations should not fail in benchmarks");
+        }
+    }
+
+    #[pallet::view_functions]
+    impl<T: Config> Pallet<T> {
+        pub fn convert_shares_to_stake(candidate: Candidate<T>, shares: T::Balance, pool: PoolKind) -> Result<T::Balance, Error<T>> {
+            use pools::Pool;
+
+            let shares = Shares(shares);
+            match pool {
+                PoolKind::Joining => pools::Joining::shares_to_stake(&candidate, shares),
+                PoolKind::AutoCompounding => pools::AutoCompounding::shares_to_stake(&candidate, shares),
+                PoolKind::ManualRewards => pools::ManualRewards::shares_to_stake(&candidate, shares),
+                PoolKind::Leaving => pools::Leaving::shares_to_stake(&candidate, shares),
+            }.map(|Stake(x)| x)
         }
     }
 }
