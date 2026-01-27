@@ -2695,6 +2695,12 @@ impl_runtime_apis! {
             >::convert_location(location)
         }
     }
+
+    impl frame_support::view_functions::runtime_api::RuntimeViewFunction<Block> for Runtime {
+        fn execute_view_function(id: frame_support::view_functions::ViewFunctionId, input: Vec<u8>) -> Result<Vec<u8>, frame_support::view_functions::ViewFunctionDispatchError> {
+			Runtime::execute_view_function(id, input)
+		}
+    }
 }
 
 #[allow(dead_code)]
