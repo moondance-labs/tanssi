@@ -159,6 +159,12 @@ pub mod pallet {
             if let Some(price) = self.initial_price {
                 let fixed_price = FixedU128::from_inner(price);
                 if !fixed_price.is_zero() {
+                    let price_inner = fixed_price.into_inner();
+                    assert!(
+                        price_inner >= T::MinTokenPrice::get()
+                            && price_inner <= T::MaxTokenPrice::get(),
+                        "initial_price out of bounds"
+                    );
                     TokenPriceUsd::<T>::put(fixed_price);
                 }
             }
