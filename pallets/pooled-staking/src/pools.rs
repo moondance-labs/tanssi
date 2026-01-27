@@ -526,7 +526,9 @@ pub fn accumulate_rewards<T: Config>(
 
     // Update storage
     crate::PendingRewards::<T>::put(pending);
-    Ok(Some(T::DbWeight::get().reads(1) + T::DbWeight::get().writes(1)).into())
+
+    // Read+write PendingRewards & Currency balance
+    Ok(Some(T::DbWeight::get().reads(2) + T::DbWeight::get().writes(2)).into())
 }
 
 pub fn distribute_accumulated_rewards<T: Config>(
@@ -561,7 +563,7 @@ pub fn distribute_accumulated_rewards<T: Config>(
                 err.post_info.actual_weight =
                     Some(weight.saturating_add(err.post_info.actual_weight.unwrap_or_default()));
                 log::error!(
-                    "failed to distribute rewards for candidate {candidate}: {:?}",
+                    "failed to distribute rewards for candidate {candidate:?}: {:?}",
                     err.error
                 );
                 return Err(err);
