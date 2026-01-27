@@ -26,7 +26,7 @@ mod benchmarks {
     #[benchmark]
     fn set_token_price() -> Result<(), BenchmarkError> {
         #[extrinsic_call]
-        _(RawOrigin::Root, FixedU128::from_u32(1000));
+        _(RawOrigin::Root, FixedU128::from_u32(10));
 
         Ok(())
     }
