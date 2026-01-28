@@ -57,19 +57,9 @@ struct Distribution {
     delegators_manual: Balance,
 }
 
-fn test_distribution(
-    delegations: &[Delegation],
-    reward: RewardRequest,
-    stakes: &[DelegatorState],
-    distribution: Distribution,
-) {
+fn setup_delegations(delegations: &[Delegation]) {
     use crate::traits::Timer;
     let block_number = <Runtime as crate::Config>::JoiningRequestTimer::now();
-
-    // Create new supply for rewards
-    let new_supply = currency_issue(reward.rewards);
-    use frame_support::traits::Imbalance;
-    let new_supply_amount = new_supply.peek();
 
     // Request all delegations
     for d in delegations {
@@ -106,28 +96,41 @@ fn test_distribution(
             }]
         ));
     }
+}
+
+fn test_distribution(
+    delegations: &[Delegation],
+    reward: RewardRequest,
+    stakes: &[DelegatorState],
+    distribution: Distribution,
+) {
+    use frame_support::traits::Imbalance;
+
+    // Create new supply for rewards
+    let new_supply = currency_issue(reward.rewards);
+    let new_supply_amount = new_supply.peek();
+
+    // Setup delegations before rewarding.
+    setup_delegations(delegations);
 
     // Distribute rewards
     let candidate_balance_before = total_balance(&ACCOUNT_CANDIDATE_1);
-    assert_ok!(Pallet::<Runtime>::distribute_rewards(
+
+    assert_ok!(crate::pools::accumulate_rewards::<Runtime>(
         reward.collator,
         new_supply
     ));
+    let _ = crate::pools::distribute_accumulated_rewards_immediately::<Runtime>();
     let candidate_balance_after = total_balance(&ACCOUNT_CANDIDATE_1);
 
     // Check events matches the expected distribution.
-    assert_eq_last_events!(vec![
-        Event::<Runtime>::RewardedCollator {
-            collator: reward.collator,
-            auto_compounding_rewards: distribution.collator_auto,
-            manual_claim_rewards: distribution.collator_manual,
-        },
-        Event::RewardedDelegators {
-            collator: reward.collator,
-            auto_compounding_rewards: distribution.delegators_auto,
-            manual_claim_rewards: distribution.delegators_manual,
-        },
-    ]);
+    assert_eq_last_events!(vec![Event::<Runtime>::RewardsDistributed {
+        collator: reward.collator,
+        collator_ac_rewards: distribution.collator_auto,
+        collator_mc_rewards: distribution.collator_manual,
+        delegators_ac_rewards: distribution.delegators_auto,
+        delegators_mc_rewards: distribution.delegators_manual,
+    },]);
 
     // Check the state of each delegate match the expected values.
     for expected in stakes {
@@ -635,4 +638,158 @@ fn reward_distribution_is_transactional() {
             "distribution should be reverted"
         );
     })
+}
+
+#[test]
+fn rewards_are_aggregated_then_distributed() {
+    use crate::traits::Timer;
+
+    ExtBuilder::default().build().execute_with(|| {
+        // Pending rewards storage is empty at genesis
+        assert!(!crate::PendingRewards::<Runtime>::exists());
+
+        setup_delegations(&[
+            Delegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_CANDIDATE_1,
+                pool: ActivePoolKind::AutoCompounding,
+                stake: 1_000_000_000,
+            },
+            Delegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_CANDIDATE_1,
+                pool: ActivePoolKind::ManualRewards,
+                stake: 500_000_000,
+            },
+            Delegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                pool: ActivePoolKind::ManualRewards,
+                stake: 250_000_000,
+            },
+            Delegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                pool: ActivePoolKind::AutoCompounding,
+                stake: 500_000_000,
+            },
+            Delegation {
+                candidate: ACCOUNT_CANDIDATE_2,
+                delegator: ACCOUNT_CANDIDATE_2,
+                pool: ActivePoolKind::AutoCompounding,
+                stake: 1_000_000_000,
+            },
+            Delegation {
+                candidate: ACCOUNT_CANDIDATE_2,
+                delegator: ACCOUNT_DELEGATOR_1,
+                pool: ActivePoolKind::ManualRewards,
+                stake: 500_000_000,
+            },
+        ]);
+
+        // First time calling it will never reward immediatly since it write the current instant for
+        // the first time. We'll reward multiple times and ensure no distribution occurs.
+        let block_number = <Runtime as crate::Config>::RewardsDistributionTimer::now();
+        let candidates_balance_before = [
+            total_balance(&ACCOUNT_CANDIDATE_1),
+            total_balance(&ACCOUNT_CANDIDATE_2),
+        ];
+
+        // - 1st reward
+        let rewards = currency_issue(1_000_000);
+        assert_ok!(Pallet::<Runtime>::distribute_rewards(
+            ACCOUNT_CANDIDATE_1,
+            rewards
+        ));
+
+        assert_eq!(
+            crate::PendingRewards::<Runtime>::get(),
+            Some(crate::pools::PendingRewards {
+                last_distribution: block_number,
+                rewards: [(ACCOUNT_CANDIDATE_1, 1_000_000)].into(),
+            })
+        );
+
+        // - 2nd reward
+        let rewards = currency_issue(1_100_000);
+        assert_ok!(Pallet::<Runtime>::distribute_rewards(
+            ACCOUNT_CANDIDATE_2,
+            rewards
+        ));
+        assert_eq!(
+            crate::PendingRewards::<Runtime>::get(),
+            Some(crate::pools::PendingRewards {
+                last_distribution: block_number,
+                rewards: [
+                    (ACCOUNT_CANDIDATE_1, 1_000_000),
+                    (ACCOUNT_CANDIDATE_2, 1_100_000)
+                ]
+                .into(),
+            })
+        );
+
+        // - 3rd reward
+        let rewards = currency_issue(1_200_000);
+        assert_ok!(Pallet::<Runtime>::distribute_rewards(
+            ACCOUNT_CANDIDATE_1,
+            rewards
+        ));
+
+        assert_eq!(
+            crate::PendingRewards::<Runtime>::get(),
+            Some(crate::pools::PendingRewards {
+                last_distribution: block_number,
+                rewards: [
+                    (ACCOUNT_CANDIDATE_1, 2_200_000),
+                    (ACCOUNT_CANDIDATE_2, 1_100_000)
+                ]
+                .into(),
+            })
+        );
+
+        // Rewards have only be aggregated, not actually distributed.
+        let candidates_balance_after = [
+            total_balance(&ACCOUNT_CANDIDATE_1),
+            total_balance(&ACCOUNT_CANDIDATE_2),
+        ];
+        assert_eq!(candidates_balance_before, candidates_balance_after);
+
+        // Let's move to next block, rewards should be distributed in on_initialize.
+        run_block();
+        assert_eq!(
+            <Runtime as crate::Config>::RewardsDistributionTimer::now(),
+            block_number + 1
+        );
+
+        assert_eq!(
+            crate::PendingRewards::<Runtime>::get(),
+            Some(crate::pools::PendingRewards {
+                last_distribution: block_number + 1,
+                rewards: Default::default(), // distribution occured, no rewards pending
+            })
+        );
+
+        let candidates_balance_after = [
+            total_balance(&ACCOUNT_CANDIDATE_1),
+            total_balance(&ACCOUNT_CANDIDATE_2),
+        ];
+        assert_ne!(candidates_balance_before, candidates_balance_after);
+
+        assert_eq_last_events!(vec![
+            Event::<Runtime>::RewardsDistributed {
+                collator: ACCOUNT_CANDIDATE_1,
+                collator_ac_rewards: 0,
+                collator_mc_rewards: 440_000,
+                delegators_ac_rewards: 1_173_500,
+                delegators_mc_rewards: 586_500,
+            },
+            Event::RewardsDistributed {
+                collator: ACCOUNT_CANDIDATE_2,
+                collator_ac_rewards: 0,
+                collator_mc_rewards: 220_000,
+                delegators_ac_rewards: 587_000,
+                delegators_mc_rewards: 293_000
+            },
+        ]);
+    });
 }

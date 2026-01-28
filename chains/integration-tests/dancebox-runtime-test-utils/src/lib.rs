@@ -233,6 +233,7 @@ pub fn start_block() -> RunSummary {
         .expect("author inherent to dispatch correctly");
 
     InactivityTracking::on_initialize(System::block_number());
+    PooledStaking::on_initialize(System::block_number());
 
     RunSummary {
         author_id,

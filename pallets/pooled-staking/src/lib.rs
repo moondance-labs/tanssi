@@ -328,6 +328,9 @@ pub mod pallet {
         type JoiningRequestTimer: Timer;
         /// Condition for when a leaving request can be executed.
         type LeavingRequestTimer: Timer;
+        /// Condition for when rewards should effectively be distributed.
+        type RewardsDistributionTimer: Timer;
+
         /// All eligible candidates are stored in a sorted list that is modified each time
         /// delegations changes. It is safer to bound this list, in which case eligible candidate
         /// could fall out of this list if they have less stake than the top `EligibleCandidatesBufferSize`
@@ -405,6 +408,22 @@ pub mod pallet {
     #[pallet::storage]
     pub type PausePoolsExtrinsics<T: Config> = StorageValue<_, bool, ValueQuery>;
 
+    /// Aggregates rewards to be effectively distributed later.
+    /// Size is unbounded to ensure new collators can be registered, but is
+    /// indirectly bounded by how many collators can be rewarded before
+    /// `RewardsDistributionTimer` is elapsed, which will empty the map.
+    #[pallet::storage]
+    #[pallet::unbounded]
+    pub type PendingRewards<T: Config> = StorageValue<
+        _,
+        pools::PendingRewards<
+            <T::RewardsDistributionTimer as Timer>::Instant,
+            Candidate<T>,
+            T::Balance,
+        >,
+        OptionQuery,
+    >;
+
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -454,11 +473,13 @@ pub mod pallet {
         },
 
         /// Stake of that Candidate increased.
+        #[deprecated]
         IncreasedStake {
             candidate: Candidate<T>,
             stake_diff: T::Balance,
         },
         /// Stake of that Candidate decreased.
+        #[deprecated]
         DecreasedStake {
             candidate: Candidate<T>,
             stake_diff: T::Balance,
@@ -492,12 +513,14 @@ pub mod pallet {
             stake: T::Balance,
         },
         /// Collator has been rewarded.
+        #[deprecated]
         RewardedCollator {
             collator: Candidate<T>,
             auto_compounding_rewards: T::Balance,
             manual_claim_rewards: T::Balance,
         },
         /// Delegators have been rewarded.
+        #[deprecated]
         RewardedDelegators {
             collator: Candidate<T>,
             auto_compounding_rewards: T::Balance,
@@ -520,6 +543,14 @@ pub mod pallet {
             target_stake: T::Balance,
             pending_leaving: T::Balance,
             released: T::Balance,
+        },
+        /// Rewards has been distributed to a collator and its delegators.
+        RewardsDistributed {
+            collator: Candidate<T>,
+            collator_ac_rewards: T::Balance,
+            collator_mc_rewards: T::Balance,
+            delegators_ac_rewards: T::Balance,
+            delegators_mc_rewards: T::Balance,
         },
     }
 
@@ -556,6 +587,16 @@ pub mod pallet {
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn on_initialize(_: BlockNumberFor<T>) -> Weight {
+            match pools::distribute_accumulated_rewards_on_timer::<T>() {
+                Ok(post) => post.actual_weight.unwrap_or_default(),
+                Err(err) => {
+                    // error is logged inside distribute_accumulated_rewards
+                    err.post_info.actual_weight.unwrap_or_default()
+                }
+            }
+        }
+
         #[cfg(feature = "try-runtime")]
         fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
             use alloc::collections::btree_set::BTreeSet;
@@ -791,7 +832,9 @@ pub mod pallet {
             candidate: Candidate<T>,
             rewards: CreditOf<T>,
         ) -> DispatchResultWithPostInfo {
-            pools::distribute_rewards::<T>(&candidate, rewards)
+            // We don't distribute them immediatly and instead accumulate them
+            // to distribute them later.
+            pools::accumulate_rewards::<T>(candidate, rewards)
         }
 
         #[cfg(feature = "runtime-benchmarks")]
@@ -841,6 +884,7 @@ pub mod pallet {
                 .expect("failed to execute pending operations");
         }
     }
+
     impl<T: Config> tp_traits::StakingCandidateHelper<Candidate<T>> for Pallet<T> {
         fn is_candidate_selected(candidate: &Candidate<T>) -> bool {
             <SortedEligibleCandidates<T>>::get()

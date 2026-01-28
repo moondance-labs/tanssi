@@ -164,6 +164,27 @@ export function filterRewardStakingDelegators(events: EventRecord[], author: str
     };
 }
 
+export function filterRewardStakingDistributed(events: EventRecord[], author: string) {
+    const stakignRewardEvents = fetchRewardStakingDistributed(events);
+    for (const index in stakignRewardEvents) {
+        if (stakignRewardEvents[index].collator.toString() === author) {
+            return {
+                collatorAcRewards: stakignRewardEvents[index].collatorAcRewards.toBigInt(),
+                collatorMcRewards: stakignRewardEvents[index].collatorMcRewards.toBigInt(),
+                delegatorsAcRewards: stakignRewardEvents[index].delegatorsAcRewards.toBigInt(),
+                delegatorsMcRewards: stakignRewardEvents[index].delegatorsMcRewards.toBigInt(),
+            };
+        }
+    }
+
+    return {
+        collatorAcRewards: 0n,
+        collatorMcRewards: 0n,
+        delegatorsAcRewards: 0n,
+        delegatorsMcRewards: 0n,
+    };
+}
+
 export function fetchRewardStakingDelegators(events: EventRecord[]) {
     const filtered = filterAndApply(
         events,
@@ -183,6 +204,24 @@ export function fetchRewardStakingCollators(events: EventRecord[]) {
         ["RewardedCollator"],
         ({ event }: EventRecord) =>
             event.data as unknown as { collator: AccountId32; autoCompoundingRewards: u128; manualClaimRewards: u128 }
+    );
+
+    return filtered;
+}
+
+export function fetchRewardStakingDistributed(events: EventRecord[]) {
+    const filtered = filterAndApply(
+        events,
+        "pooledStaking",
+        ["RewardsDistributed"],
+        ({ event }: EventRecord) =>
+            event.data as unknown as {
+                collator: AccountId32;
+                collatorAcRewards: u128;
+                collatorMcRewards: u128;
+                delegatorsAcRewards: u128;
+                delegatorsMcRewards: u128;
+            }
     );
 
     return filtered;
