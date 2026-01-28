@@ -16,13 +16,12 @@
 
 #![cfg(test)]
 
-use crate::{MinimumSelfDelegation, PooledStaking, RewardsCollatorCommission};
-use frame_support::assert_ok;
-use pallet_pooled_staking::{ActivePoolKind, PendingOperationKey, PendingOperationQuery};
 use {
-    crate::{tests::common::*, AuthorNoting, RewardsPortion},
+    crate::{tests::common::*, AuthorNoting, MinimumSelfDelegation, PooledStaking, RewardsPortion},
     alloc::vec,
     cumulus_primitives_core::ParaId,
+    frame_support::assert_ok,
+    pallet_pooled_staking::{ActivePoolKind, PendingOperationKey, PendingOperationQuery},
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_runtime::{generic::DigestItem, traits::BlakeTwo256},
