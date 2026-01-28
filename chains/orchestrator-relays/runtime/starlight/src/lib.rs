@@ -915,6 +915,7 @@ pub enum ProxyType {
     SessionKeyManagement,
     Staking,
     Balances,
+    SudoOraclePrice,
 }
 impl Default for ProxyType {
     fn default() -> Self {
@@ -1013,6 +1014,12 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
             ProxyType::Balances => {
                 matches!(c, RuntimeCall::Balances(..))
             }
+            ProxyType::SudoOraclePrice => match c {
+                RuntimeCall::Sudo(pallet_sudo::Call::sudo { call: ref x }) => {
+                    matches!(x.as_ref(), &RuntimeCall::ServicesPaymentPriceOracle(..))
+                }
+                _ => false,
+            },
         }
     }
     fn is_superset(&self, o: &Self) -> bool {
@@ -1690,18 +1697,56 @@ impl pallet_maintenance_mode::Config for Runtime {
 
 pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 30000 * MICROUNITS;
 pub const FIXED_COLLATOR_ASSIGNMENT_COST: u128 = 50 * UNITS;
+pub const USD_DECIMALS: u128 = 1_000_000;
+
+/// Fixed monthly services cost in USD (with 6 decimals)
+/// Includes block production + collator assignment
+pub const FIXED_MONTHLY_SERVICES_COST_USD: u128 = 2_000 * USD_DECIMALS;
+/// We allow the price to be in the range specified below
+pub const MIN_TOKEN_PRICE: u128 = 40_000_000_000_000; // $0.00004 with 18 decimals
+pub const MAX_TOKEN_PRICE: u128 = 10_000_000_000_000_000_000; // $10 with 18 decimals
+
+parameter_types! {
+    pub const FixedMonthlyServicesCostUsd: u128 = FIXED_MONTHLY_SERVICES_COST_USD;
+    pub const BlockTimeMs: u64 = MILLISECS_PER_BLOCK;
+    pub const SessionDurationBlocks: u32 = EpochDurationInBlocks::get();
+    pub const TokenDecimals: u32 = DECIMALS;
+    pub const ReferenceBlockCost: u128 = FIXED_BLOCK_PRODUCTION_COST;
+    pub const ReferenceSessionCost: u128 = FIXED_COLLATOR_ASSIGNMENT_COST;
+    pub const MinTokenPrice: u128 = MIN_TOKEN_PRICE;
+    pub const MaxTokenPrice: u128 = MAX_TOKEN_PRICE;
+}
+
+impl pallet_services_payment_price_oracle::Config for Runtime {
+    type SetPriceOrigin = EnsureRoot<AccountId>;
+    type FixedMonthlyServicesCostUsd = FixedMonthlyServicesCostUsd;
+    type BlockTimeMs = BlockTimeMs;
+    type SessionDurationBlocks = SessionDurationBlocks;
+    type TokenDecimals = TokenDecimals;
+    type ReferenceBlockCost = ReferenceBlockCost;
+    type ReferenceSessionCost = ReferenceSessionCost;
+    type WeightInfo = weights::pallet_services_payment_price_oracle::SubstrateWeight<Runtime>;
+    type MinTokenPrice = MinTokenPrice;
+    type MaxTokenPrice = MaxTokenPrice;
+}
 
 pub struct BlockProductionCost<Runtime>(PhantomData<Runtime>);
 impl ProvideBlockProductionCost<Runtime> for BlockProductionCost<Runtime> {
     fn block_cost(_para_id: &ParaId) -> (u128, Weight) {
-        (FIXED_BLOCK_PRODUCTION_COST, Weight::zero())
+        // Try to get cost from oracle, fallback to fixed cost if not available
+        let cost = pallet_services_payment_price_oracle::Pallet::<Runtime>::calculate_block_production_cost()
+            .unwrap_or(FIXED_BLOCK_PRODUCTION_COST);
+        (cost, Weight::zero())
     }
 }
 
 pub struct CollatorAssignmentCost<Runtime>(PhantomData<Runtime>);
 impl ProvideCollatorAssignmentCost<Runtime> for CollatorAssignmentCost<Runtime> {
     fn collator_assignment_cost(_para_id: &ParaId) -> (u128, Weight) {
-        (FIXED_COLLATOR_ASSIGNMENT_COST, Weight::zero())
+        // Try to get cost from oracle, fallback to fixed cost if not available
+        let cost = pallet_services_payment_price_oracle::Pallet::<Runtime>::calculate_collator_assignment_cost()
+            .unwrap_or(FIXED_COLLATOR_ASSIGNMENT_COST);
+        (cost, Weight::zero())
     }
 }
 
@@ -1939,6 +1984,7 @@ construct_runtime! {
         TanssiAuthorityMapping: pallet_authority_mapping = 16,
         AuthorNoting: pallet_author_noting = 17,
         ServicesPayment: pallet_services_payment = 18,
+        ServicesPaymentPriceOracle: pallet_services_payment_price_oracle = 28,
         DataPreservers: pallet_data_preservers = 19,
 
         // Validator stuff
@@ -2359,6 +2405,7 @@ mod benches {
         [pallet_pooled_staking, PooledStaking]
         [pallet_configuration, CollatorConfiguration]
         [pallet_stream_payment, StreamPayment]
+        [pallet_services_payment_price_oracle, ServicesPaymentPriceOracle]
         [pallet_inactivity_tracking, InactivityTracking]
 
         // Foreign Assets
@@ -3094,6 +3141,22 @@ sp_api::impl_runtime_apis! {
 
         fn parachain_tank_account(para_id: ParaId) -> AccountId {
             ServicesPayment::parachain_tank(para_id)
+        }
+    }
+
+    impl pallet_services_payment_price_oracle_runtime_api::ServicesPaymentPriceOracleApi<Block, Balance> for Runtime {
+        fn token_price_usd() -> Option<FixedU128> {
+            ServicesPaymentPriceOracle::get_token_price()
+        }
+
+        // If token price is not set - fallback to fixed amount
+        fn block_cost() -> Balance {
+            ServicesPaymentPriceOracle::calculate_block_production_cost().unwrap_or(FIXED_BLOCK_PRODUCTION_COST)
+        }
+
+        // If token price is not set - fallback to fixed amount
+        fn collator_assignment_cost() -> Balance {
+            ServicesPaymentPriceOracle::calculate_collator_assignment_cost().unwrap_or(FIXED_COLLATOR_ASSIGNMENT_COST)
         }
     }
 

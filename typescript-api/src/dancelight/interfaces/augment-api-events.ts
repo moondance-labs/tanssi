@@ -2283,6 +2283,16 @@ declare module "@polkadot/api-base/types/events" {
              **/
             [key: string]: AugmentedEvent<ApiType>;
         };
+        servicesPaymentPriceOracle: {
+            /**
+             * Token price has been updated.
+             **/
+            PriceUpdated: AugmentedEvent<ApiType, [newPrice: u128], { newPrice: u128 }>;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         session: {
             /**
              * The `NewSession` event in the current block also implies a new validator set to be

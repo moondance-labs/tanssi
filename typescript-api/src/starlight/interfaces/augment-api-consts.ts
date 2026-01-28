@@ -726,6 +726,49 @@ declare module "@polkadot/api-base/types/consts" {
              **/
             [key: string]: Codec;
         };
+        servicesPaymentPriceOracle: {
+            /**
+             * Block time in milliseconds.
+             **/
+            blockTimeMs: u64 & AugmentedConst<ApiType>;
+            /**
+             * Fixed monthly services cost in USD (with USD_DECIMALS precision).
+             * For example, $2000 = 2_000_000_000 (2000 * 10^6)
+             **/
+            fixedMonthlyServicesCostUsd: u128 & AugmentedConst<ApiType>;
+            /**
+             * The maximum acceptable token price in USD (with 18 decimals).
+             **/
+            maxTokenPrice: u128 & AugmentedConst<ApiType>;
+            /**
+             * The minimum acceptable token price in USD (with 18 decimals).
+             **/
+            minTokenPrice: u128 & AugmentedConst<ApiType>;
+            /**
+             * Reference block production cost in token base units.
+             * This is used to maintain the ratio between block and session costs.
+             * Example: 0.03 STAR|TANSSI = 30_000_000_000 (with 12 decimals)
+             **/
+            referenceBlockCost: u128 & AugmentedConst<ApiType>;
+            /**
+             * Reference collator assignment cost per session in token base units.
+             * This is used to maintain the ratio between block and session costs.
+             * Example: 50 STAR|TANSSI = 50_000_000_000_000 (with 12 decimals)
+             **/
+            referenceSessionCost: u128 & AugmentedConst<ApiType>;
+            /**
+             * Session/Epoch duration in blocks.
+             **/
+            sessionDurationBlocks: u32 & AugmentedConst<ApiType>;
+            /**
+             * Token decimals (e.g., 12 for STAR|TANSSI).
+             **/
+            tokenDecimals: u32 & AugmentedConst<ApiType>;
+            /**
+             * Generic const
+             **/
+            [key: string]: Codec;
+        };
         streamPayment: {
             openStreamHoldAmount: u128 & AugmentedConst<ApiType>;
             /**
