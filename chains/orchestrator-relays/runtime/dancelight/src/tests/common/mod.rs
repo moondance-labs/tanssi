@@ -294,7 +294,7 @@ pub fn start_block() -> RunSummary {
     BeefyMmrLeaf::on_initialize(System::block_number());
     InactivityTracking::on_initialize(System::block_number());
     RunSummary {
-        inflation: new_issuance - current_issuance,
+        inflation: new_issuance.checked_sub(current_issuance).unwrap(),
     }
 }
 
