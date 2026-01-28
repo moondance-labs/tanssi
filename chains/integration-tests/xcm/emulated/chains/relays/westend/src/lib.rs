@@ -15,12 +15,12 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 pub mod genesis;
-use cumulus_primitives_core::relay_chain::runtime_api::runtime_decl_for_parachain_host::ParachainHostV13;
+use cumulus_primitives_core::relay_chain::runtime_api::runtime_decl_for_parachain_host::ParachainHostV15;
 pub use westend_runtime;
 use xcm_emulator::decl_test_relay_chains;
 
 decl_test_relay_chains! {
-    #[api_version(11)]
+    #[api_version(15)]
     pub struct Westend {
         genesis = genesis::genesis(),
         on_init = (),

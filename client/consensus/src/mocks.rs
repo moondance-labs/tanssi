@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
+use polkadot_core_primitives::AccountId;
+use sp_consensus::EnableProofRecording;
 use {
     crate::{
         collators::lookahead::{BuyCoreParams, Params as LookAheadParams},
@@ -952,6 +954,12 @@ impl CollatorLookaheadTestBuilder {
         // spawn overseer
         spawner.spawn("overseer", None, overseer.run().then(|_| async {}).boxed());
 
+        let proposer: sc_basic_authorship::ProposerFactory<
+            sc_transaction_pool::TransactionPoolHandle<Block, TestClient>,
+            TestClient,
+            EnableProofRecording,
+        > = todo!();
+
         // Build the collator
         let params = LookAheadParams {
             create_inherent_data_providers: move |_block_hash, _| async move {
@@ -966,7 +974,7 @@ impl CollatorLookaheadTestBuilder {
             relay_client: relay_client.clone(),
             keystore: keystore.into(),
             para_id: self.para_id,
-            proposer: environ.clone(),
+            proposer,
             collator_service: CollatorService::new(
                 client.clone(),
                 Arc::new(spawner.clone()),

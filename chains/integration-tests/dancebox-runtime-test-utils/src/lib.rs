@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use cumulus_pallet_parachain_system::parachain_inherent::deconstruct_parachain_inherent_data;
+use cumulus_pallet_parachain_system::parachain_inherent::InboundMessagesData;
 use {
     core::cell::Cell,
     cumulus_primitives_core::{ParaId, PersistedValidationData},
@@ -305,9 +307,16 @@ pub fn set_parachain_inherent_data(mock_inherent_data: MockInherentData) {
         b"ValidationData",
     ));
 
+    let (inherent_data, downward_messages, horizontal_messages) =
+        deconstruct_parachain_inherent_data(parachain_inherent_data);
+
     assert_ok!(RuntimeCall::ParachainSystem(
         cumulus_pallet_parachain_system::Call::<Runtime>::set_validation_data {
-            data: parachain_inherent_data
+            data: inherent_data,
+            inbound_messages_data: InboundMessagesData::new(
+                downward_messages.into_abridged(&mut usize::MAX.clone()),
+                horizontal_messages.into_abridged(&mut usize::MAX.clone()),
+            ),
         }
     )
     .dispatch(inherent_origin()));

@@ -16,12 +16,12 @@
 
 pub mod genesis;
 
-use cumulus_primitives_core::relay_chain::runtime_api::runtime_decl_for_parachain_host::ParachainHostV13;
+use cumulus_primitives_core::relay_chain::runtime_api::runtime_decl_for_parachain_host::ParachainHostV15;
 use xcm_emulator::decl_test_relay_chains;
 pub use xcm_emulator::TestExt;
 
 decl_test_relay_chains! {
-    #[api_version(11)]
+    #[api_version(15)]
     pub struct Rococo {
         genesis = genesis::genesis(),
         on_init = (),

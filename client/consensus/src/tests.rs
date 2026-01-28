@@ -19,6 +19,8 @@
 // This tests have been greatly influenced by
 // https://github.com/paritytech/substrate/blob/master/client/consensus/aura/src/lib.rs#L832
 // Most of the items hereby added are intended to make it work with our current consensus mechanism
+use sc_network_types::PeerId;
+use sp_consensus::EnableProofRecording;
 use {
     crate::{
         collators::{tanssi_claim_slot, ClaimMode, Collator, Params as CollatorParams},
@@ -178,6 +180,12 @@ async fn collate_returns_correct_block() {
         block_import_iterations: 1u32,
     };
 
+    let proposer: sc_basic_authorship::ProposerFactory<
+        sc_transaction_pool::TransactionPoolHandle<Block, TestClient>,
+        TestClient,
+        EnableProofRecording,
+    > = todo!();
+
     // Build the collator
     let mut collator = {
         let params = CollatorParams {
@@ -194,13 +202,14 @@ async fn collate_returns_correct_block() {
             relay_client: relay_client.clone(),
             keystore: keystore.into(),
             para_id: 1000.into(),
-            proposer: environ.clone(),
+            proposer,
             collator_service: CollatorService::new(
                 client.clone(),
                 Arc::new(spawner),
                 Arc::new(move |_, _| {}),
                 Arc::new(environ),
             ),
+            collator_peer_id: PeerId::random(),
         };
 
         Collator::<Block, NimbusPair, _, _, _, _, _>::new(params)
@@ -216,6 +225,7 @@ async fn collate_returns_correct_block() {
             head.clone().hash(),
             None,
             None,
+            PeerId::random(),
         )
         .await
         .unwrap();

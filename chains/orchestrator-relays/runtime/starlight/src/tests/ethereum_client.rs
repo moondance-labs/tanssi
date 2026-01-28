@@ -36,9 +36,8 @@ fn test_ethereum_force_checkpoint() {
         .build()
         .execute_with(|| {
             // This tests submits the initial checkpoint that contains the initial sync committee
-            let checkpoint = Box::new(
-                snowbridge_pallet_ethereum_client::mock::load_checkpoint_update_fixture(),
-            );
+            let checkpoint =
+                Box::new(snowbridge_pallet_ethereum_client::mock::load_checkpoint_update_fixture());
             assert_ok!(EthereumBeaconClient::force_checkpoint(
                 root_origin(),
                 checkpoint.clone()

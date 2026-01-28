@@ -868,8 +868,7 @@ pub const EVE: [u8; 32] = [8u8; 32];
 pub const FERDIE: [u8; 32] = [9u8; 32];
 
 // Whether we have custom data to inject in paras inherent
-fn take_new_inherent_data() -> Option<cumulus_primitives_core::relay_chain::InherentData>
-{
+fn take_new_inherent_data() -> Option<cumulus_primitives_core::relay_chain::InherentData> {
     let data: Option<cumulus_primitives_core::relay_chain::InherentData> =
         frame_support::storage::unhashed::take(b"ParasInherentData");
 
@@ -1039,9 +1038,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
         HeadData(vec![0xFF; max_head_size as usize])
     }
 
-    fn candidate_descriptor_mock(
-        para_id: ParaId,
-    ) -> CandidateDescriptorV2<T::Hash> {
+    fn candidate_descriptor_mock(para_id: ParaId) -> CandidateDescriptorV2<T::Hash> {
         CandidateDescriptorV2::new(
             para_id,
             Default::default(),

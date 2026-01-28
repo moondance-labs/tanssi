@@ -18,7 +18,7 @@ pub mod genesis;
 use xcm_emulator::decl_test_relay_chains;
 
 decl_test_relay_chains! {
-    #[api_version(13)]
+    #[api_version(15)]
     pub struct Starlight {
         genesis = genesis::genesis(),
         on_init = (),

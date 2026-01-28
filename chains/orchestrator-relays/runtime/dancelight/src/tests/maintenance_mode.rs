@@ -274,17 +274,17 @@ fn test_non_filtered_calls_maintenance_mode() {
 
             assert_call_not_filtered(RuntimeCall::EthereumBeaconClient(
                 snowbridge_pallet_ethereum_client::Call::<Runtime>::force_checkpoint {
-                    update: Box::new(snowbridge_pallet_ethereum_client::mock::load_checkpoint_update_fixture()),
+                    update: Box::new(
+                        snowbridge_pallet_ethereum_client::mock::load_checkpoint_update_fixture(),
+                    ),
                 },
             ));
 
-            assert_call_not_filtered(RuntimeCall::Sudo(
-                pallet_sudo::Call::<Runtime>::sudo {
-                    call: Box::new(RuntimeCall::System(frame_system::Call::<Runtime>::remark{
-                        remark: vec![]
-                    })),
-                },
-            ));
+            assert_call_not_filtered(RuntimeCall::Sudo(pallet_sudo::Call::<Runtime>::sudo {
+                call: Box::new(RuntimeCall::System(frame_system::Call::<Runtime>::remark {
+                    remark: vec![],
+                })),
+            }));
 
             assert_call_not_filtered(RuntimeCall::Multisig(
                 pallet_multisig::Call::<Runtime>::as_multi_threshold_1 {
