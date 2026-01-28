@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies]
 # Substrate deps
+sc-basic-authorship = { workspace = true }
 sc-client-api = { workspace = true }
 sc-consensus = { workspace = true }
 sc-consensus-aura = { workspace = true }
@@ -36,7 +37,6 @@ sp-timestamp = { workspace = true }
 sp-transaction-pool = { workspace = true }
 sp-version = { workspace = true }
 substrate-prometheus-endpoint = { workspace = true }
-sc-basic-authorship = { workspace = true }
 
 # Own
 dc-orchestrator-chain-interface = { workspace = true }
