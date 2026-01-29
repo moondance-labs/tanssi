@@ -19,6 +19,7 @@
 // This tests have been greatly influenced by
 // https://github.com/paritytech/substrate/blob/master/client/consensus/aura/src/lib.rs#L832
 // Most of the items hereby added are intended to make it work with our current consensus mechanism
+use sc_basic_authorship::ProposerFactory;
 use sc_network_types::PeerId;
 use sp_consensus::EnableProofRecording;
 use {
@@ -174,17 +175,27 @@ async fn collate_returns_correct_block() {
     let peer = net.peer(3);
     let client = peer.client().as_client();
     let environ = DummyFactory(client.clone());
-    let spawner = DummySpawner;
     let relay_client = RelayChain {
         client: client.clone(),
         block_import_iterations: 1u32,
     };
+    // Create the txpool for orchestrator, which should serve to test parathread buy core injection
+    let spawner = sp_core::testing::TaskExecutor::new();
+    let orchestrator_tx_pool = Arc::new(
+        sc_transaction_pool::Builder::new(spawner.clone(), client.clone(), true.into()).build(),
+    );
 
-    let proposer: sc_basic_authorship::ProposerFactory<
+    let proposer: ProposerFactory<
         sc_transaction_pool::TransactionPoolHandle<Block, TestClient>,
         TestClient,
         EnableProofRecording,
-    > = todo!();
+    > = sc_basic_authorship::ProposerFactory::with_proof_recording(
+        spawner.clone(),
+        client.clone(),
+        orchestrator_tx_pool,
+        None,
+        None,
+    );
 
     // Build the collator
     let mut collator = {
