@@ -565,9 +565,13 @@ where
 
 /// We store past timestamp we created in the aux storage, which enable us to return timestamp which is increased by
 /// slot duration from previous timestamp or current timestamp if in reality more time is passed.
+/// This function is called twice per block: first in `create_inherent_data_providers` and later in
+/// `babe::block_import`. The second call mutates, the first call does not. This is to ensure they both
+/// return the same value.
 fn get_next_timestamp(
     client: Arc<FullClient>,
     slot_duration: SlotDuration,
+    mutate: bool,
 ) -> sp_timestamp::InherentDataProvider {
     const TIMESTAMP_AUX_KEY: &[u8] = b"__DEV_TIMESTAMP";
 
@@ -581,12 +585,14 @@ fn get_next_timestamp(
             last_inherent_data.add(slot_duration.as_millis()),
             sp_timestamp::InherentType::current(),
         );
-        client
-            .insert_aux(
-                &[(TIMESTAMP_AUX_KEY, new_inherent_data.encode().as_slice())],
-                &[],
-            )
-            .expect("Should be able to write to aux storage; qed");
+        if mutate {
+            client
+                .insert_aux(
+                    &[(TIMESTAMP_AUX_KEY, new_inherent_data.encode().as_slice())],
+                    &[],
+                )
+                .expect("Should be able to write to aux storage; qed");
+        }
         sp_timestamp::InherentDataProvider::new(new_inherent_data)
     } else {
         let current_timestamp = sp_timestamp::InherentType::current();
@@ -791,7 +797,7 @@ fn new_full<
                             mock_container_chains_exclusion_receiver
                         );
 
-                        let timestamp = get_next_timestamp(client_clone, slot_duration);
+                        let timestamp = get_next_timestamp(client_clone, slot_duration, false);
 
                         let slot =
                             sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
@@ -913,18 +919,22 @@ where
     // available for manual seal to produce block
     let babe_config = babe::configuration(&*client)?;
     let slot_duration = babe_config.slot_duration();
+    let client_for_cidp = client.clone();
     let (babe_block_import, babe_link) = babe::block_import(
         babe_config.clone(),
         client.clone(),
         client.clone(),
-        Arc::new(move |_, _| async move {
-            let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
-            let slot =
-			sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
-				*timestamp,
-				slot_duration,
-			);
-            Ok((slot, timestamp))
+        Arc::new(move |_parent, ()| {
+            let client_for_cidp = client_for_cidp.clone();
+
+            async move {
+                let timestamp = get_next_timestamp(client_for_cidp.clone(), slot_duration, true);
+                let slot = sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
+                    *timestamp,
+                    slot_duration,
+                );
+                Ok((slot, timestamp))
+            }
         }) as BabeCreateInherentDataProviders<Block>,
         select_chain.clone(),
         OffchainTransactionPoolFactory::new(transaction_pool.clone()),
