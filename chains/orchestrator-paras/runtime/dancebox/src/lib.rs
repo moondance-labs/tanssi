@@ -433,7 +433,10 @@ impl frame_system::Config for Runtime {
     type SingleBlockMigrations = ();
     type MultiBlockMigrator = MultiBlockMigrations;
     type PreInherents = ();
-    type PostInherents = ();
+    type PostInherents = (
+        // Validate timestamp provided by the consensus client
+        AsyncBacking,
+    );
     type PostTransactions = ();
     type ExtensionsWeightInfo = weights::frame_system_extensions::SubstrateWeight<Runtime>;
 }
