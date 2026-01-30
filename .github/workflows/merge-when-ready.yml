@@ -78,10 +78,6 @@ jobs:
             fail-fast: false
             matrix:
                 chains:
-                    - chain: stagenet_dancebox
-                      runtime: dancebox
-                    - chain: flashbox
-                      runtime: flashbox
                     - chain: frontier_template
                       runtime: container-chain-template-frontier
                     - chain: stagelight
