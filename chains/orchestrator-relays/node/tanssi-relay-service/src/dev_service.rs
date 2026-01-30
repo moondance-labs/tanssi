@@ -30,7 +30,7 @@
 //! 10. If amount of time passed between two block is less than slot duration, we emulate passing of time babe block import and runtime
 //!     by incrementing timestamp by slot duration.
 
-use sp_consensus_babe::inherents::{BabeCreateInherentDataProviders, InherentDataProvider};
+use sp_consensus_babe::inherents::InherentDataProvider;
 use sp_inherents::CreateInherentDataProviders;
 use {
     crate::dev_rpcs::{DevApiServer, DevRpc},
@@ -86,6 +86,7 @@ use {
 const PARA_INHERENT_SELECTOR_AUX_KEY: &[u8] = b"__DEV_PARA_INHERENT_SELECTOR";
 
 const CONTAINER_CHAINS_EXCLUSION_AUX_KEY: &[u8] = b"__DEV_CONTAINER_CHAINS_EXCLUSION";
+const UPWARD_MESSAGES_AUX_KEY: &[u8] = b"__DEV_UPWARD_MESSAGES";
 
 pub type FullBackend = service::TFullBackend<Block>;
 
@@ -239,12 +240,10 @@ pub fn build_full<OverseerGenerator: OverseerGen>(
 /// candidates
 /// We detect whether any of the keys in our keystore is assigned to a core and provide
 /// a mocked candidate in such core
-struct MockParachainsInherentDataProvider<C: HeaderBackend<Block> + ProvideRuntimeApi<Block>> {
+pub struct MockParachainsInherentDataProvider<C: HeaderBackend<Block> + ProvideRuntimeApi<Block>> {
     pub client: Arc<C>,
     pub parent: Hash,
     pub keystore: KeystorePtr,
-    pub upward_messages_receiver: flume::Receiver<Vec<u8>>,
-    pub container_chain_exclusion_receiver: flume::Receiver<Vec<ParaId>>,
 }
 
 impl<C: HeaderBackend<Block> + ProvideRuntimeApi<Block>> MockParachainsInherentDataProvider<C>
@@ -252,19 +251,11 @@ where
     C::Api: ParachainHost<Block>,
     C: AuxStore,
 {
-    pub fn new(
-        client: Arc<C>,
-        parent: Hash,
-        keystore: KeystorePtr,
-        upward_messages_receiver: flume::Receiver<Vec<u8>>,
-        container_chain_exclusion_receiver: flume::Receiver<Vec<ParaId>>,
-    ) -> Self {
+    pub fn new(client: Arc<C>, parent: Hash, keystore: KeystorePtr) -> Self {
         MockParachainsInherentDataProvider {
             client,
             parent,
             keystore,
-            upward_messages_receiver,
-            container_chain_exclusion_receiver,
         }
     }
 
@@ -272,8 +263,6 @@ where
         client: Arc<C>,
         parent: Hash,
         keystore: KeystorePtr,
-        upward_messages_receiver: flume::Receiver<Vec<u8>>,
-        container_chains_exclusion_receiver: flume::Receiver<Vec<ParaId>>,
     ) -> Result<ParachainsInherentData, InherentError> {
         let parent_header = match client.header(parent) {
             Ok(Some(h)) => h,
@@ -364,20 +353,6 @@ where
 
         let mut backed_cand: Vec<BackedCandidate<H256>> = vec![];
 
-        let container_chains_exclusion_messages: Vec<Vec<ParaId>> =
-            container_chains_exclusion_receiver.drain().collect();
-        // If there is a new set of excluded container chains, we update it
-        if let Some(mock_excluded_container_chains) = container_chains_exclusion_messages.last() {
-            client
-                .insert_aux(
-                    &[(
-                        CONTAINER_CHAINS_EXCLUSION_AUX_KEY,
-                        mock_excluded_container_chains.encode().as_slice(),
-                    )],
-                    &[],
-                )
-                .expect("Should be able to write to aux storage; qed");
-        }
         let new_excluded_container_chains_value = client
             .get_aux(CONTAINER_CHAINS_EXCLUSION_AUX_KEY)
             .expect("Should be able to query aux storage; qed")
@@ -433,10 +408,22 @@ where
                                 .unwrap();
                             let pov_hash = Default::default();
 
-                            let upward_messages = UpwardMessages::try_from(
-                                upward_messages_receiver.drain().collect::<Vec<_>>(),
-                            )
-                            .expect("create upward messages from raw messages");
+                            let upward_messages_value_encoded: Vec<u8> = client
+                                .get_aux(UPWARD_MESSAGES_AUX_KEY)
+                                .expect("Should be able to query aux storage; qed")
+                                .unwrap_or(Vec::<Vec<u8>>::new().encode());
+
+                            let upward_messages_value: Vec<Vec<u8>> =
+                                Decode::decode(&mut upward_messages_value_encoded.as_slice())
+                                    .expect("Vector non-decodable");
+
+                            log::info!(
+                                "reading upward_messages_value. got {} msg",
+                                upward_messages_value.len()
+                            );
+
+                            let upward_messages = UpwardMessages::try_from(upward_messages_value)
+                                .expect("create upward messages from raw messages");
 
                             // generate a candidate with most of the values mocked
                             let candidate = CommittedCandidateReceiptV2::<H256> {
@@ -531,8 +518,6 @@ where
                         self.client.clone(),
                         self.parent,
                         self.keystore.clone(),
-                        self.upward_messages_receiver.clone(),
-                        self.container_chain_exclusion_receiver.clone(),
                     )
                     .await
                     .map_err(|e| sp_inherents::Error::Application(Box::new(e)))?
@@ -608,15 +593,12 @@ fn get_next_timestamp(
 }
 
 /// Returns `CreateInherentDataProviders` implementation for tanssi solochain manual seal dev node.
-/// Can only be called once per parent block.
-// TODO: allow calling it twice because babe also needs this
+/// Can be called multiple times for the same block, the result must be the same!
+/// So avoid writing to storage.
 fn tanssi_inherent_data_providers(
     client: Arc<FullClient>,
     keystore: KeystorePtr,
     slot_duration: SlotDuration,
-    downward_mock_para_inherent_receiver: flume::Receiver<Vec<u8>>,
-    upward_mock_receiver: flume::Receiver<Vec<u8>>,
-    mock_container_chains_exclusion_receiver: flume::Receiver<Vec<ParaId>>,
 ) -> TanssiBabeCreateInherentDataProviders<Block> {
     let client_clone = client.clone();
     let keystore_clone = keystore.clone();
@@ -624,32 +606,10 @@ fn tanssi_inherent_data_providers(
     let f = move |parent, ()| {
         let client_clone = client_clone.clone();
         let keystore = keystore_clone.clone();
-        let downward_mock_para_inherent_receiver = downward_mock_para_inherent_receiver.clone();
-        let upward_mock_receiver = upward_mock_receiver.clone();
-        let mock_container_chains_exclusion_receiver =
-            mock_container_chains_exclusion_receiver.clone();
+
         async move {
-            let downward_mock_para_inherent_receiver = downward_mock_para_inherent_receiver.clone();
-            // here we only take the last one
-            let para_inherent_decider_messages: Vec<Vec<u8>> =
-                downward_mock_para_inherent_receiver.drain().collect();
-
-            let upward_messages_receiver = upward_mock_receiver.clone();
-
-            // If there is a value to be updated, we update it
-            if let Some(value) = para_inherent_decider_messages.last() {
-                client_clone
-                    .insert_aux(&[(PARA_INHERENT_SELECTOR_AUX_KEY, value.as_slice())], &[])
-                    .expect("Should be able to write to aux storage; qed");
-            }
-
-            let parachain = MockParachainsInherentDataProvider::new(
-                client_clone.clone(),
-                parent,
-                keystore,
-                upward_messages_receiver,
-                mock_container_chains_exclusion_receiver,
-            );
+            let parachain =
+                MockParachainsInherentDataProvider::new(client_clone.clone(), parent, keystore);
 
             let timestamp = get_next_timestamp(client_clone, slot_duration, false);
 
@@ -703,14 +663,7 @@ fn new_full<
         import_queue,
         transaction_pool,
         other: (block_import, babe_link, tanssi_idp, mut telemetry),
-    } = new_partial::<SelectRelayChain<_>>(
-        &mut config,
-        basics,
-        select_chain,
-        downward_mock_para_inherent_receiver,
-        upward_mock_receiver,
-        mock_container_chains_exclusion_receiver,
-    )?;
+    } = new_partial::<SelectRelayChain<_>>(&mut config, basics, select_chain)?;
 
     let metrics = Network::register_notification_metrics(
         config.prometheus_config.as_ref().map(|cfg| &cfg.registry),
@@ -830,10 +783,53 @@ fn new_full<
                 create_inherent_data_providers: move |parent, ()| {
                     let tanssi_idp = tanssi_idp.clone();
                     let client = client_clone.clone();
+                    let downward_mock_para_inherent_receiver =
+                        downward_mock_para_inherent_receiver.clone();
+                    let mock_container_chains_exclusion_receiver =
+                        mock_container_chains_exclusion_receiver.clone();
+                    let upward_mock_receiver = upward_mock_receiver.clone();
 
                     async move {
                         // Update timestamp (only do this once per block, so not needed in babe import)
-                        get_next_timestamp(client, slot_duration, true);
+                        get_next_timestamp(client.clone(), slot_duration, true);
+
+                        let downward_mock_para_inherent_receiver =
+                            downward_mock_para_inherent_receiver.clone();
+                        let para_inherent_decider_messages: Vec<Vec<u8>> =
+                            downward_mock_para_inherent_receiver.drain().collect();
+                        // If there is a value to be updated, we update it
+                        if let Some(value) = para_inherent_decider_messages.last() {
+                            client
+                                .insert_aux(
+                                    &[(PARA_INHERENT_SELECTOR_AUX_KEY, value.as_slice())],
+                                    &[],
+                                )
+                                .expect("Should be able to write to aux storage; qed");
+                        }
+                        let value = upward_mock_receiver.drain().collect::<Vec<_>>();
+                        client
+                            .insert_aux(
+                                &[(UPWARD_MESSAGES_AUX_KEY, value.encode().as_slice())],
+                                &[],
+                            )
+                            .expect("Should be able to write to aux storage; qed");
+
+                        let container_chains_exclusion_messages: Vec<Vec<ParaId>> =
+                            mock_container_chains_exclusion_receiver.drain().collect();
+                        // If there is a new set of excluded container chains, we update it
+                        if let Some(mock_excluded_container_chains) =
+                            container_chains_exclusion_messages.last()
+                        {
+                            client
+                                .insert_aux(
+                                    &[(
+                                        CONTAINER_CHAINS_EXCLUSION_AUX_KEY,
+                                        mock_excluded_container_chains.encode().as_slice(),
+                                    )],
+                                    &[],
+                                )
+                                .expect("Should be able to write to aux storage; qed");
+                        }
 
                         tanssi_idp.create_inherent_data_providers(parent, ()).await
                     }
@@ -920,9 +916,6 @@ fn new_partial<ChainSelection>(
         telemetry,
     }: Basics,
     select_chain: ChainSelection,
-    downward_mock_para_inherent_receiver: flume::Receiver<Vec<u8>>,
-    upward_mock_receiver: flume::Receiver<Vec<u8>>,
-    mock_container_chains_exclusion_receiver: flume::Receiver<Vec<ParaId>>,
 ) -> Result<
     service::PartialComponents<
         FullClient,
@@ -969,9 +962,6 @@ where
         client.clone(),
         keystore_container.local_keystore().clone(),
         slot_duration,
-        downward_mock_para_inherent_receiver,
-        upward_mock_receiver,
-        mock_container_chains_exclusion_receiver,
     );
     let (babe_block_import, babe_link) = babe::block_import(
         babe_config.clone(),
@@ -1068,7 +1058,6 @@ fn new_partial_basics(
     })
 }
 
-use starlight_runtime::BabeCurrentBlockRandomnessGetter;
 use {
     polkadot_primitives::{AvailabilityBitfield, UncheckedSigned, ValidatorId, ValidatorIndex},
     sp_keystore::Error as KeystoreError,
