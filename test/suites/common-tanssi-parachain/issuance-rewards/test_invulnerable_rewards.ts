@@ -29,7 +29,7 @@ describeSuite({
             alice = context.keyring.alice;
             charlie = context.keyring.charlie;
             const randomAccount = generateKeyringPair("sr25519");
-            const value = 100_000_000_000n;
+            const value = 100_000_000_000_000n;
             await context.createBlock([
                 await polkadotJs.tx.balances.transferAllowDeath(randomAccount.address, value).signAsync(alice),
             ]);

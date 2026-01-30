@@ -56,7 +56,7 @@ describeSuite({
                 // First block, send some balance to each account. This needs to go first because `.signAndSend(randomAccount)`
                 // given an error if the account has no balance, even though we send some balance and it's pending.
                 for (const randomAccount of randomAccounts) {
-                    const value = 100_000_000_000n;
+                    const value = 10_000_000_000_000_000n;
                     await polkadotJs.tx.balances
                         .transferAllowDeath(randomAccount.address, value)
                         .signAndSend(alice, { nonce: aliceNonce++ });
