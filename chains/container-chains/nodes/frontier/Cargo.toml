@@ -110,8 +110,8 @@ cumulus-test-relay-sproof-builder = { workspace = true }
 # Frontier
 fc-api = { workspace = true }
 fc-consensus = { workspace = true }
-fc-db = { workspace = true, features = [ "sql" ] }
-fc-mapping-sync = { workspace = true, features = [ "sql" ] }
+fc-db = { workspace = true, features = [ "sql", "rocksdb" ] }
+fc-mapping-sync = { workspace = true, features = [ "sql", "rocksdb" ] }
 fc-rpc = { workspace = true, features = [ "txpool" ] }
 fc-rpc-core = { workspace = true, features = [ "txpool" ] }
 fc-storage = { workspace = true }

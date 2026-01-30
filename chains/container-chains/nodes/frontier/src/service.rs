@@ -17,6 +17,7 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
 use node_common::timestamp::MockTimestampInherentDataProvider;
+use std::path::PathBuf;
 use {
     container_chain_template_frontier_runtime::{opaque::Block, Hash, RuntimeApi},
     cumulus_client_cli::CollatorOptions,
@@ -27,7 +28,6 @@ use {
         relay_chain::well_known_keys as RelayWellKnownKeys, CollectCollationInfo, ParaId,
     },
     fc_consensus::FrontierBlockImport,
-    fc_db::DatabaseSource,
     fc_rpc_core::types::{FeeHistoryCache, FilterPool},
     fc_storage::StorageOverrideHandler,
     nimbus_primitives::NimbusId,
@@ -70,18 +70,14 @@ impl NodeBuilderConfig for NodeConfig {
 
 const RELAY_CHAIN_SLOT_DURATION_MILLIS: u64 = 6_000;
 
-pub fn frontier_database_dir(config: &Configuration, path: &str) -> std::path::PathBuf {
-    let config_dir = config
-        .base_path
-        .config_dir(config.chain_spec.id())
-        .join("frontier")
-        .join(path);
-
-    config_dir
+pub fn frontier_database_dir(config: &Configuration, path: &str) -> PathBuf {
+    db_config_dir(config).join("frontier").join(path)
 }
 
-// TODO This is copied from frontier. It should be imported instead after
-// https://github.com/paritytech/frontier/issues/333 is solved
+pub fn db_config_dir(config: &Configuration) -> PathBuf {
+    config.base_path.config_dir(config.chain_spec.id())
+}
+
 pub fn open_frontier_backend<C>(
     client: Arc<C>,
     config: &Configuration,
@@ -89,28 +85,7 @@ pub fn open_frontier_backend<C>(
 where
     C: sp_blockchain::HeaderBackend<Block>,
 {
-    fc_db::kv::Backend::<Block, _>::new(
-        client,
-        &fc_db::kv::DatabaseSettings {
-            source: match config.database {
-                DatabaseSource::RocksDb { .. } => DatabaseSource::RocksDb {
-                    path: frontier_database_dir(config, "db"),
-                    cache_size: 0,
-                },
-                DatabaseSource::ParityDb { .. } => DatabaseSource::ParityDb {
-                    path: frontier_database_dir(config, "paritydb"),
-                },
-                DatabaseSource::Auto { .. } => DatabaseSource::Auto {
-                    rocksdb_path: frontier_database_dir(config, "db"),
-                    paritydb_path: frontier_database_dir(config, "paritydb"),
-                    cache_size: 0,
-                },
-                _ => {
-                    return Err("Supported db sources: `rocksdb` | `paritydb` | `auto`".to_string())
-                }
-            },
-        },
-    )
+    fc_db::kv::Backend::open(client, &config.database, &db_config_dir(config))
 }
 
 pub fn import_queue(
