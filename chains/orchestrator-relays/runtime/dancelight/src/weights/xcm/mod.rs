@@ -36,6 +36,7 @@ const MAX_ASSETS: u64 = 1;
 pub enum AssetTypes {
     Balances,
     Ethereum,
+    ChildParachain,
     Unknown,
 }
 
@@ -64,6 +65,20 @@ impl From<&Asset> for AssetTypes {
                     AssetTypes::Unknown
                 }
             }
+            Asset {
+                id:
+                    AssetId(Location {
+                        parents: 0,
+                        interior,
+                    }),
+                ..
+            } => {
+                if let Some(Parachain(_)) = interior.first() {
+                    AssetTypes::ChildParachain
+                } else {
+                    AssetTypes::Unknown
+                }
+            }
             _ => AssetTypes::Unknown,
         }
     }
@@ -83,6 +98,7 @@ impl WeighAssets for AssetFilter {
                 .map(|t| match t {
                     AssetTypes::Balances => balances_weight,
                     AssetTypes::Ethereum => balances_weight,
+                    AssetTypes::ChildParachain => balances_weight,
                     AssetTypes::Unknown => Weight::MAX,
                 })
                 .fold(Weight::zero(), |acc, x| acc.saturating_add(x)),
@@ -103,6 +119,7 @@ impl WeighAssets for Assets {
             .map(|t| match t {
                 AssetTypes::Balances => balances_weight,
                 AssetTypes::Ethereum => balances_weight,
+                AssetTypes::ChildParachain => balances_weight,
                 AssetTypes::Unknown => Weight::MAX,
             })
             .fold(Weight::zero(), |acc, x| acc.saturating_add(x))

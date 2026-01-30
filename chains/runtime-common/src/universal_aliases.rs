@@ -18,7 +18,11 @@ extern crate alloc;
 
 use {
     alloc::collections::btree_set::BTreeSet,
-    frame_support::{parameter_types, traits::Contains},
+    core::marker::PhantomData,
+    frame_support::{
+        parameter_types,
+        traits::{Contains, ContainsPair, Get},
+    },
     xcm::latest::prelude::*,
 };
 
@@ -66,5 +70,18 @@ impl AliasingBenchmarksHelper {
                 }
             });
         Some(alias.expect("Tanssi's InboundQueue to container-chain mapping expected here"))
+    }
+}
+
+/// Allows the parent (relay chain) to alias as the Ethereum origin.
+/// This is needed for container native token transfers from Ethereum where the relay
+/// sends XCM with preserve_origin: true and the origin needs to represent Ethereum.
+pub struct ParentAsEthereumAliaser<EthereumLocation>(PhantomData<EthereumLocation>);
+impl<EthereumLocation: Get<Location>> ContainsPair<Location, Location>
+    for ParentAsEthereumAliaser<EthereumLocation>
+{
+    fn contains(origin: &Location, target: &Location) -> bool {
+        // Allow parent (relay chain) to alias as Ethereum global consensus
+        *origin == Location::parent() && *target == EthereumLocation::get()
     }
 }

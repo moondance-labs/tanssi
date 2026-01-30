@@ -77,3 +77,38 @@ where
         return false;
     }
 }
+
+/// Filter to ensure that Ethereum can be recognized as a reserve for container chain assets.
+/// Used when assets native to container chains are transferred back from Ethereum.
+///
+/// Note: this is not the usual way of managing container assets, as recognizing Ethereum as
+/// their reserve is not the "correct" way of doing it.
+///
+/// This is an exception for inbound queue V2 processing, where we need to recognize Ethereum
+/// as the reserve for container assets at the moment of placing them in the holding (in Tanssi)
+/// via ReserveAssetDeposited instruction.
+///
+/// Otherwise, we don't have any other way of placing inbound container assets in holding, since
+/// we cannot extract them from the Ethereum's sovereign account either (as the assets
+/// don't exist in Tanssi).
+pub struct EthereumAssetReserveForContainerAssets<EthereumLocation>(
+    core::marker::PhantomData<EthereumLocation>,
+);
+impl<EthereumLocation> frame_support::traits::ContainsPair<Asset, Location>
+    for EthereumAssetReserveForContainerAssets<EthereumLocation>
+where
+    EthereumLocation: Get<Location>,
+{
+    fn contains(asset: &Asset, origin: &Location) -> bool {
+        log::trace!(target: "xcm::contains", "EthereumAssetReserveForContainerAssets asset: {:?}, origin: {:?}, eth_location: {:?}", asset, origin, EthereumLocation::get());
+        if *origin == EthereumLocation::get() {
+            // Check if the asset has a Parachain junction as its first interior,
+            // indicating it's native to a container chain
+            return matches!(
+                (asset.id.0.parents, asset.id.0.first_interior()),
+                (0, Some(Parachain(_)))
+            );
+        }
+        false
+    }
+}

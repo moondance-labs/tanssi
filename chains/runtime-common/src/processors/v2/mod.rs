@@ -182,8 +182,19 @@ where
                 tanssi_chain_universal_location,
                 token_location_reanchored_to_eth,
             )?;
-            let asset: Asset = (asset_location, *value).into();
-            Ok(AssetTransfer::ReserveWithdraw(asset))
+
+            let asset: Asset = (asset_location.clone(), *value).into();
+
+            // If the asset_location has a Parachain as the first interior junction,
+            // it means the asset is native to a parachain and was reserve-transferred
+            // to Ethereum. We return ReserveDeposit in this case.
+            let is_parachain_native = matches!(asset_location.interior.first(), Some(Parachain(_)));
+
+            if is_parachain_native {
+                Ok(AssetTransfer::ReserveDeposit(asset))
+            } else {
+                Ok(AssetTransfer::ReserveWithdraw(asset))
+            }
         }
     }
 }

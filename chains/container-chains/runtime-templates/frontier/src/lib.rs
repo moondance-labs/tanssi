@@ -1565,7 +1565,7 @@ impl_runtime_apis! {
                 }
 
                 fn alias_origin() -> Result<(Location, Location), BenchmarkError> {
-                    Err(BenchmarkError::Skip)
+                    Ok((Location::parent(), EthereumLocation::get()))
                 }
             }
 
