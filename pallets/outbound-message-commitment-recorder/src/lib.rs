@@ -117,10 +117,20 @@ pub mod pallet {
         }
 
         pub fn prove_message_v1(leaf_index: u64) -> Option<MerkleProof> {
-            Self::prove_message(leaf_index)
+            let v1_exists = RecordedCommitment::<T>::exists();
+            if !v1_exists {
+                None
+            } else {
+                Self::prove_message(leaf_index)
+            }
         }
 
         pub fn prove_message_v2(leaf_index: u64) -> Option<MerkleProof> {
+            let v2_exists = RecordedCommitmentV2::<T>::exists();
+            if !v2_exists {
+                return None;
+            }
+
             let v1 = RecordedCommitment::<T>::get();
             if let Some((_, leaves)) = v1 {
                 let maybe_combined_index = (leaves.len() as u64).checked_add(leaf_index);
