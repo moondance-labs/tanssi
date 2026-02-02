@@ -628,8 +628,7 @@ impl SessionManager<CollatorId> for CollatorsFromInvulnerables {
 parameter_types! {
     pub const Period: u32 = prod_or_fast!(5 * MINUTES, 1 * MINUTES);
     pub const Offset: u32 = 0;
-    // TODO: how to calculate KeyDeposit?
-    pub const KeyDeposit: Balance = currency::deposit(1, 5 * 32 + 33);
+    pub const KeyDeposit: Balance = currency::deposit(1, 32);
 }
 
 impl pallet_session::Config for Runtime {

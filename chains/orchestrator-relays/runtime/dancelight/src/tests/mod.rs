@@ -16,6 +16,7 @@
 
 //! Tests for the Dancelight Runtime Configuration
 
+use crate::genesis_config_presets::get_authority_keys_from_seed;
 use {
     crate::*, frame_support::traits::WhitelistedStorageKeys, sp_core::hexdisplay::HexDisplay,
     std::collections::HashSet,
@@ -93,4 +94,29 @@ fn check_treasury_pallet_id() {
         <Treasury as frame_support::traits::PalletInfoAccess>::index() as u8,
         dancelight_runtime_constants::TREASURY_PALLET_ID
     );
+}
+
+#[test]
+fn session_keys_deposit() {
+    // Check that deposit for pallet_session has correct size depending on `SessionKeys`.
+    // Assumes that all SessionKeys have the same encoded size.
+    let keys = get_authority_keys_from_seed("Alice");
+    let session_keys = SessionKeys {
+        grandpa: keys.grandpa,
+        babe: keys.babe,
+        para_validator: keys.para_validator,
+        para_assignment: keys.para_assignment,
+        authority_discovery: keys.authority_discovery,
+        beefy: keys.beefy,
+        nimbus: keys.nimbus,
+    };
+    let session_keys_len = session_keys.encoded_size();
+    // Hardcode value in test so it is easier to debug when SessionKeys size changes
+    // 225 = 6 * 32 + 33
+    assert_eq!(session_keys_len, 225);
+    // And assert that the actual deposit matches this session keys length
+    let x = KeyDeposit::get();
+    let y = deposit(1, session_keys_len as u32);
+
+    assert_eq!(x, y);
 }

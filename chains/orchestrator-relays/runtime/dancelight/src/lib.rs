@@ -603,8 +603,7 @@ impl sp_runtime::traits::Convert<AccountId, Option<AccountId>> for ValidatorIdOf
 }
 
 parameter_types! {
-    // TODO: how to calculate KeyDeposit?
-    pub const KeyDeposit: Balance = deposit(1, 5 * 32 + 33);
+    pub const KeyDeposit: Balance = deposit(1, 6 * 32 + 33);
 }
 
 impl pallet_session::Config for Runtime {
