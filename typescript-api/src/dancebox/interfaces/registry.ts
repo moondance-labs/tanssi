@@ -166,6 +166,7 @@ import type {
     PalletPooledStakingPoolsActivePoolKind,
     PalletPooledStakingPoolsCandidateSummary,
     PalletPooledStakingPoolsKey,
+    PalletPooledStakingPoolsPendingRewards,
     PalletPooledStakingPoolsPoolKind,
     PalletPooledStakingSharesOrStake,
     PalletProxyAnnouncement,
@@ -504,6 +505,7 @@ declare module "@polkadot/types/types/registry" {
         PalletPooledStakingPoolsActivePoolKind: PalletPooledStakingPoolsActivePoolKind;
         PalletPooledStakingPoolsCandidateSummary: PalletPooledStakingPoolsCandidateSummary;
         PalletPooledStakingPoolsKey: PalletPooledStakingPoolsKey;
+        PalletPooledStakingPoolsPendingRewards: PalletPooledStakingPoolsPendingRewards;
         PalletPooledStakingPoolsPoolKind: PalletPooledStakingPoolsPoolKind;
         PalletPooledStakingSharesOrStake: PalletPooledStakingSharesOrStake;
         PalletProxyAnnouncement: PalletProxyAnnouncement;

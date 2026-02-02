@@ -171,6 +171,9 @@ impl pallet_pooled_staking::Config for Runtime {
     type RewardsCollatorCommission = RewardsCollatorCommission;
     type JoiningRequestTimer = BlockNumberTimer<Self, BlocksToWait>;
     type LeavingRequestTimer = BlockNumberTimer<Self, BlocksToWait>;
+    // Distribute once per block. However in tests we can call the reward function as many times we
+    // want in one block to test aggregation.
+    type RewardsDistributionTimer = BlockNumberTimer<Self, ConstU64<1>>;
     // low value so we can test vec bounding, in practice it should be bigger
     type EligibleCandidatesBufferSize = ConstU32<3>;
     type EligibleCandidatesFilter = ();

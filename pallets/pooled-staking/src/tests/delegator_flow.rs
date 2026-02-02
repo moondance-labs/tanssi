@@ -85,25 +85,12 @@ pool_test!(
                 }
             );
 
-            assert_eq_events!(vec![
-                Event::IncreasedStake {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake_diff: amount,
-                },
-                Event::UpdatedCandidatePosition {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake: amount,
-                    self_delegation: 0,
-                    before: None,
-                    after: None,
-                },
-                Event::RequestedDelegate {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    delegator: ACCOUNT_DELEGATOR_1,
-                    pool: P::target_pool(),
-                    pending: amount
-                },
-            ]);
+            assert_eq_events!(vec![Event::RequestedDelegate {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                pool: P::target_pool(),
+                pending: amount
+            },]);
         })
     }
 );
@@ -176,33 +163,11 @@ pool_test!(
             );
 
             assert_eq_events!(vec![
-                Event::IncreasedStake {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake_diff: requested_amount,
-                },
-                Event::UpdatedCandidatePosition {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake: requested_amount,
-                    self_delegation: 0,
-                    before: None,
-                    after: None,
-                },
                 Event::RequestedDelegate {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_DELEGATOR_1,
                     pool: P::target_pool(),
                     pending: requested_amount,
-                },
-                Event::DecreasedStake {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake_diff: 10,
-                },
-                Event::UpdatedCandidatePosition {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake: final_amount,
-                    self_delegation: 0,
-                    before: None,
-                    after: None,
                 },
                 P::event_staked(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1, 2, final_amount),
                 Event::ExecutedDelegate {
@@ -353,17 +318,6 @@ pool_test!(
 
             assert_eq_events!(vec![
                 // delegate request
-                Event::IncreasedStake {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake_diff: requested_amount,
-                },
-                Event::UpdatedCandidatePosition {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake: requested_amount,
-                    self_delegation: 0,
-                    before: None,
-                    after: None,
-                },
                 Event::RequestedDelegate {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_DELEGATOR_1,
@@ -371,17 +325,6 @@ pool_test!(
                     pending: requested_amount
                 },
                 // delegate exec
-                Event::DecreasedStake {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake_diff: 10,
-                },
-                Event::UpdatedCandidatePosition {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake: final_amount,
-                    self_delegation: 0,
-                    before: None,
-                    after: None,
-                },
                 P::event_staked(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1, 2, final_amount),
                 Event::ExecutedDelegate {
                     candidate: ACCOUNT_CANDIDATE_1,
@@ -391,17 +334,6 @@ pool_test!(
                     released: 10,
                 },
                 // undelegate request
-                Event::DecreasedStake {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake_diff: final_amount,
-                },
-                Event::UpdatedCandidatePosition {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake: 0,
-                    self_delegation: 0,
-                    before: None,
-                    after: None,
-                },
                 Event::RequestedUndelegate {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_DELEGATOR_1,
@@ -452,17 +384,6 @@ pool_test!(
 
             assert_eq_events!(vec![
                 // delegate request
-                Event::IncreasedStake {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake_diff: joining_requested_amount,
-                },
-                Event::UpdatedCandidatePosition {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake: joining_requested_amount,
-                    self_delegation: 0,
-                    before: None,
-                    after: None,
-                },
                 Event::RequestedDelegate {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_DELEGATOR_1,
@@ -470,17 +391,6 @@ pool_test!(
                     pending: joining_requested_amount
                 },
                 // delegate exec
-                Event::DecreasedStake {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake_diff: 10,
-                },
-                Event::UpdatedCandidatePosition {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake: joining_amount,
-                    self_delegation: 0,
-                    before: None,
-                    after: None,
-                },
                 P::event_staked(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1, 2, joining_amount),
                 Event::ExecutedDelegate {
                     candidate: ACCOUNT_CANDIDATE_1,
@@ -490,17 +400,6 @@ pool_test!(
                     released: 10,
                 },
                 // undelegate request
-                Event::DecreasedStake {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake_diff: leaving_requested_amount,
-                },
-                Event::UpdatedCandidatePosition {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake: joining_amount - leaving_requested_amount,
-                    self_delegation: 0,
-                    before: None,
-                    after: None,
-                },
                 Event::RequestedUndelegate {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_DELEGATOR_1,

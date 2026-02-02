@@ -16,7 +16,7 @@
 
 #![cfg(test)]
 
-use crate::{MinimumSelfDelegation, PooledStaking, RewardsCollatorCommission};
+use crate::{MinimumSelfDelegation, PooledStaking};
 use frame_support::assert_ok;
 use pallet_pooled_staking::{ActivePoolKind, PendingOperationKey, PendingOperationQuery};
 use {
@@ -108,8 +108,19 @@ fn test_reward_to_staking_candidate() {
                 ]
             ));
 
+            {
+                let pending = pallet_pooled_staking::PendingRewards::<Runtime>::get().expect("pending rewards to exist");
+                assert_eq!(pending.last_distribution, 3u32, "timer should be up to date");
+            }
+
             // wait for next session so that DAVE is elected
             run_to_session(4u32);
+
+            {
+                let pending = pallet_pooled_staking::PendingRewards::<Runtime>::get().expect("pending rewards to exist");
+                assert_eq!(pending.last_distribution, 4u32, "timer should be up to date");
+            }
+
             run_block();
 
             let account: AccountId = DAVE.into();
@@ -154,19 +165,42 @@ fn test_reward_to_staking_candidate() {
                 .unwrap()
                 .author;
             assert_eq!(container_block_author, AccountId::from(DAVE));
-            let balance_after = System::account(account).data.free;
 
             let all_rewards = RewardsPortion::get() * summary.inflation;
-            // rewards are shared between the 2 paras
-            let rewards_per_chain = all_rewards / 2;
-            // candidate gets transferred 20% of the reward immediately.
-            // the rest goes into the staking pools
-            let candidate_rewards = RewardsCollatorCommission::get() * rewards_per_chain;
+            let rewards_per_chain = all_rewards / 2; // rewards are shared between the 2 paras
 
+            // Rewards are now aggregated in storage and then distributed at the start of the next session.
+            // We'll thus check that the pending rewards contains DAVE rewards.
+
+            {
+                let pending = pallet_pooled_staking::PendingRewards::<Runtime>::get().expect("pending rewards to exist");
+                assert_eq!(pending.last_distribution, 4u32, "timer should be up to date");
+                let dave_rewards = pending.rewards.get(&account).expect("DAVE should have pending rewards");
+
+                assert_eq!(*dave_rewards, rewards_per_chain, "dave should have pending rewards for 1 chain");
+            }
+
+            let balance_after = System::account(&account).data.free;
             assert_eq!(
-                candidate_rewards,
-                balance_after - balance_before,
-                "dave should get the correct reward portion"
+                balance_before,
+                balance_after,
+                "dave shouldn't have rewards in their account yet"
+            );
+
+            // let's go to next session
+            run_to_session(5u32);
+
+            {
+                let pending = pallet_pooled_staking::PendingRewards::<Runtime>::get().expect("pending rewards to exist");
+                assert_eq!(pending.last_distribution, 5u32, "timer should be up to date");
+                assert!(pending.rewards.is_empty(), "rewards should be distributed including the latest ones, so the pending rewards should be empty");
+            }
+
+            let balance_after = System::account(&account).data.free;
+            assert_ne!(
+                balance_before,
+                balance_after,
+                "dave should have rewards in their account now"
             );
         });
 }

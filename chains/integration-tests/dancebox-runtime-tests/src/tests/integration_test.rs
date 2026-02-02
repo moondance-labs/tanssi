@@ -18,7 +18,7 @@
 
 use {
     cumulus_primitives_core::ParaId,
-    dancebox_runtime::{RewardsCollatorCommission, StreamPayment, TransactionPayment},
+    dancebox_runtime::{StreamPayment, TransactionPayment},
     dancebox_runtime_test_utils::*,
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
     dp_core::well_known_keys,
@@ -3762,7 +3762,17 @@ fn test_reward_to_staking_candidate() {
             );
 
             let account: AccountId = DAVE.into();
-            let balance_before = System::account(account.clone()).data.free;
+
+            {
+                let pending = pallet_pooled_staking::PendingRewards::<Runtime>::get()
+                    .expect("pending rewards to exist");
+                assert!(
+                    pending.rewards.get(&account).is_none(),
+                    "DAVE shouldn't have pending rewards at session start"
+                );
+            }
+
+            let balance_before = System::account(&account).data.free;
             let summary = (0..100)
                 .find_map(|_| {
                     let summary = run_block();
@@ -3773,17 +3783,34 @@ fn test_reward_to_staking_candidate() {
                     }
                 })
                 .unwrap_or_else(|| panic!("DAVE doesn't seem to author any blocks"));
-            let balance_after = System::account(account).data.free;
+            let balance_after = System::account(&account).data.free;
 
             let all_rewards = RewardsPortion::get() * summary.inflation;
             // rewards are shared between orchestrator and registered paras
             let orchestrator_rewards = all_rewards / 3;
-            let candidate_rewards = RewardsCollatorCommission::get() * orchestrator_rewards;
 
             assert_eq!(
-                candidate_rewards,
-                balance_after - balance_before,
-                "dave should get the correct reward portion"
+                balance_before, balance_after,
+                "dave shouldn't get any rewards in their account yet"
+            );
+
+            let pending = pallet_pooled_staking::PendingRewards::<Runtime>::get()
+                .expect("pending rewards to exist");
+            let dave_rewards = pending
+                .rewards
+                .get(&account)
+                .expect("DAVE should have pending rewards");
+
+            assert_eq!(
+                *dave_rewards, orchestrator_rewards,
+                "dave should have pending rewards for 1 chain"
+            );
+
+            run_to_session(5u32);
+            let balance_after = System::account(account).data.free;
+            assert_ne!(
+                balance_before, balance_after,
+                "dave should now have received rewards"
             );
         });
 }

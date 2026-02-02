@@ -81,14 +81,14 @@ describeSuite({
                 );
                 await context.createBlock([await tx3.signAsync(randomAccount)]);
                 const events = await polkadotJs.query.system.events();
-                const ev1 = events.filter((a) => {
-                    return a.event.method === "IncreasedStake";
-                });
-                expect(ev1.length).to.be.equal(1);
-                const ev2 = events.filter((a) => {
-                    return a.event.method === "UpdatedCandidatePosition";
-                });
-                expect(ev2.length).to.be.equal(1);
+                // const ev1 = events.filter((a) => {
+                //     return a.event.method === "IncreasedStake";
+                // });
+                // expect(ev1.length).to.be.equal(1);
+                // const ev2 = events.filter((a) => {
+                //     return a.event.method === "UpdatedCandidatePosition";
+                // });
+                // expect(ev2.length).to.be.equal(1);
                 const ev3 = events.filter((a) => {
                     return a.event.method === "RequestedDelegate";
                 });

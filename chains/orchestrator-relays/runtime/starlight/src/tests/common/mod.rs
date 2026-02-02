@@ -19,7 +19,7 @@
 use {
     crate::{
         Authorship, BlockProductionCost, CollatorAssignmentCost, ExternalValidatorSlashes,
-        MessageQueue, Preimage, RuntimeCall,
+        MessageQueue, PooledStaking, Preimage, RuntimeCall,
     },
     alloc::collections::btree_map::BTreeMap,
     babe_primitives::{
@@ -291,6 +291,7 @@ pub fn start_block() -> RunSummary {
     Beefy::on_initialize(System::block_number());
     Mmr::on_initialize(System::block_number());
     BeefyMmrLeaf::on_initialize(System::block_number());
+    PooledStaking::on_initialize(System::block_number());
     RunSummary {
         inflation: new_issuance - current_issuance,
     }
