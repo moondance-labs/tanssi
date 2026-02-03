@@ -53,7 +53,6 @@ use crate::{AccountId, BlockWeights, BridgeRelayers, EthereumInboundQueueV2};
 use dancelight_runtime_constants::snowbridge::EthereumLocation;
 use pallet_external_validators::WeightInfo;
 use snowbridge_outbound_queue_primitives::v2::ConstantGasMeter as ConstantGasMeterV2;
-use snowbridge_pallet_inbound_queue_v2_fixtures::register_token::make_register_token_message as make_register_token_message_v2;
 use sp_arithmetic::Perbill;
 use sp_runtime::Weight;
 use {
