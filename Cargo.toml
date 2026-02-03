@@ -354,7 +354,6 @@ cumulus-pallet-session-benchmarking = { git = "https://github.com/moondance-labs
 cumulus-pallet-xcm = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2512", default-features = false }
 cumulus-pallet-xcmp-queue = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2512", default-features = false }
 cumulus-primitives-core = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2512", default-features = false }
-cumulus-primitives-timestamp = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2512", default-features = false }
 cumulus-primitives-utility = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2512", default-features = false }
 parachain-info = { package = "staging-parachain-info", git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2512", default-features = false }
 parachains-common = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2512", default-features = false }

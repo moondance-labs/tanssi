@@ -2761,7 +2761,6 @@ dependencies = [
  "cumulus-pallet-xcm",
  "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
- "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
  "dp-consensus",
  "dp-container-chain-genesis-data",
@@ -2867,7 +2866,6 @@ dependencies = [
  "cumulus-pallet-xcm",
  "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
- "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
  "dp-consensus",
  "dp-container-chain-genesis-data",
@@ -3795,16 +3793,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cumulus-primitives-timestamp"
-version = "0.24.0"
-source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2512#afb5dc300ecda3d92320f3cf4d0f28aac5e856c5"
-dependencies = [
- "cumulus-primitives-core",
- "sp-inherents",
- "sp-timestamp",
-]
-
-[[package]]
 name = "cumulus-primitives-utility"
 version = "0.25.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2512#afb5dc300ecda3d92320f3cf4d0f28aac5e856c5"
@@ -4093,7 +4081,6 @@ dependencies = [
  "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
  "cumulus-primitives-parachain-inherent",
- "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
  "dp-consensus",
  "dp-container-chain-genesis-data",
@@ -5902,7 +5889,6 @@ dependencies = [
  "cumulus-pallet-weight-reclaim",
  "cumulus-primitives-core",
  "cumulus-primitives-parachain-inherent",
- "cumulus-primitives-timestamp",
  "cumulus-test-relay-sproof-builder",
  "dp-consensus",
  "dp-container-chain-genesis-data",
