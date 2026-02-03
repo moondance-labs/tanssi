@@ -98,20 +98,26 @@ parameter_types! {
     };
 }
 
-pub struct CommitmentRecorder;
+pub struct CommitmentRecorderV1;
 
-impl OnNewCommitment for CommitmentRecorder {
+impl OnNewCommitment for CommitmentRecorderV1 {
     fn on_new_commitment(commitment: H256) {
-        OutboundMessageCommitmentRecorder::record_commitment_root(commitment);
+        let message_leaves = snowbridge_pallet_outbound_queue::MessageLeaves::<Runtime>::get();
+        OutboundMessageCommitmentRecorder::record_commitment_root(commitment, message_leaves);
     }
 }
 
-impl OnNewCommitmentV2 for CommitmentRecorder {
+pub struct CommitmentRecorderV2;
+
+impl OnNewCommitmentV2 for CommitmentRecorderV2 {
     fn on_new_commitment(commitment: H256) {
-        OutboundMessageCommitmentRecorder::record_commitment_root(commitment);
+        let message_leaves = snowbridge_pallet_outbound_queue_v2::MessageLeaves::<Runtime>::get();
+        OutboundMessageCommitmentRecorder::record_commitment_root_v2(commitment, message_leaves);
     }
 }
-impl pallet_outbound_message_commitment_recorder::Config for Runtime {}
+impl pallet_outbound_message_commitment_recorder::Config for Runtime {
+    type Hashing = Keccak256;
+}
 
 // https://github.com/paritytech/polkadot-sdk/blob/2ae79be8e028a995b850621ee55f46c041eceefe/cumulus/parachains/runtimes/bridge-hubs/bridge-hub-westend/src/bridge_to_ethereum_config.rs#L105
 impl snowbridge_pallet_outbound_queue::Config for Runtime {
@@ -129,7 +135,7 @@ impl snowbridge_pallet_outbound_queue::Config for Runtime {
     type WeightInfo = crate::weights::snowbridge_pallet_outbound_queue::SubstrateWeight<Runtime>;
     type PricingParameters = EthereumSystem;
     type Channels = EthereumSystem;
-    type OnNewCommitment = CommitmentRecorder;
+    type OnNewCommitment = CommitmentRecorderV1;
 }
 
 /// Rewards for Snowbridge.Outbound in tanssi. Inbound in ETH
@@ -834,7 +840,7 @@ impl snowbridge_pallet_outbound_queue_v2::Config for Runtime {
     type DefaultRewardKind = SnowbridgeRewardOutbound;
     type RewardPayment = BridgeRelayers;
     // Enable once we cherry-pick
-    type OnNewCommitment = CommitmentRecorder;
+    type OnNewCommitment = CommitmentRecorderV2;
     type AggregateMessageOrigin = TanssiAggregateMessageOrigin;
     #[cfg(feature = "runtime-benchmarks")]
     type Helper = Runtime;

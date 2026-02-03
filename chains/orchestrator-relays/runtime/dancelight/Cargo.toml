@@ -176,6 +176,7 @@ tp-bridge = { workspace = true }
 bp-relayers = { workspace = true }
 bridge-hub-common = { workspace = true }
 pallet-bridge-relayers = { workspace = true }
+snowbridge-outbound-queue-v2-runtime-api = { workspace = true }
 snowbridge-pallet-inbound-queue-v2 = { workspace = true }
 snowbridge-pallet-inbound-queue-v2-fixtures = { workspace = true, optional = true }
 snowbridge-pallet-outbound-queue-v2 = { workspace = true }
@@ -312,6 +313,7 @@ std = [
 	"snowbridge-merkle-tree/std",
 	"snowbridge-outbound-queue-primitives/std",
 	"snowbridge-outbound-queue-runtime-api/std",
+	"snowbridge-outbound-queue-v2-runtime-api/std",
 	"snowbridge-pallet-ethereum-client/fuzzing",
 	"snowbridge-pallet-ethereum-client/std",
 	"snowbridge-pallet-inbound-queue-fixtures/std",
