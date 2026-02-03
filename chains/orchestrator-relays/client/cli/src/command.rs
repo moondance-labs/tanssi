@@ -50,6 +50,7 @@ fn get_exec_name() -> Option<String> {
 }
 
 // We don't have AssetsHub, so this list is empty
+#[allow(clippy::borrowed_box)]
 fn get_invulnerable_ah_collators(
     _chain_spec: &Box<dyn polkadot_service::ChainSpec>,
 ) -> HashSet<PeerId> {

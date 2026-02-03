@@ -494,7 +494,7 @@ where
                     relay_chain_slot_duration,
                     para_id,
                     collator_key.clone(),
-                    collator_peer_id.clone(),
+                    collator_peer_id,
                     overseer.clone(),
                     announce_block.clone(),
                     proposer_factory.clone(),

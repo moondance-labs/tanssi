@@ -22,8 +22,9 @@ use frame_support::traits::{KeyOwnerProofSystem, OnFinalize, OnInitialize, Valid
 use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin};
 use parity_scale_codec::Decode;
 use polkadot_primitives::{
-    slashing::{DisputeProof, DisputesTimeSlot, SlashingOffenceKind},
-    CandidateHash, Hash, SessionIndex, ValidatorId, ValidatorIndex, PARACHAIN_KEY_TYPE_ID,
+    slashing::{DisputeProof, DisputesTimeSlot},
+    CandidateHash, DisputeOffenceKind, Hash, SessionIndex, ValidatorId, ValidatorIndex,
+    PARACHAIN_KEY_TYPE_ID,
 };
 use polkadot_runtime_parachains::{disputes::SlashingHandler, initializer};
 use sp_runtime::traits::{One, OpaqueKeys};
@@ -157,7 +158,7 @@ fn dispute_proof(
     validator_id: ValidatorId,
     validator_index: ValidatorIndex,
 ) -> DisputeProof {
-    let kind = SlashingOffenceKind::ForInvalid;
+    let kind = DisputeOffenceKind::ForInvalidBacked;
     let time_slot = DisputesTimeSlot::new(session_index, CANDIDATE_HASH);
 
     DisputeProof {
@@ -185,7 +186,7 @@ mod benchmarks {
         {
             result = polkadot_runtime_parachains::disputes::slashing::Pallet::<T>::report_dispute_lost_unsigned(
                 RawOrigin::None.into(),
-                Box::new(dispute_proof.into()),
+                Box::new(dispute_proof),
                 key_owner_proof,
             );
         }

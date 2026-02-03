@@ -53,6 +53,7 @@ use crate::{AccountId, BlockWeights, BridgeRelayers, EthereumInboundQueueV2};
 use dancelight_runtime_constants::snowbridge::EthereumLocation;
 use pallet_external_validators::WeightInfo;
 use snowbridge_outbound_queue_primitives::v2::ConstantGasMeter as ConstantGasMeterV2;
+use snowbridge_pallet_inbound_queue_v2_fixtures::register_token::make_register_token_message as make_register_token_message_v2;
 use sp_arithmetic::Perbill;
 use sp_runtime::Weight;
 use {
@@ -501,7 +502,7 @@ mod benchmark_helper {
         }
     }
     impl<T: snowbridge_pallet_inbound_queue_v2::Config> InboundQueueBenchmarkHelperV2<T> for Runtime {
-        fn initialize_storage(_beacon_header: BeaconHeader, _block_roots_root: H256) {
+        fn initialize_storage() -> EventFixture {
             // Putting the gateway address in https://github.com/moondance-labs/polkadot-sdk/blob/0f3f611ed8b58be9e6c1d96694719b6c6fda3a62/bridges/snowbridge/pallets/inbound-queue-v2/fixtures/src/register_token.rs#L18
             // Necessary to bench correctly
             EthereumGatewayAddress::set(&H160(hex_literal::hex!(
@@ -534,6 +535,8 @@ mod benchmark_helper {
 
             Balances::mint_into(&SnowbridgeFeesAccount::get(), 10 * UNITS)
                 .expect("minting fees_account balance");
+
+            submit_message
         }
     }
 

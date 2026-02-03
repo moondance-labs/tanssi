@@ -306,10 +306,13 @@ parameter_types! {
 /// Simple conversion of `u32` into an `AssetId` for use in benchmarking.
 pub struct ForeignAssetBenchmarkHelper;
 #[cfg(feature = "runtime-benchmarks")]
-impl pallet_assets::BenchmarkHelper<AssetId> for ForeignAssetBenchmarkHelper {
+impl pallet_assets::BenchmarkHelper<AssetId, ReserveId> for ForeignAssetBenchmarkHelper {
     fn create_asset_id_parameter(id: u32) -> AssetId {
         id.try_into()
             .expect("number too large to create benchmarks")
+    }
+    fn create_reserve_id_parameter(id: u32) -> ReserveId {
+        ()
     }
 }
 #[cfg(feature = "runtime-benchmarks")]
@@ -321,6 +324,7 @@ impl pallet_asset_rate::AssetKindFactory<AssetId> for ForeignAssetBenchmarkHelpe
 }
 
 pub type AssetId = u16;
+pub type ReserveId = ();
 pub type ForeignAssetsInstance = pallet_assets::Instance1;
 impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
     type RuntimeEvent = RuntimeEvent;
