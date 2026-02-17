@@ -3,10 +3,10 @@
   "id": "tanssi",
   "chainType": "Live",
   "bootNodes": [
-    "/dns4/uko-tanssi-boot-1.rv.tanssi.network/tcp/30334/p2p/12D3KooWAexWR4uyhVPyxqPBNhhepJ5jRqUa885mu5dKPPVHSfpC",
-    "/dns4/qco-tanssi-boot-1.rv.tanssi.network/tcp/30334/p2p/12D3KooWBzJzAdAKNVXcsvfL3nHH8BSocNvxz7A8PkRAAJhTuQNm",
-    "/dns4/fro-tanssi-boot-1.rv.tanssi.network/tcp/30334/p2p/12D3KooWS3kv4PyNTxKS8CBxZsVrhMcNcXgxqVUHLrXixuz4DaSR",
-    "/dns4/deo-tanssi-boot-1.rv.tanssi.network/tcp/30334/p2p/12D3KooWNQ1cddxwvnZZUBG2gtByn9hirVGEn2yR37ztnGSi1VHu"
+    "/dns4/deo-tanssi-rpc-1.rv.tanssi.network/tcp/30334/p2p/12D3KooWD6jbDgfH2SwkCi9fng1PZ7EyN6S4D3cSrhxgPKjQJarT",
+    "/dns4/uko-tanssi-rpc-1.rv.tanssi.network/tcp/30334/p2p/12D3KooWN1JCp5hLLdVAmqnfmg81zCcjgfw8HtHM4jKHWAbaT4yE",
+    "/dns4/fro-tanssi-rpc-1.rv.tanssi.network/tcp/30334/p2p/12D3KooWCZxfJUxpgGP32UueFLbfVBrNt7FVTNhnXPNLy5WAiNVB",
+    "/dns4/fro-tanssi-rpc-2.rv.tanssi.network/tcp/30334/p2p/12D3KooWGF4s1gNFwJQyjE1HaNurgGEazU6eUBpY63nKneLR3W76"
   ],
   "telemetryEndpoints": null,
   "protocolId": "tanssi",
