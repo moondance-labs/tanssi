@@ -26,7 +26,7 @@ describeSuite({
             test: async () => {
                 const randomAccount = generateKeyringPair("sr25519");
 
-                const tx = polkadotJs.tx.balances.transferAllowDeath(randomAccount.address, 2n * 10000000000000000n);
+                const tx = polkadotJs.tx.balances.transferAllowDeath(randomAccount.address, 20n * 10000000000000000n);
                 await context.createBlock([await tx.signAsync(alice)]);
                 expect(isExtrinsicSuccessful(await polkadotJs.query.system.events())).to.be.true;
 
@@ -39,7 +39,7 @@ describeSuite({
                 await context.createBlock([await tx2.signAsync(randomAccount)]);
                 expect(isExtrinsicSuccessful(await polkadotJs.query.system.events())).to.be.true;
                 const consumersAfterTx2 = await polkadotJs.query.system.account(randomAccount.address);
-                expect(consumersAfterTx2.consumers.toNumber()).to.be.equal(1);
+                expect(consumersAfterTx2.consumers.toNumber()).to.be.equal(2);
 
                 // Self-delegate in pallet_pooled_staking
                 const tx3 = polkadotJs.tx.pooledStaking.requestDelegate(
@@ -97,7 +97,7 @@ describeSuite({
                 await context.createBlock([await tx6.signAsync(randomAccount)]);
                 // It is only after we leave that the consumer is cleaned
                 const consumersAfterTx6 = await polkadotJs.query.system.account(randomAccount.address);
-                expect(consumersAfterTx6.consumers.toNumber()).to.be.equal(1);
+                expect(consumersAfterTx6.consumers.toNumber()).to.be.equal(2);
             },
         });
     },

@@ -94,7 +94,7 @@ impl pallet_balances::Config for Test {
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type ReserveIdentifier = [u8; 8];
-    type RuntimeHoldReason = ();
+    type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = ();
     type FreezeIdentifier = ();
     type MaxLocks = ();
@@ -174,6 +174,8 @@ impl pallet_session::Config for Test {
     type Keys = MockSessionKeys;
     type WeightInfo = ();
     type DisablingStrategy = ();
+    type Currency = Balances;
+    type KeyDeposit = ();
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {

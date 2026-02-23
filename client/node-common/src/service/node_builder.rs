@@ -14,6 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
+use cumulus_client_service::{
+    DARecoveryProfile, ParachainTracingExecuteBlock, StartRelayChainTasksParams,
+};
+use parity_scale_codec::Encode;
 use {
     async_channel::Receiver,
     async_io::Timer,
@@ -23,7 +27,6 @@ use {
     cumulus_client_cli::CollatorOptions,
     cumulus_client_service::{
         build_relay_chain_interface, CollatorSybilResistance, ParachainHostFunctions,
-        StartFullNodeParams,
     },
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
@@ -622,6 +625,9 @@ where
             system_rpc_tx: network.system_rpc_tx.clone(),
             tx_handler_controller,
             telemetry: telemetry.as_mut(),
+            tracing_execute_block: Some(Arc::new(ParachainTracingExecuteBlock::new(
+                client.clone(),
+            ))),
             sync_service: network.sync_service.clone(),
         })?;
 
@@ -791,7 +797,7 @@ where
             .overseer_handle()
             .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
 
-        let params = StartFullNodeParams {
+        let params = StartRelayChainTasksParams {
             client: client.clone(),
             announce_block,
             task_manager: &mut task_manager,
@@ -801,14 +807,12 @@ where
             import_queue: import_queue_service,
             recovery_handle: Box::new(overseer_handle),
             sync_service: network.sync_service.clone(),
+            da_recovery_profile: DARecoveryProfile::FullNode,
             prometheus_registry: prometheus_registry.as_ref(),
         };
 
         // TODO: change for async backing
-        // TODO: to fix deprecation warning, we only need to change
-        // `start_full_node` to `start_relay_chain_tasks`
-        #[allow(deprecated)]
-        cumulus_client_service::start_full_node(params)?;
+        cumulus_client_service::start_relay_chain_tasks(params)?;
 
         let StartBootnodeParams {
             relay_chain_fork_id,
@@ -833,7 +837,7 @@ where
             request_receiver: paranode_rx,
             parachain_network: network.network.clone(),
             advertise_non_global_ips,
-            parachain_genesis_hash: TypeIdentity::into_type(client.chain_info().genesis_hash),
+            parachain_genesis_hash: client.chain_info().genesis_hash.encode(),
             parachain_fork_id,
             parachain_public_addresses,
         });

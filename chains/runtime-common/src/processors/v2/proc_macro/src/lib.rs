@@ -116,7 +116,7 @@ fn message_processor_trait_derive_impl(ast: DeriveInput) -> proc_macro2::TokenSt
     };
 
     // Return the generated code as a TokenStream
-    expanded.into()
+    expanded
 }
 
 #[cfg(test)]
@@ -203,7 +203,7 @@ where
     }
 }
 "##;
-        let out = derive_macro_for_test(input.into()).unwrap();
+        let out = derive_macro_for_test(input).unwrap();
 
         let as_file = syn::parse_file(&out.to_string()).unwrap();
 

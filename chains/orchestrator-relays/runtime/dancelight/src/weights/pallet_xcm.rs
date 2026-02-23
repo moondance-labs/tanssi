@@ -53,300 +53,373 @@ use core::marker::PhantomData;
 /// Weights for pallet_xcm using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_xcm::WeightInfo for SubstrateWeight<T> {
-	/// Storage: `Dmp::DeliveryFeeFactor` (r:1 w:0)
-	/// Proof: `Dmp::DeliveryFeeFactor` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `XcmPallet::SupportedVersion` (r:1 w:0)
-	/// Proof: `XcmPallet::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Dmp::DownwardMessageQueues` (r:1 w:1)
-	/// Proof: `Dmp::DownwardMessageQueues` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Paras::Heads` (r:1 w:0)
-	/// Proof: `Paras::Heads` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Dmp::DownwardMessageQueueHeads` (r:1 w:1)
-	/// Proof: `Dmp::DownwardMessageQueueHeads` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `XcmpQueue::DeliveryFeeFactor` (r:1 w:0)
+	/// Proof: `XcmpQueue::DeliveryFeeFactor` (`max_values`: None, `max_size`: Some(28), added: 2503, mode: `MaxEncodedLen`)
+	/// Storage: `PolkadotXcm::SupportedVersion` (r:1 w:0)
+	/// Proof: `PolkadotXcm::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `ParachainSystem::RelevantMessagingState` (r:1 w:0)
+	/// Proof: `ParachainSystem::RelevantMessagingState` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `XcmpQueue::OutboundXcmpStatus` (r:1 w:1)
+	/// Proof: `XcmpQueue::OutboundXcmpStatus` (`max_values`: Some(1), `max_size`: Some(1282), added: 1777, mode: `MaxEncodedLen`)
+	/// Storage: `XcmpQueue::OutboundXcmpMessages` (r:0 w:1)
+	/// Proof: `XcmpQueue::OutboundXcmpMessages` (`max_values`: None, `max_size`: Some(105506), added: 107981, mode: `MaxEncodedLen`)
 	fn send() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `141`
-		//  Estimated: `3606`
-		// Minimum execution time: 51_114_000 picoseconds.
-		Weight::from_parts(53_131_000, 3606)
-			.saturating_add(T::DbWeight::get().reads(5_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
+		//  Measured:  `245`
+		//  Estimated: `3710`
+		// Minimum execution time: 31_621_000 picoseconds.
+		Weight::from_parts(33_059_000, 0)
+			.saturating_add(Weight::from_parts(0, 3710))
+			.saturating_add(T::DbWeight::get().reads(4))
+			.saturating_add(T::DbWeight::get().writes(2))
 	}
-	/// Storage: `Benchmark::Override` (r:0 w:0)
-	/// Proof: `Benchmark::Override` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `ParachainInfo::ParachainId` (r:1 w:0)
+	/// Proof: `ParachainInfo::ParachainId` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `PolkadotXcm::ShouldRecordXcm` (r:1 w:0)
+	/// Proof: `PolkadotXcm::ShouldRecordXcm` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `XcmpQueue::DeliveryFeeFactor` (r:1 w:0)
+	/// Proof: `XcmpQueue::DeliveryFeeFactor` (`max_values`: None, `max_size`: Some(28), added: 2503, mode: `MaxEncodedLen`)
+	/// Storage: `PolkadotXcm::SupportedVersion` (r:1 w:0)
+	/// Proof: `PolkadotXcm::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `ParachainSystem::RelevantMessagingState` (r:1 w:0)
+	/// Proof: `ParachainSystem::RelevantMessagingState` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `XcmpQueue::OutboundXcmpStatus` (r:1 w:1)
+	/// Proof: `XcmpQueue::OutboundXcmpStatus` (`max_values`: Some(1), `max_size`: Some(1282), added: 1777, mode: `MaxEncodedLen`)
+	/// Storage: `XcmpQueue::OutboundXcmpMessages` (r:0 w:1)
+	/// Proof: `XcmpQueue::OutboundXcmpMessages` (`max_values`: None, `max_size`: Some(105506), added: 107981, mode: `MaxEncodedLen`)
 	fn teleport_assets() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `0`
-		//  Estimated: `0`
-		// Minimum execution time: 18_446_744_073_709_551_000 picoseconds.
-		Weight::from_parts(18_446_744_073_709_551_000, 0)
+		//  Measured:  `277`
+		//  Estimated: `3742`
+		// Minimum execution time: 120_046_000 picoseconds.
+		Weight::from_parts(123_674_000, 0)
+			.saturating_add(Weight::from_parts(0, 3742))
+			.saturating_add(T::DbWeight::get().reads(7))
+			.saturating_add(T::DbWeight::get().writes(3))
 	}
-	/// Storage: `System::Account` (r:1 w:1)
+	/// Storage: `ParachainInfo::ParachainId` (r:1 w:0)
+	/// Proof: `ParachainInfo::ParachainId` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `PolkadotXcm::ShouldRecordXcm` (r:1 w:0)
+	/// Proof: `PolkadotXcm::ShouldRecordXcm` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `System::Account` (r:2 w:2)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
-	/// Storage: `Dmp::DeliveryFeeFactor` (r:1 w:0)
-	/// Proof: `Dmp::DeliveryFeeFactor` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `XcmPallet::SupportedVersion` (r:1 w:0)
-	/// Proof: `XcmPallet::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Dmp::DownwardMessageQueues` (r:1 w:1)
-	/// Proof: `Dmp::DownwardMessageQueues` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Paras::Heads` (r:1 w:0)
-	/// Proof: `Paras::Heads` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Dmp::DownwardMessageQueueHeads` (r:1 w:1)
-	/// Proof: `Dmp::DownwardMessageQueueHeads` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `XcmpQueue::DeliveryFeeFactor` (r:1 w:0)
+	/// Proof: `XcmpQueue::DeliveryFeeFactor` (`max_values`: None, `max_size`: Some(28), added: 2503, mode: `MaxEncodedLen`)
+	/// Storage: `PolkadotXcm::SupportedVersion` (r:1 w:0)
+	/// Proof: `PolkadotXcm::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `ParachainSystem::RelevantMessagingState` (r:1 w:0)
+	/// Proof: `ParachainSystem::RelevantMessagingState` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `XcmpQueue::OutboundXcmpStatus` (r:1 w:1)
+	/// Proof: `XcmpQueue::OutboundXcmpStatus` (`max_values`: Some(1), `max_size`: Some(1282), added: 1777, mode: `MaxEncodedLen`)
+	/// Storage: `XcmpQueue::OutboundXcmpMessages` (r:0 w:1)
+	/// Proof: `XcmpQueue::OutboundXcmpMessages` (`max_values`: None, `max_size`: Some(105506), added: 107981, mode: `MaxEncodedLen`)
 	fn reserve_transfer_assets() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `193`
-		//  Estimated: `3658`
-		// Minimum execution time: 178_061_000 picoseconds.
-		Weight::from_parts(181_481_000, 3658)
-			.saturating_add(T::DbWeight::get().reads(6_u64))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
+		//  Measured:  `329`
+		//  Estimated: `6196`
+		// Minimum execution time: 136_136_000 picoseconds.
+		Weight::from_parts(140_390_000, 0)
+			.saturating_add(Weight::from_parts(0, 6196))
+			.saturating_add(T::DbWeight::get().reads(8))
+			.saturating_add(T::DbWeight::get().writes(4))
 	}
-	/// Storage: `System::Account` (r:1 w:1)
+	/// Storage: `ParachainInfo::ParachainId` (r:1 w:0)
+	/// Proof: `ParachainInfo::ParachainId` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `PolkadotXcm::ShouldRecordXcm` (r:1 w:0)
+	/// Proof: `PolkadotXcm::ShouldRecordXcm` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Assets::Asset` (r:1 w:1)
+	/// Proof: `Assets::Asset` (`max_values`: None, `max_size`: Some(210), added: 2685, mode: `MaxEncodedLen`)
+	/// Storage: `Assets::Account` (r:2 w:2)
+	/// Proof: `Assets::Account` (`max_values`: None, `max_size`: Some(134), added: 2609, mode: `MaxEncodedLen`)
+	/// Storage: `AssetsFreezer::FrozenBalances` (r:1 w:0)
+	/// Proof: `AssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:2 w:2)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
-	/// Storage: `Dmp::DeliveryFeeFactor` (r:1 w:0)
-	/// Proof: `Dmp::DeliveryFeeFactor` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `XcmPallet::SupportedVersion` (r:1 w:0)
-	/// Proof: `XcmPallet::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Dmp::DownwardMessageQueues` (r:1 w:1)
-	/// Proof: `Dmp::DownwardMessageQueues` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Paras::Heads` (r:1 w:0)
-	/// Proof: `Paras::Heads` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Dmp::DownwardMessageQueueHeads` (r:1 w:1)
-	/// Proof: `Dmp::DownwardMessageQueueHeads` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `XcmpQueue::DeliveryFeeFactor` (r:1 w:0)
+	/// Proof: `XcmpQueue::DeliveryFeeFactor` (`max_values`: None, `max_size`: Some(28), added: 2503, mode: `MaxEncodedLen`)
+	/// Storage: `PolkadotXcm::SupportedVersion` (r:1 w:0)
+	/// Proof: `PolkadotXcm::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `ParachainSystem::RelevantMessagingState` (r:1 w:0)
+	/// Proof: `ParachainSystem::RelevantMessagingState` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `XcmpQueue::OutboundXcmpStatus` (r:1 w:1)
+	/// Proof: `XcmpQueue::OutboundXcmpStatus` (`max_values`: Some(1), `max_size`: Some(1282), added: 1777, mode: `MaxEncodedLen`)
+	/// Storage: `XcmpQueue::OutboundXcmpMessages` (r:0 w:1)
+	/// Proof: `XcmpQueue::OutboundXcmpMessages` (`max_values`: None, `max_size`: Some(105506), added: 107981, mode: `MaxEncodedLen`)
 	fn transfer_assets() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `141`
-		//  Estimated: `3606`
-		// Minimum execution time: 175_455_000 picoseconds.
-		Weight::from_parts(178_758_000, 3606)
-			.saturating_add(T::DbWeight::get().reads(6_u64))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
+		//  Measured:  `669`
+		//  Estimated: `6208`
+		// Minimum execution time: 187_283_000 picoseconds.
+		Weight::from_parts(195_176_000, 0)
+			.saturating_add(Weight::from_parts(0, 6208))
+			.saturating_add(T::DbWeight::get().reads(12))
+			.saturating_add(T::DbWeight::get().writes(7))
 	}
+	/// Storage: `PolkadotXcm::ShouldRecordXcm` (r:1 w:0)
+	/// Proof: `PolkadotXcm::ShouldRecordXcm` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	fn execute() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
-		//  Estimated: `0`
-		// Minimum execution time: 12_911_000 picoseconds.
-		Weight::from_parts(13_138_000, 0)
+		//  Estimated: `1485`
+		// Minimum execution time: 10_096_000 picoseconds.
+		Weight::from_parts(10_505_000, 0)
+			.saturating_add(Weight::from_parts(0, 1485))
+			.saturating_add(T::DbWeight::get().reads(1))
 	}
-	/// Storage: `XcmPallet::SupportedVersion` (r:0 w:1)
-	/// Proof: `XcmPallet::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `PolkadotXcm::SupportedVersion` (r:0 w:1)
+	/// Proof: `PolkadotXcm::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn force_xcm_version() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 11_522_000 picoseconds.
-		Weight::from_parts(11_896_000, 0)
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		// Minimum execution time: 8_024_000 picoseconds.
+		Weight::from_parts(8_375_000, 0)
+			.saturating_add(Weight::from_parts(0, 0))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	fn force_default_xcm_version() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 3_790_000 picoseconds.
-		Weight::from_parts(3_937_000, 0)
+		// Minimum execution time: 2_480_000 picoseconds.
+		Weight::from_parts(2_590_000, 0)
+			.saturating_add(Weight::from_parts(0, 0))
 	}
-	/// Storage: `XcmPallet::VersionNotifiers` (r:1 w:1)
-	/// Proof: `XcmPallet::VersionNotifiers` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `XcmPallet::QueryCounter` (r:1 w:1)
-	/// Proof: `XcmPallet::QueryCounter` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `Dmp::DeliveryFeeFactor` (r:1 w:0)
-	/// Proof: `Dmp::DeliveryFeeFactor` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `XcmPallet::SupportedVersion` (r:1 w:0)
-	/// Proof: `XcmPallet::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Dmp::DownwardMessageQueues` (r:1 w:1)
-	/// Proof: `Dmp::DownwardMessageQueues` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Paras::Heads` (r:1 w:0)
-	/// Proof: `Paras::Heads` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Dmp::DownwardMessageQueueHeads` (r:1 w:1)
-	/// Proof: `Dmp::DownwardMessageQueueHeads` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `XcmPallet::Queries` (r:0 w:1)
-	/// Proof: `XcmPallet::Queries` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `PolkadotXcm::VersionNotifiers` (r:1 w:1)
+	/// Proof: `PolkadotXcm::VersionNotifiers` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `PolkadotXcm::QueryCounter` (r:1 w:1)
+	/// Proof: `PolkadotXcm::QueryCounter` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `XcmpQueue::DeliveryFeeFactor` (r:1 w:0)
+	/// Proof: `XcmpQueue::DeliveryFeeFactor` (`max_values`: None, `max_size`: Some(28), added: 2503, mode: `MaxEncodedLen`)
+	/// Storage: `PolkadotXcm::SupportedVersion` (r:1 w:0)
+	/// Proof: `PolkadotXcm::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `ParachainSystem::RelevantMessagingState` (r:1 w:0)
+	/// Proof: `ParachainSystem::RelevantMessagingState` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `XcmpQueue::OutboundXcmpStatus` (r:1 w:1)
+	/// Proof: `XcmpQueue::OutboundXcmpStatus` (`max_values`: Some(1), `max_size`: Some(1282), added: 1777, mode: `MaxEncodedLen`)
+	/// Storage: `XcmpQueue::OutboundXcmpMessages` (r:0 w:1)
+	/// Proof: `XcmpQueue::OutboundXcmpMessages` (`max_values`: None, `max_size`: Some(105506), added: 107981, mode: `MaxEncodedLen`)
+	/// Storage: `PolkadotXcm::Queries` (r:0 w:1)
+	/// Proof: `PolkadotXcm::Queries` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn force_subscribe_version_notify() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `141`
-		//  Estimated: `3606`
-		// Minimum execution time: 58_594_000 picoseconds.
-		Weight::from_parts(61_111_000, 3606)
-			.saturating_add(T::DbWeight::get().reads(7_u64))
-			.saturating_add(T::DbWeight::get().writes(5_u64))
+		//  Measured:  `245`
+		//  Estimated: `3710`
+		// Minimum execution time: 38_995_000 picoseconds.
+		Weight::from_parts(40_184_000, 0)
+			.saturating_add(Weight::from_parts(0, 3710))
+			.saturating_add(T::DbWeight::get().reads(6))
+			.saturating_add(T::DbWeight::get().writes(5))
 	}
-	/// Storage: `XcmPallet::VersionNotifiers` (r:1 w:1)
-	/// Proof: `XcmPallet::VersionNotifiers` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Dmp::DeliveryFeeFactor` (r:1 w:0)
-	/// Proof: `Dmp::DeliveryFeeFactor` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `XcmPallet::SupportedVersion` (r:1 w:0)
-	/// Proof: `XcmPallet::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Dmp::DownwardMessageQueues` (r:1 w:1)
-	/// Proof: `Dmp::DownwardMessageQueues` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Paras::Heads` (r:1 w:0)
-	/// Proof: `Paras::Heads` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Dmp::DownwardMessageQueueHeads` (r:1 w:1)
-	/// Proof: `Dmp::DownwardMessageQueueHeads` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `XcmPallet::Queries` (r:0 w:1)
-	/// Proof: `XcmPallet::Queries` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `PolkadotXcm::VersionNotifiers` (r:1 w:1)
+	/// Proof: `PolkadotXcm::VersionNotifiers` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `XcmpQueue::DeliveryFeeFactor` (r:1 w:0)
+	/// Proof: `XcmpQueue::DeliveryFeeFactor` (`max_values`: None, `max_size`: Some(28), added: 2503, mode: `MaxEncodedLen`)
+	/// Storage: `PolkadotXcm::SupportedVersion` (r:1 w:0)
+	/// Proof: `PolkadotXcm::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `ParachainSystem::RelevantMessagingState` (r:1 w:0)
+	/// Proof: `ParachainSystem::RelevantMessagingState` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `XcmpQueue::OutboundXcmpStatus` (r:1 w:0)
+	/// Proof: `XcmpQueue::OutboundXcmpStatus` (`max_values`: Some(1), `max_size`: Some(1282), added: 1777, mode: `MaxEncodedLen`)
+	/// Storage: `XcmpQueue::OutboundXcmpMessages` (r:1 w:1)
+	/// Proof: `XcmpQueue::OutboundXcmpMessages` (`max_values`: None, `max_size`: Some(105506), added: 107981, mode: `MaxEncodedLen`)
+	/// Storage: `PolkadotXcm::Queries` (r:0 w:1)
+	/// Proof: `PolkadotXcm::Queries` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn force_unsubscribe_version_notify() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `321`
-		//  Estimated: `3786`
-		// Minimum execution time: 63_045_000 picoseconds.
-		Weight::from_parts(65_516_000, 3786)
-			.saturating_add(T::DbWeight::get().reads(6_u64))
-			.saturating_add(T::DbWeight::get().writes(4_u64))
+		//  Measured:  `404`
+		//  Estimated: `108971`
+		// Minimum execution time: 43_832_000 picoseconds.
+		Weight::from_parts(45_241_000, 0)
+			.saturating_add(Weight::from_parts(0, 108971))
+			.saturating_add(T::DbWeight::get().reads(6))
+			.saturating_add(T::DbWeight::get().writes(3))
 	}
-	/// Storage: `XcmPallet::XcmExecutionSuspended` (r:0 w:1)
-	/// Proof: `XcmPallet::XcmExecutionSuspended` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `PolkadotXcm::XcmExecutionSuspended` (r:0 w:1)
+	/// Proof: `PolkadotXcm::XcmExecutionSuspended` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	fn force_suspension() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 3_837_000 picoseconds.
-		Weight::from_parts(3_988_000, 0)
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		// Minimum execution time: 2_395_000 picoseconds.
+		Weight::from_parts(2_546_000, 0)
+			.saturating_add(Weight::from_parts(0, 0))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
-	/// Storage: `XcmPallet::SupportedVersion` (r:6 w:2)
-	/// Proof: `XcmPallet::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `PolkadotXcm::SupportedVersion` (r:6 w:2)
+	/// Proof: `PolkadotXcm::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn migrate_supported_version() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `22`
 		//  Estimated: `15862`
-		// Minimum execution time: 27_738_000 picoseconds.
-		Weight::from_parts(28_249_000, 15862)
-			.saturating_add(T::DbWeight::get().reads(6_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
+		// Minimum execution time: 22_061_000 picoseconds.
+		Weight::from_parts(22_555_000, 0)
+			.saturating_add(Weight::from_parts(0, 15862))
+			.saturating_add(T::DbWeight::get().reads(6))
+			.saturating_add(T::DbWeight::get().writes(2))
 	}
-	/// Storage: `XcmPallet::VersionNotifiers` (r:6 w:2)
-	/// Proof: `XcmPallet::VersionNotifiers` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `PolkadotXcm::VersionNotifiers` (r:6 w:2)
+	/// Proof: `PolkadotXcm::VersionNotifiers` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn migrate_version_notifiers() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `26`
 		//  Estimated: `15866`
-		// Minimum execution time: 27_830_000 picoseconds.
-		Weight::from_parts(28_404_000, 15866)
-			.saturating_add(T::DbWeight::get().reads(6_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
+		// Minimum execution time: 21_646_000 picoseconds.
+		Weight::from_parts(22_119_000, 0)
+			.saturating_add(Weight::from_parts(0, 15866))
+			.saturating_add(T::DbWeight::get().reads(6))
+			.saturating_add(T::DbWeight::get().writes(2))
 	}
-	/// Storage: `XcmPallet::VersionNotifyTargets` (r:7 w:0)
-	/// Proof: `XcmPallet::VersionNotifyTargets` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `PolkadotXcm::VersionNotifyTargets` (r:7 w:0)
+	/// Proof: `PolkadotXcm::VersionNotifyTargets` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn already_notified_target() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `78`
-		//  Estimated: `18393`
-		// Minimum execution time: 35_474_000 picoseconds.
-		Weight::from_parts(36_076_000, 18393)
-			.saturating_add(T::DbWeight::get().reads(7_u64))
+		//  Measured:  `39`
+		//  Estimated: `18354`
+		// Minimum execution time: 25_937_000 picoseconds.
+		Weight::from_parts(26_388_000, 0)
+			.saturating_add(Weight::from_parts(0, 18354))
+			.saturating_add(T::DbWeight::get().reads(7))
 	}
-	/// Storage: `XcmPallet::VersionNotifyTargets` (r:2 w:1)
-	/// Proof: `XcmPallet::VersionNotifyTargets` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Dmp::DeliveryFeeFactor` (r:1 w:0)
-	/// Proof: `Dmp::DeliveryFeeFactor` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `XcmPallet::SupportedVersion` (r:1 w:0)
-	/// Proof: `XcmPallet::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Dmp::DownwardMessageQueues` (r:1 w:0)
-	/// Proof: `Dmp::DownwardMessageQueues` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Paras::Heads` (r:1 w:0)
-	/// Proof: `Paras::Heads` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `PolkadotXcm::VersionNotifyTargets` (r:2 w:1)
+	/// Proof: `PolkadotXcm::VersionNotifyTargets` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `XcmpQueue::DeliveryFeeFactor` (r:1 w:0)
+	/// Proof: `XcmpQueue::DeliveryFeeFactor` (`max_values`: None, `max_size`: Some(28), added: 2503, mode: `MaxEncodedLen`)
+	/// Storage: `PolkadotXcm::SupportedVersion` (r:1 w:0)
+	/// Proof: `PolkadotXcm::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `ParachainSystem::RelevantMessagingState` (r:1 w:0)
+	/// Proof: `ParachainSystem::RelevantMessagingState` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	fn notify_current_targets() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `140`
-		//  Estimated: `6080`
-		// Minimum execution time: 43_461_000 picoseconds.
-		Weight::from_parts(44_250_000, 6080)
-			.saturating_add(T::DbWeight::get().reads(6_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		//  Measured:  `187`
+		//  Estimated: `6127`
+		// Minimum execution time: 36_716_000 picoseconds.
+		Weight::from_parts(38_269_000, 0)
+			.saturating_add(Weight::from_parts(0, 6127))
+			.saturating_add(T::DbWeight::get().reads(5))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
-	/// Storage: `XcmPallet::VersionNotifyTargets` (r:5 w:0)
-	/// Proof: `XcmPallet::VersionNotifyTargets` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `PolkadotXcm::VersionNotifyTargets` (r:5 w:0)
+	/// Proof: `PolkadotXcm::VersionNotifyTargets` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn notify_target_migration_fail() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `78`
-		//  Estimated: `13443`
-		// Minimum execution time: 25_196_000 picoseconds.
-		Weight::from_parts(25_707_000, 13443)
-			.saturating_add(T::DbWeight::get().reads(5_u64))
+		//  Measured:  `39`
+		//  Estimated: `13404`
+		// Minimum execution time: 17_974_000 picoseconds.
+		Weight::from_parts(18_407_000, 0)
+			.saturating_add(Weight::from_parts(0, 13404))
+			.saturating_add(T::DbWeight::get().reads(5))
 	}
-	/// Storage: `XcmPallet::VersionNotifyTargets` (r:6 w:2)
-	/// Proof: `XcmPallet::VersionNotifyTargets` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `PolkadotXcm::VersionNotifyTargets` (r:6 w:2)
+	/// Proof: `PolkadotXcm::VersionNotifyTargets` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn migrate_version_notify_targets() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `33`
 		//  Estimated: `15873`
-		// Minimum execution time: 28_447_000 picoseconds.
-		Weight::from_parts(28_769_000, 15873)
-			.saturating_add(T::DbWeight::get().reads(6_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
+		// Minimum execution time: 21_964_000 picoseconds.
+		Weight::from_parts(22_610_000, 0)
+			.saturating_add(Weight::from_parts(0, 15873))
+			.saturating_add(T::DbWeight::get().reads(6))
+			.saturating_add(T::DbWeight::get().writes(2))
 	}
-	/// Storage: `XcmPallet::VersionNotifyTargets` (r:6 w:1)
-	/// Proof: `XcmPallet::VersionNotifyTargets` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Dmp::DeliveryFeeFactor` (r:1 w:0)
-	/// Proof: `Dmp::DeliveryFeeFactor` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `XcmPallet::SupportedVersion` (r:1 w:0)
-	/// Proof: `XcmPallet::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Dmp::DownwardMessageQueues` (r:1 w:0)
-	/// Proof: `Dmp::DownwardMessageQueues` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Paras::Heads` (r:1 w:0)
-	/// Proof: `Paras::Heads` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `PolkadotXcm::VersionNotifyTargets` (r:6 w:1)
+	/// Proof: `PolkadotXcm::VersionNotifyTargets` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `XcmpQueue::DeliveryFeeFactor` (r:1 w:0)
+	/// Proof: `XcmpQueue::DeliveryFeeFactor` (`max_values`: None, `max_size`: Some(28), added: 2503, mode: `MaxEncodedLen`)
+	/// Storage: `PolkadotXcm::SupportedVersion` (r:1 w:0)
+	/// Proof: `PolkadotXcm::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `ParachainSystem::RelevantMessagingState` (r:1 w:0)
+	/// Proof: `ParachainSystem::RelevantMessagingState` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	fn migrate_and_notify_old_targets() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `140`
-		//  Estimated: `15980`
-		// Minimum execution time: 57_121_000 picoseconds.
-		Weight::from_parts(58_025_000, 15980)
-			.saturating_add(T::DbWeight::get().reads(10_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		//  Measured:  `187`
+		//  Estimated: `16027`
+		// Minimum execution time: 46_704_000 picoseconds.
+		Weight::from_parts(49_027_000, 0)
+			.saturating_add(Weight::from_parts(0, 16027))
+			.saturating_add(T::DbWeight::get().reads(9))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
-	/// Storage: `XcmPallet::QueryCounter` (r:1 w:1)
-	/// Proof: `XcmPallet::QueryCounter` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `XcmPallet::Queries` (r:0 w:1)
-	/// Proof: `XcmPallet::Queries` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `PolkadotXcm::QueryCounter` (r:1 w:1)
+	/// Proof: `PolkadotXcm::QueryCounter` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `PolkadotXcm::Queries` (r:0 w:1)
+	/// Proof: `PolkadotXcm::Queries` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn new_query() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `1485`
-		// Minimum execution time: 3_816_000 picoseconds.
-		Weight::from_parts(4_057_000, 1485)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
+		// Minimum execution time: 2_694_000 picoseconds.
+		Weight::from_parts(2_829_000, 0)
+			.saturating_add(Weight::from_parts(0, 1485))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().writes(2))
 	}
-	/// Storage: `XcmPallet::Queries` (r:1 w:1)
-	/// Proof: `XcmPallet::Queries` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `PolkadotXcm::Queries` (r:1 w:1)
+	/// Proof: `PolkadotXcm::Queries` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn take_response() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `7576`
 		//  Estimated: `11041`
-		// Minimum execution time: 36_206_000 picoseconds.
-		Weight::from_parts(36_516_000, 11041)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		// Minimum execution time: 27_767_000 picoseconds.
+		Weight::from_parts(28_348_000, 0)
+			.saturating_add(Weight::from_parts(0, 11041))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
-	/// Storage: `XcmPallet::AssetTraps` (r:1 w:1)
-	/// Proof: `XcmPallet::AssetTraps` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `PolkadotXcm::ShouldRecordXcm` (r:1 w:0)
+	/// Proof: `PolkadotXcm::ShouldRecordXcm` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `PolkadotXcm::AssetTraps` (r:1 w:1)
+	/// Proof: `PolkadotXcm::AssetTraps` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Assets::Asset` (r:1 w:1)
+	/// Proof: `Assets::Asset` (`max_values`: None, `max_size`: Some(210), added: 2685, mode: `MaxEncodedLen`)
+	/// Storage: `Assets::Account` (r:1 w:1)
+	/// Proof: `Assets::Account` (`max_values`: None, `max_size`: Some(134), added: 2609, mode: `MaxEncodedLen`)
 	fn claim_assets() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `23`
-		//  Estimated: `3488`
-		// Minimum execution time: 52_840_000 picoseconds.
-		Weight::from_parts(54_447_000, 3488)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		//  Measured:  `303`
+		//  Estimated: `3768`
+		// Minimum execution time: 45_836_000 picoseconds.
+		Weight::from_parts(47_883_000, 0)
+			.saturating_add(Weight::from_parts(0, 3768))
+			.saturating_add(T::DbWeight::get().reads(4))
+			.saturating_add(T::DbWeight::get().writes(3))
 	}
-	/// Storage: `Benchmark::Override` (r:0 w:0)
-	/// Proof: `Benchmark::Override` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `PolkadotXcm::AuthorizedAliases` (r:1 w:1)
+	/// Proof: `PolkadotXcm::AuthorizedAliases` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Balances::Holds` (r:1 w:1)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(121), added: 2596, mode: `MaxEncodedLen`)
 	fn add_authorized_alias() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `0`
-		//  Estimated: `0`
-		// Minimum execution time: 18_446_744_073_709_551_000 picoseconds.
-		Weight::from_parts(18_446_744_073_709_551_000, 0)
+		//  Measured:  `160`
+		//  Estimated: `3625`
+		// Minimum execution time: 50_608_000 picoseconds.
+		Weight::from_parts(51_989_000, 0)
+			.saturating_add(Weight::from_parts(0, 3625))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(2))
 	}
-	/// Storage: `Benchmark::Override` (r:0 w:0)
-	/// Proof: `Benchmark::Override` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `PolkadotXcm::AuthorizedAliases` (r:1 w:1)
+	/// Proof: `PolkadotXcm::AuthorizedAliases` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Balances::Holds` (r:1 w:1)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(121), added: 2596, mode: `MaxEncodedLen`)
 	fn remove_authorized_alias() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `516`
+		//  Estimated: `3981`
+		// Minimum execution time: 52_003_000 picoseconds.
+		Weight::from_parts(52_989_000, 0)
+			.saturating_add(Weight::from_parts(0, 3981))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(2))
+	}
+	fn weigh_message() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 18_446_744_073_709_551_000 picoseconds.
-		Weight::from_parts(18_446_744_073_709_551_000, 0)
+		// Minimum execution time: 8_416_000 picoseconds.
+		Weight::from_parts(8_668_000, 0)
+			.saturating_add(Weight::from_parts(0, 0))
 	}
 }

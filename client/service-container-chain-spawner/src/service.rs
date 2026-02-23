@@ -52,6 +52,7 @@ use {
     sp_api::ProvideRuntimeApi,
     sp_consensus::EnableProofRecording,
     sp_consensus_aura::SlotDuration,
+    sp_core::Encode,
     sp_keystore::KeystorePtr,
     std::{marker::PhantomData, sync::Arc, time::Duration},
     substrate_prometheus_endpoint::Registry,
@@ -292,7 +293,7 @@ pub fn start_node_impl_container<
                 request_receiver: paranode_rx,
                 parachain_network: node_builder.network.network.clone(),
                 advertise_non_global_ips,
-                parachain_genesis_hash: node_builder.client.chain_info().genesis_hash,
+                parachain_genesis_hash: node_builder.client.chain_info().genesis_hash.encode(),
                 parachain_fork_id,
                 parachain_public_addresses,
             });
@@ -401,6 +402,7 @@ fn start_consensus_container<RuntimeApi: MinimalContainerRuntimeApi>(
 ) {
     let crate::spawner::CollationParams {
         collator_key,
+        collator_peer_id,
         orchestrator_tx_pool,
         orchestrator_client,
         orchestrator_para_id,
@@ -421,15 +423,13 @@ fn start_consensus_container<RuntimeApi: MinimalContainerRuntimeApi>(
         .expect("start_consensus_container: slot duration should exist")
     };
 
-    let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
+    let proposer = sc_basic_authorship::ProposerFactory::with_proof_recording(
         spawner.clone(),
         client.clone(),
         transaction_pool,
         prometheus_registry.as_ref(),
         telemetry.clone(),
     );
-
-    let proposer = cumulus_client_consensus_proposer::Proposer::new(proposer_factory);
 
     let collator_service = cumulus_client_collator::service::CollatorService::new(
         client.clone(),
@@ -622,6 +622,7 @@ fn start_consensus_container<RuntimeApi: MinimalContainerRuntimeApi>(
         keystore,
         collator_key,
         para_id,
+        collator_peer_id,
         overseer_handle,
         orchestrator_slot_duration: slot_duration,
         force_authoring,

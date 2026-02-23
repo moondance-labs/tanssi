@@ -108,7 +108,7 @@ pub type BalanceOf<T> =
 
 pub(crate) fn currency_issue<T: Config + frame_system::Config>(
     amount: BalanceOf<T>,
-) -> crate::CreditOf<T, T::Currency> {
+) -> crate::CreditOf<T, <T as crate::Config>::Currency> {
     <<T as crate::Config>::Currency as Balanced<T::AccountId>>::issue(amount)
 }
 
@@ -233,7 +233,7 @@ mod benchmarks {
         let new_supply = currency_issue::<T>(1000u32.into());
         #[block]
         {
-            let _ = InvulnerableRewardDistribution::<T, T::Currency, ()>::distribute_rewards(
+            let _ = InvulnerableRewardDistribution::<T, <T as crate::Config>::Currency, ()>::distribute_rewards(
                 to_reward, new_supply,
             );
         }

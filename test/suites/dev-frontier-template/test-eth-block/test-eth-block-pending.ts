@@ -44,12 +44,20 @@ describeSuite({
                 nonce = nonce + 100;
                 await sendTransaction();
 
-                // do not seal, get pendign block
+                // do not seal, get pending block
                 let pending_transactions = [];
                 {
-                    const pending = (
-                        await customWeb3Request(context.web3(), "eth_getBlockByNumber", ["pending", false])
-                    ).result;
+                    const pendingRes = await customWeb3Request(context.web3(), "eth_getBlockByNumber", [
+                        "pending",
+                        false,
+                    ]);
+                    /* Error:
+panicked at /home/tomasz/.cargo/git/checkouts/moonkit-6d94c845bc690c80/0fec9fd/pallets/async-backing/src/lib.rs:135:48:
+Relay slot to exist
+Essential task `txpool-background` failed. Shutting down service.
+                     */
+                    console.log(pendingRes);
+                    const pending = pendingRes.result;
                     expect(pending.hash).to.be.null;
                     expect(pending.miner).to.be.null;
                     expect(pending.nonce).to.be.null;

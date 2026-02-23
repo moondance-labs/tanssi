@@ -16,6 +16,7 @@
 
 #![cfg(test)]
 
+use crate::{currency, KeyDeposit, SessionKeys};
 use {
     crate::{tests::common::*, RuntimeOrigin},
     alloc::vec,
@@ -4582,4 +4583,20 @@ fn test_registrar_extrinsic_permissions() {
                 ()
             );
         });
+}
+
+#[test]
+fn session_keys_deposit() {
+    // Check that deposit for pallet_session has correct size depending on `SessionKeys`.
+    // Assumes that all SessionKeys have the same encoded size.
+    let nimbus = get_aura_id_from_seed("alice");
+    let session_keys = SessionKeys { nimbus };
+    let session_keys_len = session_keys.encoded_size();
+    // Hardcode value in test so it is easier to debug when SessionKeys size changes
+    assert_eq!(session_keys_len, 32);
+    // And assert that the actual deposit matches this session keys length
+    let x = KeyDeposit::get();
+    let y = currency::deposit(1, session_keys_len as u32);
+
+    assert_eq!(x, y);
 }

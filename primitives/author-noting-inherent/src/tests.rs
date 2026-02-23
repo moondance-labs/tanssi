@@ -17,10 +17,7 @@
 use {
     crate::{tests::mock_relay_chain_impl::MyMockRelayInterface, OwnParachainInherentData},
     cumulus_pallet_parachain_system::RelayChainStateProof,
-    cumulus_primitives_core::relay_chain::{
-        vstaging::{CandidateEvent, CoreState},
-        BlakeTwo256, BlockNumber,
-    },
+    cumulus_primitives_core::relay_chain::{BlakeTwo256, BlockNumber, CandidateEvent, CoreState},
     dp_core::well_known_keys::para_id_head,
     futures::executor::block_on,
     hex_literal::hex,
@@ -125,8 +122,7 @@ mod mock_relay_chain_impl {
         async_trait::async_trait,
         cumulus_primitives_core::{
             relay_chain::{
-                vstaging::CommittedCandidateReceiptV2, BlockId, OccupiedCoreAssumption,
-                SessionIndex,
+                BlockId, CommittedCandidateReceiptV2, OccupiedCoreAssumption, SessionIndex,
             },
             InboundHrmpMessage, ParaId,
         },

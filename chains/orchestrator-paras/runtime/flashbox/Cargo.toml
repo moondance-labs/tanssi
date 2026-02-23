@@ -104,7 +104,6 @@ cumulus-pallet-parachain-system = { workspace = true }
 cumulus-pallet-session-benchmarking = { workspace = true }
 cumulus-pallet-weight-reclaim = { workspace = true }
 cumulus-primitives-core = { workspace = true }
-cumulus-primitives-timestamp = { workspace = true }
 pallet-invulnerables = { workspace = true }
 parachain-info = { workspace = true }
 
@@ -137,7 +136,6 @@ std = [
 	"cumulus-pallet-weight-reclaim/std",
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-parachain-inherent/std",
-	"cumulus-primitives-timestamp/std",
 	"cumulus-test-relay-sproof-builder/std",
 	"dp-consensus/std",
 	"dp-container-chain-genesis-data/std",
@@ -257,6 +255,7 @@ runtime-benchmarks = [
 	"pallet-registrar/runtime-benchmarks",
 	"pallet-relay-storage-roots/runtime-benchmarks",
 	"pallet-services-payment/runtime-benchmarks",
+	"pallet-session/runtime-benchmarks",
 	"pallet-stream-payment/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",

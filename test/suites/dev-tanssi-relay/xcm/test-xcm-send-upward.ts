@@ -97,6 +97,10 @@ describeSuite({
                 // Enable para inherent to process xcm message
                 await customDevRpcRequest("mock_enableParaInherentCandidate", []);
 
+                // This only works from block 21
+                await jumpToSession(context, 2);
+                await context.createBlock();
+
                 // Send ump message
                 await injectUmpMessageAndSeal(context, {
                     type: "XcmVersionedXcm",

@@ -239,7 +239,6 @@ where
         Eth::<_, _, _, _, _, _, DefaultEthConfig<C, BE>>::new(
             Arc::clone(&client),
             Arc::clone(&pool),
-            Arc::clone(&graph),
             convert_transaction,
             Arc::clone(&sync),
             signers,

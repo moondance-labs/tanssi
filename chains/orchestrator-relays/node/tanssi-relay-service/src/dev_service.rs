@@ -30,6 +30,8 @@
 //! 10. If amount of time passed between two block is less than slot duration, we emulate passing of time babe block import and runtime
 //!     by incrementing timestamp by slot duration.
 
+use sp_consensus_babe::inherents::InherentDataProvider;
+use sp_inherents::CreateInherentDataProviders;
 use {
     crate::dev_rpcs::{DevApiServer, DevRpc},
     async_io::Timer,
@@ -49,8 +51,8 @@ use {
     polkadot_overseer::Handle,
     polkadot_parachain_primitives::primitives::UpwardMessages,
     polkadot_primitives::{
-        runtime_api::ParachainHost, BackedCandidate, CandidateCommitments, CandidateDescriptor,
-        CollatorPair, CommittedCandidateReceipt, CompactStatement, EncodeAs,
+        runtime_api::ParachainHost, BackedCandidate, CandidateCommitments, CandidateDescriptorV2,
+        CommittedCandidateReceiptV2, CompactStatement, CoreIndex, EncodeAs,
         InherentData as ParachainsInherentData, OccupiedCoreAssumption, SigningContext,
         ValidityAttestation,
     },
@@ -73,7 +75,7 @@ use {
     sp_blockchain::{HeaderBackend, HeaderMetadata},
     sp_consensus_aura::{inherents::InherentType as AuraInherentType, AURA_ENGINE_ID},
     sp_consensus_babe::SlotDuration,
-    sp_core::{ByteArray, Pair, H256},
+    sp_core::{ByteArray, H256},
     sp_keystore::KeystorePtr,
     sp_runtime::{traits::BlakeTwo256, DigestItem, RuntimeAppPublic},
     std::{cmp::max, ops::Add, sync::Arc, time::Duration},
@@ -84,6 +86,7 @@ use {
 const PARA_INHERENT_SELECTOR_AUX_KEY: &[u8] = b"__DEV_PARA_INHERENT_SELECTOR";
 
 const CONTAINER_CHAINS_EXCLUSION_AUX_KEY: &[u8] = b"__DEV_CONTAINER_CHAINS_EXCLUSION";
+const UPWARD_MESSAGES_AUX_KEY: &[u8] = b"__DEV_UPWARD_MESSAGES";
 
 pub type FullBackend = service::TFullBackend<Block>;
 
@@ -237,12 +240,10 @@ pub fn build_full<OverseerGenerator: OverseerGen>(
 /// candidates
 /// We detect whether any of the keys in our keystore is assigned to a core and provide
 /// a mocked candidate in such core
-struct MockParachainsInherentDataProvider<C: HeaderBackend<Block> + ProvideRuntimeApi<Block>> {
+pub struct MockParachainsInherentDataProvider<C: HeaderBackend<Block> + ProvideRuntimeApi<Block>> {
     pub client: Arc<C>,
     pub parent: Hash,
     pub keystore: KeystorePtr,
-    pub upward_messages_receiver: flume::Receiver<Vec<u8>>,
-    pub container_chain_exclusion_receiver: flume::Receiver<Vec<ParaId>>,
 }
 
 impl<C: HeaderBackend<Block> + ProvideRuntimeApi<Block>> MockParachainsInherentDataProvider<C>
@@ -250,19 +251,11 @@ where
     C::Api: ParachainHost<Block>,
     C: AuxStore,
 {
-    pub fn new(
-        client: Arc<C>,
-        parent: Hash,
-        keystore: KeystorePtr,
-        upward_messages_receiver: flume::Receiver<Vec<u8>>,
-        container_chain_exclusion_receiver: flume::Receiver<Vec<ParaId>>,
-    ) -> Self {
+    pub fn new(client: Arc<C>, parent: Hash, keystore: KeystorePtr) -> Self {
         MockParachainsInherentDataProvider {
             client,
             parent,
             keystore,
-            upward_messages_receiver,
-            container_chain_exclusion_receiver,
         }
     }
 
@@ -270,8 +263,6 @@ where
         client: Arc<C>,
         parent: Hash,
         keystore: KeystorePtr,
-        upward_messages_receiver: flume::Receiver<Vec<u8>>,
-        container_chains_exclusion_receiver: flume::Receiver<Vec<ParaId>>,
     ) -> Result<ParachainsInherentData, InherentError> {
         let parent_header = match client.header(parent) {
             Ok(Some(h)) => h,
@@ -360,24 +351,8 @@ where
             })
             .collect();
 
-        // generate a random collator pair
-        let collator_pair = CollatorPair::generate().0;
         let mut backed_cand: Vec<BackedCandidate<H256>> = vec![];
 
-        let container_chains_exclusion_messages: Vec<Vec<ParaId>> =
-            container_chains_exclusion_receiver.drain().collect();
-        // If there is a new set of excluded container chains, we update it
-        if let Some(mock_excluded_container_chains) = container_chains_exclusion_messages.last() {
-            client
-                .insert_aux(
-                    &[(
-                        CONTAINER_CHAINS_EXCLUSION_AUX_KEY,
-                        mock_excluded_container_chains.encode().as_slice(),
-                    )],
-                    &[],
-                )
-                .expect("Should be able to write to aux storage; qed");
-        }
         let new_excluded_container_chains_value = client
             .get_aux(CONTAINER_CHAINS_EXCLUSION_AUX_KEY)
             .expect("Should be able to query aux storage; qed")
@@ -432,34 +407,37 @@ where
                                 .unwrap()
                                 .unwrap();
                             let pov_hash = Default::default();
-                            // generate a fake collator signature
-                            let payload = polkadot_primitives::collator_signature_payload(
-                                &parent,
-                                &para[0],
-                                &persisted_validation_data_hash,
-                                &pov_hash,
-                                &validation_code_hash,
-                            );
-                            let collator_signature = collator_pair.sign(&payload);
 
-                            let upward_messages = UpwardMessages::try_from(
-                                upward_messages_receiver.drain().collect::<Vec<_>>(),
-                            )
-                            .expect("create upward messages from raw messages");
+                            let upward_messages_value_encoded: Vec<u8> = client
+                                .get_aux(UPWARD_MESSAGES_AUX_KEY)
+                                .expect("Should be able to query aux storage; qed")
+                                .unwrap_or(Vec::<Vec<u8>>::new().encode());
+
+                            let upward_messages_value: Vec<Vec<u8>> =
+                                Decode::decode(&mut upward_messages_value_encoded.as_slice())
+                                    .expect("Vector non-decodable");
+
+                            log::info!(
+                                "reading upward_messages_value. got {} msg",
+                                upward_messages_value.len()
+                            );
+
+                            let upward_messages = UpwardMessages::try_from(upward_messages_value)
+                                .expect("create upward messages from raw messages");
 
                             // generate a candidate with most of the values mocked
-                            let candidate = CommittedCandidateReceipt::<H256> {
-                                descriptor: CandidateDescriptor::<H256> {
-                                    para_id: para[0],
-                                    relay_parent: parent,
-                                    collator: collator_pair.public(),
+                            let candidate = CommittedCandidateReceiptV2::<H256> {
+                                descriptor: CandidateDescriptorV2::new(
+                                    para[0],
+                                    parent,
+                                    CoreIndex(0),
+                                    0,
                                     persisted_validation_data_hash,
                                     pov_hash,
-                                    erasure_root: Default::default(),
-                                    signature: collator_signature,
-                                    para_head: parachain_mocked_header.clone().hash(),
+                                    Default::default(),
+                                    parachain_mocked_header.clone().hash(),
                                     validation_code_hash,
-                                },
+                                ),
                                 commitments: CandidateCommitments::<u32> {
                                     upward_messages,
                                     horizontal_messages: Default::default(),
@@ -540,8 +518,6 @@ where
                         self.client.clone(),
                         self.parent,
                         self.keystore.clone(),
-                        self.upward_messages_receiver.clone(),
-                        self.container_chain_exclusion_receiver.clone(),
                     )
                     .await
                     .map_err(|e| sp_inherents::Error::Application(Box::new(e)))?
@@ -575,9 +551,13 @@ where
 
 /// We store past timestamp we created in the aux storage, which enable us to return timestamp which is increased by
 /// slot duration from previous timestamp or current timestamp if in reality more time is passed.
+/// This function is called twice per block: first in `create_inherent_data_providers` and later in
+/// `babe::block_import`. The second call mutates, the first call does not. This is to ensure they both
+/// return the same value.
 fn get_next_timestamp(
     client: Arc<FullClient>,
     slot_duration: SlotDuration,
+    mutate: bool,
 ) -> sp_timestamp::InherentDataProvider {
     const TIMESTAMP_AUX_KEY: &[u8] = b"__DEV_TIMESTAMP";
 
@@ -591,12 +571,14 @@ fn get_next_timestamp(
             last_inherent_data.add(slot_duration.as_millis()),
             sp_timestamp::InherentType::current(),
         );
-        client
-            .insert_aux(
-                &[(TIMESTAMP_AUX_KEY, new_inherent_data.encode().as_slice())],
-                &[],
-            )
-            .expect("Should be able to write to aux storage; qed");
+        if mutate {
+            client
+                .insert_aux(
+                    &[(TIMESTAMP_AUX_KEY, new_inherent_data.encode().as_slice())],
+                    &[],
+                )
+                .expect("Should be able to write to aux storage; qed");
+        }
         sp_timestamp::InherentDataProvider::new(new_inherent_data)
     } else {
         let current_timestamp = sp_timestamp::InherentType::current();
@@ -608,6 +590,40 @@ fn get_next_timestamp(
             .expect("Should be able to write to aux storage; qed");
         sp_timestamp::InherentDataProvider::new(current_timestamp)
     }
+}
+
+/// Returns `CreateInherentDataProviders` implementation for tanssi solochain manual seal dev node.
+/// Can be called multiple times for the same block, the result must be the same!
+/// So avoid writing to storage.
+fn tanssi_inherent_data_providers(
+    client: Arc<FullClient>,
+    keystore: KeystorePtr,
+    slot_duration: SlotDuration,
+) -> TanssiBabeCreateInherentDataProviders<Block> {
+    let client_clone = client.clone();
+    let keystore_clone = keystore.clone();
+
+    let f = move |parent, ()| {
+        let client_clone = client_clone.clone();
+        let keystore = keystore_clone.clone();
+
+        async move {
+            let parachain =
+                MockParachainsInherentDataProvider::new(client_clone.clone(), parent, keystore);
+
+            let timestamp = get_next_timestamp(client_clone, slot_duration, false);
+
+            let slot =
+                sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
+                    *timestamp,
+                    slot_duration,
+                );
+
+            Ok((slot, timestamp, parachain))
+        }
+    };
+
+    Arc::new(f)
 }
 
 fn new_full<
@@ -631,6 +647,13 @@ fn new_full<
 
     let select_chain = SelectRelayChain::new_longest_chain(basics.backend.clone());
 
+    // Create channels for mocked parachain candidates.
+    let (downward_mock_para_inherent_sender, downward_mock_para_inherent_receiver) =
+        flume::bounded::<Vec<u8>>(100);
+    let (upward_mock_sender, upward_mock_receiver) = flume::bounded::<Vec<u8>>(100);
+    let (mock_container_chains_exclusion_sender, mock_container_chains_exclusion_receiver) =
+        flume::bounded::<Vec<ParaId>>(100);
+
     let service::PartialComponents::<_, _, SelectRelayChain<_>, _, _, _> {
         client,
         backend,
@@ -639,7 +662,7 @@ fn new_full<
         select_chain,
         import_queue,
         transaction_pool,
-        other: (block_import, babe_link, slot_duration, mut telemetry),
+        other: (block_import, babe_link, tanssi_idp, mut telemetry),
     } = new_partial::<SelectRelayChain<_>>(&mut config, basics, select_chain)?;
 
     let metrics = Network::register_notification_metrics(
@@ -650,12 +673,6 @@ fn new_full<
         &config.network,
         prometheus_registry.clone(),
     );
-
-    // Create channels for mocked parachain candidates.
-    let (downward_mock_para_inherent_sender, downward_mock_para_inherent_receiver) =
-        flume::bounded::<Vec<u8>>(100);
-
-    let (upward_mock_sender, upward_mock_receiver) = flume::bounded::<Vec<u8>>(100);
 
     let (network, system_rpc_tx, tx_handler_controller, sync_service) =
         service::build_network(service::BuildNetworkParams {
@@ -738,26 +755,20 @@ fn new_full<
                 },
             )),
         };
-        let keystore_clone = keystore.clone();
-
         let babe_config = babe_link.config();
         let babe_consensus_provider = BabeConsensusDataProvider::new(
             client.clone(),
-            keystore,
+            keystore.clone(),
             babe_link.epoch_changes().clone(),
             babe_config.authorities.clone(),
         )
         .map_err(|babe_error| {
             Error::Consensus(consensus_common::Error::Other(babe_error.into()))
         })?;
-
-        let (mock_container_chains_exclusion_sender, mock_container_chains_exclusion_receiver) =
-            flume::bounded::<Vec<ParaId>>(100);
-        container_chain_exclusion_sender = Some(mock_container_chains_exclusion_sender);
-
-        // Need to clone it and store here to avoid moving of `client`
-        // variable in closure below.
+        let slot_duration = babe_config.slot_duration();
         let client_clone = client.clone();
+
+        container_chain_exclusion_sender = Some(mock_container_chains_exclusion_sender);
 
         task_manager.spawn_essential_handle().spawn_blocking(
             "authorship_task",
@@ -770,46 +781,57 @@ fn new_full<
                 commands_stream,
                 select_chain,
                 create_inherent_data_providers: move |parent, ()| {
-                    let client_clone = client_clone.clone();
-                    let keystore = keystore_clone.clone();
-                    let downward_mock_para_inherent_receiver = downward_mock_para_inherent_receiver.clone();
+                    let tanssi_idp = tanssi_idp.clone();
+                    let client = client_clone.clone();
+                    let downward_mock_para_inherent_receiver =
+                        downward_mock_para_inherent_receiver.clone();
+                    let mock_container_chains_exclusion_receiver =
+                        mock_container_chains_exclusion_receiver.clone();
                     let upward_mock_receiver = upward_mock_receiver.clone();
-                    let mock_container_chains_exclusion_receiver = mock_container_chains_exclusion_receiver.clone();
+
                     async move {
+                        // Update timestamp (only do this once per block, so not needed in babe import)
+                        get_next_timestamp(client.clone(), slot_duration, true);
 
-                        let downward_mock_para_inherent_receiver = downward_mock_para_inherent_receiver.clone();
-                        // here we only take the last one
-                        let para_inherent_decider_messages: Vec<Vec<u8>> = downward_mock_para_inherent_receiver.drain().collect();
-
-                        let upward_messages_receiver = upward_mock_receiver.clone();
-
+                        let downward_mock_para_inherent_receiver =
+                            downward_mock_para_inherent_receiver.clone();
+                        let para_inherent_decider_messages: Vec<Vec<u8>> =
+                            downward_mock_para_inherent_receiver.drain().collect();
                         // If there is a value to be updated, we update it
                         if let Some(value) = para_inherent_decider_messages.last() {
-                            client_clone
+                            client
+                                .insert_aux(
+                                    &[(PARA_INHERENT_SELECTOR_AUX_KEY, value.as_slice())],
+                                    &[],
+                                )
+                                .expect("Should be able to write to aux storage; qed");
+                        }
+                        let value = upward_mock_receiver.drain().collect::<Vec<_>>();
+                        client
                             .insert_aux(
-                                &[(PARA_INHERENT_SELECTOR_AUX_KEY, value.as_slice())],
+                                &[(UPWARD_MESSAGES_AUX_KEY, value.encode().as_slice())],
                                 &[],
                             )
                             .expect("Should be able to write to aux storage; qed");
+
+                        let container_chains_exclusion_messages: Vec<Vec<ParaId>> =
+                            mock_container_chains_exclusion_receiver.drain().collect();
+                        // If there is a new set of excluded container chains, we update it
+                        if let Some(mock_excluded_container_chains) =
+                            container_chains_exclusion_messages.last()
+                        {
+                            client
+                                .insert_aux(
+                                    &[(
+                                        CONTAINER_CHAINS_EXCLUSION_AUX_KEY,
+                                        mock_excluded_container_chains.encode().as_slice(),
+                                    )],
+                                    &[],
+                                )
+                                .expect("Should be able to write to aux storage; qed");
                         }
 
-                        let parachain = MockParachainsInherentDataProvider::new(
-                            client_clone.clone(),
-                            parent,
-                            keystore,
-                            upward_messages_receiver,
-                            mock_container_chains_exclusion_receiver
-                        );
-
-                        let timestamp = get_next_timestamp(client_clone, slot_duration);
-
-                        let slot =
-                            sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
-                                *timestamp,
-                                slot_duration,
-                            );
-
-                        Ok((slot, timestamp, parachain))
+                        tanssi_idp.create_inherent_data_providers(parent, ()).await
                     }
                 },
                 consensus_data_provider: Some(Box::new(babe_consensus_provider)),
@@ -857,6 +879,7 @@ fn new_full<
         system_rpc_tx,
         tx_handler_controller,
         telemetry: telemetry.as_mut(),
+        tracing_execute_block: None,
     })?;
 
     Ok(NewFull {
@@ -869,6 +892,19 @@ fn new_full<
         backend,
     })
 }
+
+/// Create inherent data providers for BABE with timestamp.
+pub type TanssiBabeCreateInherentDataProviders<Block> = std::sync::Arc<
+    dyn sp_inherents::CreateInherentDataProviders<
+        Block,
+        (),
+        InherentDataProviders = (
+            InherentDataProvider,
+            sp_timestamp::InherentDataProvider,
+            MockParachainsInherentDataProvider<FullClient>,
+        ),
+    >,
+>;
 
 fn new_partial<ChainSelection>(
     config: &mut Configuration,
@@ -888,9 +924,18 @@ fn new_partial<ChainSelection>(
         sc_consensus::DefaultImportQueue<Block>,
         sc_transaction_pool::TransactionPoolHandle<Block, FullClient>,
         (
-            BabeBlockImport<Block, FullClient, Arc<FullClient>>,
+            BabeBlockImport<
+                Block,
+                FullClient,
+                // TODO: this is different in polkadot-sdk:
+                //FullBeefyBlockImport<FullGrandpaBlockImport>,
+                //FullGrandpaBlockImport,
+                Arc<FullClient>,
+                TanssiBabeCreateInherentDataProviders<Block>,
+                ChainSelection,
+            >,
             BabeLink<Block>,
-            SlotDuration,
+            TanssiBabeCreateInherentDataProviders<Block>,
             Option<Telemetry>,
         ),
     >,
@@ -907,13 +952,25 @@ where
     .with_options(config.transaction_pool.clone())
     .with_prometheus(config.prometheus_registry())
     .build();
+    let transaction_pool = Arc::new(transaction_pool);
 
     // Create babe block import queue; this is required to have correct epoch data
     // available for manual seal to produce block
     let babe_config = babe::configuration(&*client)?;
-    let (babe_block_import, babe_link) =
-        babe::block_import(babe_config.clone(), client.clone(), client.clone())?;
-    let slot_duration = babe_link.config().slot_duration();
+    let slot_duration = babe_config.slot_duration();
+    let tanssi_idp = tanssi_inherent_data_providers(
+        client.clone(),
+        keystore_container.local_keystore().clone(),
+        slot_duration,
+    );
+    let (babe_block_import, babe_link) = babe::block_import(
+        babe_config.clone(),
+        client.clone(),
+        client.clone(),
+        tanssi_idp.clone() as TanssiBabeCreateInherentDataProviders<Block>,
+        select_chain.clone(),
+        OffchainTransactionPoolFactory::new(transaction_pool.clone()),
+    )?;
 
     // Create manual seal block import with manual seal block import queue
     let import_queue = sc_consensus_manual_seal::import_queue(
@@ -929,8 +986,8 @@ where
         keystore_container,
         select_chain,
         import_queue,
-        transaction_pool: transaction_pool.into(),
-        other: (babe_block_import, babe_link, slot_duration, telemetry),
+        transaction_pool,
+        other: (babe_block_import, babe_link, tanssi_idp, telemetry),
     })
 }
 
@@ -1005,6 +1062,7 @@ use {
     polkadot_primitives::{AvailabilityBitfield, UncheckedSigned, ValidatorId, ValidatorIndex},
     sp_keystore::Error as KeystoreError,
 };
+
 fn keystore_sign<H: Encode, Payload: Encode>(
     keystore: &KeystorePtr,
     payload: Payload,
