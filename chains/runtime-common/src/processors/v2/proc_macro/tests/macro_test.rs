@@ -38,8 +38,6 @@ use v2_processor_proc_macro::MessageProcessor as MessageProcessorDerive;
 /// 2. `process_message`: Each row in table consists of three element, the first two elements contain message.value and message.execution_fee respectively and the last element contains expected return value
 ///
 /// The test will pass when the macro implementation behaves consistently as per tables.
-///
-
 struct TestFallback1;
 
 impl<AccountId> FallbackMessageProcessor<AccountId> for TestFallback1 {
