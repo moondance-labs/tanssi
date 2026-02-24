@@ -236,7 +236,7 @@ pub fn start_block() -> RunSummary {
 
     RunSummary {
         author_id,
-        inflation: new_issuance - current_issuance,
+        inflation: new_issuance.checked_sub(current_issuance).unwrap(),
     }
 }
 
