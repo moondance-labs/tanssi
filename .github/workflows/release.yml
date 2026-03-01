@@ -310,7 +310,7 @@ jobs:
                   echo "✅ Found build ID: $LATEST_TARGET_BRANCH_BUILD"
                   echo "LATEST_TARGET_BRANCH_BUILD=$LATEST_TARGET_BRANCH_BUILD" >> $GITHUB_OUTPUT
             - name: "Download runtimes from target branch"
-              uses: actions/download-artifact@v7
+              uses: actions/download-artifact@v8
               with:
                 name: runtimes
                 path: runtimes-target-branch
@@ -318,7 +318,7 @@ jobs:
                 github-token: ${{ github.token }}
                 run-id: ${{ steps.latest-target-build.outputs.LATEST_TARGET_BRANCH_BUILD }}
             - name: "Download branch built runtime"
-              uses: actions/download-artifact@v7
+              uses: actions/download-artifact@v8
               with:
                   name: runtimes
                   path: runtimes-current-branch
@@ -510,7 +510,7 @@ jobs:
               with:
                   version: 9
             - name: "Download binaries"
-              uses: actions/download-artifact@v7
+              uses: actions/download-artifact@v8
               with:
                   name: binaries
                   path: target/release
@@ -543,7 +543,7 @@ jobs:
               with:
                   version: 9
             - name: "Download binaries"
-              uses: actions/download-artifact@v7
+              uses: actions/download-artifact@v8
               with:
                   name: binaries
                   path: target/release
@@ -576,7 +576,7 @@ jobs:
               with:
                   version: 9
             - name: "Download binaries"
-              uses: actions/download-artifact@v7
+              uses: actions/download-artifact@v8
               with:
                   name: binaries
                   path: target/release
@@ -614,7 +614,7 @@ jobs:
                   node-version: 22.x
                   cache: "pnpm"
             - name: "Download binaries"
-              uses: actions/download-artifact@v7
+              uses: actions/download-artifact@v8
               with:
                   name: binaries
                   path: target/release
@@ -647,7 +647,7 @@ jobs:
                   node-version: 22.x
                   cache: "pnpm"
             - name: "Download binaries"
-              uses: actions/download-artifact@v7
+              uses: actions/download-artifact@v8
               with:
                   name: binaries
                   path: target/release
@@ -680,7 +680,7 @@ jobs:
                   node-version: 22.x
                   cache: "pnpm"
             - name: "Download binaries"
-              uses: actions/download-artifact@v7
+              uses: actions/download-artifact@v8
               with:
                   name: binaries
                   path: target/release
@@ -705,7 +705,7 @@ jobs:
               with:
                   version: 9
             - name: "Download binaries"
-              uses: actions/download-artifact@v7
+              uses: actions/download-artifact@v8
               with:
                   name: binaries
                   path: target/release
@@ -742,7 +742,7 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: "Download binaries"
-              uses: actions/download-artifact@v7
+              uses: actions/download-artifact@v8
               with:
                   name: binaries
                   path: target/release
@@ -777,7 +777,7 @@ jobs:
               run: |
                   mkdir -p test/tmp
             - name: "Download binaries"
-              uses: actions/download-artifact@v7
+              uses: actions/download-artifact@v8
               with:
                   name: binaries
                   path: target/release
@@ -831,7 +831,7 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: "Download binaries"
-              uses: actions/download-artifact@v7
+              uses: actions/download-artifact@v8
               with:
                   name: binaries
                   path: build
