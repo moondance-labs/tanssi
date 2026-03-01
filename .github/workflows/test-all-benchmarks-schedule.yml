@@ -54,7 +54,7 @@ jobs:
 
       - name: Upload benchmark logs
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: benchmark-logs
           path: tmp/benchmark_log_*.txt
