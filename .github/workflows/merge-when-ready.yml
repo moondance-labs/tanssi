@@ -96,7 +96,7 @@ jobs:
               uses: actions/checkout@v6
               with:
                 ref: ${{ github.event.pull_request.head.sha }}
-            - uses: pnpm/action-setup@v4.2.0
+            - uses: pnpm/action-setup@v6.0.9
               with:
                   version: 9
             - uses: actions/setup-node@v6
@@ -139,7 +139,7 @@ jobs:
               with:
                   ref: ${{ github.event.pull_request.head.sha }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.2.0
+              uses: pnpm/action-setup@v6.0.9
               with:
                   version: 9
             - name: Setup node
@@ -199,7 +199,7 @@ jobs:
               with:
                   ref: ${{ github.event.pull_request.head.sha }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.2.0
+              uses: pnpm/action-setup@v6.0.9
               with:
                   version: 9
             - name: Setup node
@@ -246,7 +246,7 @@ jobs:
               with:
                   ref: ${{ github.event.pull_request.head.sha }}
             - name: Pnpm
-              uses: pnpm/action-setup@v4.2.0
+              uses: pnpm/action-setup@v6.0.9
               with:
                   version: 9
             - name: Setup node
@@ -408,7 +408,7 @@ jobs:
               uses: actions/checkout@v6
 
             - name: Pnpm
-              uses: pnpm/action-setup@v4.2.0
+              uses: pnpm/action-setup@v6.0.9
               with:
                 version: 9
 
